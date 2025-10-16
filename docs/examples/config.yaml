@@ -1,0 +1,47 @@
+# Example MDV configuration file
+# Copy to ~/.config/mdv/config.yaml
+
+# Theme settings
+theme: "monokai"           # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppucin"
+code_theme: "monokai"      # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppucin"
+theme_info: false          # Print palette information alongside rendered output
+custom_theme: null         # Override individual UI colors (see formats below)
+custom_code_theme: null    # Override syntax colors (same format as custom_theme)
+
+# Display behaviour
+# Keys must use snake_case (e.g. no_colors, tab_length).
+cols: 100                  # Fallback width when terminal size cannot be detected
+tab_length: 4              # Replace tab characters with this many spaces
+no_colors: false           # Strip all ANSI colors from output
+wrap: "char"               # Options: "char" | "word" | "none"
+table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
+heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
+smart_indent: true         # Smooth heading indentation jumps (only with "level" layout)
+hide_comments: false       # Hide Markdown comments from the rendered output
+show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
+show_code_language: false  # Show a language label above code blocks
+code_guessing: true        # Disable to keep unknown code blocks as plain text
+code_block_style: "simple" # Options: "simple" | "pretty"
+
+# Link handling
+link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inlinetable" | "hide" | "inline" (aliases: c/clickable, fc/fclickable, it/inlinetable, h/hide, i/inline)
+link_truncation: "wrap"    # Options: "wrap" | "cut" | "none"
+
+# Content filtering
+from_text: null            # Render starting from the first line that contains this text
+
+# `table_wrap` accepts the values above; `heading_layout` also understands camel-case variants from earlier releases.
+
+# Available keys for custom_theme:
+# text, text_light, h1..h6, code, code_block, quote, link, emphasis, strong,
+# strikethrough, background, border, list_marker, table_header, table_border,
+# error, warning
+
+# Available keys for custom_code_theme:
+# keyword, string, comment, number, operator, function, variable, type_name
+
+# Color value formats accepted in custom_theme/custom_code_theme:
+# Hex strings: "#rrggbb" or "#rgb"
+# RGB tuples:  "r,g,b" or "rgb(r,g,b)" (values 0..255)
+# ANSI 256:    "ansi(N)" or just "N" (0..255)
+# Named:       "red", "darkgrey", etc.

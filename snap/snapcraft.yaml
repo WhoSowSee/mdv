@@ -1,0 +1,24 @@
+name: mdv
+base: core22
+version: git
+summary: Fast, themeable Markdown viewer for the terminal
+description: |
+  mdv - command line utility for comfortable Markdown rendering.
+  The package includes the mdv binary and is ready to run in strict confinement Snap.
+grade: stable
+confinement: strict
+
+apps:
+  mdv:
+    command: bin/mdv
+    plugs:
+      - home
+      - network
+
+parts:
+  mdv:
+    plugin: rust
+    source: .
+    build-packages:
+      - pkg-config
+      - libssl-dev

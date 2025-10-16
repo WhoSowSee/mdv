@@ -1,0 +1,29 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# IDE
+.vscode/
+.zed/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Test Files
+test_*.md
+test_*.txt
+temp_*.md
+tmp_*.md
+
+# Files
+out_*.txt
+tmp_*.txt
