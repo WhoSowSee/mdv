@@ -22,6 +22,7 @@ show_empty_elements: false # Show otherwise hidden empty lists, block quotes, ta
 show_code_language: false  # Show a language label above code blocks
 code_guessing: true        # Disable to keep unknown code blocks as plain text
 code_block_style: "simple" # Options: "simple" | "pretty"
+reverse: false             # Render document starting from the end while preserving layout
 
 # Link handling
 link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inlinetable" | "hide" | "inline" (aliases: c/clickable, fc/fclickable, it/inlinetable, h/hide, i/inline)

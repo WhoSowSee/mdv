@@ -107,6 +107,10 @@ pub struct Cli {
     #[arg(short = 'f', long = "from", value_name = "TEXT")]
     pub from_txt: Option<String>,
 
+    /// Render document starting from the end while preserving layout
+    #[arg(short = 'r', long = "reverse")]
+    pub reverse: bool,
+
     /// Monitor file for changes and redisplay
     #[arg(short = 'm', long = "monitor")]
     pub monitor_file: bool,

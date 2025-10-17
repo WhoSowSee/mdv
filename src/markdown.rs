@@ -1,6 +1,7 @@
 use crate::config::Config;
 use anyhow::Result;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
+use std::mem;
 
 /// Markdown processor that parses markdown and prepares it for rendering
 pub struct MarkdownProcessor {
@@ -29,7 +30,14 @@ impl MarkdownProcessor {
         let parser = Parser::new_ext(&content, self.options);
 
         let events: Vec<Event> = parser.collect();
-        Ok(self.postprocess_events(events)?)
+        let events = self.postprocess_events(events)?;
+        let events = if self.config.reverse {
+            self.reverse_events(events)
+        } else {
+            events
+        };
+
+        Ok(events)
     }
 
     fn preprocess_content(&self, content: &str) -> Result<String> {
@@ -161,6 +169,48 @@ impl MarkdownProcessor {
         }
 
         Ok(processed)
+    }
+
+    fn reverse_events(&self, events: Vec<Event<'static>>) -> Vec<Event<'static>> {
+        if events.is_empty() {
+            return events;
+        }
+
+        let mut segments: Vec<Vec<Event<'static>>> = Vec::new();
+        let mut current: Vec<Event<'static>> = Vec::new();
+        let mut depth = 0usize;
+
+        for event in events {
+            match event {
+                Event::Start(_) => {
+                    if depth == 0 && !current.is_empty() {
+                        segments.push(mem::take(&mut current));
+                    }
+                    depth += 1;
+                    current.push(event);
+                }
+                Event::End(_) => {
+                    current.push(event);
+                    depth = depth.saturating_sub(1);
+                    if depth == 0 {
+                        segments.push(mem::take(&mut current));
+                    }
+                }
+                _ => {
+                    current.push(event);
+                    if depth == 0 {
+                        segments.push(mem::take(&mut current));
+                    }
+                }
+            }
+        }
+
+        if !current.is_empty() {
+            segments.push(current);
+        }
+
+        segments.reverse();
+        segments.into_iter().flatten().collect()
     }
 
     fn convert_to_static(&self, event: Event) -> Event<'static> {

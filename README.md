@@ -77,6 +77,7 @@ mdv [OPTIONS] | mdv
 - `-C, --hide-comments` removes Markdown comments from the rendered output.
 - `-i, --theme-info [FILE]` shows the active palette; when `FILE` is provided it renders the file along with palette information.
 - `-f, --from <TEXT>` starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
+- `-r, --reverse` renders the document starting from the end while keeping block formatting intact.
 - `-m, --monitor` watches the source file and re-renders when it changes.
 - `-F, --config-file <CONFIG_PATH>` reads configuration from the provided file.
 - `-n, --no-config` skips loading configuration files (uses CLI options and defaults only).

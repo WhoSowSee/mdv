@@ -157,6 +157,43 @@ fn test_word_wrap_list_inline_code_does_not_hang() {
 }
 
 #[test]
+fn test_reverse_option_preserves_block_layout() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "# First Heading\n\nParagraph one continues here.\n\n## Second Heading\n\nParagraph two comes last.",
+    )
+    .unwrap();
+
+    let output = Command::cargo_bin("mdv")
+        .unwrap()
+        .arg("-A")
+        .arg("-r")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    let second_pos = stdout
+        .find("Second Heading")
+        .expect("second heading missing in output");
+    let first_pos = stdout
+        .find("First Heading")
+        .expect("first heading missing in output");
+
+    assert!(
+        second_pos < first_pos,
+        "expected second heading to appear before first heading in reverse output"
+    );
+    assert!(
+        stdout.contains("Paragraph two comes last."),
+        "expected concluding paragraph to appear intact"
+    );
+}
+
+#[test]
 fn test_nonexistent_file() {
     let mut cmd = Command::cargo_bin("mdv").unwrap();
     cmd.arg("nonexistent_file.md");

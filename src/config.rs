@@ -37,6 +37,7 @@ pub struct Config {
     pub show_code_language: bool,
     pub code_guessing: bool,
     pub code_block_style: CodeBlockStyle,
+    pub reverse: bool,
 
     // Theme configuration
     pub theme: String,
@@ -72,6 +73,7 @@ impl Default for Config {
             show_code_language: false,
             code_guessing: true,
             code_block_style: CodeBlockStyle::Simple,
+            reverse: false,
             theme: "terminal".to_string(),
             code_theme: None,
             custom_theme: None,
@@ -196,6 +198,10 @@ impl Config {
             if arg_has_user_value(matches, "from_txt") {
                 config.from_text = Some(from_text.clone());
             }
+        }
+
+        if cli.reverse {
+            config.reverse = true;
         }
 
         Ok(config)
@@ -348,6 +354,10 @@ impl Config {
 
         if other.from_text.is_some() {
             self.from_text = other.from_text;
+        }
+
+        if other.reverse {
+            self.reverse = true;
         }
     }
 

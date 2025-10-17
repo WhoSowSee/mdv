@@ -47,7 +47,8 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
 
     if cli.do_html {
         let events_clone = processor.parse(&content)?; // Re-parse for HTML
-        print!("{}", renderer.to_html(events_clone)?);
+        let html_output = renderer.to_html(events_clone)?;
+        print!("{}", html_output);
     } else {
         if show_current_theme {
             print_current_themes(&config);
