@@ -19,9 +19,9 @@ heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 smart_indent: true         # Smooth heading indentation jumps (only with "level" layout)
 hide_comments: false       # Hide Markdown comments from the rendered output
 show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
-show_code_language: false  # Show a language label above code blocks
+no_code_language: false    # Disable the language label above code blocks
 code_guessing: true        # Disable to keep unknown code blocks as plain text
-code_block_style: "simple" # Options: "simple" | "pretty"
+code_block_style: "pretty" # Options: "simple" | "pretty"
 reverse: false             # Render document starting from the end while preserving layout
 
 # Link handling

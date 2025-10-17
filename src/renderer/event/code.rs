@@ -148,7 +148,7 @@ impl<'a> EventRenderer<'a> {
 
         let code_starts_with_blank = self.code_block_content.starts_with('\n');
 
-        let language_label = if self.config.show_code_language {
+        let language_label = if !self.config.no_code_language {
             Some(match language_hint.as_deref() {
                 Some(raw) => {
                     let syntax = self.resolve_syntax(Some(raw), &self.code_block_content);

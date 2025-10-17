@@ -86,7 +86,7 @@ mdv [OPTIONS] | mdv
 
 - `-t, --theme <NAME>` chooses a built-in theme (default `terminal`).
 - `-T, --code-theme <NAME>` sets the syntax highlight palette (default `terminal`).
-- `-s, --style-code-block <simple|pretty>` switches between a single gutter and a boxed frame for code blocks (default `simple`).
+- `-s, --style-code-block <simple|pretty>` switches between a single gutter and a boxed frame for code blocks (default `pretty`).
 - `-y, --custom-theme <key=value;...>` overrides UI colors on top of the selected theme.
 - `-Y, --custom-code-theme <key=value;...>` overrides syntax colors using the same format as `--custom-theme`.
 
@@ -101,7 +101,7 @@ mdv [OPTIONS] | mdv
 
 ### Content visibility
 
-- `-L, --show-code-language` displays the language label above code blocks when metadata is available.
+- `-L, --no-code-language` hides the language label above code blocks when metadata is available.
 - `-e, --show-empty-elements` keeps normally hidden empty lists, block quotes, and code blocks in the output.
 - `-g, --no-code-guessing` disables heuristic detection of code block languages (unknown blocks remain plain text).
 

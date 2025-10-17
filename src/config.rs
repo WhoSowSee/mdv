@@ -34,7 +34,7 @@ pub struct Config {
     pub smart_indent: bool,
     pub hide_comments: bool,
     pub show_empty_elements: bool,
-    pub show_code_language: bool,
+    pub no_code_language: bool,
     pub code_guessing: bool,
     pub code_block_style: CodeBlockStyle,
     pub reverse: bool,
@@ -70,9 +70,9 @@ impl Default for Config {
             smart_indent: false,
             hide_comments: false,
             show_empty_elements: false,
-            show_code_language: false,
+            no_code_language: false,
             code_guessing: true,
-            code_block_style: CodeBlockStyle::Simple,
+            code_block_style: CodeBlockStyle::Pretty,
             reverse: false,
             theme: "terminal".to_string(),
             code_theme: None,
@@ -184,8 +184,8 @@ impl Config {
             config.show_empty_elements = true;
         }
 
-        if cli.show_code_language {
-            config.show_code_language = true;
+        if cli.no_code_language {
+            config.no_code_language = true;
         }
 
         if let Some(style) = cli.style_code_block {
@@ -268,11 +268,10 @@ impl Config {
         let content = std::fs::read_to_string(path)?;
 
         serde_yaml::from_str::<Self>(&content).map_err(|_| {
-            MdvError::ConfigParseError(format!(
+            anyhow::Error::from(MdvError::ConfigParseError(format!(
                 "Failed to parse YAML config file: {}",
                 path.display()
-            ))
-            .into()
+            )))
         })
     }
 
@@ -318,13 +317,13 @@ impl Config {
         if other.show_empty_elements {
             self.show_empty_elements = true;
         }
-        if other.show_code_language {
-            self.show_code_language = true;
+        if other.no_code_language {
+            self.no_code_language = true;
         }
         if !other.code_guessing {
             self.code_guessing = false;
         }
-        if !matches!(other.code_block_style, CodeBlockStyle::Simple) {
+        if !matches!(other.code_block_style, CodeBlockStyle::Pretty) {
             self.code_block_style = other.code_block_style;
         }
 

@@ -225,7 +225,6 @@ fn test_no_code_guessing_disables_detection_for_unknown_language() {
 
     let mut cmd = Command::cargo_bin("mdv").unwrap();
     cmd.arg("--no-code-guessing")
-        .arg("--show-code-language")
         .arg("--style-code-block")
         .arg("simple")
         .arg(temp_file.path());
@@ -246,8 +245,7 @@ fn test_code_language_simple_style_named_block() {
     .unwrap();
 
     let mut cmd = Command::cargo_bin("mdv").unwrap();
-    cmd.arg("--show-code-language")
-        .arg("--style-code-block")
+    cmd.arg("--style-code-block")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path());
@@ -259,13 +257,34 @@ fn test_code_language_simple_style_named_block() {
 }
 
 #[test]
+fn test_no_code_language_flag_hides_label() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "```rust\nfn badge() {\n    println!(\"label\");\n}\n```",
+    )
+    .unwrap();
+
+    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    cmd.arg("--no-code-language")
+        .arg("--style-code-block")
+        .arg("simple")
+        .arg("-A")
+        .arg(temp_file.path());
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("│ Rust").not())
+        .stdout(predicate::str::contains("│ fn badge()"));
+}
+
+#[test]
 fn test_code_language_simple_style_plain_block() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```\nplain text output\n```\n").unwrap();
 
     let mut cmd = Command::cargo_bin("mdv").unwrap();
-    cmd.arg("--show-code-language")
-        .arg("--style-code-block")
+    cmd.arg("--style-code-block")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path());
@@ -281,8 +300,7 @@ fn test_code_language_pretty_style_named_block() {
     fs::write(&temp_file, "```python\nprint(\"hello\")\n```\n").unwrap();
 
     let mut cmd = Command::cargo_bin("mdv").unwrap();
-    cmd.arg("--show-code-language")
-        .arg("--style-code-block")
+    cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path());
@@ -352,6 +370,20 @@ fn test_code_language_pretty_style_named_block() {
 }
 
 #[test]
+fn test_default_code_block_style_is_pretty() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "```rust\nfn demo() {}\n```\n").unwrap();
+
+    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    cmd.arg("-A").arg(temp_file.path());
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("╭─ Rust"))
+        .stdout(predicate::str::contains("╰"));
+}
+
+#[test]
 fn test_pretty_style_empty_code_block_has_right_padding() {
     let temp_file = NamedTempFile::new().unwrap();
     // Empty fenced block; language shown to match the reported case
@@ -360,7 +392,6 @@ fn test_pretty_style_empty_code_block_has_right_padding() {
     let mut cmd = Command::cargo_bin("mdv").unwrap();
     cmd.arg("--style-code-block")
         .arg("pretty")
-        .arg("--show-code-language")
         .arg("--show-empty-elements")
         .arg("-A")
         .arg(temp_file.path());
@@ -389,7 +420,6 @@ fn test_pretty_style_empty_block_falls_back_when_too_narrow() {
     let mut cmd = Command::cargo_bin("mdv").unwrap();
     cmd.arg("--style-code-block")
         .arg("pretty")
-        .arg("--show-code-language")
         .arg("--show-empty-elements")
         .arg("--wrap")
         .arg("word")
@@ -414,7 +444,6 @@ fn test_simple_language_label_wraps_under_char_width() {
     let mut cmd = Command::cargo_bin("mdv").unwrap();
     cmd.arg("--style-code-block")
         .arg("pretty")
-        .arg("--show-code-language")
         .arg("--wrap")
         .arg("char")
         .arg("-c")
@@ -471,6 +500,8 @@ fn test_blockquote_code_block_preserves_prefix() {
 
     let output = Command::cargo_bin("mdv")
         .unwrap()
+        .arg("--style-code-block")
+        .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -487,6 +518,16 @@ fn test_blockquote_code_block_preserves_prefix() {
 
     assert_eq!(
         lines.next(),
+        Some("│ │ Python"),
+        "expected language label line to keep blockquote prefix"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("│ │ "),
+        "expected spacer between label and code to keep blockquote prefix"
+    );
+    assert_eq!(
+        lines.next(),
         Some("│ │ print(\"Hello word\")"),
         "expected first code block to keep blockquote and border prefixes"
     );
@@ -499,6 +540,16 @@ fn test_blockquote_code_block_preserves_prefix() {
         lines.next(),
         Some("││ "),
         "expected nested blockquote spacer line"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("││ │ Python"),
+        "expected nested language label to keep prefixes"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("││ │ "),
+        "expected nested spacer between label and code"
     );
     assert_eq!(
         lines.next(),
@@ -523,6 +574,8 @@ fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
 
     let output = Command::cargo_bin("mdv")
         .unwrap()
+        .arg("--style-code-block")
+        .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -541,15 +594,21 @@ fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
         stdout
     );
 
-    let first_line = stdout
-        .lines()
-        .next()
-        .unwrap_or_default()
-        .to_string();
-    assert!(
-        first_line.contains("│ │ │ dsadas"),
-        "expected blockquote and code block prefixes with content, first line: {}",
-        first_line
+    let mut lines = stdout.lines();
+    assert_eq!(
+        lines.next(),
+        Some("│ │ Markdown"),
+        "expected language label to keep blockquote prefix"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("│ │ "),
+        "expected spacer between label and content"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("│ │ │ dsadas"),
+        "expected blockquote and code block prefixes with content"
     );
 }
 
@@ -788,8 +847,7 @@ fn test_inline_table_link_style_inside_text_code_block_pretty() {
     .unwrap();
 
     let mut cmd = Command::cargo_bin("mdv").unwrap();
-    cmd.arg("--show-code-language")
-        .arg("--style-code-block")
+    cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-u")
         .arg("it")
@@ -821,8 +879,7 @@ fn test_inline_table_link_style_inside_text_code_block_simple() {
     .unwrap();
 
     let mut cmd = Command::cargo_bin("mdv").unwrap();
-    cmd.arg("--show-code-language")
-        .arg("--style-code-block")
+    cmd.arg("--style-code-block")
         .arg("simple")
         .arg("-u")
         .arg("it")
