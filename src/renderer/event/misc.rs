@@ -20,8 +20,50 @@ impl<'a> EventRenderer<'a> {
         }
 
         let style = create_style(self.theme, ThemeElement::Text);
-        let rendered = style.apply(html_str, self.config.no_colors);
-        self.output.push_str(&rendered);
+        let mut followup_prefix: Option<String> = None;
+        let line_start = self
+            .output
+            .rfind('\n')
+            .map(|idx| idx.saturating_add(1))
+            .unwrap_or(0);
+        let current_line = &self.output[line_start..];
+
+        if current_line.is_empty() {
+            let prefix = self.current_line_prefix();
+            if !prefix.is_empty() {
+                self.push_indent_for_line_start();
+                followup_prefix = Some(prefix);
+            }
+        } else {
+            let prefix = self.current_line_prefix();
+            if !prefix.is_empty() && current_line == prefix {
+                followup_prefix = Some(prefix);
+            }
+        }
+
+        let mut segments = html_str.split('\n').peekable();
+        let mut first_segment = true;
+
+        while let Some(segment) = segments.next() {
+            if !first_segment {
+                self.output.push('\n');
+                if let Some(prefix) = followup_prefix.as_ref() {
+                    if !prefix.is_empty() && (!segment.is_empty() || segments.peek().is_some()) {
+                        self.output.push_str(prefix);
+                    }
+                }
+            } else {
+                first_segment = false;
+            }
+
+            if segment.is_empty() {
+                continue;
+            }
+
+            let rendered = style.apply(segment, self.config.no_colors);
+            self.output.push_str(&rendered);
+        }
+
         self.commit_pending_heading_placeholder_if_content();
 
         Ok(())
