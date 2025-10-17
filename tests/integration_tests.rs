@@ -469,17 +469,88 @@ fn test_blockquote_code_block_preserves_prefix() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
-    cmd.arg("-A").arg(temp_file.path());
+    let output = Command::cargo_bin("mdv")
+        .unwrap()
+        .arg("-A")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv executed");
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("\n│ \n│ │ print(\"Hello word\")"))
-        .stdout(predicate::str::contains(
-            "\n││ \n││ │ print(\"Hello word\")",
-        ))
-        .stdout(predicate::str::contains("\n│ \n││ "))
-        .stdout(predicate::str::contains("\n\n│ │ print(\"Hello word\")").not());
+    assert!(
+        output.status.success(),
+        "mdv finished with failure status: {:?}",
+        output.status
+    );
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let mut lines = stdout.lines();
+
+    assert_eq!(
+        lines.next(),
+        Some("│ │ print(\"Hello word\")"),
+        "expected first code block to keep blockquote and border prefixes"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("│ "),
+        "expected blank line within blockquote to retain blockquote prefix"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("││ "),
+        "expected nested blockquote spacer line"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("││ │ print(\"Hello word\")"),
+        "expected nested blockquote code line to keep prefixes"
+    );
+    assert_eq!(
+        lines.next(),
+        Some("││"),
+        "expected trailing blank line for nested blockquote to keep prefix"
+    );
+}
+
+#[test]
+fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "> ```markdown\n> > dsadas\n> ```\n",
+    )
+    .unwrap();
+
+    let output = Command::cargo_bin("mdv")
+        .unwrap()
+        .arg("-A")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv executed");
+
+    assert!(
+        output.status.success(),
+        "mdv finished with failure status: {:?}",
+        output.status
+    );
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        !stdout.starts_with('\n'),
+        "expected no leading blank line, stdout: {}",
+        stdout
+    );
+
+    let first_line = stdout
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .to_string();
+    assert!(
+        first_line.contains("│ │ │ dsadas"),
+        "expected blockquote and code block prefixes with content, first line: {}",
+        first_line
+    );
 }
 
 #[test]

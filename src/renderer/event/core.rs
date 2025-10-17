@@ -238,7 +238,7 @@ impl<'a> EventRenderer<'a> {
                 self.blockquote_starts.push(self.output.len());
                 self.blockquote_level += 1;
                 self.current_indent += 2;
-                if !self.output.ends_with('\n') {
+                if !self.output.is_empty() && !self.output.ends_with('\n') {
                     self.output.push('\n');
                 }
             }
