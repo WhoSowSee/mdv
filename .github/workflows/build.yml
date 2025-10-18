@@ -207,14 +207,54 @@ jobs:
       - name: Extract tag metadata
         id: tag_meta
         run: |
+          # Fallback order: changelog entry -> tag annotation -> commit message
           TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
           COMMIT=$(git rev-list -n 1 "$TAG")
-          MESSAGE=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)')
-          if [ -z "${MESSAGE//[$'\r\n\t ']/}" ]; then
-            MESSAGE=$(git tag -l "$TAG" --format='%(contents)')
+          TAG_MESSAGE=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)')
+          if [ -z "${TAG_MESSAGE//[$'\r\n\t ']/}" ]; then
+            TAG_MESSAGE=$(git tag -l "$TAG" --format='%(contents)')
           fi
-          if [ -z "${MESSAGE//[$'\r\n\t ']/}" ]; then
-            MESSAGE=$(git show -s --format=%B "$COMMIT")
+          COMMIT_MESSAGE=$(git show -s --format=%B "$COMMIT")
+          CHANGELOG_SECTION=""
+          if [ -f CHANGELOG.md ]; then
+            CHANGELOG_SECTION=$(awk -v ver="$VERSION" '
+              function trim(str) {
+                sub(/^[[:space:]]+/, "", str)
+                sub(/[[:space:]]+$/, "", str)
+                return str
+              }
+              /^## \[/ {
+                if (match($0, /^## \[([^\]]+)\]/, m)) {
+                  heading = trim(m[1])
+                  if (found && heading != ver) {
+                    exit
+                  }
+                  if (!found && heading == ver) {
+                    found = 1
+                    next
+                  }
+                }
+              }
+              found {
+                if (!printed) {
+                  if ($0 ~ /^[[:space:]]*$/) {
+                    next
+                  }
+                  printed = 1
+                  print
+                  next
+                }
+                print
+              }
+            ' CHANGELOG.md)
+          fi
+          if [ -n "$(printf '%s' "$CHANGELOG_SECTION" | tr -d $'\r\n\t ')" ]; then
+            MESSAGE="$CHANGELOG_SECTION"
+          elif [ -n "$(printf '%s' "$TAG_MESSAGE" | tr -d $'\r\n\t ')" ]; then
+            MESSAGE="$TAG_MESSAGE"
+          else
+            MESSAGE="$COMMIT_MESSAGE"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
