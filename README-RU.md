@@ -1,3 +1,7 @@
+<div style="text-align: center;">
+  <img src="docs/images/banner.png" alt="Баннер">
+</div>
+
 <h1 align="center">🗒️mdv</h1>
 <p align="center">
   <b>Быстрый и настраиваемый просмотрщик Markdown для терминала</b><br>

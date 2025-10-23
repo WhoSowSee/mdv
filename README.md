@@ -1,3 +1,7 @@
+<div style="text-align: center;">
+  <img src="docs/images/banner.png" alt="Banner">
+</div>
+
 <h1 align="center">🗒️mdv</h1>
 <p align="center">
   <b>Fast, themeable Markdown viewer for the terminal</b><br>
