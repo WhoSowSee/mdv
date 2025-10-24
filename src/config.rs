@@ -204,6 +204,8 @@ impl Config {
             config.reverse = true;
         }
 
+        config.normalize_theme_settings();
+
         Ok(config)
     }
 
@@ -391,6 +393,18 @@ impl Config {
         }
 
         80 // Default fallback
+    }
+
+    fn normalize_theme_settings(&mut self) {
+        if self.theme.trim().is_empty() {
+            self.theme = "terminal".to_string();
+        }
+
+        if let Some(code_theme) = self.code_theme.as_ref() {
+            if code_theme.trim().is_empty() {
+                self.code_theme = None;
+            }
+        }
     }
 }
 
@@ -599,6 +613,48 @@ link_truncation: cut
         let config = Config::from_cli(&cli, &matches).expect("load config with overrides");
         assert!(matches!(config.wrap, TextWrapMode::None));
         assert!(matches!(config.link_style, LinkStyle::Hide));
+    }
+
+    #[test]
+    fn empty_theme_from_cli_falls_back_to_default() {
+        let _env_lock = env_lock();
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--theme"),
+            OsString::from(""),
+        ]);
+
+        let config = Config::from_cli(&cli, &matches).expect("load config with empty theme");
+        assert_eq!(config.theme, "terminal");
+    }
+
+    #[test]
+    fn empty_theme_in_config_file_falls_back_to_default() {
+        let _env_lock = env_lock();
+        let config = parse_with_config("theme: \"\"\n");
+
+        assert_eq!(config.theme, "terminal");
+    }
+
+    #[test]
+    fn empty_code_theme_input_clears_override() {
+        let _env_lock = env_lock();
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--code-theme"),
+            OsString::from(""),
+        ]);
+
+        let config = Config::from_cli(&cli, &matches).expect("load config with empty code theme");
+        assert!(config.code_theme.is_none());
+    }
+
+    #[test]
+    fn empty_code_theme_in_config_file_is_ignored() {
+        let _env_lock = env_lock();
+        let config = parse_with_config("code_theme: \"\"\n");
+
+        assert!(config.code_theme.is_none());
     }
 
     #[test]
