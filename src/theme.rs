@@ -514,8 +514,14 @@ impl ThemeManager {
     }
 
     pub fn get_theme(&self, name: &str) -> Result<&Theme> {
+        if let Some(theme) = self.themes.get(name) {
+            return Ok(theme);
+        }
+
         self.themes
-            .get(name)
+            .iter()
+            .find(|(stored_name, _)| stored_name.eq_ignore_ascii_case(name))
+            .map(|(_, theme)| theme)
             .ok_or_else(|| MdvError::ThemeError(format!("Theme '{}' not found", name)).into())
     }
 
@@ -526,6 +532,16 @@ impl ThemeManager {
     }
 
     pub fn add_theme(&mut self, theme: Theme) {
+        let key_to_remove = self
+            .themes
+            .keys()
+            .find(|existing| existing.eq_ignore_ascii_case(&theme.name) && *existing != &theme.name)
+            .cloned();
+
+        if let Some(existing_key) = key_to_remove {
+            self.themes.remove(&existing_key);
+        }
+
         self.themes.insert(theme.name.clone(), theme);
     }
 
@@ -956,6 +972,8 @@ mod tests {
         let manager = ThemeManager::new();
         assert!(manager.get_theme("terminal").is_ok());
         assert!(manager.get_theme("monokai").is_ok());
+        assert!(manager.get_theme("Terminal").is_ok());
+        assert!(manager.get_theme("MoNoKaI").is_ok());
         assert!(manager.get_theme("nonexistent").is_err());
     }
 
