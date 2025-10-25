@@ -1,7 +1,8 @@
 use crate::config::Config;
 use anyhow::Result;
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use std::mem;
+use std::ops::Range;
 
 /// Markdown processor that parses markdown and prepares it for rendering
 pub struct MarkdownProcessor {
@@ -27,10 +28,10 @@ impl MarkdownProcessor {
 
     pub fn parse(&self, markdown: &str) -> Result<Vec<Event<'static>>> {
         let content = self.preprocess_content(markdown)?;
-        let parser = Parser::new_ext(&content, self.options);
+        let parser = Parser::new_ext(&content, self.options).into_offset_iter();
 
-        let events: Vec<Event> = parser.collect();
-        let events = self.postprocess_events(events)?;
+        let events: Vec<(Event, Range<usize>)> = parser.collect();
+        let events = self.postprocess_events(&content, events)?;
         let events = if self.config.reverse {
             self.reverse_events(events)
         } else {
@@ -137,16 +138,33 @@ impl MarkdownProcessor {
         result.join("\n")
     }
 
-    fn postprocess_events(&self, events: Vec<Event>) -> Result<Vec<Event<'static>>> {
-        let mut processed = Vec::new();
+    fn postprocess_events(
+        &self,
+        content: &str,
+        events: Vec<(Event, Range<usize>)>,
+    ) -> Result<Vec<Event<'static>>> {
+        let mut processed = Vec::with_capacity(events.len());
+        let mut heading_stack: Vec<bool> = Vec::new();
 
-        for event in events {
+        for (event, range) in events {
             match event {
-                Event::Start(Tag::Heading { .. }) => {
-                    processed.push(self.convert_to_static(event));
+                Event::Start(tag @ Tag::Heading { .. }) => {
+                    let is_setext = matches!(tag, Tag::Heading { level: HeadingLevel::H2, .. })
+                        && self.is_setext_heading_segment(content, &range);
+                    heading_stack.push(is_setext);
+                    processed.push(Event::Start(self.convert_tag_to_static(tag)));
                 }
-                Event::End(TagEnd::Heading(_level)) => {
-                    processed.push(self.convert_to_static(event));
+                Event::Start(tag) => {
+                    processed.push(Event::Start(self.convert_tag_to_static(tag)));
+                }
+                Event::End(tag_end @ TagEnd::Heading(_)) => {
+                    processed.push(Event::End(tag_end));
+                    if heading_stack.pop().unwrap_or(false) {
+                        processed.push(Event::Rule);
+                    }
+                }
+                Event::End(tag_end) => {
+                    processed.push(Event::End(tag_end));
                 }
                 Event::Text(text) => {
                     let processed_text = self.process_text(&text);
@@ -155,20 +173,30 @@ impl MarkdownProcessor {
                 Event::Code(code) => {
                     processed.push(Event::Code(code.to_string().into()));
                 }
-                Event::Start(Tag::CodeBlock(kind)) => {
-                    let static_kind = match kind {
-                        CodeBlockKind::Indented => CodeBlockKind::Indented,
-                        CodeBlockKind::Fenced(lang) => {
-                            CodeBlockKind::Fenced(lang.to_string().into())
-                        }
-                    };
-                    processed.push(Event::Start(Tag::CodeBlock(static_kind)));
-                }
-                _ => processed.push(self.convert_to_static(event)),
+                other => processed.push(self.convert_to_static(other)),
             }
         }
 
         Ok(processed)
+    }
+
+    fn is_setext_heading_segment(&self, content: &str, range: &Range<usize>) -> bool {
+        if range.start >= range.end || range.end > content.len() {
+            return false;
+        }
+
+        let mut lines = content[range.clone()].lines();
+        let first_line = lines.next().unwrap_or("").trim();
+        let last_line = lines.last().unwrap_or("").trim();
+
+        if first_line.is_empty() || last_line.is_empty() {
+            return false;
+        }
+
+        let is_dash_line = last_line.chars().all(|ch| ch == '-' || ch.is_whitespace())
+            && last_line.chars().filter(|&ch| ch == '-').count() >= 3;
+
+        is_dash_line
     }
 
     fn reverse_events(&self, events: Vec<Event<'static>>) -> Vec<Event<'static>> {
@@ -471,5 +499,29 @@ mod tests {
             detect_source_code(rust_code, None),
             Some("rust".to_string())
         );
+    }
+
+    #[test]
+    fn setext_separator_becomes_rule() {
+        use pulldown_cmark::{Event, Tag, TagEnd};
+
+        let config = Config::default();
+        let processor = MarkdownProcessor::new(&config);
+
+        let markdown = "Text\n---\nNext\n";
+        let events = processor.parse(markdown).unwrap();
+
+        assert!(matches!(
+            events.as_slice(),
+            [
+                Event::Start(Tag::Heading { .. }),
+                Event::Text(first),
+                Event::End(TagEnd::Heading(_)),
+                Event::Rule,
+                Event::Start(Tag::Paragraph),
+                Event::Text(second),
+                Event::End(TagEnd::Paragraph)
+            ] if first.as_ref() == "Text" && second.as_ref() == "Next"
+        ));
     }
 }
