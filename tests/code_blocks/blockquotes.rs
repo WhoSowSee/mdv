@@ -80,11 +80,7 @@ fn test_blockquote_code_block_preserves_prefix() {
 #[test]
 fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(
-        &temp_file,
-        "> ```markdown\n> > Nested reminder\n> ```\n",
-    )
-    .unwrap();
+    fs::write(&temp_file, "> ```markdown\n> > Nested reminder\n> ```\n").unwrap();
 
     let output = Command::cargo_bin("mdv")
         .unwrap()

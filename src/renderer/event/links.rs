@@ -62,6 +62,16 @@ impl<'a> EventRenderer<'a> {
                 self.current_link_text.clear();
                 self.in_link = true;
             }
+            LinkStyle::EndTable => {
+                // Store URL for document-scoped references and start collecting link text
+                self.paragraph_link_counter += 1;
+                self.document_links.push((
+                    format!("[{}]", self.paragraph_link_counter),
+                    dest_url.to_string(),
+                ));
+                self.current_link_text.clear();
+                self.in_link = true;
+            }
         }
         Ok(())
     }
@@ -507,6 +517,52 @@ impl<'a> EventRenderer<'a> {
                 self.in_link = false;
                 self.current_link_text.clear();
             }
+            LinkStyle::EndTable => {
+                // Behave like InlineTable for inline markers but collect references for document-level table.
+                if let Some(ref mut table) = self.table_state {
+                    let reference_text = format!("[{}]", self.paragraph_link_counter);
+                    let style = create_style(self.theme, ThemeElement::Link);
+                    let styled_reference = style.apply(&reference_text, self.config.no_colors);
+
+                    let formatted_link_text = if !self.config.no_colors {
+                        format!("\x1b[4m{}\x1b[0m", self.current_link_text)
+                    } else {
+                        self.current_link_text.clone()
+                    };
+
+                    table
+                        .inline_references
+                        .push((reference_text.clone(), styled_reference));
+                    table.current_cell.push_str(&formatted_link_text);
+                    table.current_cell.push_str(&reference_text);
+                } else {
+                    let link_text = self.current_link_text.clone();
+                    self.process_underlined_text_with_wrapping(&link_text)?;
+
+                    let reference_text = format!("[{}]", self.paragraph_link_counter);
+                    let style = create_style(self.theme, ThemeElement::Link);
+                    let styled_reference = style.apply(&reference_text, self.config.no_colors);
+
+                    let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
+                        crate::utils::strip_ansi(&self.output[last_newline + 1..])
+                    } else {
+                        crate::utils::strip_ansi(&self.output)
+                    };
+                    let terminal_width = self.config.get_terminal_width();
+                    let current_line_width = crate::utils::display_width(&current_line_clean);
+                    let reference_width = crate::utils::display_width(&reference_text);
+
+                    if self.config.is_text_wrapping_enabled()
+                        && current_line_width + reference_width > terminal_width
+                    {
+                        self.push_newline_with_context();
+                    }
+                    self.output.push_str(&styled_reference);
+                }
+
+                self.in_link = false;
+                self.current_link_text.clear();
+            }
         }
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
@@ -534,29 +590,7 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        let style = create_style(self.theme, ThemeElement::Link);
-
-        let mut styled_blocks: Vec<Vec<String>> = Vec::new();
-
-        for (reference, url) in &self.paragraph_links {
-            let link_line = format!("{} {}", reference, url);
-
-            let wrapped_link = if self.config.is_text_wrapping_enabled() {
-                self.wrap_link_line(&link_line)
-            } else {
-                link_line
-            };
-
-            let styled_lines: Vec<String> = wrapped_link
-                .lines()
-                .map(|line| {
-                    let clickable_line = self.make_clickable_link(line, url);
-                    style.apply(&clickable_line, self.config.no_colors)
-                })
-                .collect();
-
-            styled_blocks.push(styled_lines);
-        }
+        let styled_blocks = self.build_styled_reference_blocks(&self.paragraph_links);
 
         if self.plaintext_code_block_depth > 0 {
             let captured_lines: Vec<String> = styled_blocks
@@ -609,6 +643,33 @@ impl<'a> EventRenderer<'a> {
         self.paragraph_links.clear();
     }
 
+    fn build_styled_reference_blocks(&self, links: &[(String, String)]) -> Vec<Vec<String>> {
+        let style = create_style(self.theme, ThemeElement::Link);
+        let mut styled_blocks: Vec<Vec<String>> = Vec::new();
+
+        for (reference, url) in links {
+            let link_line = format!("{} {}", reference, url);
+
+            let wrapped_link = if self.config.is_text_wrapping_enabled() {
+                self.wrap_link_line(&link_line)
+            } else {
+                link_line
+            };
+
+            let styled_lines: Vec<String> = wrapped_link
+                .lines()
+                .map(|line| {
+                    let clickable_line = self.make_clickable_link(line, url);
+                    style.apply(&clickable_line, self.config.no_colors)
+                })
+                .collect();
+
+            styled_blocks.push(styled_lines);
+        }
+
+        styled_blocks
+    }
+
     /// Wrap a link line (reference + URL) with proper handling of URL breaking
     pub(super) fn wrap_link_line(&self, link_line: &str) -> String {
         let terminal_width = self.config.get_terminal_width();
@@ -644,8 +705,11 @@ impl<'a> EventRenderer<'a> {
                 return link_line.to_string();
             }
 
-            // Check truncation style - only apply for InlineTable mode
-            if matches!(self.config.link_style, LinkStyle::InlineTable) {
+            // Check truncation style - only apply for InlineTable-like modes
+            if matches!(
+                self.config.link_style,
+                LinkStyle::InlineTable | LinkStyle::EndTable
+            ) {
                 match self.config.link_truncation {
                     LinkTruncationStyle::Cut => {
                         // Cut the URL and add "..." if it doesn't fit
@@ -677,6 +741,52 @@ impl<'a> EventRenderer<'a> {
             let wrap_mode = self.config.text_wrap_mode();
             crate::utils::wrap_text_with_mode(link_line, terminal_width, wrap_mode)
         }
+    }
+
+    pub(super) fn finalize_document_link_references(&mut self) {
+        if !matches!(self.config.link_style, LinkStyle::EndTable) {
+            return;
+        }
+
+        if self.document_links.is_empty() {
+            return;
+        }
+
+        if self.plaintext_code_block_depth > 0 {
+            // Nested plaintext renderers defer formatting to the parent renderer.
+            return;
+        }
+
+        let styled_blocks = self.build_styled_reference_blocks(&self.document_links);
+
+        if self.output.ends_with('\n') {
+            self.output.push('\n');
+        } else if !self.output.is_empty() {
+            self.output.push('\n');
+            self.output.push('\n');
+        }
+
+        for (block_idx, styled_lines) in styled_blocks.iter().enumerate() {
+            for (line_idx, styled_line) in styled_lines.iter().enumerate() {
+                if self.content_indent > 0 {
+                    self.output.push_str(&" ".repeat(self.content_indent));
+                }
+
+                self.output.push_str(styled_line);
+
+                if line_idx < styled_lines.len() - 1 {
+                    self.output.push('\n');
+                }
+            }
+
+            if block_idx < styled_blocks.len() - 1 {
+                self.output.push('\n');
+            }
+        }
+
+        self.output.push('\n');
+        self.document_links.clear();
+        self.commit_pending_heading_placeholder_if_content();
     }
 
     /// Wrap a URL with smart breaking at appropriate characters

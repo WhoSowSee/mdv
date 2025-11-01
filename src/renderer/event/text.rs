@@ -30,6 +30,11 @@ impl<'a> EventRenderer<'a> {
                     self.current_link_text.push_str(&text);
                     return Ok(());
                 }
+                LinkStyle::EndTable => {
+                    // Collect link text for document-scoped reference handling
+                    self.current_link_text.push_str(&text);
+                    return Ok(());
+                }
                 LinkStyle::Hide => {
                     // This shouldn't happen since we don't set in_link for Hide mode anymore
                 }
@@ -140,14 +145,17 @@ impl<'a> EventRenderer<'a> {
             let unit_width = crate::utils::display_width(unit);
 
             // For InlineTable links, account for the reference number that will be added
-            let additional_width =
-                if self.in_link && matches!(self.config.link_style, LinkStyle::InlineTable) {
-                    // Calculate the width of the reference number like [1], [2], etc.
-                    let ref_num_str = format!("[{}]", self.paragraph_link_counter);
-                    crate::utils::display_width(&ref_num_str)
-                } else {
-                    0
-                };
+            let additional_width = if self.in_link
+                && matches!(
+                    self.config.link_style,
+                    LinkStyle::InlineTable | LinkStyle::EndTable
+                ) {
+                // Calculate the width of the reference number like [1], [2], etc.
+                let ref_num_str = format!("[{}]", self.paragraph_link_counter);
+                crate::utils::display_width(&ref_num_str)
+            } else {
+                0
+            };
 
             let would_exceed = current_line_width + unit_width + additional_width > effective_width;
 
@@ -610,14 +618,17 @@ impl<'a> EventRenderer<'a> {
                 let unit_width = crate::utils::display_width(unit);
 
                 // For InlineTable links, account for the reference number that will be added
-                let additional_width =
-                    if self.in_link && matches!(self.config.link_style, LinkStyle::InlineTable) {
-                        // Calculate the width of the reference number like [1], [2], etc.
-                        let ref_num_str = format!("[{}]", self.paragraph_link_counter);
-                        crate::utils::display_width(&ref_num_str)
-                    } else {
-                        0
-                    };
+                let additional_width = if self.in_link
+                    && matches!(
+                        self.config.link_style,
+                        LinkStyle::InlineTable | LinkStyle::EndTable
+                    ) {
+                    // Calculate the width of the reference number like [1], [2], etc.
+                    let ref_num_str = format!("[{}]", self.paragraph_link_counter);
+                    crate::utils::display_width(&ref_num_str)
+                } else {
+                    0
+                };
 
                 let would_exceed =
                     current_line_width + unit_width + additional_width > effective_width;

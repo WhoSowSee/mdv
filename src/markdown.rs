@@ -149,8 +149,13 @@ impl MarkdownProcessor {
         for (event, range) in events {
             match event {
                 Event::Start(tag @ Tag::Heading { .. }) => {
-                    let is_setext = matches!(tag, Tag::Heading { level: HeadingLevel::H2, .. })
-                        && self.is_setext_heading_segment(content, &range);
+                    let is_setext = matches!(
+                        tag,
+                        Tag::Heading {
+                            level: HeadingLevel::H2,
+                            ..
+                        }
+                    ) && self.is_setext_heading_segment(content, &range);
                     heading_stack.push(is_setext);
                     processed.push(Event::Start(self.convert_tag_to_static(tag)));
                 }

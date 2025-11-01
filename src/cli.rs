@@ -176,6 +176,10 @@ pub enum LinkStyle {
     #[value(name = "inlinetable", alias = "it")]
     #[serde(alias = "inlinetable", alias = "it")]
     InlineTable,
+    /// [alias: et] Index after link name and link URL table at document end
+    #[value(name = "endtable", alias = "et")]
+    #[serde(alias = "endtable", alias = "et")]
+    EndTable,
     /// [alias:  h] Hide link URLs
     #[value(name = "hide", alias = "h")]
     #[serde(alias = "hide", alias = "h")]
@@ -261,6 +265,7 @@ mod tests {
             parse_link_style("inlinetable"),
             LinkStyle::InlineTable
         ));
+        assert!(matches!(parse_link_style("endtable"), LinkStyle::EndTable));
         assert!(matches!(
             parse_link_style("clickable"),
             LinkStyle::Clickable
@@ -271,5 +276,6 @@ mod tests {
         ));
         assert!(matches!(parse_link_style("fc"), LinkStyle::ClickableForced));
         assert!(matches!(parse_link_style("hide"), LinkStyle::Hide));
+        assert!(matches!(parse_link_style("et"), LinkStyle::EndTable));
     }
 }

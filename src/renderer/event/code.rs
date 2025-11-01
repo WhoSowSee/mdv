@@ -1,5 +1,5 @@
 use super::{
-    CapturedReferenceBlock, CodeBlockStyle, CowStr, EventRenderer, HighlightLines,
+    CapturedReferenceBlock, CodeBlockStyle, CowStr, EventRenderer, HighlightLines, LinkStyle,
     MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, WrapMode, as_24_bit_terminal_escaped,
     detect_source_code,
 };
@@ -122,16 +122,34 @@ impl<'a> EventRenderer<'a> {
         let language_hint = self.code_block_language.clone();
         let treat_as_plaintext =
             self.should_render_code_block_as_plaintext(language_hint.as_deref());
-        let (mut highlighted, captured_reference_blocks) = if treat_as_plaintext {
-            let PlaintextRenderResult { body, references } =
-                self.render_plaintext_code_block(&self.code_block_content)?;
-            (body, references)
+        let (
+            mut highlighted,
+            captured_reference_blocks,
+            collected_document_links,
+            reference_counter,
+        ) = if treat_as_plaintext {
+            let PlaintextRenderResult {
+                body,
+                references,
+                document_links,
+                reference_counter,
+            } = self.render_plaintext_code_block(&self.code_block_content)?;
+            (body, references, document_links, reference_counter)
         } else {
             (
                 self.highlight_code(&self.code_block_content, language_hint.as_deref())?,
                 Vec::new(),
+                Vec::new(),
+                self.paragraph_link_counter,
             )
         };
+
+        if matches!(self.config.link_style, LinkStyle::EndTable) {
+            if !collected_document_links.is_empty() {
+                self.document_links.extend(collected_document_links);
+            }
+            self.paragraph_link_counter = reference_counter;
+        }
 
         let highlighted_is_empty = strip_ansi(&highlighted).trim().is_empty();
         if highlighted_is_empty {
@@ -601,15 +619,22 @@ impl<'a> EventRenderer<'a> {
         let mut nested_renderer =
             EventRenderer::new(&nested_config, self.theme, self.syntax_set, self.code_theme);
         nested_renderer.plaintext_code_block_depth = self.plaintext_code_block_depth + 1;
+        if matches!(self.config.link_style, LinkStyle::EndTable) {
+            nested_renderer.paragraph_link_counter = self.paragraph_link_counter;
+        }
 
         let mut rendered = nested_renderer.render_events(events)?;
         rendered = rendered.trim_end_matches('\n').to_string();
 
-        let references = nested_renderer.captured_reference_blocks;
+        let references = std::mem::take(&mut nested_renderer.captured_reference_blocks);
+        let document_links = std::mem::take(&mut nested_renderer.document_links);
+        let reference_counter = nested_renderer.paragraph_link_counter;
 
         Ok(PlaintextRenderResult {
             body: rendered,
             references,
+            document_links,
+            reference_counter,
         })
     }
 
@@ -1241,6 +1266,8 @@ impl<'a> EventRenderer<'a> {
 struct PlaintextRenderResult {
     body: String,
     references: Vec<CapturedReferenceBlock>,
+    document_links: Vec<(String, String)>,
+    reference_counter: usize,
 }
 
 #[cfg(test)]

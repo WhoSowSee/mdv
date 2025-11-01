@@ -30,15 +30,11 @@ fn test_blockquote_list_preserves_marker_prefix() {
     let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
     let lines: Vec<&str> = stdout.lines().collect();
 
-    let first_line_ok = lines
-        .iter()
-        .any(|line| line.starts_with("│ - Ensure"));
+    let first_line_ok = lines.iter().any(|line| line.starts_with("│ - Ensure"));
     let first_wrap_ok = lines
         .iter()
         .any(|line| line.starts_with("│   ") && line.contains("bullet"));
-    let second_line_ok = lines
-        .iter()
-        .any(|line| line.starts_with("│ - Confirm"));
+    let second_line_ok = lines.iter().any(|line| line.starts_with("│ - Confirm"));
     let second_wrap_ok = lines
         .iter()
         .any(|line| line.starts_with("│   ") && line.contains("quote"));

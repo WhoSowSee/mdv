@@ -25,7 +25,7 @@ code_block_style: "pretty" # Options: "simple" | "pretty"
 reverse: false             # Render document starting from the end while preserving layout
 
 # Link handling
-link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inlinetable" | "hide" | "inline" (aliases: c/clickable, fc/fclickable, it/inlinetable, h/hide, i/inline)
+link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
 link_truncation: "wrap"    # Options: "wrap" | "cut" | "none"
 
 # Content filtering

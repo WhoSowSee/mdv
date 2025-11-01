@@ -49,6 +49,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) in_link: bool,
     pub(crate) paragraph_link_counter: usize,
     pub(crate) paragraph_links: Vec<(String, String)>,
+    pub(crate) document_links: Vec<(String, String)>,
     pub(crate) in_code_block: bool,
     pub(crate) code_block_content: String,
     pub(crate) code_block_language: Option<String>,
@@ -88,6 +89,7 @@ impl<'a> EventRenderer<'a> {
             in_link: false,
             paragraph_link_counter: 0,
             paragraph_links: Vec::new(),
+            document_links: Vec::new(),
             in_code_block: false,
             code_block_content: String::new(),
             code_block_language: None,
@@ -118,6 +120,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.finalize_pending_heading_placeholder();
+        self.finalize_document_link_references();
 
         // Remove excessive trailing newlines, but keep one
         let mut result = self.output.trim_end().to_string();
