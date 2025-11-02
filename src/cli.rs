@@ -71,6 +71,16 @@ pub struct Cli {
     )]
     pub style_code_block: Option<CodeBlockStyle>,
 
+    /// Set hanging indent style for wrapped code block lines
+    #[arg(
+        short = 'K',
+        long = "code-wrap-indent",
+        value_enum,
+        value_name = "MODE",
+        default_value = "double"
+    )]
+    pub code_wrap_indent: Option<CodeWrapIndent>,
+
     /// Show current theme and optionally display the contents of FILE when provided
     #[arg(short = 'i', long = "theme-info", value_name = "FILE", num_args = 0..=1, value_hint = clap::ValueHint::FilePath)]
     pub theme_info: Option<Option<PathBuf>>,
@@ -247,6 +257,17 @@ pub enum CodeBlockStyle {
     Pretty,
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CodeWrapIndent {
+    #[value(help = "Do not add extra indentation to wrapped lines")]
+    None,
+    #[value(help = "Align wrapped lines to the original indentation")]
+    Base,
+    #[value(help = "Add two extra spaces on top of the original indentation")]
+    Double,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,6 +277,15 @@ mod tests {
         Cli::parse_from(["mdv", "-u", value])
             .link_style
             .expect("link style parsed")
+    }
+
+    #[test]
+    fn short_flag_parses_code_wrap_indent() {
+        let cli = Cli::parse_from(["mdv", "-K", "base"]);
+        assert!(matches!(
+            cli.code_wrap_indent.expect("code wrap indent value"),
+            CodeWrapIndent::Base
+        ));
     }
 
     #[test]

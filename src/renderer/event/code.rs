@@ -1,7 +1,7 @@
 use super::{
-    CapturedReferenceBlock, CodeBlockStyle, CowStr, EventRenderer, HighlightLines, LinkStyle,
-    MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, WrapMode, as_24_bit_terminal_escaped,
-    detect_source_code,
+    CapturedReferenceBlock, CodeBlockStyle, CodeWrapIndent, CowStr, EventRenderer, HighlightLines,
+    LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, WrapMode,
+    as_24_bit_terminal_escaped, detect_source_code,
 };
 use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
@@ -18,6 +18,12 @@ const CUSTOM_LANGUAGE_LABELS: &[(&str, &str)] = &[
     ("sh", "Shell"),
     ("objective-c", "Objective-C"),
 ];
+
+#[derive(Debug, Clone)]
+struct WrappedCodeSegment {
+    text: String,
+    visible_width: usize,
+}
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_inline_code(&mut self, code: CowStr) -> Result<()> {
@@ -112,9 +118,10 @@ impl<'a> EventRenderer<'a> {
     pub(super) fn handle_code_block_end(&mut self) -> Result<()> {
         self.in_code_block = false;
 
-        let is_empty = self.code_block_content.trim().is_empty();
+        let raw_code = std::mem::take(&mut self.code_block_content);
+
+        let is_empty = raw_code.trim().is_empty();
         if is_empty && !self.config.show_empty_elements {
-            self.code_block_content.clear();
             self.code_block_language = None;
             return Ok(());
         }
@@ -133,11 +140,11 @@ impl<'a> EventRenderer<'a> {
                 references,
                 document_links,
                 reference_counter,
-            } = self.render_plaintext_code_block(&self.code_block_content)?;
+            } = self.render_plaintext_code_block(&raw_code)?;
             (body, references, document_links, reference_counter)
         } else {
             (
-                self.highlight_code(&self.code_block_content, language_hint.as_deref())?,
+                self.highlight_code(&raw_code, language_hint.as_deref())?,
                 Vec::new(),
                 Vec::new(),
                 self.paragraph_link_counter,
@@ -154,7 +161,6 @@ impl<'a> EventRenderer<'a> {
         let highlighted_is_empty = strip_ansi(&highlighted).trim().is_empty();
         if highlighted_is_empty {
             if !self.config.show_empty_elements {
-                self.code_block_content.clear();
                 self.code_block_language = None;
                 return Ok(());
             }
@@ -164,12 +170,12 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        let code_starts_with_blank = self.code_block_content.starts_with('\n');
+        let code_starts_with_blank = raw_code.starts_with('\n');
 
         let language_label = if !self.config.no_code_language {
             Some(match language_hint.as_deref() {
                 Some(raw) => {
-                    let syntax = self.resolve_syntax(Some(raw), &self.code_block_content);
+                    let syntax = self.resolve_syntax(Some(raw), &raw_code);
                     Self::resolve_language_label(raw, syntax)
                 }
                 None => "Text".to_string(),
@@ -178,7 +184,6 @@ impl<'a> EventRenderer<'a> {
             None
         };
 
-        self.code_block_content.clear();
         self.code_block_language = None;
 
         let should_wrap = self.config.is_text_wrapping_enabled();
@@ -198,6 +203,7 @@ impl<'a> EventRenderer<'a> {
                     should_wrap,
                     wrap_mode,
                     terminal_width,
+                    &raw_code,
                 )?;
             }
             CodeBlockStyle::Pretty => {
@@ -208,6 +214,7 @@ impl<'a> EventRenderer<'a> {
                     should_wrap,
                     wrap_mode,
                     terminal_width,
+                    &raw_code,
                 )?;
             }
         }
@@ -230,8 +237,10 @@ impl<'a> EventRenderer<'a> {
         should_wrap: bool,
         wrap_mode: WrapMode,
         terminal_width: usize,
+        raw_code: &str,
     ) -> Result<()> {
         let prefix = self.render_code_block_border();
+        let raw_lines: Vec<&str> = raw_code.lines().collect();
 
         if let Some(label) = language_label {
             let trimmed_label = label.trim();
@@ -266,21 +275,20 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        for line in highlighted.lines() {
+        for (idx, line) in highlighted.lines().enumerate() {
             let context_width = self.compute_line_start_context_width();
             let border_visible_width = 2usize;
             let available = terminal_width.saturating_sub(context_width + border_visible_width);
 
-            let wrapped_line = if should_wrap && available > 0 {
-                crate::utils::wrap_text_with_mode(line, available, wrap_mode)
-            } else {
-                line.to_string()
-            };
+            let raw_line = raw_lines.get(idx).copied();
 
-            for part in wrapped_line.split('\n') {
+            let segments =
+                self.wrap_code_line_segments(line, raw_line, available, should_wrap, wrap_mode);
+
+            for segment in segments {
                 self.push_indent_for_line_start();
                 self.output.push_str(&prefix);
-                self.output.push_str(part);
+                self.output.push_str(&segment.text);
                 self.output.push('\n');
             }
         }
@@ -296,6 +304,7 @@ impl<'a> EventRenderer<'a> {
         should_wrap: bool,
         wrap_mode: WrapMode,
         terminal_width: usize,
+        raw_code: &str,
     ) -> Result<()> {
         let left_padding = 1usize;
         let right_padding = 1usize;
@@ -310,6 +319,7 @@ impl<'a> EventRenderer<'a> {
                 should_wrap,
                 wrap_mode,
                 terminal_width,
+                raw_code,
             );
         }
 
@@ -323,12 +333,14 @@ impl<'a> EventRenderer<'a> {
                 should_wrap,
                 wrap_mode,
                 terminal_width,
+                raw_code,
             );
         }
 
-        let raw_lines: Vec<&str> = highlighted.lines().collect();
+        let highlight_lines: Vec<&str> = highlighted.lines().collect();
+        let raw_code_lines: Vec<&str> = raw_code.lines().collect();
         let mut max_line_width = 0usize;
-        for line in &raw_lines {
+        for line in &highlight_lines {
             max_line_width = max_line_width.max(display_width(&strip_ansi(line)));
         }
 
@@ -349,17 +361,23 @@ impl<'a> EventRenderer<'a> {
                     should_wrap,
                     wrap_mode,
                     terminal_width,
+                    raw_code,
                 );
             }
 
-            for line in &raw_lines {
-                let wrapped_line =
-                    crate::utils::wrap_text_with_mode(line, wrap_width_allowed, wrap_mode);
-                for part in wrapped_line.split('\n') {
-                    let owned = part.to_string();
-                    let part_width = display_width(&strip_ansi(&owned));
-                    max_part_width = max_part_width.max(part_width);
-                    rendered_lines.push(owned);
+            for (idx, line) in highlight_lines.iter().enumerate() {
+                let raw_line = raw_code_lines.get(idx).copied();
+                let segments = self.wrap_code_line_segments(
+                    line,
+                    raw_line,
+                    wrap_width_allowed,
+                    should_wrap,
+                    wrap_mode,
+                );
+
+                for segment in segments {
+                    max_part_width = max_part_width.max(segment.visible_width);
+                    rendered_lines.push(segment.text);
                 }
             }
 
@@ -371,17 +389,27 @@ impl<'a> EventRenderer<'a> {
                     should_wrap,
                     wrap_mode,
                     terminal_width,
+                    raw_code,
                 );
             }
         } else {
-            if raw_lines.is_empty() {
+            if highlight_lines.is_empty() {
                 rendered_lines.push(String::new());
             } else {
-                for line in &raw_lines {
-                    let owned = (*line).to_string();
-                    let line_width = display_width(&strip_ansi(&owned));
-                    max_part_width = max_part_width.max(line_width);
-                    rendered_lines.push(owned);
+                for (idx, line) in highlight_lines.iter().enumerate() {
+                    let raw_line = raw_code_lines.get(idx).copied();
+                    let segments = self.wrap_code_line_segments(
+                        line,
+                        raw_line,
+                        wrap_width_allowed,
+                        false,
+                        wrap_mode,
+                    );
+
+                    for segment in segments {
+                        max_part_width = max_part_width.max(segment.visible_width);
+                        rendered_lines.push(segment.text);
+                    }
                 }
             }
 
@@ -393,6 +421,7 @@ impl<'a> EventRenderer<'a> {
                     should_wrap,
                     wrap_mode,
                     terminal_width,
+                    raw_code,
                 );
             }
         }
@@ -422,6 +451,7 @@ impl<'a> EventRenderer<'a> {
                             should_wrap,
                             wrap_mode,
                             terminal_width,
+                            raw_code,
                         );
                     }
                 }
@@ -455,6 +485,75 @@ impl<'a> EventRenderer<'a> {
         self.output.push('\n');
 
         Ok(())
+    }
+
+    fn wrap_code_line_segments(
+        &self,
+        highlighted_line: &str,
+        raw_line: Option<&str>,
+        width: usize,
+        should_wrap: bool,
+        wrap_mode: WrapMode,
+    ) -> Vec<WrappedCodeSegment> {
+        let base_indent = if let Some(line) = raw_line {
+            line.chars()
+                .take_while(|c| c.is_whitespace())
+                .collect::<String>()
+        } else {
+            let stripped = strip_ansi(highlighted_line);
+            stripped
+                .chars()
+                .take_while(|c| c.is_whitespace())
+                .collect::<String>()
+        };
+
+        let continuation_indent = match self.config.code_wrap_indent {
+            CodeWrapIndent::None => String::new(),
+            CodeWrapIndent::Base => base_indent.clone(),
+            CodeWrapIndent::Double => {
+                let mut indent = base_indent.clone();
+                indent.push_str("  ");
+                indent
+            }
+        };
+
+        let raw_wrapped = if should_wrap && width > 0 {
+            crate::utils::wrap_text_with_mode(highlighted_line, width, wrap_mode)
+        } else {
+            highlighted_line.to_string()
+        };
+
+        let mut segments_raw: Vec<String> = raw_wrapped
+            .split('\n')
+            .map(|part| part.to_string())
+            .collect();
+        if segments_raw.is_empty() {
+            segments_raw.push(String::new());
+        }
+
+        let mut segments = Vec::with_capacity(segments_raw.len());
+        for (idx, mut segment) in segments_raw.into_iter().enumerate() {
+            let mut visible_width = display_width(&strip_ansi(&segment));
+
+            if idx > 0 && !continuation_indent.is_empty() {
+                let candidate = format!("{}{}", continuation_indent, segment);
+                let candidate_width = display_width(&strip_ansi(&candidate));
+                if should_wrap && width > 0 && candidate_width > width {
+                    // Not enough room to apply hanging indent - retain original segment.
+                    visible_width = display_width(&strip_ansi(&segment));
+                } else {
+                    segment = candidate;
+                    visible_width = candidate_width;
+                }
+            }
+
+            segments.push(WrappedCodeSegment {
+                text: segment,
+                visible_width,
+            });
+        }
+
+        segments
     }
 
     fn render_pretty_top_border(&self, inner_box_width: usize, label: Option<&str>) -> String {

@@ -1,5 +1,6 @@
 use crate::cli::{
-    Cli, CodeBlockStyle, HeadingLayout, LinkStyle, LinkTruncationStyle, TableWrapMode, TextWrapMode,
+    Cli, CodeBlockStyle, CodeWrapIndent, HeadingLayout, LinkStyle, LinkTruncationStyle,
+    TableWrapMode, TextWrapMode,
 };
 use crate::error::MdvError;
 use anyhow::Result;
@@ -37,6 +38,7 @@ pub struct Config {
     pub no_code_language: bool,
     pub code_guessing: bool,
     pub code_block_style: CodeBlockStyle,
+    pub code_wrap_indent: CodeWrapIndent,
     pub reverse: bool,
 
     // Theme configuration
@@ -73,6 +75,7 @@ impl Default for Config {
             no_code_language: false,
             code_guessing: true,
             code_block_style: CodeBlockStyle::Pretty,
+            code_wrap_indent: CodeWrapIndent::Double,
             reverse: false,
             theme: "terminal".to_string(),
             code_theme: None,
@@ -191,6 +194,12 @@ impl Config {
         if let Some(style) = cli.style_code_block {
             if arg_has_user_value(matches, "style_code_block") {
                 config.code_block_style = style;
+            }
+        }
+
+        if let Some(indent) = cli.code_wrap_indent {
+            if arg_has_user_value(matches, "code_wrap_indent") {
+                config.code_wrap_indent = indent;
             }
         }
 
@@ -327,6 +336,9 @@ impl Config {
         }
         if !matches!(other.code_block_style, CodeBlockStyle::Pretty) {
             self.code_block_style = other.code_block_style;
+        }
+        if !matches!(other.code_wrap_indent, CodeWrapIndent::Double) {
+            self.code_wrap_indent = other.code_wrap_indent;
         }
 
         if other.theme != "terminal" {

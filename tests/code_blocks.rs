@@ -6,3 +6,5 @@ mod blockquotes;
 mod pretty;
 #[path = "code_blocks/spacing.rs"]
 mod spacing;
+#[path = "code_blocks/wrap_indent.rs"]
+mod wrap_indent;

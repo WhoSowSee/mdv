@@ -102,6 +102,7 @@ mdv [OPTIONS] | mdv
 - `-w, --table-wrap <fit|wrap|none>` chooses how wide tables are handled (default `fit`).
 - `-d, --heading-layout <level|center|flat|none>` controls heading indentation (default `level`).
 - `-I, --smart-indent` smooths indentation jumps between heading levels in `level` mode.
+- `-K, --code-wrap-indent <none|base|double>` sets the hanging indent applied to wrapped code block lines (default `double`).
 
 ### Content visibility
 
@@ -137,6 +138,7 @@ wrap: 'char'
 table_wrap: 'fit'
 heading_layout: 'level'
 smart_indent: true
+code_wrap_indent: 'double'
 link_style: 'inlinetable'
 link_truncation: 'wrap'
 ```

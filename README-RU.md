@@ -102,6 +102,7 @@ mdv [OPTIONS] | mdv
 - `-w, --table-wrap <fit|wrap|none>` — логика отображения широких таблиц (по умолчанию `fit`).
 - `-d, --heading-layout <level|center|flat|none>` — схема выравнивания заголовков (по умолчанию `level`).
 - `-I, --smart-indent` — сглаживание скачков отступов между уровнями заголовков в режиме `level`.
+- `-K, --code-wrap-indent <none|base|double>` — управляет «висячим» отступом при переносе строк внутри блоков кода (по умолчанию `double`).
 
 ### Видимость элементов
 
@@ -137,6 +138,7 @@ wrap: "char"
 table_wrap: "fit"
 heading_layout: "level"
 smart_indent: true
+code_wrap_indent: "double"
 link_style: "inlinetable"
 link_truncation: "wrap"
 ```
