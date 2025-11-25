@@ -88,6 +88,7 @@ pub struct Theme {
     pub strikethrough: Color,
 
     // Background and borders
+    pub highlight_background: Color,
     pub background: Option<Color>,
     pub border: Color,
 
@@ -136,6 +137,7 @@ impl Default for Theme {
             emphasis: Color::Yellow,
             strong: Color::Red,
             strikethrough: Color::DarkGrey,
+            highlight_background: Color::AnsiValue(236),
             background: None,
             border: Color::Grey,
             list_marker: Color::Green,
@@ -191,6 +193,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(253, 151, 31),
             strong: rgb(249, 38, 114),
             strikethrough: rgb(117, 113, 94),
+            highlight_background: rgb(73, 72, 62),
             background: Some(rgb(39, 40, 34)),
             border: rgb(73, 72, 62),
             list_marker: rgb(166, 226, 46),
@@ -232,6 +235,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(203, 75, 22),
             strong: rgb(220, 50, 47),
             strikethrough: rgb(88, 110, 117),
+            highlight_background: rgb(7, 54, 66),
             background: Some(rgb(0, 43, 54)),
             border: rgb(88, 110, 117),
             list_marker: rgb(133, 153, 0),
@@ -273,6 +277,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(163, 190, 140),
             strong: rgb(180, 142, 173),
             strikethrough: rgb(67, 76, 94),
+            highlight_background: rgb(67, 76, 94),
             background: Some(rgb(46, 52, 64)),
             border: rgb(76, 86, 106),
             list_marker: rgb(163, 190, 140),
@@ -314,6 +319,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(169, 177, 214),
             strong: rgb(122, 162, 247),
             strikethrough: rgb(84, 92, 126),
+            highlight_background: rgb(44, 50, 70),
             background: Some(rgb(26, 27, 38)),
             border: rgb(59, 66, 97),
             list_marker: rgb(158, 206, 106),
@@ -355,6 +361,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(200, 192, 147),
             strong: rgb(147, 138, 169),
             strikethrough: rgb(114, 113, 105),
+            highlight_background: rgb(45, 46, 60),
             background: Some(rgb(31, 31, 40)),
             border: rgb(42, 42, 55),
             list_marker: rgb(122, 168, 159),
@@ -396,6 +403,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(211, 134, 155),
             strong: rgb(251, 73, 52),
             strikethrough: rgb(102, 92, 84),
+            highlight_background: rgb(60, 56, 54),
             background: Some(rgb(40, 40, 40)),
             border: rgb(102, 92, 84),
             list_marker: rgb(184, 187, 38),
@@ -437,6 +445,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(247, 140, 108),
             strong: rgb(199, 146, 234),
             strikethrough: rgb(84, 110, 122),
+            highlight_background: rgb(30, 34, 48),
             background: Some(rgb(15, 17, 26)),
             border: rgb(28, 34, 48),
             list_marker: rgb(195, 232, 141),
@@ -478,6 +487,7 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
             emphasis: rgb(245, 194, 231),
             strong: rgb(203, 166, 247),
             strikethrough: rgb(108, 112, 134),
+            highlight_background: rgb(49, 50, 68),
             background: Some(rgb(30, 30, 46)),
             border: rgb(49, 50, 68),
             list_marker: rgb(166, 227, 161),
@@ -647,6 +657,7 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         "emphasis" => theme.emphasis = parse_color_spec(value)?,
         "strong" => theme.strong = parse_color_spec(value)?,
         "strikethrough" | "strike" | "del" => theme.strikethrough = parse_color_spec(value)?,
+        "highlight_background" | "highlight_bg" => theme.highlight_background = parse_color_spec(value)?,
         "background" | "bg" => {
             if is_none_value(value) {
                 theme.background = None;
@@ -997,7 +1008,7 @@ mod tests {
         let mut theme = Theme::default();
         apply_custom_theme(
             &mut theme,
-            "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30)",
+            "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30); highlight_bg=#112233",
         )
         .expect("custom theme overrides should be applied");
 
@@ -1026,6 +1037,14 @@ mod tests {
             }
         ));
         assert!(theme.background.is_none());
+        assert!(matches!(
+            theme.highlight_background,
+            Color::Rgb {
+                r: 0x11,
+                g: 0x22,
+                b: 0x33
+            }
+        ));
     }
 
     #[test]

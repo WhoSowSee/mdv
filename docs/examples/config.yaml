@@ -36,8 +36,8 @@ from_text: null            # Render starting from the first line that contains t
 
 # Available keys for custom_theme:
 # text, text_light, h1..h6, code, code_block, quote, link, emphasis, strong,
-# strikethrough, background, border, list_marker, table_header, table_border,
-# error, warning
+# strikethrough, highlight_background, background, border, list_marker,
+# table_header, table_border, error, warning
 
 # Available keys for custom_code_theme:
 # keyword, string, comment, number, operator, function, variable, type_name

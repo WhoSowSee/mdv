@@ -9,7 +9,16 @@ impl<'a> EventRenderer<'a> {
     /// Ensures consistent precedence when multiple styles are active at once
     /// (e.g. Strong + Emphasis). Color precedence: Strong > Emphasis > Strikethrough > Text.
     pub(super) fn apply_formatting(&self, text: &str) -> String {
-        if self.formatting_stack.is_empty() {
+        self.apply_formatting_with_highlight(text, false)
+    }
+
+    /// Apply formatting stack plus optional background highlight (==text==)
+    pub(super) fn apply_formatting_with_highlight(
+        &self,
+        text: &str,
+        highlighted: bool,
+    ) -> String {
+        if self.formatting_stack.is_empty() && !highlighted {
             return text.to_string();
         }
 
@@ -39,6 +48,10 @@ impl<'a> EventRenderer<'a> {
         }
         if has_strike {
             style = style.strikethrough();
+        }
+
+        if highlighted {
+            style = style.bg(self.theme.highlight_background.clone().into());
         }
 
         style.apply(text, self.config.no_colors)

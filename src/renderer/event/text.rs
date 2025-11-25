@@ -1,5 +1,11 @@
 use super::{CowStr, EventRenderer, LinkStyle, Result, ThemeElement};
 
+#[derive(Debug, Clone)]
+struct HighlightSegment {
+    text: String,
+    highlighted: bool,
+}
+
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_text(&mut self, text: CowStr) -> Result<()> {
         if self.in_code_block {
@@ -51,12 +57,37 @@ impl<'a> EventRenderer<'a> {
 
     /// Process text with wrapping and formatting, handling styled text properly
     fn process_text_with_wrapping_and_formatting(&mut self, text: &str) -> Result<()> {
-        // Check if this is for a table cell
-        let is_table_cell = self.table_state.is_some();
+        if !text.contains("==") {
+            return self.process_segment_with_wrapping_and_formatting(
+                text,
+                false,
+                self.table_state.is_some(),
+            );
+        }
 
+        for segment in self.split_highlight_segments(text) {
+            if !segment.text.is_empty() {
+                self.process_segment_with_wrapping_and_formatting(
+                    &segment.text,
+                    segment.highlighted,
+                    self.table_state.is_some(),
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn process_segment_with_wrapping_and_formatting(
+        &mut self,
+        text: &str,
+        highlighted: bool,
+        is_table_cell: bool,
+    ) -> Result<()> {
+        // Check if this is for a table cell
         if is_table_cell {
             // For table cells, apply formatting directly without complex wrapping
-            let formatted_text = self.apply_formatting(text);
+            let formatted_text = self.apply_formatting_with_highlight(text, highlighted);
             if let Some(ref mut table) = self.table_state {
                 table.current_cell.push_str(&formatted_text);
             }
@@ -95,21 +126,54 @@ impl<'a> EventRenderer<'a> {
         if should_wrap && !self.formatting_stack.is_empty() {
             // For styled text, prefer continuous decoration for strike-through
             if self.formatting_stack.contains(&ThemeElement::Strikethrough) {
-                self.process_strikethrough_text_with_wrapping(text)?;
+                self.process_strikethrough_text_with_wrapping(text, highlighted)?;
             } else {
                 // Default styled processing (per-unit formatting)
-                self.process_styled_text_with_wrapping(text)?;
+                self.process_styled_text_with_wrapping(text, highlighted)?;
             }
         } else {
             // Regular text processing
-            self.process_regular_text(text, should_wrap)?;
+            self.process_regular_text(text, should_wrap, highlighted)?;
         }
 
         Ok(())
     }
 
+    fn split_highlight_segments(&self, text: &str) -> Vec<HighlightSegment> {
+        let mut segments = Vec::with_capacity(4);
+        let mut buffer = String::new();
+        let mut highlighted = false;
+        let mut chars = text.chars().peekable();
+
+        while let Some(ch) = chars.next() {
+            if ch == '=' && matches!(chars.peek(), Some('=')) {
+                chars.next(); // consume second '='
+                if !buffer.is_empty() {
+                    segments.push(HighlightSegment {
+                        text: std::mem::take(&mut buffer),
+                        highlighted,
+                    });
+                }
+                highlighted = !highlighted;
+                continue;
+            }
+            buffer.push(ch);
+        }
+
+        segments.push(HighlightSegment {
+            text: if highlighted {
+                format!("=={}", buffer)
+            } else {
+                buffer
+            },
+            highlighted,
+        });
+
+        segments
+    }
+
     /// Process styled text with proper character/word-level wrapping like the original logic
-    fn process_styled_text_with_wrapping(&mut self, text: &str) -> Result<()> {
+    fn process_styled_text_with_wrapping(&mut self, text: &str, highlighted: bool) -> Result<()> {
         let terminal_width = self.config.get_terminal_width();
 
         // The effective width is the full terminal width since current_line_width
@@ -130,7 +194,12 @@ impl<'a> EventRenderer<'a> {
         for (i, unit) in units.iter().enumerate() {
             if unit.trim().is_empty() && i > 0 {
                 // Handle whitespace between units
-                self.output.push_str(unit);
+                let formatted_unit = if highlighted {
+                    self.apply_formatting_with_highlight(unit, true)
+                } else {
+                    unit.to_string()
+                };
+                self.output.push_str(&formatted_unit);
                 continue;
             }
 
@@ -186,7 +255,7 @@ impl<'a> EventRenderer<'a> {
             }
 
             // Apply formatting and add to output
-            let formatted_unit = self.apply_formatting(unit);
+            let formatted_unit = self.apply_formatting_with_highlight(unit, highlighted);
 
             // Add content indentation for new lines if needed
             // But don't add it if we're continuing text on the same line (like after inline links)
@@ -435,12 +504,16 @@ impl<'a> EventRenderer<'a> {
     }
 
     /// Process text with strikethrough formatting applied as a continuous run (includes spaces)
-    fn process_strikethrough_text_with_wrapping(&mut self, text: &str) -> Result<()> {
+    fn process_strikethrough_text_with_wrapping(
+        &mut self,
+        text: &str,
+        highlighted: bool,
+    ) -> Result<()> {
         let should_wrap = self.config.is_text_wrapping_enabled();
 
         if !should_wrap {
             // No wrapping - apply full formatting (including strikethrough) to entire text
-            let formatted_text = self.apply_formatting(text);
+            let formatted_text = self.apply_formatting_with_highlight(text, highlighted);
             self.output.push_str(&formatted_text);
             return Ok(());
         }
@@ -490,12 +563,16 @@ impl<'a> EventRenderer<'a> {
                     let fragment_to_format = current_fragment.trim_end();
                     let trailing_spaces = &current_fragment[fragment_to_format.len()..];
 
-                    // Apply full formatting (includes strike) to the non-trailing part, then append spaces
-                    let formatted_fragment = format!(
-                        "{}{}",
-                        self.apply_formatting(fragment_to_format),
-                        trailing_spaces
-                    );
+                    // Apply full formatting (includes strike) to the fragment; keep spaces highlighted when needed
+                    let formatted_fragment = if highlighted {
+                        self.apply_formatting_with_highlight(&current_fragment, true)
+                    } else {
+                        format!(
+                            "{}{}",
+                            self.apply_formatting(fragment_to_format),
+                            trailing_spaces
+                        )
+                    };
                     self.output.push_str(&formatted_fragment);
 
                     // Start new visual line with correct context indentation
@@ -514,11 +591,15 @@ impl<'a> EventRenderer<'a> {
                 // Break: output current fragment first
                 let fragment_to_format = current_fragment.trim_end();
                 let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-                let formatted_fragment = format!(
-                    "{}{}",
-                    self.apply_formatting(fragment_to_format),
-                    trailing_spaces
-                );
+                let formatted_fragment = if highlighted {
+                    self.apply_formatting_with_highlight(&current_fragment, true)
+                } else {
+                    format!(
+                        "{}{}",
+                        self.apply_formatting(fragment_to_format),
+                        trailing_spaces
+                    )
+                };
                 self.output.push_str(&formatted_fragment);
 
                 // Decide if we break before this unit (word wrap rules)
@@ -559,17 +640,26 @@ impl<'a> EventRenderer<'a> {
         if !current_fragment.is_empty() {
             let fragment_to_format = current_fragment.trim_end();
             let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-            let formatted_fragment = format!(
-                "{}{}",
-                self.apply_formatting(fragment_to_format),
-                trailing_spaces
-            );
+            let formatted_fragment = if highlighted {
+                self.apply_formatting_with_highlight(&current_fragment, true)
+            } else {
+                format!(
+                    "{}{}",
+                    self.apply_formatting(fragment_to_format),
+                    trailing_spaces
+                )
+            };
             self.output.push_str(&formatted_fragment);
         }
 
         Ok(())
     }
-    fn process_regular_text(&mut self, text: &str, should_wrap: bool) -> Result<()> {
+    fn process_regular_text(
+        &mut self,
+        text: &str,
+        should_wrap: bool,
+        highlighted: bool,
+    ) -> Result<()> {
         // Use the same word-by-word logic as styled text for consistent behavior
         if should_wrap {
             let terminal_width = self.config.get_terminal_width();
@@ -602,7 +692,12 @@ impl<'a> EventRenderer<'a> {
                         // Break visual line and skip adding whitespace at start of next line
                         self.push_newline_with_context();
                     } else {
-                        self.output.push_str(unit);
+                        let formatted_unit = if highlighted {
+                            self.apply_formatting_with_highlight(unit, true)
+                        } else {
+                            unit.to_string()
+                        };
+                        self.output.push_str(&formatted_unit);
                     }
                     continue;
                 }
@@ -659,7 +754,7 @@ impl<'a> EventRenderer<'a> {
                 }
 
                 // Apply formatting (no-op for regular text) and add to output
-                let formatted_unit = self.apply_formatting(unit);
+                let formatted_unit = self.apply_formatting_with_highlight(unit, highlighted);
 
                 // Add content indentation for new lines if needed
                 // But don't add it if we're continuing text on the same line (like after inline links)
@@ -684,7 +779,7 @@ impl<'a> EventRenderer<'a> {
             }
         } else {
             // No wrapping - still ensure correct indentation at visual line starts
-            let final_text = self.apply_formatting(text);
+            let final_text = self.apply_formatting_with_highlight(text, highlighted);
 
             // Add content indentation for new visual lines when appropriate
             if (self.output.ends_with('\n') || self.output.is_empty())

@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use mdv::utils::strip_ansi;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -269,4 +270,26 @@ fn test_theme_info_from_config_prints_current_theme() {
         .stdout(predicate::str::contains("\nCurrent theme: terminal"))
         .stdout(predicate::str::contains("\nCurrent code theme: terminal"))
         .stdout(predicate::str::contains("Available themes").not());
+}
+
+#[test]
+fn test_text_highlight_background() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Normal ==highlighted text== end.").unwrap();
+
+    let output = Command::cargo_bin("mdv")
+        .unwrap()
+        .arg("-c")
+        .arg("80")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let clean = strip_ansi(&stdout);
+    assert!(clean.contains("highlighted text"));
+    assert!(!clean.contains("==highlighted text=="));
+    assert!(stdout.contains("\u{1b}[48;"));
 }
