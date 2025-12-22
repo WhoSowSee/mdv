@@ -4,9 +4,13 @@ use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
 
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
+
 #[test]
 fn test_help_command() {
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--help");
     cmd.assert()
         .success()
@@ -15,7 +19,7 @@ fn test_help_command() {
 
 #[test]
 fn test_version_command() {
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--version");
     cmd.assert()
         .success()
@@ -27,7 +31,7 @@ fn test_basic_markdown_rendering() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Hello World\n\nThis is **bold** text.").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg(temp_file.path());
     cmd.assert()
         .success()
@@ -36,7 +40,7 @@ fn test_basic_markdown_rendering() {
 
 #[test]
 fn test_stdin_input() {
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-");
     cmd.write_stdin("# Test\n\nFrom stdin");
     cmd.assert()
@@ -46,7 +50,7 @@ fn test_stdin_input() {
 
 #[test]
 fn test_stdin_input_with_bom() {
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-");
     cmd.write_stdin("\u{feff}# Heading\n\nBody text");
     cmd.assert()
@@ -61,7 +65,7 @@ fn test_html_output() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# HTML Test\n\nThis is a test.").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-H").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -74,7 +78,7 @@ fn test_no_colors_option() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Test\n\n**Bold text**").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-A").arg(temp_file.path());
     cmd.assert().success();
     // Note: We can't easily test for absence of ANSI codes in integration tests
@@ -85,7 +89,7 @@ fn test_theme_option() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Theme Test\n\nTesting themes.").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-t").arg("monokai").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -97,7 +101,7 @@ fn test_comments_rendered_by_default() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "<!-- note -->\n\nVisible text\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-A").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -110,7 +114,7 @@ fn test_hide_comments_option_hides_comments() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "<!-- secret -->\n\nVisible text\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--hide-comments").arg("-A").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -123,7 +127,7 @@ fn test_column_width_option() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Width Test\n\nThis is a long line that should be wrapped according to the specified column width.").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-c").arg("40").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -139,7 +143,7 @@ fn test_word_wrap_list_inline_code_does_not_hang() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-A")
         .arg("--wrap")
         .arg("word")
@@ -165,8 +169,7 @@ fn test_reverse_option_preserves_block_layout() {
     )
     .unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("-A")
         .arg("-r")
         .arg(temp_file.path())
@@ -195,7 +198,7 @@ fn test_reverse_option_preserves_block_layout() {
 
 #[test]
 fn test_nonexistent_file() {
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("nonexistent_file.md");
     cmd.assert()
         .failure()
@@ -207,7 +210,7 @@ fn test_from_text_option() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Start\n\nSome content.\n\n## Target Section\n\nThis is the target.\n\n## End\n\nMore content.").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-f").arg("Target Section").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -219,7 +222,7 @@ fn test_tab_length_option() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Tab Test\n\n\tIndented with tab").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-b").arg("8").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -228,7 +231,7 @@ fn test_tab_length_option() {
 
 #[test]
 fn test_theme_info_without_file_lists_available_themes() {
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--theme").arg("terminal");
     cmd.arg("--theme-info");
     cmd.assert()
@@ -243,7 +246,7 @@ fn test_theme_info_with_file_outputs_file_contents() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "custom theme info").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--theme").arg("terminal");
     cmd.arg("--theme-info").arg(temp_file.path());
     cmd.assert()
@@ -262,7 +265,7 @@ fn test_theme_info_from_config_prints_current_theme() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Config Theme Info\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--config-file").arg(config_file.path());
     cmd.arg(temp_file.path());
     cmd.assert()
@@ -277,8 +280,7 @@ fn test_text_highlight_background() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "Normal ==highlighted text== end.").unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("-c")
         .arg("80")
         .arg(temp_file.path())

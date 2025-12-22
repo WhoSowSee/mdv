@@ -62,7 +62,7 @@ impl TerminalRenderer {
         })
     }
 
-    pub fn render(&self, events: Vec<Event>) -> Result<String> {
+    pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
         let mut renderer = EventRenderer::new(
             &self.config,
             &self.theme,
@@ -72,7 +72,7 @@ impl TerminalRenderer {
         renderer.render_events(events)
     }
 
-    pub fn to_html(&self, events: Vec<Event>) -> Result<String> {
+    pub fn to_html(&self, events: Vec<Event<'static>>) -> Result<String> {
         let mut html_output = String::new();
         pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
         Ok(html_output)

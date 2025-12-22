@@ -1,4 +1,9 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
+
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -12,8 +17,7 @@ fn test_blockquote_list_preserves_marker_prefix() {
     )
     .unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("-A")
         .arg("-c")
         .arg("20")
@@ -66,7 +70,7 @@ fn test_smart_indent_promotes_first_heading() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "## Heading Two\n\nContent\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
@@ -84,7 +88,7 @@ fn test_smart_indent_limits_growth_per_step() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# H1\n\n## H2\n\n###### H6\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
@@ -106,7 +110,7 @@ fn test_smart_indent_handles_mixed_levels() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
@@ -130,7 +134,7 @@ fn test_center_heading_layout_adds_blank_line() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--heading-layout")
         .arg("center")
         .arg("-A")
@@ -148,8 +152,7 @@ fn test_single_blank_line_before_heading_after_empty_pretty_code_block() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```\n```\n\n##\n").unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("--no-colors")
         .arg("--style-code-block")
         .arg("pretty")
@@ -188,8 +191,7 @@ fn test_single_blank_line_before_heading_with_surrounding_elements() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "- Item\n-\n\n```\n```\n>\n>\n\n##\n").unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("--no-colors")
         .arg("--style-code-block")
         .arg("pretty")
@@ -226,3 +228,7 @@ fn test_single_blank_line_before_heading_with_surrounding_elements() {
         stdout
     );
 }
+
+
+
+

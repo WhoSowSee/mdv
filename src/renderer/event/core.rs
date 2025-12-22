@@ -1,6 +1,6 @@
 use super::{
-    Alignment, Config, Event, HashMap, HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd,
-    Theme, ThemeElement, create_style, extract_code_language,
+    Alignment, Config, Event, FootnoteDefinition, FootnoteStyle, HashMap, HeadingLevel, LinkStyle,
+    Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement, create_style, extract_code_language,
 };
 use crate::utils::strip_ansi;
 use syntect::highlighting::Theme as SyntectTheme;
@@ -28,7 +28,6 @@ pub(crate) struct TableState {
 pub(crate) struct CapturedReferenceBlock {
     pub(super) lines: Vec<String>,
     pub(super) add_trailing_newline: bool,
-    pub(super) in_list: bool,
 }
 
 /// Internal event renderer
@@ -55,6 +54,11 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) code_block_language: Option<String>,
     pub(crate) plaintext_code_block_depth: usize,
     pub(crate) captured_reference_blocks: Vec<CapturedReferenceBlock>,
+    pub(crate) footnote_definitions: Vec<FootnoteDefinition>,
+    pub(crate) footnote_order: Vec<String>,
+    pub(crate) current_inline_footnotes: Vec<String>,
+    pub(crate) footnote_use_count: HashMap<String, usize>,
+    pub(crate) suppress_footnote_output: bool,
     pub(crate) last_header_level: HeadingLevel,
     pub(crate) formatting_stack: Vec<ThemeElement>,
     pub(crate) current_heading_level: Option<HeadingLevel>,
@@ -95,6 +99,11 @@ impl<'a> EventRenderer<'a> {
             code_block_language: None,
             plaintext_code_block_depth: 0,
             captured_reference_blocks: Vec::new(),
+            footnote_definitions: Vec::new(),
+            footnote_order: Vec::new(),
+            current_inline_footnotes: Vec::new(),
+            footnote_use_count: HashMap::new(),
+            suppress_footnote_output: false,
             last_header_level: HeadingLevel::H1,
             formatting_stack: Vec::new(),
             current_heading_level: None,
@@ -106,7 +115,18 @@ impl<'a> EventRenderer<'a> {
         }
     }
 
-    pub(crate) fn render_events(&mut self, events: Vec<Event>) -> Result<String> {
+    pub(crate) fn render_events(&mut self, events: Vec<Event<'static>>) -> Result<String> {
+        let (events, mut definitions) = self.extract_footnote_definitions(events);
+
+        if !self.footnote_definitions.is_empty() {
+            for existing in self.footnote_definitions.iter() {
+                if !definitions.iter().any(|def| def.name == existing.name) {
+                    definitions.push(existing.clone());
+                }
+            }
+        }
+        self.footnote_definitions = definitions;
+
         if matches!(self.config.heading_layout, crate::cli::HeadingLayout::Level)
             && self.config.smart_indent
         {
@@ -120,7 +140,13 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.finalize_pending_heading_placeholder();
+        if matches!(self.config.footnote_style, FootnoteStyle::Attached)
+            && !self.current_inline_footnotes.is_empty()
+        {
+            self.finalize_inline_footnotes(true, false)?;
+        }
         self.finalize_document_link_references();
+        self.finalize_document_footnotes()?;
 
         // Remove excessive trailing newlines, but keep one
         let mut result = self.output.trim_end().to_string();
@@ -378,7 +404,14 @@ impl<'a> EventRenderer<'a> {
                     self.add_paragraph_link_references();
                 }
 
-                if self.list_stack.is_empty() {
+                let inline_footnotes_rendered =
+                    matches!(self.config.footnote_style, FootnoteStyle::Attached)
+                        && !self.current_inline_footnotes.is_empty()
+                        && !self.suppress_footnote_output;
+
+                self.finalize_inline_footnotes(true, !self.list_stack.is_empty())?;
+
+                if self.list_stack.is_empty() && !inline_footnotes_rendered {
                     self.output.push('\n');
                 }
             }
@@ -421,6 +454,11 @@ impl<'a> EventRenderer<'a> {
             }
             TagEnd::CodeBlock => {
                 self.handle_code_block_end()?;
+                if matches!(self.config.footnote_style, FootnoteStyle::Attached)
+                    && !self.current_inline_footnotes.is_empty()
+                {
+                    self.finalize_inline_footnotes(true, false)?;
+                }
             }
             TagEnd::List(_) => {
                 self.list_stack.pop();
@@ -434,8 +472,12 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             TagEnd::Item => {
+                let mut start_index = self.output.len();
+                let mut has_content = false;
+                let mut was_ordered = false;
+
                 if let Some(list_state) = self.list_stack.last_mut() {
-                    let start_index = list_state
+                    start_index = list_state
                         .current_item_start
                         .unwrap_or_else(|| self.output.len())
                         .min(self.output.len());
@@ -444,15 +486,24 @@ impl<'a> EventRenderer<'a> {
                         .unwrap_or(start_index)
                         .min(self.output.len());
                     let slice = &self.output[marker_end..];
-                    let has_content = !strip_ansi(slice).trim().is_empty();
+                    has_content = !strip_ansi(slice).trim().is_empty();
+                    was_ordered = list_state.is_ordered;
+                }
 
+                if matches!(self.config.footnote_style, FootnoteStyle::Attached)
+                    && !self.current_inline_footnotes.is_empty()
+                {
+                    self.finalize_inline_footnotes(true, true)?;
+                }
+
+                if let Some(list_state) = self.list_stack.last_mut() {
                     if has_content || self.config.show_empty_elements {
                         if !self.output.ends_with('\n') {
                             self.output.push('\n');
                         }
                     } else {
                         self.output.truncate(start_index);
-                        if list_state.is_ordered {
+                        if was_ordered {
                             list_state.counter = list_state.counter.saturating_sub(1);
                         }
                     }
@@ -465,6 +516,11 @@ impl<'a> EventRenderer<'a> {
             }
             TagEnd::Table => {
                 self.handle_table_end()?;
+                if matches!(self.config.footnote_style, FootnoteStyle::Attached)
+                    && !self.current_inline_footnotes.is_empty()
+                {
+                    self.finalize_inline_footnotes(true, false)?;
+                }
             }
             TagEnd::TableHead => {
                 if let Some(ref mut table) = self.table_state {

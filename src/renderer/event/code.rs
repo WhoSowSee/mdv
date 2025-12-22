@@ -1,10 +1,12 @@
 use super::{
     CapturedReferenceBlock, CodeBlockStyle, CodeWrapIndent, CowStr, EventRenderer, HighlightLines,
-    LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, WrapMode,
-    as_24_bit_terminal_escaped, detect_source_code,
+    LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, ThemeElement, WrapMode,
+    as_24_bit_terminal_escaped, create_style, detect_source_code,
 };
 use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use syntect::parsing::SyntaxReference;
 use syntect::util::LinesWithEndings;
 
@@ -31,6 +33,8 @@ impl<'a> EventRenderer<'a> {
         // We color only foreground (no background) to keep width calculations stable.
         let mut style = crate::terminal::AnsiStyle::new();
         style = style.fg(self.theme.code.clone().into());
+
+        self.register_footnotes_in_text(&code);
 
         let raw_code = format!("`{}`", code);
 
@@ -119,6 +123,7 @@ impl<'a> EventRenderer<'a> {
         self.in_code_block = false;
 
         let raw_code = std::mem::take(&mut self.code_block_content);
+        self.register_footnotes_in_text(&raw_code);
 
         let is_empty = raw_code.trim().is_empty();
         if is_empty && !self.config.show_empty_elements {
@@ -288,7 +293,8 @@ impl<'a> EventRenderer<'a> {
             for segment in segments {
                 self.push_indent_for_line_start();
                 self.output.push_str(&prefix);
-                self.output.push_str(&segment.text);
+                let decorated = self.highlight_footnote_markers_in_ansi(&segment.text);
+                self.output.push_str(&decorated);
                 self.output.push('\n');
             }
         }
@@ -474,7 +480,8 @@ impl<'a> EventRenderer<'a> {
 
         for part in rendered_lines {
             self.push_indent_for_line_start();
-            let content_line = self.render_pretty_content_line(text_width, &part);
+            let decorated = self.highlight_footnote_markers_in_ansi(&part);
+            let content_line = self.render_pretty_content_line(text_width, &decorated);
             self.output.push_str(&content_line);
             self.output.push('\n');
         }
@@ -682,6 +689,73 @@ impl<'a> EventRenderer<'a> {
         Ok(result)
     }
 
+    fn highlight_footnote_markers_in_ansi(&self, line: &str) -> String {
+        if self.config.no_colors {
+            return line.to_string();
+        }
+
+        static REGEX: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"\[\^([^\]\s][^\]]*)\]").expect("valid footnote regex"));
+
+        let clean = strip_ansi(line);
+        if !REGEX.is_match(&clean) {
+            return line.to_string();
+        }
+
+        // Build mapping from visible char index to byte range and last SGR sequence.
+        let mut mapping: Vec<(usize, usize, Option<String>)> = Vec::new();
+        let mut current_sgr: Option<String> = None;
+        let bytes = line.as_bytes();
+        let mut i = 0usize;
+        while i < line.len() {
+            if bytes[i] == 0x1b && i + 1 < bytes.len() && bytes[i + 1] == b'[' {
+                if let Some(rel) = line[i + 2..].find('m') {
+                    let end = i + 2 + rel;
+                    current_sgr = Some(line[i..=end].to_string());
+                    i = end + 1;
+                    continue;
+                }
+            }
+
+            let ch = line[i..].chars().next().unwrap_or('\0');
+            let start = i;
+            i += ch.len_utf8();
+            mapping.push((start, i, current_sgr.clone()));
+        }
+
+        let style = create_style(self.theme, ThemeElement::Link);
+        let mut result = String::new();
+        let mut prev_end = 0usize;
+
+        for mat in REGEX.find_iter(&clean) {
+            let start_v = mat.start();
+            let end_v = mat.end();
+
+            if start_v >= mapping.len() || end_v == 0 || end_v - 1 >= mapping.len() {
+                continue;
+            }
+
+            let start_byte = mapping[start_v].0;
+            let end_byte = mapping[end_v - 1].1;
+            let restore = mapping[start_v].2.clone();
+
+            // Append text before the marker
+            result.push_str(&line[prev_end..start_byte]);
+
+            let marker = &line[start_byte..end_byte];
+            let mut styled = style.apply(marker, self.config.no_colors);
+            if let Some(sgr) = restore {
+                styled.push_str(&sgr);
+            }
+            result.push_str(&styled);
+
+            prev_end = end_byte;
+        }
+
+        result.push_str(&line[prev_end..]);
+        result
+    }
+
     fn should_render_code_block_as_plaintext(&self, language_hint: Option<&str>) -> bool {
         if self.plaintext_code_block_depth > 0 {
             return false;
@@ -783,22 +857,18 @@ impl<'a> EventRenderer<'a> {
 
     fn append_captured_reference_blocks(&mut self, blocks: Vec<CapturedReferenceBlock>) {
         if blocks.is_empty() {
-            self.ensure_contextual_blank_line();
             return;
         }
 
         for block in blocks {
-            if self.output.ends_with('\n') {
-                self.output.push('\n');
-            } else {
+            self.trim_trailing_blank_lines();
+            if !self.output.is_empty() {
                 self.output.push('\n');
                 self.output.push('\n');
             }
 
             self.write_captured_reference_block(block);
         }
-
-        self.ensure_contextual_blank_line();
     }
 
     fn write_captured_reference_block(&mut self, block: CapturedReferenceBlock) {
@@ -811,10 +881,11 @@ impl<'a> EventRenderer<'a> {
         }
 
         if block.add_trailing_newline {
-            self.output.push('\n');
-            if block.in_list {
+            self.trim_trailing_blank_lines();
+            if !self.output.ends_with('\n') {
                 self.output.push('\n');
             }
+            self.output.push('\n');
         }
     }
 

@@ -93,6 +93,8 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_footnote_reference(&mut self, name: CowStr) -> Result<()> {
+        self.register_footnote_reference(name.as_ref());
+
         let style = create_style(self.theme, ThemeElement::Link);
         let footnote = style.apply(&format!("[^{}]", name), self.config.no_colors);
         self.output.push_str(&footnote);

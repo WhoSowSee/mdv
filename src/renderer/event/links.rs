@@ -601,7 +601,6 @@ impl<'a> EventRenderer<'a> {
             self.captured_reference_blocks.push(CapturedReferenceBlock {
                 lines: captured_lines,
                 add_trailing_newline,
-                in_list,
             });
 
             self.paragraph_links.clear();

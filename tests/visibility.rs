@@ -1,4 +1,9 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
+
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -8,7 +13,7 @@ fn test_show_empty_elements_flag() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "> \n\n- \n\n```\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--no-colors")
         .arg("--style-code-block")
         .arg("simple")
@@ -26,7 +31,7 @@ fn test_show_empty_elements_flag() {
         stdout
     );
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--no-colors")
         .arg("--style-code-block")
         .arg("simple")
@@ -67,14 +72,14 @@ fn test_empty_table_respects_show_empty_elements_flag() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "| |\n|-|\n| |\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--no-colors").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("╭").not())
         .stdout(predicate::str::contains("╞").not());
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--no-colors")
         .arg("--show-empty-elements")
         .arg(temp_file.path());
@@ -89,8 +94,7 @@ fn test_empty_headings_respect_show_empty_elements_flag() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "#\n\n##\n").unwrap();
 
-    let output_without_flag = Command::cargo_bin("mdv")
-        .unwrap()
+    let output_without_flag = mdv_cmd()
         .arg("--no-colors")
         .arg(temp_file.path())
         .output()
@@ -107,8 +111,7 @@ fn test_empty_headings_respect_show_empty_elements_flag() {
         stdout_without_flag
     );
 
-    let output_with_flag = Command::cargo_bin("mdv")
-        .unwrap()
+    let output_with_flag = mdv_cmd()
         .arg("--no-colors")
         .arg("--show-empty-elements")
         .arg(temp_file.path())
@@ -138,8 +141,7 @@ fn test_empty_heading_with_content_shows_placeholder_without_flag() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "#\n\nParagraph\n").unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("--no-colors")
         .arg(temp_file.path())
         .output()
@@ -168,8 +170,7 @@ fn test_empty_subheading_with_list_content_shows_placeholder() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "##\n- item\n").unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("--no-colors")
         .arg(temp_file.path())
         .output()
@@ -192,3 +193,7 @@ fn test_empty_subheading_with_list_content_shows_placeholder() {
         stdout
     );
 }
+
+
+
+

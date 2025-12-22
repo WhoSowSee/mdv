@@ -1,4 +1,8 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
 use std::fs;
 use tempfile::NamedTempFile;
 
@@ -10,7 +14,7 @@ fn capture_indent_spaces(mode: Option<&str>) -> (usize, usize) {
     )
     .expect("write markdown");
 
-    let mut cmd = Command::cargo_bin("mdv").expect("mdv binary");
+    let mut cmd = mdv_cmd();
     cmd.arg("-A")
         .arg("--style-code-block")
         .arg("simple")
@@ -86,3 +90,6 @@ fn code_wrap_indent_none_preserves_legacy_alignment() {
         "expected continuation to start immediately after border"
     );
 }
+
+
+

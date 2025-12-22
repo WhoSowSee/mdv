@@ -151,6 +151,16 @@ pub struct Cli {
     )]
     pub link_truncation: Option<LinkTruncationStyle>,
 
+    /// Configure footnote rendering style
+    #[arg(
+        short = 'o',
+        long = "footnote-style",
+        value_enum,
+        value_name = "STYLE",
+        default_value = "endnotes"
+    )]
+    pub footnote_style: Option<FootnoteStyle>,
+
     /// Set heading layout
     #[arg(
         short = 'd',
@@ -211,6 +221,23 @@ pub enum LinkTruncationStyle {
     #[value(name = "none")]
     #[serde(alias = "none")]
     None,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FootnoteStyle {
+    #[value(
+        name = "endnotes",
+        help = "Collect all footnotes at the end of the document"
+    )]
+    #[serde(alias = "endnotes")]
+    Endnotes,
+    #[value(
+        name = "attached",
+        help = "Render footnotes immediately after the block that references them"
+    )]
+    #[serde(alias = "attached")]
+    Attached,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]

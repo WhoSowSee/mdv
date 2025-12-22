@@ -1,4 +1,8 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -12,7 +16,7 @@ fn test_code_highlighting() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg(temp_file.path());
     cmd.assert()
         .success()
@@ -24,7 +28,7 @@ fn test_no_code_guessing_disables_detection_for_unknown_language() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```dasdasdas\nfn main() {}\n```").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--no-code-guessing")
         .arg("--style-code-block")
         .arg("simple")
@@ -45,7 +49,7 @@ fn test_code_language_simple_style_named_block() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("simple")
         .arg("-A")
@@ -66,7 +70,7 @@ fn test_no_code_language_flag_hides_label() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--no-code-language")
         .arg("--style-code-block")
         .arg("simple")
@@ -84,7 +88,7 @@ fn test_code_language_simple_style_plain_block() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```\nplain text output\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("simple")
         .arg("-A")
@@ -94,3 +98,6 @@ fn test_code_language_simple_style_plain_block() {
         .success()
         .stdout(predicate::str::contains("│ Text\n│ \n│ plain text output"));
 }
+
+
+

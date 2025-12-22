@@ -13,11 +13,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     /// Apply formatting stack plus optional background highlight (==text==)
-    pub(super) fn apply_formatting_with_highlight(
-        &self,
-        text: &str,
-        highlighted: bool,
-    ) -> String {
+    pub(super) fn apply_formatting_with_highlight(&self, text: &str, highlighted: bool) -> String {
         if self.formatting_stack.is_empty() && !highlighted {
             return text.to_string();
         }
@@ -123,15 +119,26 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
+        let prefix = self.current_line_prefix();
+
+        if self.has_trailing_blank_line() {
+            if self.trailing_blank_line_matches(&prefix) {
+                return;
+            }
+            self.trim_trailing_blank_lines();
+            if !self.output.ends_with('\n') {
+                self.output.push('\n');
+            }
+            self.output.push_str(&prefix);
+            self.output.push('\n');
+            return;
+        }
+
         if !self.output.ends_with('\n') {
             self.output.push('\n');
         }
-
-        let prefix = self.current_line_prefix();
-        if !self.trailing_blank_line_matches(&prefix) {
-            self.output.push_str(&prefix);
-            self.output.push('\n');
-        }
+        self.output.push_str(&prefix);
+        self.output.push('\n');
     }
 
     pub(super) fn has_trailing_blank_line(&self) -> bool {

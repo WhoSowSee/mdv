@@ -1,4 +1,8 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -12,8 +16,7 @@ fn test_blockquote_code_block_preserves_prefix() {
     )
     .unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("--style-code-block")
         .arg("simple")
         .arg("-A")
@@ -82,8 +85,7 @@ fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "> ```markdown\n> > Nested reminder\n> ```\n").unwrap();
 
-    let output = Command::cargo_bin("mdv")
-        .unwrap()
+    let output = mdv_cmd()
         .arg("--style-code-block")
         .arg("simple")
         .arg("-A")
@@ -131,7 +133,7 @@ fn test_pretty_style_consecutive_code_blocks_in_blockquote_have_single_blank_lin
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-A")
@@ -142,3 +144,7 @@ fn test_pretty_style_consecutive_code_blocks_in_blockquote_have_single_blank_lin
         .stdout(predicate::str::contains("\n│ \n│ ╭"))
         .stdout(predicate::str::contains("\n│ \n│ \n│ ╭").not());
 }
+
+
+
+

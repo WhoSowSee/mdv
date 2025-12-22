@@ -1,4 +1,8 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -12,7 +16,7 @@ fn test_pretty_style_consecutive_code_blocks_have_single_blank_line() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-A")
@@ -29,7 +33,7 @@ fn test_code_block_followed_by_heading_has_single_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```python\nprint(\"hi\")\n```\n\n# Heading\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-A")
@@ -58,7 +62,7 @@ fn test_code_block_followed_by_rule_has_single_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```python\nprint(\"hi\")\n```\n\n---\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-A")
@@ -81,3 +85,6 @@ fn test_code_block_followed_by_rule_has_single_blank_line() {
         normalized
     );
 }
+
+
+

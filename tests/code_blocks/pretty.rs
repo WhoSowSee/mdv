@@ -1,4 +1,8 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
 use mdv::utils::display_width;
 use predicates::prelude::*;
 use std::fs;
@@ -9,7 +13,7 @@ fn test_code_language_pretty_style_named_block() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```python\nprint(\"hello\")\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-A")
@@ -84,7 +88,7 @@ fn test_default_code_block_style_is_pretty() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```rust\nfn demo() {}\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-A").arg(temp_file.path());
 
     cmd.assert()
@@ -99,7 +103,7 @@ fn test_pretty_style_empty_code_block_has_right_padding() {
     // Empty fenced block; language shown to match the reported case
     fs::write(&temp_file, "# T\n\n```\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("--show-empty-elements")
@@ -127,7 +131,7 @@ fn test_pretty_style_empty_block_falls_back_when_too_narrow() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```text\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("--show-empty-elements")
@@ -151,7 +155,7 @@ fn test_simple_language_label_wraps_under_char_width() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```elixir\nIO.puts(\"Hello\")\n```\n").unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("--wrap")
@@ -177,3 +181,6 @@ fn test_simple_language_label_wraps_under_char_width() {
         }
     }
 }
+
+
+

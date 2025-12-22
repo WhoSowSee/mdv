@@ -1,4 +1,9 @@
 use assert_cmd::Command;
+
+fn mdv_cmd() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
+}
+
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -12,7 +17,7 @@ fn test_table_rendering() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg(temp_file.path());
     cmd.assert()
         .success()
@@ -25,28 +30,28 @@ fn test_link_styles() {
     fs::write(&temp_file, "# Link Test\n\n[Example](https://example.com)").unwrap();
 
     // Test inline table style (default)
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-u").arg("it").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Link Test"));
 
     // Test document-level table style
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-u").arg("et").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Link Test"));
 
     // Test inline style
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-u").arg("i").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Link Test"));
 
     // Test hide style
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-u").arg("h").arg(temp_file.path());
     cmd.assert()
         .success()
@@ -62,7 +67,7 @@ fn test_inline_table_link_style_inside_text_code_block_pretty() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("pretty")
         .arg("-u")
@@ -94,7 +99,7 @@ fn test_inline_table_link_style_inside_text_code_block_simple() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("--style-code-block")
         .arg("simple")
         .arg("-u")
@@ -126,7 +131,7 @@ fn test_end_table_link_style_collects_references_at_document_end() {
     )
     .unwrap();
 
-    let mut cmd = Command::cargo_bin("mdv").unwrap();
+    let mut cmd = mdv_cmd();
     cmd.arg("-u")
         .arg("et")
         .arg("--no-colors")
@@ -173,3 +178,8 @@ fn test_end_table_link_style_collects_references_at_document_end() {
         tail
     );
 }
+
+
+
+
+

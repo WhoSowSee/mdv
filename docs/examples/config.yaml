@@ -29,6 +29,9 @@ reverse: false             # Render document starting from the end while preserv
 link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
 link_truncation: "wrap"    # Options: "wrap" | "cut" | "none"
 
+# Footnotes
+footnote_style: "endnotes" # Options: "endnotes" | "attached"
+
 # Content filtering
 from_text: null            # Render starting from the first line that contains this text
 

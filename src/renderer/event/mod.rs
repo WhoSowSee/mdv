@@ -1,5 +1,6 @@
 mod code;
 mod core;
+mod footnotes;
 mod formatting;
 mod headings;
 mod images;
@@ -12,8 +13,11 @@ use crossterm::style::Color as CrosstermColor;
 
 pub(super) use core::TableState;
 pub(crate) use core::{CapturedReferenceBlock, EventRenderer};
+pub(super) use footnotes::FootnoteDefinition;
 
-pub(super) use crate::cli::{CodeBlockStyle, CodeWrapIndent, LinkStyle, LinkTruncationStyle};
+pub(super) use crate::cli::{
+    CodeBlockStyle, CodeWrapIndent, FootnoteStyle, LinkStyle, LinkTruncationStyle,
+};
 pub(super) use crate::config::Config;
 pub(super) use crate::error::MdvError;
 pub(super) use crate::markdown::{MarkdownProcessor, detect_source_code, extract_code_language};

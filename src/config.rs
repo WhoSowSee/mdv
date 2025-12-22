@@ -1,6 +1,6 @@
 use crate::cli::{
-    Cli, CodeBlockStyle, CodeWrapIndent, HeadingLayout, LinkStyle, LinkTruncationStyle,
-    TableWrapMode, TextWrapMode,
+    Cli, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, HeadingLayout, LinkStyle,
+    LinkTruncationStyle, TableWrapMode, TextWrapMode,
 };
 use crate::error::MdvError;
 use anyhow::Result;
@@ -50,6 +50,7 @@ pub struct Config {
     // Link handling
     pub link_style: LinkStyle,
     pub link_truncation: LinkTruncationStyle,
+    pub footnote_style: FootnoteStyle,
 
     // Content filtering
     pub from_text: Option<String>,
@@ -83,6 +84,7 @@ impl Default for Config {
             custom_code_theme: None,
             link_style: LinkStyle::Clickable,
             link_truncation: LinkTruncationStyle::Wrap,
+            footnote_style: FootnoteStyle::Endnotes,
             from_text: None,
             config_file: None,
         }
@@ -167,6 +169,12 @@ impl Config {
         if let Some(link_truncation) = cli.link_truncation.clone() {
             if arg_has_user_value(matches, "link_truncation") {
                 config.link_truncation = link_truncation;
+            }
+        }
+
+        if let Some(footnote_style) = cli.footnote_style {
+            if arg_has_user_value(matches, "footnote_style") {
+                config.footnote_style = footnote_style;
             }
         }
 
@@ -363,6 +371,10 @@ impl Config {
 
         if !matches!(other.link_truncation, LinkTruncationStyle::Wrap) {
             self.link_truncation = other.link_truncation;
+        }
+
+        if !matches!(other.footnote_style, FootnoteStyle::Endnotes) {
+            self.footnote_style = other.footnote_style;
         }
 
         if other.from_text.is_some() {

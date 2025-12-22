@@ -657,7 +657,9 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         "emphasis" => theme.emphasis = parse_color_spec(value)?,
         "strong" => theme.strong = parse_color_spec(value)?,
         "strikethrough" | "strike" | "del" => theme.strikethrough = parse_color_spec(value)?,
-        "highlight_background" | "highlight_bg" => theme.highlight_background = parse_color_spec(value)?,
+        "highlight_background" | "highlight_bg" => {
+            theme.highlight_background = parse_color_spec(value)?
+        }
         "background" | "bg" => {
             if is_none_value(value) {
                 theme.background = None;
