@@ -228,9 +228,8 @@ impl<'a> EventRenderer<'a> {
             Event::Rule => self.handle_horizontal_rule()?,
             Event::FootnoteReference(name) => self.handle_footnote_reference(name)?,
             Event::TaskListMarker(checked) => self.handle_task_list_marker(checked)?,
-            Event::InlineMath(_) | Event::DisplayMath(_) => {
-                // Handle math and inline HTML - for now just ignore
-            }
+            Event::InlineMath(math) => self.handle_inline_math(math)?,
+            Event::DisplayMath(math) => self.handle_display_math(math)?,
         }
         Ok(())
     }

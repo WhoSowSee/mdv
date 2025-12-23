@@ -2,6 +2,7 @@ pub mod cli;
 pub mod config;
 pub mod error;
 pub mod markdown;
+pub mod math;
 pub mod monitor;
 pub mod renderer;
 pub mod table;

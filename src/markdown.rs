@@ -19,6 +19,7 @@ impl MarkdownProcessor {
         options.insert(Options::ENABLE_TASKLISTS);
         options.insert(Options::ENABLE_SMART_PUNCTUATION);
         options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+        options.insert(Options::ENABLE_MATH);
 
         Self {
             config: config.clone(),

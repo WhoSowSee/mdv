@@ -5,6 +5,7 @@ mod formatting;
 mod headings;
 mod images;
 mod links;
+mod math;
 mod misc;
 mod tables;
 mod text;

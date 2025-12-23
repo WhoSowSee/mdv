@@ -3,6 +3,7 @@ use super::{
     LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, ThemeElement, WrapMode,
     as_24_bit_terminal_escaped, create_style, detect_source_code,
 };
+use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
 use once_cell::sync::Lazy;
@@ -132,6 +133,12 @@ impl<'a> EventRenderer<'a> {
         }
 
         let language_hint = self.code_block_language.clone();
+        if let Some(hint) = language_hint.as_deref() {
+            if is_math_language_hint(hint) {
+                self.code_block_language = None;
+                return self.handle_math_code_block(&raw_code, language_hint.as_deref());
+            }
+        }
         let treat_as_plaintext =
             self.should_render_code_block_as_plaintext(language_hint.as_deref());
         let (
@@ -234,7 +241,7 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    fn render_code_block_simple(
+    pub(super) fn render_code_block_simple(
         &mut self,
         highlighted: &str,
         language_label: Option<&str>,
@@ -302,7 +309,7 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    fn render_code_block_pretty(
+    pub(super) fn render_code_block_pretty(
         &mut self,
         highlighted: &str,
         language_label: Option<&str>,
