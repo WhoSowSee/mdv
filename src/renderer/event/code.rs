@@ -380,7 +380,7 @@ impl<'a> EventRenderer<'a> {
 
             for (idx, line) in highlight_lines.iter().enumerate() {
                 let raw_line = raw_code_lines.get(idx).copied();
-                let segments = self.wrap_code_line_segments(
+                let segments = self.wrap_code_line_segments_pretty(
                     line,
                     raw_line,
                     wrap_width_allowed,
@@ -411,7 +411,7 @@ impl<'a> EventRenderer<'a> {
             } else {
                 for (idx, line) in highlight_lines.iter().enumerate() {
                     let raw_line = raw_code_lines.get(idx).copied();
-                    let segments = self.wrap_code_line_segments(
+                    let segments = self.wrap_code_line_segments_pretty(
                         line,
                         raw_line,
                         wrap_width_allowed,
@@ -499,6 +499,36 @@ impl<'a> EventRenderer<'a> {
         self.output.push('\n');
 
         Ok(())
+    }
+
+    fn wrap_code_line_segments_pretty(
+        &self,
+        highlighted_line: &str,
+        raw_line: Option<&str>,
+        width: usize,
+        should_wrap: bool,
+        wrap_mode: WrapMode,
+    ) -> Vec<WrappedCodeSegment> {
+        let mut segments =
+            self.wrap_code_line_segments(highlighted_line, raw_line, width, should_wrap, wrap_mode);
+
+        if should_wrap && width > 0 && matches!(wrap_mode, WrapMode::Word) {
+            let has_overflow = segments
+                .iter()
+                .any(|segment| segment.visible_width > width);
+            if has_overflow {
+                // Fall back to character wrapping to keep the pretty frame consistent.
+                segments = self.wrap_code_line_segments(
+                    highlighted_line,
+                    raw_line,
+                    width,
+                    should_wrap,
+                    WrapMode::Character,
+                );
+            }
+        }
+
+        segments
     }
 
     fn wrap_code_line_segments(
