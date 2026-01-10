@@ -47,6 +47,9 @@ impl<'a> EventRenderer<'a> {
             }
         } else {
             // Process text with wrapping and formatting
+            if !text.trim().is_empty() {
+                self.note_paragraph_content();
+            }
             self.process_text_with_wrapping_and_formatting(&text)?;
         }
         if !self.in_code_block && !self.in_link {

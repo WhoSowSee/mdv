@@ -77,6 +77,10 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_link_end(&mut self) -> Result<()> {
+        if self.table_state.is_none() && !matches!(self.config.link_style, LinkStyle::Hide) {
+            self.note_paragraph_content();
+        }
+
         match self.config.link_style {
             LinkStyle::Clickable => {
                 // For clickable links in tables, just show underlined text instead of OSC 8 sequences

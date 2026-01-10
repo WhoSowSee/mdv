@@ -3,10 +3,18 @@ use crate::terminal::AnsiStyle;
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_html(&mut self, html: CowStr) -> Result<()> {
+        if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER {
+            self.handle_explicit_blank_line();
+            return Ok(());
+        }
         self.render_html_fragment(&html)
     }
 
     pub(super) fn handle_inline_html(&mut self, html: CowStr) -> Result<()> {
+        if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER {
+            self.handle_explicit_blank_line();
+            return Ok(());
+        }
         self.render_html_fragment(&html)
     }
 
@@ -18,6 +26,8 @@ impl<'a> EventRenderer<'a> {
         if !is_comment || self.config.hide_comments {
             return Ok(());
         }
+
+        self.note_paragraph_content();
 
         let style = create_style(self.theme, ThemeElement::Text);
         let mut followup_prefix: Option<String> = None;
@@ -70,6 +80,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_horizontal_rule(&mut self) -> Result<()> {
+        self.reset_explicit_blank_line_streak();
         let width = self.config.get_terminal_width();
         let rule = format!("◈{}◈", "─".repeat(width.saturating_sub(2)));
         let styled_rule = AnsiStyle::new()
@@ -93,6 +104,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_footnote_reference(&mut self, name: CowStr) -> Result<()> {
+        self.note_paragraph_content();
         self.register_footnote_reference(name.as_ref());
 
         let style = create_style(self.theme, ThemeElement::Link);
@@ -103,6 +115,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_task_list_marker(&mut self, checked: bool) -> Result<()> {
+        self.note_paragraph_content();
         let marker = if checked { "[✓] " } else { "[ ] " };
         let style = create_style(self.theme, ThemeElement::ListMarker);
         let styled_marker = style.apply(marker, self.config.no_colors);

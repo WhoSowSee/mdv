@@ -73,8 +73,17 @@ impl TerminalRenderer {
     }
 
     pub fn to_html(&self, events: Vec<Event<'static>>) -> Result<String> {
+        let events = events.into_iter().map(|event| match event {
+            Event::Html(html) if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER => {
+                Event::HardBreak
+            }
+            Event::InlineHtml(html) if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER => {
+                Event::HardBreak
+            }
+            other => other,
+        });
         let mut html_output = String::new();
-        pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
+        pulldown_cmark::html::push_html(&mut html_output, events);
         Ok(html_output)
     }
 }

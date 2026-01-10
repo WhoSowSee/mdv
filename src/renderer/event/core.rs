@@ -67,6 +67,10 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) heading_indent: usize,
     pub(crate) content_indent: usize,
     pub(crate) smart_level_indents: HashMap<HeadingLevel, usize>,
+    pub(crate) current_paragraph_start: Option<usize>,
+    pub(crate) current_paragraph_has_content: bool,
+    pub(crate) current_paragraph_has_leading_break: bool,
+    pub(crate) explicit_blank_line_streak: usize,
 }
 
 impl<'a> EventRenderer<'a> {
@@ -112,6 +116,10 @@ impl<'a> EventRenderer<'a> {
             heading_indent: 0,
             content_indent: 0,
             smart_level_indents: HashMap::new(),
+            current_paragraph_start: None,
+            current_paragraph_has_content: false,
+            current_paragraph_has_leading_break: false,
+            explicit_blank_line_streak: 0,
         }
     }
 
@@ -224,7 +232,18 @@ impl<'a> EventRenderer<'a> {
             Event::SoftBreak => {
                 self.output.push('\n');
             }
-            Event::HardBreak => self.output.push_str("\n\n"),
+            Event::HardBreak => {
+                if self.current_paragraph_start.is_some() && !self.current_paragraph_has_content {
+                    self.current_paragraph_has_leading_break = true;
+                    if let Some(start) = self.current_paragraph_start {
+                        if start <= self.output.len() {
+                            self.output.truncate(start);
+                        }
+                    }
+                } else {
+                    self.handle_hard_break();
+                }
+            }
             Event::Rule => self.handle_horizontal_rule()?,
             Event::FootnoteReference(name) => self.handle_footnote_reference(name)?,
             Event::TaskListMarker(checked) => self.handle_task_list_marker(checked)?,
@@ -237,6 +256,10 @@ impl<'a> EventRenderer<'a> {
     fn handle_start_tag(&mut self, tag: Tag) -> Result<()> {
         match tag {
             Tag::Paragraph => {
+                self.current_paragraph_start = Some(self.output.len());
+                self.current_paragraph_has_content = false;
+                self.current_paragraph_has_leading_break = false;
+
                 if matches!(self.config.link_style, LinkStyle::InlineTable) {
                     self.paragraph_link_counter = 0;
                     self.paragraph_links.clear();
@@ -297,6 +320,8 @@ impl<'a> EventRenderer<'a> {
                 if self.list_stack.is_empty() {
                     return Ok(());
                 }
+
+                self.reset_explicit_blank_line_streak();
 
                 let indent_level = self.list_stack.len().saturating_sub(1);
                 let marker = if let Some(list_state) = self.list_stack.last() {
@@ -397,6 +422,12 @@ impl<'a> EventRenderer<'a> {
     fn handle_end_tag(&mut self, tag_end: TagEnd) -> Result<()> {
         match tag_end {
             TagEnd::Paragraph => {
+                let paragraph_start = self.current_paragraph_start.take();
+                let paragraph_has_content = self.current_paragraph_has_content;
+                let paragraph_has_leading_break = self.current_paragraph_has_leading_break;
+                self.current_paragraph_has_content = false;
+                self.current_paragraph_has_leading_break = false;
+
                 if matches!(self.config.link_style, LinkStyle::InlineTable)
                     && !self.paragraph_links.is_empty()
                 {
@@ -409,6 +440,23 @@ impl<'a> EventRenderer<'a> {
                         && !self.suppress_footnote_output;
 
                 self.finalize_inline_footnotes(true, !self.list_stack.is_empty())?;
+
+                let has_visible_content = paragraph_has_content
+                    || paragraph_start.map_or(false, |start| {
+                        let slice = if start <= self.output.len() {
+                            &self.output[start..]
+                        } else {
+                            ""
+                        };
+                        let clean = strip_ansi(slice);
+                        clean.chars().any(|ch| !ch.is_whitespace() && ch != '│')
+                    });
+
+                if paragraph_has_leading_break && !has_visible_content {
+                    self.trim_trailing_blank_lines();
+                    self.ensure_contextual_blank_line();
+                    return Ok(());
+                }
 
                 if self.list_stack.is_empty() && !inline_footnotes_rendered {
                     self.output.push('\n');
@@ -559,5 +607,17 @@ impl<'a> EventRenderer<'a> {
             _ => {}
         }
         Ok(())
+    }
+
+    fn handle_hard_break(&mut self) {
+        if self.has_trailing_blank_line() {
+            return;
+        }
+
+        if self.output.ends_with('\n') {
+            self.output.push('\n');
+        } else {
+            self.output.push_str("\n\n");
+        }
     }
 }

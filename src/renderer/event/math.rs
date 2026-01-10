@@ -18,6 +18,8 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
+        self.note_paragraph_content();
+
         if !self.config.is_text_wrapping_enabled() {
             self.output.push_str(&styled);
             self.commit_pending_heading_placeholder_if_content();

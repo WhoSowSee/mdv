@@ -11,6 +11,8 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
+        self.note_paragraph_content();
+
         // Ensure correct indentation/prefix when an image starts a visual line.
         // Paragraph start may have added spaces, but when inside lists/quotes
         // there may be no prefix yet. If the current line contains only

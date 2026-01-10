@@ -4,6 +4,8 @@ use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser
 use std::mem;
 use std::ops::Range;
 
+pub(crate) const BLANK_LINE_MARKER: &str = "MDV_BLANK_LINE_MARKER";
+
 /// Markdown processor that parses markdown and prepares it for rendering
 pub struct MarkdownProcessor {
     config: Config,
@@ -49,6 +51,8 @@ impl MarkdownProcessor {
             processed = self.filter_from_text(&processed, from_text)?;
         }
 
+        processed = self.normalize_explicit_blank_lines(&processed);
+        processed = self.ensure_task_list_termination(&processed);
         processed = self.preprocess_blockquotes(&processed);
 
         processed = processed.replace('\t', &" ".repeat(self.config.tab_length));
@@ -139,6 +143,222 @@ impl MarkdownProcessor {
         result.join("\n")
     }
 
+    fn normalize_explicit_blank_lines(&self, content: &str) -> String {
+        let mut result = Vec::new();
+        let mut in_fence = false;
+        let mut fence_char = '\0';
+        let mut fence_len = 0usize;
+        let mut last_blank = false;
+
+        for raw_line in content.lines() {
+            let line = raw_line.trim_end_matches('\r');
+            let trimmed_start = line.trim_start();
+            let indent = line.len().saturating_sub(trimmed_start.len());
+
+            if indent <= 3 {
+                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
+                    if in_fence && marker == fence_char && count >= fence_len {
+                        in_fence = false;
+                        fence_char = '\0';
+                        fence_len = 0;
+                    } else if !in_fence {
+                        in_fence = true;
+                        fence_char = marker;
+                        fence_len = count;
+                    }
+                    result.push(line.to_string());
+                    continue;
+                }
+            }
+
+            if in_fence {
+                result.push(line.to_string());
+                last_blank = false;
+                continue;
+            }
+
+            let trimmed_end = line.trim_end();
+            let trimmed = trimmed_end.trim();
+
+            if trimmed == "\\" {
+                self.push_explicit_blank_line_marker(&mut result, &mut last_blank);
+                continue;
+            }
+
+            if trimmed_end.ends_with('\\') && trimmed_end.len() > 1 {
+                let line_without_backslash = trimmed_end[..trimmed_end.len() - 1].to_string();
+                if !line_without_backslash.trim().is_empty() {
+                    result.push(line_without_backslash);
+                    last_blank = false;
+                }
+                self.push_explicit_blank_line_marker(&mut result, &mut last_blank);
+                continue;
+            }
+
+            if trimmed.is_empty() {
+                result.push(String::new());
+                last_blank = true;
+                continue;
+            }
+
+            result.push(line.to_string());
+            last_blank = false;
+        }
+
+        result.join("\n")
+    }
+
+    fn push_explicit_blank_line_marker(
+        &self,
+        result: &mut Vec<String>,
+        last_blank: &mut bool,
+    ) {
+        if !*last_blank {
+            result.push(String::new());
+        }
+        result.push(BLANK_LINE_MARKER.to_string());
+        result.push(String::new());
+        *last_blank = true;
+    }
+
+    fn detect_fence_marker(line: &str) -> Option<(char, usize)> {
+        let mut chars = line.chars();
+        let first = chars.next()?;
+        if first != '`' && first != '~' {
+            return None;
+        }
+
+        let count = 1 + chars.take_while(|ch| *ch == first).count();
+        if count >= 3 {
+            Some((first, count))
+        } else {
+            None
+        }
+    }
+
+    fn ensure_task_list_termination(&self, content: &str) -> String {
+        let lines: Vec<&str> = content.lines().collect();
+        let mut result = Vec::with_capacity(lines.len().saturating_add(4));
+        let mut in_fence = false;
+        let mut fence_char = '\0';
+        let mut fence_len = 0usize;
+
+        for (idx, line) in lines.iter().enumerate() {
+            let trimmed_start = line.trim_start();
+            let indent = line.len().saturating_sub(trimmed_start.len());
+
+            if indent <= 3 {
+                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
+                    if in_fence && marker == fence_char && count >= fence_len {
+                        in_fence = false;
+                        fence_char = '\0';
+                        fence_len = 0;
+                    } else if !in_fence {
+                        in_fence = true;
+                        fence_char = marker;
+                        fence_len = count;
+                    }
+                }
+            }
+
+            result.push((*line).to_string());
+
+            if in_fence {
+                continue;
+            }
+
+            if indent > 0 || !Self::is_task_list_item(trimmed_start) {
+                continue;
+            }
+
+            let mut next_idx = idx + 1;
+            while next_idx < lines.len() && lines[next_idx].trim().is_empty() {
+                next_idx += 1;
+            }
+
+            if next_idx >= lines.len() {
+                continue;
+            }
+
+            let next_line = lines[next_idx];
+            if next_line.trim() == BLANK_LINE_MARKER {
+                continue;
+            }
+
+            let next_trimmed = next_line.trim_start();
+            let next_indent = next_line.len().saturating_sub(next_trimmed.len());
+            if next_indent == 0 && !Self::is_list_item(next_trimmed) {
+                if !matches!(result.last(), Some(last) if last.is_empty()) {
+                    result.push(String::new());
+                }
+            }
+        }
+
+        result.join("\n")
+    }
+
+    fn is_task_list_item(line: &str) -> bool {
+        let mut chars = line.chars();
+        let first = match chars.next() {
+            Some(ch) => ch,
+            None => return false,
+        };
+
+        if !matches!(first, '-' | '+' | '*') {
+            return false;
+        }
+
+        if chars.next() != Some(' ') {
+            return false;
+        }
+
+        if chars.next() != Some('[') {
+            return false;
+        }
+
+        let marker = match chars.next() {
+            Some(ch) => ch,
+            None => return false,
+        };
+
+        if !matches!(marker, ' ' | 'x' | 'X' | '/' | '-' | '?') {
+            return false;
+        }
+
+        if chars.next() != Some(']') {
+            return false;
+        }
+
+        matches!(chars.next(), Some(' ') | Some('\t'))
+    }
+
+    fn is_list_item(line: &str) -> bool {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("- ")
+            || trimmed.starts_with("+ ")
+            || trimmed.starts_with("* ")
+        {
+            return true;
+        }
+
+        let mut chars = trimmed.chars().peekable();
+        let mut saw_digit = false;
+        while let Some(ch) = chars.peek().copied() {
+            if ch.is_ascii_digit() {
+                saw_digit = true;
+                chars.next();
+            } else {
+                break;
+            }
+        }
+
+        if !saw_digit || chars.next() != Some('.') {
+            return false;
+        }
+
+        matches!(chars.next(), Some(' ') | Some('\t'))
+    }
+
     fn postprocess_events(
         &self,
         content: &str,
@@ -147,7 +367,21 @@ impl MarkdownProcessor {
         let mut processed = Vec::with_capacity(events.len());
         let mut heading_stack: Vec<bool> = Vec::new();
 
-        for (event, range) in events {
+        let mut idx = 0usize;
+        while idx < events.len() {
+            if let Some((Event::Start(Tag::Paragraph), _)) = events.get(idx) {
+                if let (Some((Event::Text(text), _)), Some((Event::End(TagEnd::Paragraph), _))) =
+                    (events.get(idx + 1), events.get(idx + 2))
+                {
+                    if text.as_ref().trim() == BLANK_LINE_MARKER {
+                        processed.push(Event::Html(BLANK_LINE_MARKER.into()));
+                        idx += 3;
+                        continue;
+                    }
+                }
+            }
+
+            let (event, range) = &events[idx];
             match event {
                 Event::Start(tag @ Tag::Heading { .. }) => {
                     let is_setext = matches!(
@@ -156,31 +390,32 @@ impl MarkdownProcessor {
                             level: HeadingLevel::H2,
                             ..
                         }
-                    ) && self.is_setext_heading_segment(content, &range);
+                    ) && self.is_setext_heading_segment(content, range);
                     heading_stack.push(is_setext);
-                    processed.push(Event::Start(self.convert_tag_to_static(tag)));
+                    processed.push(Event::Start(self.convert_tag_to_static(tag.clone())));
                 }
                 Event::Start(tag) => {
-                    processed.push(Event::Start(self.convert_tag_to_static(tag)));
+                    processed.push(Event::Start(self.convert_tag_to_static(tag.clone())));
                 }
                 Event::End(tag_end @ TagEnd::Heading(_)) => {
-                    processed.push(Event::End(tag_end));
+                    processed.push(Event::End(tag_end.clone()));
                     if heading_stack.pop().unwrap_or(false) {
                         processed.push(Event::Rule);
                     }
                 }
                 Event::End(tag_end) => {
-                    processed.push(Event::End(tag_end));
+                    processed.push(Event::End(tag_end.clone()));
                 }
                 Event::Text(text) => {
-                    let processed_text = self.process_text(&text);
+                    let processed_text = self.process_text(text);
                     processed.push(Event::Text(processed_text.to_string().into()));
                 }
                 Event::Code(code) => {
                     processed.push(Event::Code(code.to_string().into()));
                 }
-                other => processed.push(self.convert_to_static(other)),
+                other => processed.push(self.convert_to_static(other.clone())),
             }
+            idx += 1;
         }
 
         Ok(processed)

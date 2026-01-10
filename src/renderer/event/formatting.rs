@@ -4,6 +4,40 @@ use crate::utils::strip_ansi;
 use crossterm::style::Color as CrosstermColor;
 
 impl<'a> EventRenderer<'a> {
+    pub(super) fn reset_explicit_blank_line_streak(&mut self) {
+        self.explicit_blank_line_streak = 0;
+    }
+
+    pub(super) fn handle_explicit_blank_line(&mut self) {
+        if self.has_trailing_blank_line() {
+            if self.explicit_blank_line_streak > 0 {
+                self.output.push('\n');
+            }
+        } else if self.output.ends_with('\n') {
+            self.output.push('\n');
+        } else {
+            self.output.push_str("\n\n");
+        }
+        self.explicit_blank_line_streak = self.explicit_blank_line_streak.saturating_add(1);
+    }
+
+    pub(super) fn note_paragraph_content(&mut self) {
+        if self.table_state.is_some() || self.current_paragraph_start.is_none() {
+            return;
+        }
+
+        self.reset_explicit_blank_line_streak();
+
+        if !self.current_paragraph_has_content {
+            if self.current_paragraph_has_leading_break {
+                self.trim_trailing_blank_lines();
+                self.ensure_contextual_blank_line();
+                self.current_paragraph_has_leading_break = false;
+            }
+            self.current_paragraph_has_content = true;
+        }
+    }
+
     /// Apply current formatting stack to text
     ///
     /// Ensures consistent precedence when multiple styles are active at once

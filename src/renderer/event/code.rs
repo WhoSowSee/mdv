@@ -38,6 +38,7 @@ impl<'a> EventRenderer<'a> {
         self.register_footnotes_in_text(&code);
 
         let raw_code = format!("`{}`", code);
+        self.note_paragraph_content();
 
         // Table cells: let the table renderer decide about wrapping; just push styled.
         if let Some(ref mut table) = self.table_state {
@@ -122,6 +123,8 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn handle_code_block_end(&mut self) -> Result<()> {
         self.in_code_block = false;
+
+        self.reset_explicit_blank_line_streak();
 
         let raw_code = std::mem::take(&mut self.code_block_content);
         self.register_footnotes_in_text(&raw_code);
