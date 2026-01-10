@@ -71,6 +71,8 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) current_paragraph_has_content: bool,
     pub(crate) current_paragraph_has_leading_break: bool,
     pub(crate) explicit_blank_line_streak: usize,
+    pub(crate) pending_task_marker: bool,
+    pub(crate) pending_task_marker_buffer: String,
 }
 
 impl<'a> EventRenderer<'a> {
@@ -120,6 +122,8 @@ impl<'a> EventRenderer<'a> {
             current_paragraph_has_content: false,
             current_paragraph_has_leading_break: false,
             explicit_blank_line_streak: 0,
+            pending_task_marker: false,
+            pending_task_marker_buffer: String::new(),
         }
     }
 
@@ -367,6 +371,8 @@ impl<'a> EventRenderer<'a> {
                         list_state.counter += 1;
                     }
                 }
+                self.pending_task_marker = true;
+                self.pending_task_marker_buffer.clear();
             }
             Tag::Table(alignments) => {
                 if matches!(self.config.link_style, LinkStyle::InlineTable) {
@@ -560,6 +566,8 @@ impl<'a> EventRenderer<'a> {
                 } else if !self.output.ends_with('\n') {
                     self.output.push('\n');
                 }
+                self.pending_task_marker = false;
+                self.pending_task_marker_buffer.clear();
             }
             TagEnd::Table => {
                 self.handle_table_end()?;

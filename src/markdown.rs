@@ -321,7 +321,7 @@ impl MarkdownProcessor {
             None => return false,
         };
 
-        if !matches!(marker, ' ' | 'x' | 'X' | '/' | '-' | '?') {
+        if !matches!(marker, ' ' | 'x' | 'X' | '/' | '-' | '?' | '\\' | '|') {
             return false;
         }
 

@@ -1,4 +1,4 @@
-use super::{CowStr, EventRenderer, LinkStyle, Result, ThemeElement};
+use super::{CowStr, EventRenderer, LinkStyle, Result, ThemeElement, create_style};
 
 #[derive(Debug, Clone)]
 struct HighlightSegment {
@@ -9,7 +9,10 @@ struct HighlightSegment {
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_text(&mut self, text: CowStr) -> Result<()> {
         if self.in_code_block {
+            self.pending_task_marker = false;
+            self.pending_task_marker_buffer.clear();
             self.code_block_content.push_str(&text);
+            return Ok(());
         } else if self.in_link {
             match self.config.link_style {
                 LinkStyle::Clickable => {
@@ -45,17 +48,87 @@ impl<'a> EventRenderer<'a> {
                     // This shouldn't happen since we don't set in_link for Hide mode anymore
                 }
             }
+            self.pending_task_marker = false;
+            self.pending_task_marker_buffer.clear();
+            return Ok(());
+        }
+
+        let raw_text = text.as_ref();
+        if self.pending_task_marker && !self.list_stack.is_empty() {
+            if self.pending_task_marker_buffer.is_empty() && !raw_text.starts_with('[') {
+                self.pending_task_marker = false;
+                self.pending_task_marker_buffer.clear();
+            } else {
+                self.pending_task_marker_buffer.push_str(raw_text);
+                if self.pending_task_marker_buffer.chars().count() < 3 {
+                    return Ok(());
+                }
+
+                self.pending_task_marker = false;
+                let buffer = std::mem::take(&mut self.pending_task_marker_buffer);
+                if let Some((marker, remainder)) = self.split_custom_task_marker_prefix(&buffer) {
+                    self.note_paragraph_content();
+                    let style = create_style(self.theme, ThemeElement::ListMarker);
+                    let styled_marker = style.apply(marker, self.config.no_colors);
+                    self.output.push_str(&styled_marker);
+                    if !remainder.is_empty() {
+                        self.process_text_with_wrapping_and_formatting(remainder)?;
+                    }
+                } else {
+                    // Process text with wrapping and formatting
+                    if !buffer.trim().is_empty() {
+                        self.note_paragraph_content();
+                    }
+                    self.process_text_with_wrapping_and_formatting(&buffer)?;
+                }
+                self.commit_pending_heading_placeholder_if_content();
+                return Ok(());
+            }
         } else {
             // Process text with wrapping and formatting
-            if !text.trim().is_empty() {
+            if !raw_text.trim().is_empty() {
                 self.note_paragraph_content();
             }
-            self.process_text_with_wrapping_and_formatting(&text)?;
+            self.process_text_with_wrapping_and_formatting(raw_text)?;
         }
-        if !self.in_code_block && !self.in_link {
-            self.commit_pending_heading_placeholder_if_content();
-        }
+        self.commit_pending_heading_placeholder_if_content();
         Ok(())
+    }
+
+    fn split_custom_task_marker_prefix<'b>(&self, text: &'b str) -> Option<(&'b str, &'b str)> {
+        let bytes = text.as_bytes();
+        if bytes.len() < 3 || bytes[0] != b'[' || bytes[2] != b']' {
+            return None;
+        }
+
+        if !Self::is_supported_task_marker(bytes[1]) {
+            return None;
+        }
+
+        let mut marker_end = 3;
+        if bytes.len() == marker_end {
+            return Some((&text[..marker_end], &text[marker_end..]));
+        }
+
+        while marker_end < bytes.len() {
+            match bytes[marker_end] {
+                b' ' | b'\t' => marker_end += 1,
+                _ => break,
+            }
+        }
+
+        if marker_end == 3 {
+            return None;
+        }
+
+        Some((&text[..marker_end], &text[marker_end..]))
+    }
+
+    fn is_supported_task_marker(marker: u8) -> bool {
+        matches!(
+            marker,
+            b' ' | b'x' | b'X' | b'/' | b'-' | b'?' | b'\\' | b'|'
+        )
     }
 
     /// Process text with wrapping and formatting, handling styled text properly

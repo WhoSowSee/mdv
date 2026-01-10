@@ -116,6 +116,8 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn handle_task_list_marker(&mut self, checked: bool) -> Result<()> {
         self.note_paragraph_content();
+        self.pending_task_marker = false;
+        self.pending_task_marker_buffer.clear();
         let marker = if checked { "[✓] " } else { "[ ] " };
         let style = create_style(self.theme, ThemeElement::ListMarker);
         let styled_marker = style.apply(marker, self.config.no_colors);
