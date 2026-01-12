@@ -58,6 +58,7 @@ impl<'a> EventRenderer<'a> {
             if self.pending_task_marker_buffer.is_empty() && !raw_text.starts_with('[') {
                 self.pending_task_marker = false;
                 self.pending_task_marker_buffer.clear();
+                // Fall through to normal text handling when this isn't a task marker.
             } else {
                 self.pending_task_marker_buffer.push_str(raw_text);
                 if self.pending_task_marker_buffer.chars().count() < 3 {
@@ -84,13 +85,13 @@ impl<'a> EventRenderer<'a> {
                 self.commit_pending_heading_placeholder_if_content();
                 return Ok(());
             }
-        } else {
-            // Process text with wrapping and formatting
-            if !raw_text.trim().is_empty() {
-                self.note_paragraph_content();
-            }
-            self.process_text_with_wrapping_and_formatting(raw_text)?;
         }
+
+        // Process text with wrapping and formatting
+        if !raw_text.trim().is_empty() {
+            self.note_paragraph_content();
+        }
+        self.process_text_with_wrapping_and_formatting(raw_text)?;
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }
