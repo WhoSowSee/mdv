@@ -144,7 +144,3 @@ fn test_pretty_style_consecutive_code_blocks_in_blockquote_have_single_blank_lin
         .stdout(predicate::str::contains("\n│ \n│ ╭"))
         .stdout(predicate::str::contains("\n│ \n│ \n│ ╭").not());
 }
-
-
-
-

@@ -85,6 +85,3 @@ fn test_code_block_followed_by_rule_has_single_blank_line() {
         normalized
     );
 }
-
-
-

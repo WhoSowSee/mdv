@@ -1,6 +1,6 @@
 use crate::config::Config;
 use anyhow::Result;
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
 use std::mem;
 use std::ops::Range;
 
@@ -53,6 +53,8 @@ impl MarkdownProcessor {
 
         processed = self.normalize_explicit_blank_lines(&processed);
         processed = self.ensure_task_list_termination(&processed);
+        processed = self.convert_admonitions_to_callouts(&processed);
+        processed = self.separate_callout_markers_from_setext(&processed);
         processed = self.preprocess_blockquotes(&processed);
 
         processed = processed.replace('\t', &" ".repeat(self.config.tab_length));
@@ -98,20 +100,8 @@ impl MarkdownProcessor {
         let mut last_level = 0;
 
         for line in lines {
-            let trimmed = line.trim_start();
-
-            // Count the blockquote level (number of '>' characters)
-            let mut level = 0;
-            let mut chars = trimmed.chars().peekable();
-
-            while let Some(&'>') = chars.peek() {
-                chars.next();
-                level += 1;
-                // Skip optional space after '>'
-                if let Some(&' ') = chars.peek() {
-                    chars.next();
-                }
-            }
+            let (level, rest) = Self::split_blockquote_prefix(line);
+            let rest_trimmed = rest.trim();
 
             // If this line has a blockquote but at a lower level than the previous,
             // add empty lines to properly close the higher levels
@@ -123,7 +113,7 @@ impl MarkdownProcessor {
             }
             // If this line has no blockquote but the previous line was a blockquote,
             // and this line is not empty, add an empty line to close the blockquote
-            else if level == 0 && last_level > 0 && !trimmed.is_empty() {
+            else if level == 0 && last_level > 0 && !rest_trimmed.is_empty() {
                 // Add empty lines to close all blockquote levels
                 for _ in 0..last_level {
                     result.push(String::new());
@@ -134,13 +124,30 @@ impl MarkdownProcessor {
 
             if level > 0 {
                 last_level = level;
-            } else if !trimmed.is_empty() {
+            } else if !rest_trimmed.is_empty() {
                 // Reset level when we encounter non-blockquote content
                 last_level = 0;
             }
         }
 
         result.join("\n")
+    }
+
+    fn split_blockquote_prefix(line: &str) -> (usize, &str) {
+        let trimmed = line.trim_start();
+        let bytes = trimmed.as_bytes();
+        let mut idx = 0usize;
+        let mut level = 0usize;
+
+        while idx < bytes.len() && bytes[idx] == b'>' {
+            level += 1;
+            idx += 1;
+            if idx < bytes.len() && bytes[idx] == b' ' {
+                idx += 1;
+            }
+        }
+
+        (level, &trimmed[idx..])
     }
 
     fn normalize_explicit_blank_lines(&self, content: &str) -> String {
@@ -208,11 +215,7 @@ impl MarkdownProcessor {
         result.join("\n")
     }
 
-    fn push_explicit_blank_line_marker(
-        &self,
-        result: &mut Vec<String>,
-        last_blank: &mut bool,
-    ) {
+    fn push_explicit_blank_line_marker(&self, result: &mut Vec<String>, last_blank: &mut bool) {
         if !*last_blank {
             result.push(String::new());
         }
@@ -297,6 +300,312 @@ impl MarkdownProcessor {
         result.join("\n")
     }
 
+    fn convert_admonitions_to_callouts(&self, content: &str) -> String {
+        enum AdmonitionState {
+            Colon { fence_len: usize, base_ws: String },
+            Bang { base_ws: String },
+        }
+
+        let lines: Vec<&str> = content.lines().collect();
+        let mut result = Vec::with_capacity(lines.len().saturating_add(4));
+        let mut in_fence = false;
+        let mut fence_char = '\0';
+        let mut fence_len = 0usize;
+        let mut admonition: Option<AdmonitionState> = None;
+
+        for raw_line in lines {
+            let line = raw_line.trim_end_matches('\r');
+            let trimmed_start = line.trim_start();
+            let indent = line.len().saturating_sub(trimmed_start.len());
+
+            if indent <= 3 {
+                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
+                    if in_fence && marker == fence_char && count >= fence_len {
+                        in_fence = false;
+                        fence_char = '\0';
+                        fence_len = 0;
+                    } else if !in_fence {
+                        in_fence = true;
+                        fence_char = marker;
+                        fence_len = count;
+                    }
+                    result.push(line.to_string());
+                    continue;
+                }
+            }
+
+            if in_fence {
+                result.push(line.to_string());
+                continue;
+            }
+
+            if let Some(state) = &admonition {
+                match state {
+                    AdmonitionState::Colon { fence_len, base_ws } => {
+                        if Self::is_colon_fence_line(trimmed_start, *fence_len) {
+                            admonition = None;
+                            continue;
+                        }
+
+                        let content_line = line.strip_prefix(base_ws).unwrap_or(line);
+                        if content_line.trim().is_empty() {
+                            result.push(format!("{}>", base_ws));
+                        } else {
+                            result.push(format!("{}> {}", base_ws, content_line));
+                        }
+                        continue;
+                    }
+                    AdmonitionState::Bang { base_ws } => {
+                        if trimmed_start.is_empty() {
+                            admonition = None;
+                            result.push(line.to_string());
+                            continue;
+                        }
+
+                        let content_line = line.strip_prefix(base_ws).unwrap_or(line);
+                        if content_line.trim().is_empty() {
+                            result.push(format!("{}>", base_ws));
+                        } else {
+                            result.push(format!("{}> {}", base_ws, content_line));
+                        }
+                        continue;
+                    }
+                }
+            }
+
+            if let Some((kind, title, fence_len)) =
+                Self::parse_colon_admonition_start(trimmed_start)
+            {
+                let base_ws = &line[..indent];
+                result.push(Self::format_callout_marker_line(
+                    base_ws,
+                    &kind,
+                    title.as_deref(),
+                ));
+                admonition = Some(AdmonitionState::Colon {
+                    fence_len,
+                    base_ws: base_ws.to_string(),
+                });
+                continue;
+            }
+
+            if let Some((kind, title)) = Self::parse_bang_admonition_start(trimmed_start) {
+                let base_ws = &line[..indent];
+                result.push(Self::format_callout_marker_line(
+                    base_ws,
+                    &kind,
+                    title.as_deref(),
+                ));
+                admonition = Some(AdmonitionState::Bang {
+                    base_ws: base_ws.to_string(),
+                });
+                continue;
+            }
+
+            result.push(line.to_string());
+        }
+
+        result.join("\n")
+    }
+
+    fn parse_colon_admonition_start(line: &str) -> Option<(String, Option<String>, usize)> {
+        let mut count = 0usize;
+        for ch in line.chars() {
+            if ch == ':' {
+                count += 1;
+            } else {
+                break;
+            }
+        }
+
+        if count < 3 {
+            return None;
+        }
+
+        let rest = line[count..].trim_start();
+        if rest.is_empty() {
+            return None;
+        }
+
+        let (kind, title) = Self::parse_admonition_kind_and_title(rest)?;
+        Some((kind, title, count))
+    }
+
+    fn parse_bang_admonition_start(line: &str) -> Option<(String, Option<String>)> {
+        let mut count = 0usize;
+        for ch in line.chars() {
+            if ch == '!' {
+                count += 1;
+            } else {
+                break;
+            }
+        }
+
+        if count < 3 {
+            return None;
+        }
+
+        let rest = line[count..].trim_start();
+        if rest.is_empty() {
+            return None;
+        }
+
+        Self::parse_admonition_kind_and_title(rest)
+    }
+
+    fn parse_admonition_kind_and_title(input: &str) -> Option<(String, Option<String>)> {
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            return None;
+        }
+
+        if let Some(rest) = trimmed.strip_prefix('{') {
+            let end = rest.find('}')?;
+            let kind = rest[..end].trim();
+            if kind.is_empty() || !Self::is_valid_callout_kind(kind) {
+                return None;
+            }
+            let title_raw = rest[end + 1..].trim();
+            let title = if title_raw.is_empty() {
+                None
+            } else {
+                Some(title_raw.to_string())
+            };
+            return Some((kind.to_string(), title));
+        }
+
+        let mut split_idx = None;
+        for (idx, ch) in trimmed.char_indices() {
+            if ch.is_whitespace() {
+                split_idx = Some(idx);
+                break;
+            }
+        }
+
+        let (kind, title_raw) = match split_idx {
+            Some(idx) => (&trimmed[..idx], trimmed[idx..].trim()),
+            None => (trimmed, ""),
+        };
+
+        if kind.is_empty() || !Self::is_valid_callout_kind(kind) {
+            return None;
+        }
+
+        let title = if title_raw.is_empty() {
+            None
+        } else {
+            Some(title_raw.to_string())
+        };
+
+        Some((kind.to_string(), title))
+    }
+
+    fn format_callout_marker_line(base_ws: &str, kind: &str, title: Option<&str>) -> String {
+        let mut line = String::new();
+        line.push_str(base_ws);
+        line.push_str("> [!");
+        line.push_str(kind);
+        line.push(']');
+        if let Some(title) = title {
+            let trimmed = title.trim();
+            if !trimmed.is_empty() {
+                line.push(' ');
+                line.push_str(trimmed);
+            }
+        }
+        line
+    }
+
+    fn is_valid_callout_kind(kind: &str) -> bool {
+        kind.chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
+    }
+
+    fn is_colon_fence_line(line: &str, fence_len: usize) -> bool {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return false;
+        }
+        let count = trimmed.chars().filter(|ch| *ch == ':').count();
+        count >= fence_len && trimmed.chars().all(|ch| ch == ':')
+    }
+
+    fn separate_callout_markers_from_setext(&self, content: &str) -> String {
+        let lines: Vec<&str> = content.lines().collect();
+        let mut result = Vec::with_capacity(lines.len().saturating_add(4));
+        let mut in_fence = false;
+        let mut fence_char = '\0';
+        let mut fence_len = 0usize;
+
+        for idx in 0..lines.len() {
+            let line = lines[idx];
+            let trimmed_start = line.trim_start();
+            let indent = line.len().saturating_sub(trimmed_start.len());
+
+            if indent <= 3 {
+                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
+                    if in_fence && marker == fence_char && count >= fence_len {
+                        in_fence = false;
+                        fence_char = '\0';
+                        fence_len = 0;
+                    } else if !in_fence {
+                        in_fence = true;
+                        fence_char = marker;
+                        fence_len = count;
+                    }
+                    result.push(line.to_string());
+                    continue;
+                }
+            }
+
+            result.push(line.to_string());
+
+            if in_fence {
+                continue;
+            }
+
+            let (level, rest) = Self::split_blockquote_prefix(line);
+            if level == 0 {
+                continue;
+            }
+
+            let rest_trimmed = rest.trim();
+            if !Self::is_callout_marker_line(rest_trimmed) {
+                continue;
+            }
+
+            let next_idx = idx + 1;
+            let underline_idx = idx + 2;
+            if underline_idx >= lines.len() {
+                continue;
+            }
+
+            let (next_level, next_rest) = Self::split_blockquote_prefix(lines[next_idx]);
+            let (underline_level, underline_rest) =
+                Self::split_blockquote_prefix(lines[underline_idx]);
+            if next_level != level || underline_level != level {
+                continue;
+            }
+
+            if next_rest.trim().is_empty() {
+                continue;
+            }
+
+            if !Self::is_setext_underline_line(underline_rest.trim()) {
+                continue;
+            }
+
+            let leading_ws_len = line.len().saturating_sub(line.trim_start().len());
+            let leading_ws = &line[..leading_ws_len];
+            let mut blank = String::new();
+            blank.push_str(leading_ws);
+            blank.push_str(&">".repeat(level));
+            result.push(blank);
+        }
+
+        result.join("\n")
+    }
+
     fn is_task_list_item(line: &str) -> bool {
         let mut chars = line.chars();
         let first = match chars.next() {
@@ -334,10 +643,7 @@ impl MarkdownProcessor {
 
     fn is_list_item(line: &str) -> bool {
         let trimmed = line.trim_start();
-        if trimmed.starts_with("- ")
-            || trimmed.starts_with("+ ")
-            || trimmed.starts_with("* ")
-        {
+        if trimmed.starts_with("- ") || trimmed.starts_with("+ ") || trimmed.starts_with("* ") {
             return true;
         }
 
@@ -359,13 +665,43 @@ impl MarkdownProcessor {
         matches!(chars.next(), Some(' ') | Some('\t'))
     }
 
+    fn is_callout_marker_line(line: &str) -> bool {
+        let trimmed = line.trim_start();
+        if !trimmed.starts_with("[!") {
+            return false;
+        }
+
+        match trimmed.find(']') {
+            Some(idx) => idx >= 2,
+            None => false,
+        }
+    }
+
+    fn is_setext_underline_line(line: &str) -> bool {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return false;
+        }
+
+        let mut chars = trimmed.chars();
+        let first = match chars.next() {
+            Some(ch) => ch,
+            None => return false,
+        };
+
+        if first != '-' && first != '=' {
+            return false;
+        }
+
+        chars.all(|ch| ch == first)
+    }
+
     fn postprocess_events(
         &self,
-        content: &str,
+        _content: &str,
         events: Vec<(Event, Range<usize>)>,
     ) -> Result<Vec<Event<'static>>> {
         let mut processed = Vec::with_capacity(events.len());
-        let mut heading_stack: Vec<bool> = Vec::new();
 
         let mut idx = 0usize;
         while idx < events.len() {
@@ -381,27 +717,10 @@ impl MarkdownProcessor {
                 }
             }
 
-            let (event, range) = &events[idx];
+            let (event, _range) = &events[idx];
             match event {
-                Event::Start(tag @ Tag::Heading { .. }) => {
-                    let is_setext = matches!(
-                        tag,
-                        Tag::Heading {
-                            level: HeadingLevel::H2,
-                            ..
-                        }
-                    ) && self.is_setext_heading_segment(content, range);
-                    heading_stack.push(is_setext);
-                    processed.push(Event::Start(self.convert_tag_to_static(tag.clone())));
-                }
                 Event::Start(tag) => {
                     processed.push(Event::Start(self.convert_tag_to_static(tag.clone())));
-                }
-                Event::End(tag_end @ TagEnd::Heading(_)) => {
-                    processed.push(Event::End(tag_end.clone()));
-                    if heading_stack.pop().unwrap_or(false) {
-                        processed.push(Event::Rule);
-                    }
                 }
                 Event::End(tag_end) => {
                     processed.push(Event::End(tag_end.clone()));
@@ -419,25 +738,6 @@ impl MarkdownProcessor {
         }
 
         Ok(processed)
-    }
-
-    fn is_setext_heading_segment(&self, content: &str, range: &Range<usize>) -> bool {
-        if range.start >= range.end || range.end > content.len() {
-            return false;
-        }
-
-        let mut lines = content[range.clone()].lines();
-        let first_line = lines.next().unwrap_or("").trim();
-        let last_line = lines.last().unwrap_or("").trim();
-
-        if first_line.is_empty() || last_line.is_empty() {
-            return false;
-        }
-
-        let is_dash_line = last_line.chars().all(|ch| ch == '-' || ch.is_whitespace())
-            && last_line.chars().filter(|&ch| ch == '-').count() >= 3;
-
-        is_dash_line
     }
 
     fn reverse_events(&self, events: Vec<Event<'static>>) -> Vec<Event<'static>> {
@@ -684,6 +984,7 @@ pub fn detect_source_code(content: &str, filename: Option<&str>) -> Option<Strin
 mod tests {
     use super::*;
     use crate::config::Config;
+    use pulldown_cmark::HeadingLevel;
 
     #[test]
     fn test_markdown_parsing() {
@@ -743,7 +1044,7 @@ mod tests {
     }
 
     #[test]
-    fn setext_separator_becomes_rule() {
+    fn setext_dashes_create_h2() {
         use pulldown_cmark::{Event, Tag, TagEnd};
 
         let config = Config::default();
@@ -755,14 +1056,36 @@ mod tests {
         assert!(matches!(
             events.as_slice(),
             [
-                Event::Start(Tag::Heading { .. }),
+                Event::Start(Tag::Heading { level: HeadingLevel::H2, .. }),
                 Event::Text(first),
-                Event::End(TagEnd::Heading(_)),
-                Event::Rule,
+                Event::End(TagEnd::Heading(HeadingLevel::H2)),
                 Event::Start(Tag::Paragraph),
                 Event::Text(second),
                 Event::End(TagEnd::Paragraph)
             ] if first.as_ref() == "Text" && second.as_ref() == "Next"
+        ));
+    }
+
+    #[test]
+    fn setext_equals_create_h1() {
+        use pulldown_cmark::{Event, Tag, TagEnd};
+
+        let config = Config::default();
+        let processor = MarkdownProcessor::new(&config);
+
+        let markdown = "Title\n===\nBody\n";
+        let events = processor.parse(markdown).unwrap();
+
+        assert!(matches!(
+            events.as_slice(),
+            [
+                Event::Start(Tag::Heading { level: HeadingLevel::H1, .. }),
+                Event::Text(first),
+                Event::End(TagEnd::Heading(HeadingLevel::H1)),
+                Event::Start(Tag::Paragraph),
+                Event::Text(second),
+                Event::End(TagEnd::Paragraph)
+            ] if first.as_ref() == "Title" && second.as_ref() == "Body"
         ));
     }
 }

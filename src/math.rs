@@ -252,8 +252,7 @@ impl MathParser {
 
         if let Some(idx) = remaining.find(&end_marker) {
             let content = remaining[..idx].to_string();
-            let consumed_chars =
-                remaining[..idx].chars().count() + end_marker.chars().count();
+            let consumed_chars = remaining[..idx].chars().count() + end_marker.chars().count();
             self.pos = self.pos.saturating_add(consumed_chars);
             content
         } else {
@@ -371,9 +370,7 @@ fn render_environment(env: &str, content: &str, mode: MathMode) -> String {
 
     let lower = normalized.to_ascii_lowercase();
     match lower.as_str() {
-        "align" | "align*" | "aligned" | "eqnarray" | "split" => {
-            render_align_environment(content)
-        }
+        "align" | "align*" | "aligned" | "eqnarray" | "split" => render_align_environment(content),
         "matrix" | "pmatrix" | "bmatrix" | "vmatrix" | "vmatrix*" | "cases" | "bmatrix*" => {
             render_matrix_environment(&lower, content)
         }

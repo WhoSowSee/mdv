@@ -94,6 +94,13 @@ mdv [OPTIONS] | mdv
 - `-y, --custom-theme <key=value;...>` — переопределение цветов интерфейса поверх выбранной темы.
 - `-Y, --custom-code-theme <key=value;...>` — переопределение цветов подсветки кода в том же формате, что и `--custom-theme`.
 
+### Callout-блоки
+
+- `--callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` — стиль callout-блоков и правила отображения подписи. Для корректного отображения иконок нужны шрифты Nerd Fonts в терминале.
+  `label-inside` поддерживается только с `pretty`, `fold-icons` требует `show-icons`.
+- `--custom-callout <name:icon=...,color=...;...>` — переопределение или добавление подписей callout.
+  `icon` и `color` можно указывать по отдельности; формат цвета как в `--custom-theme`.
+
 ### Разметка и переносы
 
 - `-c, --cols <N>` — фиксированная ширина вывода. Если не задана, mdv использует ширину терминала или запасное значение 80.

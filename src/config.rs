@@ -1,11 +1,13 @@
+use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
-    Cli, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, HeadingLayout, LinkStyle,
-    LinkTruncationStyle, TableWrapMode, TextWrapMode,
+    CalloutStyleConfig, Cli, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, HeadingLayout,
+    LinkStyle, LinkTruncationStyle, TableWrapMode, TextWrapMode,
 };
 use crate::error::MdvError;
 use anyhow::Result;
 use clap::{ArgMatches, parser::ValueSource};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 const CONFIG_FILE_ENV: &str = "MDV_CONFIG_PATH";
@@ -38,6 +40,7 @@ pub struct Config {
     pub no_code_language: bool,
     pub code_guessing: bool,
     pub code_block_style: CodeBlockStyle,
+    pub callout_style: CalloutStyleConfig,
     pub code_wrap_indent: CodeWrapIndent,
     pub reverse: bool,
 
@@ -46,6 +49,9 @@ pub struct Config {
     pub code_theme: Option<String>,
     pub custom_theme: Option<String>,
     pub custom_code_theme: Option<String>,
+    pub custom_callout: Option<String>,
+    #[serde(skip)]
+    pub(crate) custom_callouts: HashMap<String, CustomCalloutStyle>,
 
     // Link handling
     pub link_style: LinkStyle,
@@ -76,12 +82,15 @@ impl Default for Config {
             no_code_language: false,
             code_guessing: true,
             code_block_style: CodeBlockStyle::Pretty,
+            callout_style: CalloutStyleConfig::default(),
             code_wrap_indent: CodeWrapIndent::Double,
             reverse: false,
             theme: "terminal".to_string(),
             code_theme: None,
             custom_theme: None,
             custom_code_theme: None,
+            custom_callout: None,
+            custom_callouts: HashMap::new(),
             link_style: LinkStyle::Clickable,
             link_truncation: LinkTruncationStyle::Wrap,
             footnote_style: FootnoteStyle::Endnotes,
@@ -160,6 +169,12 @@ impl Config {
             }
         }
 
+        if let Some(custom_callout) = &cli.custom_callout {
+            if arg_has_user_value(matches, "custom_callout") {
+                config.custom_callout = Some(custom_callout.clone());
+            }
+        }
+
         if let Some(link_style) = cli.link_style.clone() {
             if arg_has_user_value(matches, "link_style") {
                 config.link_style = link_style;
@@ -205,6 +220,12 @@ impl Config {
             }
         }
 
+        if let Some(style) = cli.style_callout {
+            if arg_has_user_value(matches, "style_callout") {
+                config.callout_style = style;
+            }
+        }
+
         if let Some(indent) = cli.code_wrap_indent {
             if arg_has_user_value(matches, "code_wrap_indent") {
                 config.code_wrap_indent = indent;
@@ -222,6 +243,7 @@ impl Config {
         }
 
         config.normalize_theme_settings();
+        config.apply_custom_callouts()?;
 
         Ok(config)
     }
@@ -345,6 +367,9 @@ impl Config {
         if !matches!(other.code_block_style, CodeBlockStyle::Pretty) {
             self.code_block_style = other.code_block_style;
         }
+        if other.callout_style != CalloutStyleConfig::default() {
+            self.callout_style = other.callout_style;
+        }
         if !matches!(other.code_wrap_indent, CodeWrapIndent::Double) {
             self.code_wrap_indent = other.code_wrap_indent;
         }
@@ -363,6 +388,9 @@ impl Config {
 
         if other.custom_code_theme.is_some() {
             self.custom_code_theme = other.custom_code_theme;
+        }
+        if other.custom_callout.is_some() {
+            self.custom_callout = other.custom_callout;
         }
 
         if !matches!(other.link_style, LinkStyle::Clickable) {
@@ -429,6 +457,14 @@ impl Config {
                 self.code_theme = None;
             }
         }
+    }
+
+    fn apply_custom_callouts(&mut self) -> Result<()> {
+        self.custom_callouts.clear();
+        if let Some(raw) = &self.custom_callout {
+            self.custom_callouts = parse_custom_callouts(raw)?;
+        }
+        Ok(())
     }
 }
 

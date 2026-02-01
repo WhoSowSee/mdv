@@ -1,6 +1,4 @@
-use super::{
-    CodeBlockStyle, CowStr, EventRenderer, Result, ThemeElement, WrapMode, create_style,
-};
+use super::{CodeBlockStyle, CowStr, EventRenderer, Result, ThemeElement, WrapMode, create_style};
 use crate::math::{MathMode, render_math};
 
 impl<'a> EventRenderer<'a> {
@@ -26,7 +24,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
         let wrap_mode = self.config.text_wrap_mode();
 
         let mut remaining = rendered.clone();
@@ -154,7 +152,7 @@ impl<'a> EventRenderer<'a> {
 
         let should_wrap = self.config.is_text_wrapping_enabled();
         let wrap_mode = self.config.text_wrap_mode();
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
 
         self.ensure_contextual_blank_line();
 

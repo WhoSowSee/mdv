@@ -181,6 +181,3 @@ fn test_simple_language_label_wraps_under_char_width() {
         }
     }
 }
-
-
-

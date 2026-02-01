@@ -1,3 +1,4 @@
+use super::core::CalloutState;
 use super::{
     CapturedReferenceBlock, CowStr, EventRenderer, LinkStyle, LinkTruncationStyle, Result,
     ThemeElement, create_style, wrap_text_with_mode,
@@ -53,12 +54,20 @@ impl<'a> EventRenderer<'a> {
                 self.in_link = true;
             }
             LinkStyle::InlineTable => {
-                // Store URL for paragraph-scoped references and start collecting link text
-                self.paragraph_link_counter += 1;
-                self.paragraph_links.push((
-                    format!("[{}]", self.paragraph_link_counter),
-                    dest_url.to_string(),
-                ));
+                if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {
+                    info.inline_link_counter += 1;
+                    info.inline_links.push((
+                        format!("[{}]", info.inline_link_counter),
+                        dest_url.to_string(),
+                    ));
+                } else {
+                    // Store URL for paragraph-scoped references and start collecting link text
+                    self.paragraph_link_counter += 1;
+                    self.paragraph_links.push((
+                        format!("[{}]", self.paragraph_link_counter),
+                        dest_url.to_string(),
+                    ));
+                }
                 self.current_link_text.clear();
                 self.in_link = true;
             }
@@ -129,7 +138,7 @@ impl<'a> EventRenderer<'a> {
                                     crate::utils::strip_ansi(&self.output)
                                 };
 
-                            let terminal_width = self.config.get_terminal_width();
+                            let terminal_width = self.effective_text_width();
                             let current_line_width =
                                 crate::utils::display_width(&current_line_clean);
                             let link_width = crate::utils::display_width(link_text);
@@ -196,7 +205,7 @@ impl<'a> EventRenderer<'a> {
                                     crate::utils::strip_ansi(&self.output)
                                 };
 
-                            let terminal_width = self.config.get_terminal_width();
+                            let terminal_width = self.effective_text_width();
                             let current_line_width =
                                 crate::utils::display_width(&current_line_clean);
                             let link_width = crate::utils::display_width(link_text);
@@ -264,7 +273,7 @@ impl<'a> EventRenderer<'a> {
                                     crate::utils::strip_ansi(&self.output)
                                 };
 
-                            let terminal_width = self.config.get_terminal_width();
+                            let terminal_width = self.effective_text_width();
                             let current_line_width =
                                 crate::utils::display_width(&current_line_clean);
                             let url_part_width = crate::utils::display_width(&url_part);
@@ -301,14 +310,7 @@ impl<'a> EventRenderer<'a> {
                                         // Not enough space left on this visual line – break and place URL at the start
                                         // of the next line with proper indentation, then fit it there.
                                         self.output.push('\n');
-
-                                        if self.content_indent > 0 {
-                                            self.output.push_str(&" ".repeat(self.content_indent));
-                                        }
-                                        if self.blockquote_level > 0 {
-                                            let prefix = self.render_blockquote_prefix();
-                                            self.output.push_str(&prefix);
-                                        }
+                                        self.push_indent_for_line_start();
 
                                         // Effective width for the new line considering indentation
                                         let mut effective_width_for_url = terminal_width;
@@ -406,7 +408,7 @@ impl<'a> EventRenderer<'a> {
                             // No wrapping, but still ensure we do not exceed terminal width
                             match self.config.link_truncation {
                                 LinkTruncationStyle::Cut => {
-                                    let terminal_width = self.config.get_terminal_width();
+                                    let terminal_width = self.effective_text_width();
                                     let current_line_clean = if let Some(last_newline) =
                                         self.output.rfind('\n')
                                     {
@@ -473,9 +475,13 @@ impl<'a> EventRenderer<'a> {
                 // link text outside the table. If we're inside a table cell, write the
                 // entire link (underlined text + reference) directly into the cell and
                 // skip any rendering to the main output buffer.
+                let reference_index = match self.callout_stack.last() {
+                    Some(CalloutState::Active(info)) => info.inline_link_counter,
+                    _ => self.paragraph_link_counter,
+                };
+                let reference_text = format!("[{}]", reference_index);
 
                 if let Some(ref mut table) = self.table_state {
-                    let reference_text = format!("[{}]", self.paragraph_link_counter);
                     let style = create_style(self.theme, ThemeElement::Link);
                     let styled_reference = style.apply(&reference_text, self.config.no_colors);
 
@@ -496,7 +502,6 @@ impl<'a> EventRenderer<'a> {
                     self.process_underlined_text_with_wrapping(&link_text)?;
 
                     // 2) Append the reference number after the text (wrap if needed)
-                    let reference_text = format!("[{}]", self.paragraph_link_counter);
                     let style = create_style(self.theme, ThemeElement::Link);
                     let styled_reference = style.apply(&reference_text, self.config.no_colors);
 
@@ -506,7 +511,7 @@ impl<'a> EventRenderer<'a> {
                     } else {
                         crate::utils::strip_ansi(&self.output)
                     };
-                    let terminal_width = self.config.get_terminal_width();
+                    let terminal_width = self.effective_text_width();
                     let current_line_width = crate::utils::display_width(&current_line_clean);
                     let reference_width = crate::utils::display_width(&reference_text);
 
@@ -552,7 +557,7 @@ impl<'a> EventRenderer<'a> {
                     } else {
                         crate::utils::strip_ansi(&self.output)
                     };
-                    let terminal_width = self.config.get_terminal_width();
+                    let terminal_width = self.effective_text_width();
                     let current_line_width = crate::utils::display_width(&current_line_clean);
                     let reference_width = crate::utils::display_width(&reference_text);
 
@@ -584,17 +589,18 @@ impl<'a> EventRenderer<'a> {
         self.add_paragraph_link_references_with_trailing_newline(true, in_list, in_table);
     }
 
-    pub(super) fn add_paragraph_link_references_with_trailing_newline(
+    pub(super) fn render_link_reference_blocks(
         &mut self,
+        links: &[(String, String)],
         add_trailing_newline: bool,
         in_list: bool,
         in_table: bool,
     ) {
-        if self.paragraph_links.is_empty() {
+        if links.is_empty() {
             return;
         }
 
-        let styled_blocks = self.build_styled_reference_blocks(&self.paragraph_links);
+        let styled_blocks = self.build_styled_reference_blocks(links);
 
         if self.plaintext_code_block_depth > 0 {
             let captured_lines: Vec<String> = styled_blocks
@@ -607,7 +613,6 @@ impl<'a> EventRenderer<'a> {
                 add_trailing_newline,
             });
 
-            self.paragraph_links.clear();
             return;
         }
 
@@ -641,9 +646,20 @@ impl<'a> EventRenderer<'a> {
                 self.output.push('\n');
             }
         }
+    }
 
-        // Clear the paragraph links after adding them
-        self.paragraph_links.clear();
+    pub(super) fn add_paragraph_link_references_with_trailing_newline(
+        &mut self,
+        add_trailing_newline: bool,
+        in_list: bool,
+        in_table: bool,
+    ) {
+        if self.paragraph_links.is_empty() {
+            return;
+        }
+
+        let links = std::mem::take(&mut self.paragraph_links);
+        self.render_link_reference_blocks(&links, add_trailing_newline, in_list, in_table);
     }
 
     fn build_styled_reference_blocks(&self, links: &[(String, String)]) -> Vec<Vec<String>> {
@@ -675,7 +691,7 @@ impl<'a> EventRenderer<'a> {
 
     /// Wrap a link line (reference + URL) with proper handling of URL breaking
     pub(super) fn wrap_link_line(&self, link_line: &str) -> String {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
 
         // Link reference lines are printed later with a leading content indentation
         // (self.content_indent spaces). That indentation must be accounted for when
@@ -877,7 +893,7 @@ impl<'a> EventRenderer<'a> {
             return text.to_string();
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
 
         // Don't wrap if width is too small or text is very short
         if terminal_width < 20 || text.trim().len() < 10 {
@@ -928,31 +944,9 @@ impl<'a> EventRenderer<'a> {
         for (i, line) in lines.iter().enumerate() {
             if i > 0 {
                 result.push('\n');
-
-                // Add proper indentation for continuation lines
-                if self.blockquote_level > 0 {
-                    // Heading/content indent
-                    if self.content_indent > 0 {
-                        result.push_str(&" ".repeat(self.content_indent));
-                    }
-                    // Blockquote prefix
-                    for _ in 0..self.blockquote_level {
-                        result.push('│');
-                    }
-                    result.push(' ');
-                    // If inside a list, align to list content (exclude heading indent already added)
-                    if !self.list_stack.is_empty() {
-                        let full_list_indent = self.calculate_list_content_indent();
-                        let additional = full_list_indent.saturating_sub(self.content_indent);
-                        if additional > 0 {
-                            result.push_str(&" ".repeat(additional));
-                        }
-                    }
-                } else if !self.list_stack.is_empty() {
-                    let list_content_indent = self.calculate_list_content_indent();
-                    result.push_str(&" ".repeat(list_content_indent));
-                } else if self.content_indent > 0 {
-                    result.push_str(&" ".repeat(self.content_indent));
+                let prefix = self.current_line_prefix();
+                if !prefix.is_empty() {
+                    result.push_str(&prefix);
                 }
             }
             result.push_str(line);
@@ -1068,7 +1062,7 @@ impl<'a> EventRenderer<'a> {
     /// Ensure the last visual line does not exceed the terminal width.
     /// If it does, break the line at the last space and add proper indentation/prefixes.
     pub(super) fn enforce_width_on_current_line(&mut self) {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
         let start = self.output.rfind('\n').map(|i| i + 1).unwrap_or(0);
         let current_line_raw = &self.output[start..];
         let clean = crate::utils::strip_ansi(current_line_raw);
@@ -1085,26 +1079,7 @@ impl<'a> EventRenderer<'a> {
                 return;
             }
             // Build indentation for continuation line
-            let mut indent = String::new();
-            if self.blockquote_level > 0 {
-                if self.content_indent > 0 {
-                    indent.push_str(&" ".repeat(self.content_indent));
-                }
-                let prefix = self.render_blockquote_prefix();
-                indent.push_str(&prefix);
-                if !self.list_stack.is_empty() {
-                    let full_list_indent = self.calculate_list_content_indent();
-                    let additional = full_list_indent.saturating_sub(self.content_indent);
-                    if additional > 0 {
-                        indent.push_str(&" ".repeat(additional));
-                    }
-                }
-            } else if !self.list_stack.is_empty() {
-                let list_content_indent = self.calculate_list_content_indent();
-                indent.push_str(&" ".repeat(list_content_indent));
-            } else if self.content_indent > 0 {
-                indent.push_str(&" ".repeat(self.content_indent));
-            }
+            let indent = self.current_line_prefix();
 
             // Replace the space with a newline + indent
             let insert = format!("\n{}", indent);

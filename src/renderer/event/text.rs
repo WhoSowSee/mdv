@@ -1,9 +1,42 @@
-use super::{CowStr, EventRenderer, LinkStyle, Result, ThemeElement, create_style};
+use super::core::{CalloutFold, CalloutInfo, CalloutKind, CalloutState};
+use super::{CalloutStyle, CowStr, EventRenderer, LinkStyle, Result, ThemeElement, create_style};
 
 #[derive(Debug, Clone)]
 struct HighlightSegment {
     text: String,
     highlighted: bool,
+}
+
+const CALLOUT_BUFFER_LIMIT: usize = 64;
+
+enum CalloutBufferEval {
+    Pending,
+    Callout(CalloutMarker),
+    NotCallout,
+}
+
+struct CalloutMarker {
+    kind: CalloutKind,
+    label: String,
+    label_override: Option<String>,
+    fold: Option<CalloutFold>,
+    trailing: Option<String>,
+    allow_label_override: bool,
+    suppress_paragraph_break: bool,
+}
+
+enum CalloutDecision {
+    RenderHeader {
+        kind: CalloutKind,
+        label: String,
+        label_override: Option<String>,
+        fold: Option<CalloutFold>,
+        trailing: Option<String>,
+        suppress_paragraph_break: bool,
+    },
+    AwaitLabelOverride,
+    FlushBuffer(String),
+    Pending,
 }
 
 impl<'a> EventRenderer<'a> {
@@ -54,6 +87,143 @@ impl<'a> EventRenderer<'a> {
         }
 
         let raw_text = text.as_ref();
+        if self.pending_callout_label_override {
+            if self.pending_callout_label_buffer.is_empty() {
+                let mut remaining = raw_text;
+
+                if let Some(first) = remaining.chars().next() {
+                    if matches!(first, '+' | '-') {
+                        if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {
+                            if info.fold.is_none() {
+                                info.fold = Some(match first {
+                                    '+' => CalloutFold::Expanded,
+                                    '-' => CalloutFold::Collapsed,
+                                    _ => unreachable!(),
+                                });
+                            }
+                        }
+                        remaining = &remaining[first.len_utf8()..];
+                        if remaining.is_empty() {
+                            return Ok(());
+                        }
+                    }
+                }
+
+                let starts_with_ws = remaining
+                    .chars()
+                    .next()
+                    .map(|ch| ch.is_whitespace())
+                    .unwrap_or(false);
+
+                if !starts_with_ws {
+                    if self.finalize_pending_callout_label_override() {
+                        self.suppress_next_soft_break = true;
+                    }
+                    return Ok(());
+                }
+
+                self.pending_callout_label_buffer.push_str(remaining);
+                return Ok(());
+            }
+
+            self.pending_callout_label_buffer.push_str(raw_text);
+            return Ok(());
+        }
+        let mut callout_decision = None;
+        if self.blockquote_level > 0 && self.list_stack.is_empty() {
+            if let Some(state) = self.callout_stack.last_mut() {
+                if matches!(state, CalloutState::Pending) {
+                    if self.pending_callout_marker {
+                        self.pending_callout_marker_buffer.push_str(raw_text);
+                        let evaluation =
+                            Self::evaluate_callout_buffer(&self.pending_callout_marker_buffer);
+                        callout_decision = Some(Self::apply_callout_buffer_evaluation(
+                            state,
+                            evaluation,
+                            &self.pending_callout_marker_buffer,
+                        ));
+                    } else if raw_text.trim().is_empty() {
+                        // Keep pending until we see meaningful content.
+                        return Ok(());
+                    } else if raw_text.trim_start().starts_with('[') {
+                        self.pending_callout_marker = true;
+                        self.pending_callout_marker_buffer.clear();
+                        self.pending_callout_marker_buffer.push_str(raw_text);
+                        let evaluation =
+                            Self::evaluate_callout_buffer(&self.pending_callout_marker_buffer);
+                        callout_decision = Some(Self::apply_callout_buffer_evaluation(
+                            state,
+                            evaluation,
+                            &self.pending_callout_marker_buffer,
+                        ));
+                    } else {
+                        *state = CalloutState::None;
+                    }
+                }
+            }
+        }
+
+        if let Some(decision) = callout_decision {
+            match decision {
+                CalloutDecision::RenderHeader {
+                    kind,
+                    label,
+                    label_override,
+                    fold,
+                    trailing,
+                    suppress_paragraph_break,
+                } => {
+                    self.pending_callout_marker = false;
+                    self.pending_callout_marker_buffer.clear();
+                    if matches!(self.config.callout_style.style, CalloutStyle::Pretty) {
+                        self.content_indent = 0;
+                        self.heading_indent = 0;
+                    }
+                    self.note_paragraph_content();
+                    self.render_callout_header(kind, &label, label_override.as_deref(), fold);
+                    if suppress_paragraph_break {
+                        self.suppress_next_paragraph_break = true;
+                    }
+                    if let Some(trailing) = trailing {
+                        if !trailing.trim().is_empty() {
+                            self.note_paragraph_content();
+                        }
+                        self.process_text_with_wrapping_and_formatting(&trailing)?;
+                        self.commit_pending_heading_placeholder_if_content();
+                        self.suppress_next_soft_break = false;
+                    } else {
+                        self.suppress_next_soft_break = true;
+                    }
+                    return Ok(());
+                }
+                CalloutDecision::AwaitLabelOverride => {
+                    self.pending_callout_marker = false;
+                    self.pending_callout_marker_buffer.clear();
+                    if matches!(self.config.callout_style.style, CalloutStyle::Pretty) {
+                        self.content_indent = 0;
+                        self.heading_indent = 0;
+                    }
+                    self.pending_callout_label_override = true;
+                    self.pending_callout_label_buffer.clear();
+                    return Ok(());
+                }
+                CalloutDecision::FlushBuffer(buffer) => {
+                    self.pending_callout_marker = false;
+                    self.pending_callout_marker_buffer.clear();
+                    if !buffer.trim().is_empty() {
+                        self.note_paragraph_content();
+                    }
+                    self.process_text_with_wrapping_and_formatting(&buffer)?;
+                    self.commit_pending_heading_placeholder_if_content();
+                    return Ok(());
+                }
+                CalloutDecision::Pending => {
+                    return Ok(());
+                }
+            }
+        }
+
+        self.maybe_render_callout_header();
         if self.pending_task_marker && !self.list_stack.is_empty() {
             if self.pending_task_marker_buffer.is_empty() && !raw_text.starts_with('[') {
                 self.pending_task_marker = false;
@@ -125,6 +295,185 @@ impl<'a> EventRenderer<'a> {
         Some((&text[..marker_end], &text[marker_end..]))
     }
 
+    fn parse_callout_marker(text: &str) -> Option<CalloutMarker> {
+        let trimmed = text.trim_start();
+        if !trimmed.starts_with("[!") {
+            return None;
+        }
+
+        let closing = trimmed.find(']')?;
+        if closing < 2 {
+            return None;
+        }
+
+        let kind_raw = trimmed[2..closing].trim();
+        if kind_raw.is_empty() || !Self::is_valid_callout_kind(kind_raw) {
+            return None;
+        }
+
+        let (kind, label) = Self::resolve_callout_kind(kind_raw);
+        let mut rest = &trimmed[closing + 1..];
+        let mut fold = None;
+
+        if let Some(first) = rest.chars().next() {
+            if matches!(first, '+' | '-') {
+                fold = Some(match first {
+                    '+' => CalloutFold::Expanded,
+                    '-' => CalloutFold::Collapsed,
+                    _ => unreachable!(),
+                });
+                rest = &rest[first.len_utf8()..];
+            }
+        }
+
+        if rest.is_empty() {
+            return Some(CalloutMarker {
+                kind,
+                label,
+                label_override: None,
+                fold,
+                trailing: None,
+                allow_label_override: true,
+                suppress_paragraph_break: false,
+            });
+        }
+
+        let starts_with_ws = rest
+            .chars()
+            .next()
+            .map(|ch| ch.is_whitespace())
+            .unwrap_or(false);
+        if starts_with_ws {
+            let label_override_raw = rest.trim();
+            if label_override_raw.is_empty() {
+                return Some(CalloutMarker {
+                    kind,
+                    label,
+                    label_override: None,
+                    fold,
+                    trailing: None,
+                    allow_label_override: false,
+                    suppress_paragraph_break: false,
+                });
+            }
+            return Some(CalloutMarker {
+                kind,
+                label,
+                label_override: Some(label_override_raw.to_string()),
+                fold,
+                trailing: None,
+                allow_label_override: false,
+                suppress_paragraph_break: false,
+            });
+        }
+
+        Some(CalloutMarker {
+            kind,
+            label,
+            label_override: None,
+            fold,
+            trailing: None,
+            allow_label_override: false,
+            suppress_paragraph_break: true,
+        })
+    }
+
+    fn evaluate_callout_buffer(buffer: &str) -> CalloutBufferEval {
+        let trimmed = buffer.trim_start();
+        if !trimmed.starts_with('[') {
+            return CalloutBufferEval::NotCallout;
+        }
+
+        if trimmed.len() >= 2 && !trimmed.starts_with("[!") {
+            return CalloutBufferEval::NotCallout;
+        }
+
+        if trimmed.contains(']') {
+            return match Self::parse_callout_marker(buffer) {
+                Some(marker) => CalloutBufferEval::Callout(marker),
+                None => CalloutBufferEval::NotCallout,
+            };
+        }
+
+        if trimmed.len() > CALLOUT_BUFFER_LIMIT {
+            return CalloutBufferEval::NotCallout;
+        }
+
+        CalloutBufferEval::Pending
+    }
+
+    fn apply_callout_buffer_evaluation(
+        state: &mut CalloutState,
+        evaluation: CalloutBufferEval,
+        buffer: &str,
+    ) -> CalloutDecision {
+        match evaluation {
+            CalloutBufferEval::Callout(marker) => {
+                let has_label_override = marker
+                    .label_override
+                    .as_ref()
+                    .map(|text| !text.trim().is_empty())
+                    .unwrap_or(false);
+                let defer_label_override = marker.allow_label_override && !has_label_override;
+                let info = CalloutInfo {
+                    kind: marker.kind,
+                    label: marker.label.clone(),
+                    label_override: marker.label_override.clone(),
+                    fold: marker.fold,
+                    header_rendered: !defer_label_override,
+                    min_heading_indent: None,
+                    inline_link_counter: 0,
+                    inline_links: Vec::new(),
+                };
+                *state = CalloutState::Active(info);
+                if defer_label_override {
+                    CalloutDecision::AwaitLabelOverride
+                } else {
+                    CalloutDecision::RenderHeader {
+                        kind: marker.kind,
+                        label: marker.label,
+                        label_override: marker.label_override,
+                        fold: marker.fold,
+                        trailing: marker.trailing,
+                        suppress_paragraph_break: marker.suppress_paragraph_break,
+                    }
+                }
+            }
+            CalloutBufferEval::NotCallout => {
+                *state = CalloutState::None;
+                CalloutDecision::FlushBuffer(buffer.to_string())
+            }
+            CalloutBufferEval::Pending => CalloutDecision::Pending,
+        }
+    }
+
+    fn is_valid_callout_kind(kind: &str) -> bool {
+        kind.chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
+    }
+
+    fn resolve_callout_kind(raw: &str) -> (CalloutKind, String) {
+        let lower = raw.trim().to_ascii_lowercase();
+        let kind = match lower.as_str() {
+            "note" | "seealso" => CalloutKind::Note,
+            "abstract" | "summary" | "tldr" => CalloutKind::Abstract,
+            "info" => CalloutKind::Info,
+            "todo" => CalloutKind::Todo,
+            "tip" | "hint" | "important" => CalloutKind::Tip,
+            "success" | "check" | "done" => CalloutKind::Success,
+            "question" | "help" | "faq" => CalloutKind::Question,
+            "warning" | "caution" | "attention" => CalloutKind::Warning,
+            "failure" | "fail" | "missing" => CalloutKind::Failure,
+            "danger" | "error" => CalloutKind::Danger,
+            "bug" => CalloutKind::Bug,
+            "example" => CalloutKind::Example,
+            "quote" | "cite" => CalloutKind::Quote,
+            _ => CalloutKind::Tip,
+        };
+
+        (kind, lower)
+    }
+
     fn is_supported_task_marker(marker: u8) -> bool {
         matches!(
             marker,
@@ -185,14 +534,10 @@ impl<'a> EventRenderer<'a> {
             };
 
             if after_newline || at_start || at_line_start {
-                // Add content indentation first (if we're under a heading)
-                if self.content_indent > 0 {
-                    self.output.push_str(&" ".repeat(self.content_indent));
+                let prefix = self.current_line_prefix();
+                if !prefix.is_empty() {
+                    self.output.push_str(&prefix);
                 }
-
-                // Then add blockquote prefix
-                let prefix = self.render_blockquote_prefix();
-                self.output.push_str(&prefix);
             }
         }
 
@@ -251,7 +596,7 @@ impl<'a> EventRenderer<'a> {
 
     /// Process styled text with proper character/word-level wrapping like the original logic
     fn process_styled_text_with_wrapping(&mut self, text: &str, highlighted: bool) -> Result<()> {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
 
         // The effective width is the full terminal width since current_line_width
         // already includes any indentation that's been added to the current line
@@ -297,7 +642,15 @@ impl<'a> EventRenderer<'a> {
                     LinkStyle::InlineTable | LinkStyle::EndTable
                 ) {
                 // Calculate the width of the reference number like [1], [2], etc.
-                let ref_num_str = format!("[{}]", self.paragraph_link_counter);
+                let reference_index = if matches!(self.config.link_style, LinkStyle::InlineTable) {
+                    match self.callout_stack.last() {
+                        Some(CalloutState::Active(info)) => info.inline_link_counter,
+                        _ => self.paragraph_link_counter,
+                    }
+                } else {
+                    self.paragraph_link_counter
+                };
+                let ref_num_str = format!("[{}]", reference_index);
                 crate::utils::display_width(&ref_num_str)
             } else {
                 0
@@ -438,7 +791,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
         let effective_width = terminal_width;
 
         // Determine wrap mode based on config
@@ -595,7 +948,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
         let effective_width = terminal_width;
 
         // Determine wrap mode based on config
@@ -739,7 +1092,7 @@ impl<'a> EventRenderer<'a> {
     ) -> Result<()> {
         // Use the same word-by-word logic as styled text for consistent behavior
         if should_wrap {
-            let terminal_width = self.config.get_terminal_width();
+            let terminal_width = self.effective_text_width();
 
             // Use full terminal width as effective width since current_line_width already includes indents
             let effective_width = terminal_width;
@@ -796,7 +1149,16 @@ impl<'a> EventRenderer<'a> {
                         LinkStyle::InlineTable | LinkStyle::EndTable
                     ) {
                     // Calculate the width of the reference number like [1], [2], etc.
-                    let ref_num_str = format!("[{}]", self.paragraph_link_counter);
+                    let reference_index =
+                        if matches!(self.config.link_style, LinkStyle::InlineTable) {
+                            match self.callout_stack.last() {
+                                Some(CalloutState::Active(info)) => info.inline_link_counter,
+                                _ => self.paragraph_link_counter,
+                            }
+                        } else {
+                            self.paragraph_link_counter
+                        };
+                    let ref_num_str = format!("[{}]", reference_index);
                     crate::utils::display_width(&ref_num_str)
                 } else {
                     0

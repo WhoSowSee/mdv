@@ -94,6 +94,14 @@ mdv [OPTIONS] | mdv
 - `-y, --custom-theme <key=value;...>` overrides UI colors on top of the selected theme.
 - `-Y, --custom-code-theme <key=value;...>` overrides syntax colors using the same format as `--custom-theme`.
 
+### Callouts
+
+- `--callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` sets the callout layout and label behavior.
+  `label-inside` is only supported with `pretty`, `fold-icons` requires `show-icons`.
+- `--custom-callout <name:icon=...,color=...;...>` overrides or adds callout labels.
+  `icon` and `color` are optional; color formats match `--custom-theme`.
+- Icons require Nerd Fonts in the terminal to render correctly.
+
 ### Layout and wrapping
 
 - `-c, --cols <N>` enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.

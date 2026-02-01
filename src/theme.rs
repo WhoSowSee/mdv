@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Serializable color type for themes
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Color {
     Black,
     DarkRed,
@@ -702,6 +702,10 @@ fn normalize_key(key: &str) -> String {
         .replace(['-', ' '], "_")
         .replace("__", "_")
         .to_ascii_lowercase()
+}
+
+pub(crate) fn parse_color_value(value: &str) -> Result<Color> {
+    parse_color_spec(value)
 }
 
 fn parse_color_spec(value: &str) -> Result<Color> {

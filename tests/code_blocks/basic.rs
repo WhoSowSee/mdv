@@ -99,5 +99,32 @@ fn test_code_language_simple_style_plain_block() {
         .stdout(predicate::str::contains("│ Text\n│ \n│ plain text output"));
 }
 
+#[test]
+fn test_markdown_code_block_setext_heading_renders_as_heading() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "```markdown\nTitle\n---\nBody\n```\n").unwrap();
 
+    let output = mdv_cmd()
+        .arg("--style-code-block")
+        .arg("simple")
+        .arg("-A")
+        .arg("-W")
+        .arg("none")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for markdown code block");
 
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+
+    assert!(
+        stdout.contains("Title") && stdout.contains("Body"),
+        "expected setext heading inside markdown code block, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("◈") && !stdout.contains("│ ---"),
+        "expected no horizontal rule for setext heading, stdout:\n{}",
+        stdout
+    );
+}

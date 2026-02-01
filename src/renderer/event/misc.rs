@@ -1,5 +1,6 @@
 use super::{CowStr, EventRenderer, PRETTY_ACCENT_COLOR, Result, ThemeElement, create_style};
 use crate::terminal::AnsiStyle;
+use crate::utils::{display_width, strip_ansi};
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_html(&mut self, html: CowStr) -> Result<()> {
@@ -81,21 +82,27 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn handle_horizontal_rule(&mut self) -> Result<()> {
         self.reset_explicit_blank_line_streak();
-        let width = self.config.get_terminal_width();
-        let rule = format!("◈{}◈", "─".repeat(width.saturating_sub(2)));
+        let prefix = self.current_rule_prefix();
+        let prefix_width = display_width(&strip_ansi(&prefix));
+        let width = self
+            .effective_text_width()
+            .saturating_sub(prefix_width)
+            .max(1);
+        let rule = if width >= 2 {
+            format!("◈{}◈", "─".repeat(width.saturating_sub(2)))
+        } else {
+            "─".repeat(width)
+        };
         let styled_rule = AnsiStyle::new()
             .fg(PRETTY_ACCENT_COLOR)
             .apply(&rule, self.config.no_colors);
 
         if !self.output.is_empty() {
-            if !self.output.ends_with('\n') {
-                self.output.push('\n');
-            }
-            if self.has_trailing_blank_line() {
-                self.normalize_trailing_blank_line();
-            } else {
-                self.output.push('\n');
-            }
+            self.ensure_contextual_blank_line_with_prefix(&prefix);
+        }
+
+        if !prefix.is_empty() {
+            self.output.push_str(&prefix);
         }
         self.output.push_str(&styled_rule);
         self.output.push('\n');

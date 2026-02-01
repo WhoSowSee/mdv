@@ -516,9 +516,7 @@ impl<'a> EventRenderer<'a> {
             self.wrap_code_line_segments(highlighted_line, raw_line, width, should_wrap, wrap_mode);
 
         if should_wrap && width > 0 && matches!(wrap_mode, WrapMode::Word) {
-            let has_overflow = segments
-                .iter()
-                .any(|segment| segment.visible_width > width);
+            let has_overflow = segments.iter().any(|segment| segment.visible_width > width);
             if has_overflow {
                 // Fall back to character wrapping to keep the pretty frame consistent.
                 segments = self.wrap_code_line_segments(
@@ -895,7 +893,7 @@ impl<'a> EventRenderer<'a> {
         Some(sanitized)
     }
 
-    fn append_captured_reference_blocks(&mut self, blocks: Vec<CapturedReferenceBlock>) {
+    pub(super) fn append_captured_reference_blocks(&mut self, blocks: Vec<CapturedReferenceBlock>) {
         if blocks.is_empty() {
             return;
         }
@@ -903,7 +901,9 @@ impl<'a> EventRenderer<'a> {
         for block in blocks {
             self.trim_trailing_blank_lines();
             if !self.output.is_empty() {
-                self.output.push('\n');
+                if !self.output.ends_with('\n') {
+                    self.output.push('\n');
+                }
                 self.output.push('\n');
             }
 

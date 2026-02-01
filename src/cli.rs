@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+use std::fmt;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -71,6 +72,15 @@ pub struct Cli {
     )]
     pub style_code_block: Option<CodeBlockStyle>,
 
+    #[arg(
+        long = "callout-style",
+        value_name = "CALLOUT_STYLE",
+        default_value = "pretty",
+        value_parser = parse_callout_style_config,
+        long_help = "Configure visual style for callouts\n(e.g. pretty:show-icons;label-inside;uppercase;fold-icons | simple:show-icons;uppercase;fold-icons)\nfold-icons requires show-icons. Icons require a Nerd Font in the terminal to display correctly."
+    )]
+    pub style_callout: Option<CalloutStyleConfig>,
+
     /// Set hanging indent style for wrapped code block lines
     #[arg(
         short = 'K',
@@ -133,6 +143,10 @@ pub struct Cli {
     #[arg(short = 'Y', long = "custom-code-theme", value_name = "PAIRS")]
     pub custom_code_theme: Option<String>,
 
+    /// Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
+    #[arg(long = "custom-callout", value_name = "CALLOUTS")]
+    pub custom_callout: Option<String>,
+
     /// Set link style
     #[arg(
         short = 'u',
@@ -170,10 +184,11 @@ pub struct Cli {
     )]
     pub heading_layout: Option<HeadingLayout>,
 
-    /// Smart indentation for headings when using `--heading-layout level`
-    /// compresses large jumps between heading levels so consecutive headings
-    /// change indentation gradually (e.g. H1 → H4 indents like H2).
-    #[arg(short = 'I', long = "smart-indent")]
+    #[arg(
+        short = 'I',
+        long = "smart-indent",
+        long_help = "Smart indentation for headings when using `--heading-layout level`\ncompress large jumps between heading levels so consecutive headings \nchange indentation gradually (e.g. H1 → H4 indents like H2)"
+    )]
     pub smart_indent: bool,
 }
 
@@ -282,6 +297,143 @@ pub enum CodeBlockStyle {
     Simple,
     #[value(help = "Box-drawn frame around code blocks")]
     Pretty,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CalloutStyle {
+    #[value(help = "Callout label with the quote gutter")]
+    Simple,
+    #[value(help = "Box-drawn frame with callout label on top")]
+    Pretty,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct CalloutStyleConfig {
+    pub style: CalloutStyle,
+    pub show_icons: bool,
+    pub show_fold_icons: bool,
+    pub label_inside: bool,
+    pub uppercase: bool,
+}
+
+impl Default for CalloutStyleConfig {
+    fn default() -> Self {
+        Self {
+            style: CalloutStyle::Pretty,
+            show_icons: false,
+            show_fold_icons: false,
+            label_inside: false,
+            uppercase: false,
+        }
+    }
+}
+
+impl CalloutStyleConfig {
+    fn parse(raw: &str) -> Result<Self, String> {
+        let input = raw.trim();
+        if input.is_empty() {
+            return Err("Callout style cannot be empty.".to_string());
+        }
+
+        let (style_raw, options_raw) = match input.split_once(':') {
+            Some((style, options)) => (style.trim(), Some(options.trim())),
+            None => (input, None),
+        };
+
+        let style = match style_raw.to_ascii_lowercase().as_str() {
+            "simple" => CalloutStyle::Simple,
+            "pretty" => CalloutStyle::Pretty,
+            _ => {
+                return Err(format!(
+                    "Unknown callout style '{}'. Expected 'simple' or 'pretty'.",
+                    style_raw
+                ));
+            }
+        };
+
+        let mut config = CalloutStyleConfig {
+            style,
+            ..CalloutStyleConfig::default()
+        };
+
+        if let Some(options_raw) = options_raw {
+            if options_raw.is_empty() {
+                return Err("Callout style options cannot be empty.".to_string());
+            }
+
+            for option in options_raw.split(';') {
+                let option = option.trim();
+                if option.is_empty() {
+                    return Err("Callout style option cannot be empty.".to_string());
+                }
+
+                match option.to_ascii_lowercase().as_str() {
+                    "show-icons" => config.show_icons = true,
+                    "fold-icons" => config.show_fold_icons = true,
+                    "label-inside" => config.label_inside = true,
+                    "uppercase" => config.uppercase = true,
+                    _ => return Err(format!("Unknown callout style option '{}'.", option)),
+                }
+            }
+        }
+
+        if matches!(config.style, CalloutStyle::Simple) && config.label_inside {
+            return Err(
+                "Option 'label-inside' is only supported with 'pretty' callout style.".to_string(),
+            );
+        }
+
+        Ok(config)
+    }
+}
+
+impl fmt::Display for CalloutStyleConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let style = match self.style {
+            CalloutStyle::Simple => "simple",
+            CalloutStyle::Pretty => "pretty",
+        };
+
+        let mut options = Vec::new();
+        if self.show_icons {
+            options.push("show-icons");
+        }
+        if self.show_fold_icons {
+            options.push("fold-icons");
+        }
+        if self.label_inside {
+            options.push("label-inside");
+        }
+        if self.uppercase {
+            options.push("uppercase");
+        }
+
+        if options.is_empty() {
+            write!(f, "{}", style)
+        } else {
+            write!(f, "{}:{}", style, options.join(";"))
+        }
+    }
+}
+
+impl TryFrom<String> for CalloutStyleConfig {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        CalloutStyleConfig::parse(&value)
+    }
+}
+
+impl From<CalloutStyleConfig> for String {
+    fn from(value: CalloutStyleConfig) -> Self {
+        value.to_string()
+    }
+}
+
+fn parse_callout_style_config(value: &str) -> Result<CalloutStyleConfig, String> {
+    CalloutStyleConfig::parse(value)
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]

@@ -149,6 +149,7 @@ impl<'a> EventRenderer<'a> {
                 self.output.push('\n');
             }
 
+            // Footnotes always start at column 0 to avoid inherited indents.
             self.output.push_str(line);
         }
 
@@ -237,6 +238,7 @@ impl<'a> EventRenderer<'a> {
 
         let mut is_first = true;
         for (line_idx, raw_line) in body.split('\n').enumerate() {
+            // Preserve intentional blank lines inside the body
             if line_idx > 0 && raw_line.is_empty() {
                 lines.push(String::new());
                 continue;
@@ -271,13 +273,13 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn available_width_for_footnote(&self, prefix_width: usize) -> usize {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
         let available = terminal_width.saturating_sub(prefix_width);
         available.max(1)
     }
 
     fn footnote_separator_line(&self) -> String {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.effective_text_width();
         let available = terminal_width;
 
         // Keep a visible separator even on very narrow widths.

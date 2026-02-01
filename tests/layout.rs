@@ -66,6 +66,48 @@ fn test_blockquote_list_preserves_marker_prefix() {
 }
 
 #[test]
+fn test_blockquote_respects_heading_indent_and_single_space() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "## Heading\n\n> Quote text\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("--heading-layout")
+        .arg("level")
+        .arg("-A")
+        .arg("-W")
+        .arg("none")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for blockquote heading indent");
+
+    assert!(
+        output.status.success(),
+        "mdv exited with {:?}",
+        output.status
+    );
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let lines: Vec<&str> = stdout.lines().collect();
+    let quote_line = lines
+        .iter()
+        .find(|line| line.contains("Quote text"))
+        .expect("quote line present");
+
+    assert!(
+        quote_line.starts_with("  │ "),
+        "expected heading indent before quote, stdout:\n{}",
+        stdout
+    );
+
+    let after_prefix = &quote_line["  │ ".len()..];
+    assert!(
+        !after_prefix.starts_with(' '),
+        "expected single space after quote marker, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
 fn test_smart_indent_promotes_first_heading() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "## Heading Two\n\nContent\n").unwrap();
@@ -538,11 +580,7 @@ fn test_multiple_backslash_lines_create_multiple_blank_lines() {
 #[test]
 fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(
-        &temp_file,
-        "Status update\\\n```\nSample output\n```\n",
-    )
-    .unwrap();
+    fs::write(&temp_file, "Status update\\\n```\nSample output\n```\n").unwrap();
 
     let output = mdv_cmd()
         .arg("-A")
@@ -583,5 +621,3 @@ fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
         stdout
     );
 }
-
-

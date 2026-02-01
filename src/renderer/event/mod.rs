@@ -17,7 +17,7 @@ pub(crate) use core::{CapturedReferenceBlock, EventRenderer};
 pub(super) use footnotes::FootnoteDefinition;
 
 pub(super) use crate::cli::{
-    CodeBlockStyle, CodeWrapIndent, FootnoteStyle, LinkStyle, LinkTruncationStyle,
+    CalloutStyle, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, LinkStyle, LinkTruncationStyle,
 };
 pub(super) use crate::config::Config;
 pub(super) use crate::error::MdvError;

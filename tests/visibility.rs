@@ -193,7 +193,3 @@ fn test_empty_subheading_with_list_content_shows_placeholder() {
         stdout
     );
 }
-
-
-
-

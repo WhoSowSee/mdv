@@ -77,7 +77,9 @@ impl TerminalRenderer {
             Event::Html(html) if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER => {
                 Event::HardBreak
             }
-            Event::InlineHtml(html) if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER => {
+            Event::InlineHtml(html)
+                if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER =>
+            {
                 Event::HardBreak
             }
             other => other,

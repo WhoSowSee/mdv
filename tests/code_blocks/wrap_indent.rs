@@ -90,6 +90,3 @@ fn code_wrap_indent_none_preserves_legacy_alignment() {
         "expected continuation to start immediately after border"
     );
 }
-
-
-

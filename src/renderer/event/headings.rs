@@ -1,3 +1,4 @@
+use super::core::CalloutState;
 use super::{EventRenderer, HeadingLevel, Result, ThemeElement, create_style};
 
 impl<'a> EventRenderer<'a> {
@@ -8,7 +9,16 @@ impl<'a> EventRenderer<'a> {
         if matches!(self.config.heading_layout, crate::cli::HeadingLayout::Level)
             && self.config.smart_indent
         {
-            if let Some(&planned_indent) = self.smart_level_indents.get(&level) {
+            let planned_indent = if self.blockquote_level > 0 {
+                self.active_blockquote_smart_indents
+                    .last()
+                    .and_then(|map| map.get(&level))
+                    .copied()
+            } else {
+                self.smart_level_indents.get(&level).copied()
+            };
+
+            if let Some(planned_indent) = planned_indent {
                 self.heading_indent = planned_indent;
                 self.content_indent = planned_indent + 1;
             } else {
@@ -21,19 +31,75 @@ impl<'a> EventRenderer<'a> {
             self.heading_indent = self.get_heading_indent(level);
             self.content_indent = self.get_content_indent(level);
         }
+        if let Some(callout_info) =
+            self.callout_stack
+                .iter_mut()
+                .rev()
+                .find_map(|state| match state {
+                    CalloutState::Active(info) => Some(info),
+                    _ => None,
+                })
+        {
+            let base = callout_info
+                .min_heading_indent
+                .map(|current| current.min(self.heading_indent))
+                .unwrap_or(self.heading_indent);
+            callout_info.min_heading_indent = Some(base);
+            if base > 0 {
+                self.heading_indent = self.heading_indent.saturating_sub(base);
+                self.content_indent = self.content_indent.saturating_sub(base);
+            }
+        }
         // Update trackers after computing indentation
         self.current_heading_level = Some(level);
         self.last_header_level = level;
 
         self.trim_trailing_blank_lines();
-        self.ensure_contextual_blank_line();
+        let use_heading_prefix = self.blockquote_level > 0
+            && matches!(
+                self.config.callout_style.style,
+                crate::cli::CalloutStyle::Simple
+            )
+            && self
+                .callout_stack
+                .iter()
+                .any(|state| matches!(state, CalloutState::Active(_)));
 
-        if self.has_trailing_blank_line() {
+        if use_heading_prefix {
+            let mut prefix = self.render_blockquote_prefix();
+            if !self.list_stack.is_empty() {
+                let list_indent = self
+                    .calculate_list_content_indent()
+                    .saturating_sub(self.content_indent);
+                if list_indent > 0 {
+                    prefix.push_str(&" ".repeat(list_indent));
+                }
+            }
+            self.ensure_contextual_blank_line_with_prefix(&prefix);
+        } else {
+            self.ensure_contextual_blank_line();
+        }
+
+        if self.has_trailing_blank_line() && !use_heading_prefix {
             self.normalize_trailing_blank_line();
         }
 
-        // Add heading indentation
-        if self.heading_indent > 0 {
+        if self.blockquote_level > 0 {
+            let prefix = self.render_blockquote_prefix();
+            self.output.push_str(&prefix);
+            if self.heading_indent > 0 {
+                self.output.push_str(&" ".repeat(self.heading_indent));
+            }
+            if !self.list_stack.is_empty() {
+                let list_indent = self
+                    .calculate_list_content_indent()
+                    .saturating_sub(self.content_indent);
+                if list_indent > 0 {
+                    self.output.push_str(&" ".repeat(list_indent));
+                }
+            }
+        } else if self.heading_indent > 0 {
+            // Add heading indentation
             self.output.push_str(&" ".repeat(self.heading_indent));
         }
 
@@ -123,37 +189,29 @@ impl<'a> EventRenderer<'a> {
             } else {
                 self.pending_heading_placeholder = None;
             }
-        }
 
-        // Apply header styling to the last line(s) in output
-        // This is a simplified approach - we style the header after it's been added
-        let style = create_style(self.theme, element);
-        let indent_str = " ".repeat(self.heading_indent);
+            // Apply header styling based on the exact heading span.
+            let line_start = self.output[..start]
+                .rfind('\n')
+                .map(|idx| idx + 1)
+                .unwrap_or(0);
+            let line_prefix = self.output[line_start..start].to_string();
+            let before = self.output[..line_start].to_string();
+            let header_text = self.output[start..].to_string();
 
-        // Find the last header content (everything after the last double newline)
-        if let Some(last_newline_pos) = self.output.rfind("\n\n") {
-            let (before, after) = self.output.split_at(last_newline_pos + 2);
-            let header_text = after.trim();
-            if !header_text.is_empty() {
-                // Remove the existing indentation from header text to avoid double indentation
-                let clean_header_text = if header_text.starts_with(&indent_str) {
-                    &header_text[indent_str.len()..]
-                } else {
-                    header_text
-                };
-
-                // Wrap header text if needed
+            let clean_header_text = header_text.trim();
+            if !clean_header_text.is_empty() {
                 let wrapped_header = if !self.config.is_text_wrapping_enabled() {
                     clean_header_text.to_string()
                 } else {
                     self.wrap_text_for_output(clean_header_text)
                 };
 
-                // Optionally center each line depending on layout
-                let final_header = match self.config.heading_layout {
+                let style = create_style(self.theme, element);
+                let styled_header = match self.config.heading_layout {
                     crate::cli::HeadingLayout::Center => {
-                        let terminal_width = self.config.get_terminal_width();
-                        let centered = wrapped_header
+                        let terminal_width = self.effective_text_width();
+                        wrapped_header
                             .lines()
                             .map(|line| {
                                 let clean = crate::utils::strip_ansi(line);
@@ -167,67 +225,19 @@ impl<'a> EventRenderer<'a> {
                                 format!("{}{}", " ".repeat(pad), styled)
                             })
                             .collect::<Vec<_>>()
-                            .join("\n");
-                        centered
+                            .join("\n")
                     }
-                    _ => {
-                        let styled_header = style.apply(&wrapped_header, self.config.no_colors);
-                        if self.heading_indent > 0 {
-                            format!("{}{}", indent_str, styled_header)
-                        } else {
-                            styled_header
-                        }
-                    }
+                    _ => style.apply(&wrapped_header, self.config.no_colors),
                 };
+
+                let final_header = styled_header
+                    .lines()
+                    .map(|line| format!("{}{}", line_prefix, line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
                 self.output = format!("{}{}", before, final_header);
-            }
-        } else {
-            // Header is at the beginning, style the entire output so far
-            let header_text = self.output.trim();
-            if !header_text.is_empty() {
-                // Remove the existing indentation from header text to avoid double indentation
-                let clean_header_text = if header_text.starts_with(&indent_str) {
-                    &header_text[indent_str.len()..]
-                } else {
-                    header_text
-                };
-
-                let wrapped_header = if !self.config.is_text_wrapping_enabled() {
-                    clean_header_text.to_string()
-                } else {
-                    self.wrap_text_for_output(clean_header_text)
-                };
-
-                let final_header = match self.config.heading_layout {
-                    crate::cli::HeadingLayout::Center => {
-                        let terminal_width = self.config.get_terminal_width();
-                        let centered = wrapped_header
-                            .lines()
-                            .map(|line| {
-                                let clean = crate::utils::strip_ansi(line);
-                                let line_width = crate::utils::display_width(&clean);
-                                let pad = if terminal_width > line_width {
-                                    (terminal_width - line_width) / 2
-                                } else {
-                                    0
-                                };
-                                let styled = style.apply(line, self.config.no_colors);
-                                format!("{}{}", " ".repeat(pad), styled)
-                            })
-                            .collect::<Vec<_>>()
-                            .join("\n");
-                        centered
-                    }
-                    _ => {
-                        let styled_header = style.apply(&wrapped_header, self.config.no_colors);
-                        if self.heading_indent > 0 {
-                            format!("{}{}", indent_str, styled_header)
-                        } else {
-                            styled_header
-                        }
-                    }
-                };
-                self.output = final_header;
+            } else {
+                self.output = format!("{}{}", before, line_prefix);
             }
         }
 

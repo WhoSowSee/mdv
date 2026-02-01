@@ -16,11 +16,7 @@ fn test_inline_math_renders_unicode() {
     )
     .unwrap();
 
-    let output = mdv_cmd()
-        .arg("-A")
-        .arg(temp_file.path())
-        .output()
-        .unwrap();
+    let output = mdv_cmd().arg("-A").arg(temp_file.path()).output().unwrap();
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -54,11 +50,7 @@ fn test_display_math_renders_block() {
 #[test]
 fn test_fenced_math_block_renders() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(
-        &temp_file,
-        "```math\n\\int_0^1 x^2 dx\n```",
-    )
-    .unwrap();
+    fs::write(&temp_file, "```math\n\\int_0^1 x^2 dx\n```").unwrap();
 
     let output = mdv_cmd()
         .arg("-A")

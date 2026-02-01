@@ -178,8 +178,3 @@ fn test_end_table_link_style_collects_references_at_document_end() {
         tail
     );
 }
-
-
-
-
-

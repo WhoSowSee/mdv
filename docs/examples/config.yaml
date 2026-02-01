@@ -7,6 +7,9 @@ code_theme: "monokai"      # Option: "terminal" | "solarized-dark" | "nord" | "t
 theme_info: false          # Print palette information alongside rendered output
 custom_theme: null         # Override individual UI colors (see formats below)
 custom_code_theme: null    # Override syntax colors (same format as custom_theme)
+custom_callout: null       # Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
+                           # icon/color are optional
+                           # Color values use the same formats as custom_theme/custom_code_theme.
 
 # Display behaviour
 # Keys must use snake_case (e.g. no_colors, tab_length).
@@ -22,6 +25,8 @@ show_empty_elements: false # Show otherwise hidden empty lists, block quotes, ta
 no_code_language: false    # Disable the language label above code blocks
 code_guessing: true        # Disable to keep unknown code blocks as plain text
 code_block_style: "pretty" # Options: "simple" | "pretty"
+callout_style: "pretty"    # Options: "simple:show-icons;fold-icons;uppercase" | "pretty:show-icons;fold-icons;label-inside;uppercase"
+                           # label-inside is supported only with "pretty", fold-icons requires show-icons. Icons require Nerd Fonts.
 code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hanging indent inside code blocks
 reverse: false             # Render document starting from the end while preserving layout
 
@@ -45,7 +50,7 @@ from_text: null            # Render starting from the first line that contains t
 # Available keys for custom_code_theme:
 # keyword, string, comment, number, operator, function, variable, type_name
 
-# Color value formats accepted in custom_theme/custom_code_theme:
+# Color value formats accepted in custom_theme/custom_code_theme/custom_callout:
 # Hex strings: "#rrggbb" or "#rgb"
 # RGB tuples:  "r,g,b" or "rgb(r,g,b)" (values 0..255)
 # ANSI 256:    "ansi(N)" or just "N" (0..255)

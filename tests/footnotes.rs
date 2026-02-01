@@ -130,9 +130,7 @@ fn attached_footnotes_follow_paragraphs() {
         .arg("attached")
         .arg(temp_file.path());
 
-    let output = cmd
-        .output()
-        .expect("run mdv with attached footnotes");
+    let output = cmd.output().expect("run mdv with attached footnotes");
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).expect("stdout is utf-8");
 
@@ -336,4 +334,3 @@ fn footnotes_leave_single_blank_line_after_block() {
         stdout
     );
 }
-
