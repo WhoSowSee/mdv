@@ -73,6 +73,7 @@ pub struct Cli {
     pub style_code_block: Option<CodeBlockStyle>,
 
     #[arg(
+        short = 'O',
         long = "callout-style",
         value_name = "CALLOUT_STYLE",
         default_value = "pretty",
@@ -144,7 +145,7 @@ pub struct Cli {
     pub custom_code_theme: Option<String>,
 
     /// Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
-    #[arg(long = "custom-callout", value_name = "CALLOUTS")]
+    #[arg(short = 'U', long = "custom-callout", value_name = "CALLOUTS")]
     pub custom_callout: Option<String>,
 
     /// Set link style
@@ -177,6 +178,7 @@ pub struct Cli {
 
     /// Configure handling of missing footnote definitions
     #[arg(
+        short = 'M',
         long = "missing-footnote-style",
         value_enum,
         value_name = "STYLE",
