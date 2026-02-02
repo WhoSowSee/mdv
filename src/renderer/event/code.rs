@@ -126,7 +126,15 @@ impl<'a> EventRenderer<'a> {
 
         self.reset_explicit_blank_line_streak();
 
-        let raw_code = std::mem::take(&mut self.code_block_content);
+        let mut raw_code = std::mem::take(&mut self.code_block_content);
+        let language_hint = self.code_block_language.clone();
+        if Self::is_markdown_language_hint(language_hint.as_deref()) {
+            let (cleaned, definitions) = self.extract_markdown_code_footnote_definitions(&raw_code);
+            if !definitions.is_empty() {
+                self.footnote_definitions.extend(definitions);
+            }
+            raw_code = cleaned;
+        }
         self.register_footnotes_in_text(&raw_code);
 
         let is_empty = raw_code.trim().is_empty();
@@ -135,7 +143,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let language_hint = self.code_block_language.clone();
+        let language_hint = language_hint;
         if let Some(hint) = language_hint.as_deref() {
             if is_math_language_hint(hint) {
                 self.code_block_language = None;
@@ -765,13 +773,22 @@ impl<'a> EventRenderer<'a> {
         let mut result = String::new();
         let mut prev_end = 0usize;
 
-        for mat in REGEX.find_iter(&clean) {
-            let start_v = mat.start();
-            let end_v = mat.end();
+        for capture in REGEX.captures_iter(&clean) {
+            let Some(matched) = capture.get(0) else {
+                continue;
+            };
+
+            let start_v = matched.start();
+            let end_v = matched.end();
 
             if start_v >= mapping.len() || end_v == 0 || end_v - 1 >= mapping.len() {
                 continue;
             }
+
+            let name = capture
+                .get(1)
+                .map(|group| group.as_str())
+                .unwrap_or_default();
 
             let start_byte = mapping[start_v].0;
             let end_byte = mapping[end_v - 1].1;
@@ -781,17 +798,29 @@ impl<'a> EventRenderer<'a> {
             result.push_str(&line[prev_end..start_byte]);
 
             let marker = &line[start_byte..end_byte];
-            let mut styled = style.apply(marker, self.config.no_colors);
-            if let Some(sgr) = restore {
-                styled.push_str(&sgr);
+            if self.should_highlight_footnote_reference(name) {
+                let mut styled = style.apply(marker, self.config.no_colors);
+                if let Some(sgr) = restore {
+                    styled.push_str(&sgr);
+                }
+                result.push_str(&styled);
+            } else {
+                result.push_str(marker);
             }
-            result.push_str(&styled);
 
             prev_end = end_byte;
         }
 
         result.push_str(&line[prev_end..]);
         result
+    }
+
+    fn is_markdown_language_hint(hint: Option<&str>) -> bool {
+        let Some(raw) = hint else {
+            return false;
+        };
+        let normalized = raw.trim().to_ascii_lowercase();
+        matches!(normalized.as_str(), "md" | "markdown")
     }
 
     fn should_render_code_block_as_plaintext(&self, language_hint: Option<&str>) -> bool {
@@ -830,6 +859,7 @@ impl<'a> EventRenderer<'a> {
         let mut nested_renderer =
             EventRenderer::new(&nested_config, self.theme, self.syntax_set, self.code_theme);
         nested_renderer.plaintext_code_block_depth = self.plaintext_code_block_depth + 1;
+        nested_renderer.suppress_footnote_output = true;
         if matches!(self.config.link_style, LinkStyle::EndTable) {
             nested_renderer.paragraph_link_counter = self.paragraph_link_counter;
         }

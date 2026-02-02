@@ -175,6 +175,15 @@ pub struct Cli {
     )]
     pub footnote_style: Option<FootnoteStyle>,
 
+    /// Configure handling of missing footnote definitions
+    #[arg(
+        long = "missing-footnote-style",
+        value_enum,
+        value_name = "STYLE",
+        default_value = "show"
+    )]
+    pub missing_footnote_style: Option<MissingFootnoteStyle>,
+
     /// Set heading layout
     #[arg(
         short = 'd',
@@ -253,6 +262,20 @@ pub enum FootnoteStyle {
     )]
     #[serde(alias = "attached")]
     Attached,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MissingFootnoteStyle {
+    #[value(
+        name = "show",
+        help = "Render missing footnotes with a placeholder entry"
+    )]
+    #[serde(alias = "show")]
+    Show,
+    #[value(name = "hide", help = "Omit missing footnotes from the footnote block")]
+    #[serde(alias = "hide")]
+    Hide,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]

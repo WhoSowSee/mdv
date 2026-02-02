@@ -123,6 +123,13 @@ mdv [OPTIONS] | mdv
 - `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` changes how links are displayed (default `clickable`).
 - `-l, --link-truncation <wrap|cut|none>` determines how long links are shortened (default `wrap`).
 
+### Footnotes
+
+- `--footnote-style <endnotes|attached>` places footnotes at the end of the document or after each paragraph.
+- `--missing-footnote-style <show|hide>` controls placeholder entries for missing, invalid, or empty footnote definitions.
+  `show` renders a placeholder message in the footnote block
+  `hide` omits those entries entirely.
+
 ### Information
 
 - `-h, --help` shows the help text.

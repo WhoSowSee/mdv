@@ -36,6 +36,7 @@ link_truncation: "wrap"    # Options: "wrap" | "cut" | "none"
 
 # Footnotes
 footnote_style: "endnotes" # Options: "endnotes" | "attached"
+missing_footnote_style: "show" # Options: "show" | "hide"
 
 # Content filtering
 from_text: null            # Render starting from the first line that contains this text

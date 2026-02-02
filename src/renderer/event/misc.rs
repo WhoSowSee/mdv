@@ -114,9 +114,14 @@ impl<'a> EventRenderer<'a> {
         self.note_paragraph_content();
         self.register_footnote_reference(name.as_ref());
 
-        let style = create_style(self.theme, ThemeElement::Link);
-        let footnote = style.apply(&format!("[^{}]", name), self.config.no_colors);
-        self.output.push_str(&footnote);
+        let marker = format!("[^{}]", name);
+        if self.should_highlight_footnote_reference(name.as_ref()) {
+            let style = create_style(self.theme, ThemeElement::Link);
+            let footnote = style.apply(&marker, self.config.no_colors);
+            self.output.push_str(&footnote);
+        } else {
+            self.output.push_str(&marker);
+        }
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }

@@ -76,6 +76,13 @@ pub(crate) struct CapturedReferenceBlock {
     pub(super) add_trailing_newline: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FootnoteTextState {
+    Idle,
+    SawOpenBracket,
+    Collecting,
+}
+
 fn blockquote_kind_info(kind: BlockQuoteKind) -> (CalloutKind, String) {
     match kind {
         BlockQuoteKind::Note => (CalloutKind::Note, "note".to_string()),
@@ -273,6 +280,8 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) current_inline_footnotes: Vec<String>,
     pub(crate) footnote_use_count: HashMap<String, usize>,
     pub(crate) suppress_footnote_output: bool,
+    pub(crate) footnote_text_state: FootnoteTextState,
+    pub(crate) footnote_text_buffer: String,
     pub(crate) last_header_level: HeadingLevel,
     pub(crate) formatting_stack: Vec<ThemeElement>,
     pub(crate) current_heading_level: Option<HeadingLevel>,
@@ -335,6 +344,8 @@ impl<'a> EventRenderer<'a> {
             current_inline_footnotes: Vec::new(),
             footnote_use_count: HashMap::new(),
             suppress_footnote_output: false,
+            footnote_text_state: FootnoteTextState::Idle,
+            footnote_text_buffer: String::new(),
             last_header_level: HeadingLevel::H1,
             formatting_stack: Vec::new(),
             current_heading_level: None,
@@ -501,6 +512,9 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn process_event(&mut self, event: Event) -> Result<()> {
+        if !matches!(event, Event::Text(_)) {
+            self.reset_footnote_text_scan();
+        }
         match event {
             Event::Start(tag) => self.handle_start_tag(tag)?,
             Event::End(tag_end) => self.handle_end_tag(tag_end)?,
@@ -772,7 +786,7 @@ impl<'a> EventRenderer<'a> {
 
                 let inline_footnotes_rendered =
                     matches!(self.config.footnote_style, FootnoteStyle::Attached)
-                        && !self.current_inline_footnotes.is_empty()
+                        && self.has_renderable_footnotes(&self.current_inline_footnotes)
                         && !self.suppress_footnote_output;
 
                 self.finalize_inline_footnotes(true, !self.list_stack.is_empty())?;

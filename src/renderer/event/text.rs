@@ -41,6 +41,10 @@ enum CalloutDecision {
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_text(&mut self, text: CowStr) -> Result<()> {
+        if !self.in_code_block && !self.in_link {
+            self.scan_footnotes_in_text_stream(&text);
+        }
+
         if self.in_code_block {
             self.pending_task_marker = false;
             self.pending_task_marker_buffer.clear();

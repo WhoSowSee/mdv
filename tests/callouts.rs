@@ -801,14 +801,8 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
         .iter()
         .position(|line| *line == "┃ [Info]")
         .expect("callout header present");
-    let spacer_line = lines
-        .get(header_idx + 1)
-        .copied()
-        .unwrap_or_default();
-    let body_line = lines
-        .get(header_idx + 2)
-        .copied()
-        .unwrap_or_default();
+    let spacer_line = lines.get(header_idx + 1).copied().unwrap_or_default();
+    let body_line = lines.get(header_idx + 2).copied().unwrap_or_default();
 
     assert_eq!(
         spacer_line, "┃ ",
@@ -1287,10 +1281,7 @@ fn test_callout_pretty_spacing_between_callouts_after_heading() {
         .expect("second callout top border present");
 
     let between = &lines[first_bottom + 1..second_top];
-    let blank_lines = between
-        .iter()
-        .filter(|line| line.trim().is_empty())
-        .count();
+    let blank_lines = between.iter().filter(|line| line.trim().is_empty()).count();
     let non_blank_lines = between
         .iter()
         .filter(|line| !line.trim().is_empty())

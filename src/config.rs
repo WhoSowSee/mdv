@@ -1,7 +1,7 @@
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, Cli, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, HeadingLayout,
-    LinkStyle, LinkTruncationStyle, TableWrapMode, TextWrapMode,
+    LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, TableWrapMode, TextWrapMode,
 };
 use crate::error::MdvError;
 use anyhow::Result;
@@ -57,6 +57,7 @@ pub struct Config {
     pub link_style: LinkStyle,
     pub link_truncation: LinkTruncationStyle,
     pub footnote_style: FootnoteStyle,
+    pub missing_footnote_style: MissingFootnoteStyle,
 
     // Content filtering
     pub from_text: Option<String>,
@@ -94,6 +95,7 @@ impl Default for Config {
             link_style: LinkStyle::Clickable,
             link_truncation: LinkTruncationStyle::Wrap,
             footnote_style: FootnoteStyle::Endnotes,
+            missing_footnote_style: MissingFootnoteStyle::Show,
             from_text: None,
             config_file: None,
         }
@@ -190,6 +192,12 @@ impl Config {
         if let Some(footnote_style) = cli.footnote_style {
             if arg_has_user_value(matches, "footnote_style") {
                 config.footnote_style = footnote_style;
+            }
+        }
+
+        if let Some(missing_style) = cli.missing_footnote_style {
+            if arg_has_user_value(matches, "missing_footnote_style") {
+                config.missing_footnote_style = missing_style;
             }
         }
 
@@ -403,6 +411,10 @@ impl Config {
 
         if !matches!(other.footnote_style, FootnoteStyle::Endnotes) {
             self.footnote_style = other.footnote_style;
+        }
+
+        if !matches!(other.missing_footnote_style, MissingFootnoteStyle::Show) {
+            self.missing_footnote_style = other.missing_footnote_style;
         }
 
         if other.from_text.is_some() {

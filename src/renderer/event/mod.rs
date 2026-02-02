@@ -18,6 +18,7 @@ pub(super) use footnotes::FootnoteDefinition;
 
 pub(super) use crate::cli::{
     CalloutStyle, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, LinkStyle, LinkTruncationStyle,
+    MissingFootnoteStyle,
 };
 pub(super) use crate::config::Config;
 pub(super) use crate::error::MdvError;

@@ -122,6 +122,13 @@ mdv [OPTIONS] | mdv
 - `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` — способ отображения ссылок (по умолчанию `clickable`).
 - `-l, --link-truncation <wrap|cut|none>` — стратегия укорочения длинных ссылок (по умолчанию `wrap`).
 
+### Сноски
+
+- `--footnote-style <endnotes|attached>` — размещение сносок в конце документа или после каждого абзаца.
+- `--missing-footnote-style <show|hide>` — поведение для отсутствующих, некорректных или пустых определений сносок.
+  `show` выводит сообщение-заглушку в блоке сносок
+  `hide` полностью скрывает такие записи.
+
 ### Справочная информация
 
 - `-h, --help` — вывод справки.
