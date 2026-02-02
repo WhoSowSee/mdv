@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.2.0] - 2026-02-02
+
+### Bug Fixes
+
+- Fixed: keep code blocks looking pretty in narrow terminals
+- Fixed: backslashes, blank lines, and task list spacing
+- Fixed: text disappearing inside lists
+- Fixed: backslash/blank-line handling in callouts and blockquotes
+
+### Features
+
+- Added: support for background text highlighting syntax
+- Added: footnote support
+- Added: basic LaTeX support
+- Added: support for additional TODO marker types
+- Added: callout support
+- Added: new parameter `--missing-footnote-style`
+- Added: short flags for callout and footnote options
+
+
 ## [2.1.0] - 2025-11-03
 
 ### Bux Fixes
