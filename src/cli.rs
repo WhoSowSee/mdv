@@ -77,7 +77,7 @@ pub struct Cli {
         value_name = "CALLOUT_STYLE",
         default_value = "pretty",
         value_parser = parse_callout_style_config,
-        long_help = "Configure visual style for callouts\n(e.g. pretty:show-icons;label-inside;uppercase;fold-icons | simple:show-icons;uppercase;fold-icons)\nfold-icons requires show-icons. Icons require a Nerd Font in the terminal to display correctly."
+        long_help = "Configure visual style for callouts\npretty:show-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;uppercase;fold-icons)\nOption fold-icons requires show-icons\nIcons require a Nerd Font in the terminal to display correctly"
     )]
     pub style_callout: Option<CalloutStyleConfig>,
 

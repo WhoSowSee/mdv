@@ -134,20 +134,8 @@ impl MarkdownProcessor {
     }
 
     fn split_blockquote_prefix(line: &str) -> (usize, &str) {
-        let trimmed = line.trim_start();
-        let bytes = trimmed.as_bytes();
-        let mut idx = 0usize;
-        let mut level = 0usize;
-
-        while idx < bytes.len() && bytes[idx] == b'>' {
-            level += 1;
-            idx += 1;
-            if idx < bytes.len() && bytes[idx] == b' ' {
-                idx += 1;
-            }
-        }
-
-        (level, &trimmed[idx..])
+        let (level, _prefix, rest) = Self::split_blockquote_prefix_parts(line);
+        (level, rest)
     }
 
     fn normalize_explicit_blank_lines(&self, content: &str) -> String {
@@ -188,17 +176,22 @@ impl MarkdownProcessor {
             let trimmed = trimmed_end.trim();
 
             if trimmed == "\\" {
-                self.push_explicit_blank_line_marker(&mut result, &mut last_blank);
+                let (level, prefix, _rest) = Self::split_blockquote_prefix_parts(line);
+                let prefix = if level > 0 { prefix } else { String::new() };
+                self.push_explicit_blank_line_marker(&mut result, &mut last_blank, &prefix);
                 continue;
             }
 
             if trimmed_end.ends_with('\\') && trimmed_end.len() > 1 {
                 let line_without_backslash = trimmed_end[..trimmed_end.len() - 1].to_string();
-                if !line_without_backslash.trim().is_empty() {
+                let (level, prefix, rest) =
+                    Self::split_blockquote_prefix_parts(&line_without_backslash);
+                let prefix = if level > 0 { prefix } else { String::new() };
+                if !rest.trim().is_empty() {
                     result.push(line_without_backslash);
                     last_blank = false;
                 }
-                self.push_explicit_blank_line_marker(&mut result, &mut last_blank);
+                self.push_explicit_blank_line_marker(&mut result, &mut last_blank, &prefix);
                 continue;
             }
 
@@ -215,13 +208,44 @@ impl MarkdownProcessor {
         result.join("\n")
     }
 
-    fn push_explicit_blank_line_marker(&self, result: &mut Vec<String>, last_blank: &mut bool) {
+    fn push_explicit_blank_line_marker(
+        &self,
+        result: &mut Vec<String>,
+        last_blank: &mut bool,
+        prefix: &str,
+    ) {
+        let prefix = prefix.to_string();
         if !*last_blank {
-            result.push(String::new());
+            result.push(prefix.clone());
         }
-        result.push(BLANK_LINE_MARKER.to_string());
-        result.push(String::new());
+        if prefix.is_empty() {
+            result.push(BLANK_LINE_MARKER.to_string());
+            result.push(String::new());
+        } else {
+            result.push(format!("{}{}", prefix, BLANK_LINE_MARKER));
+            result.push(prefix);
+        }
         *last_blank = true;
+    }
+
+    fn split_blockquote_prefix_parts(line: &str) -> (usize, String, &str) {
+        let trimmed = line.trim_start();
+        let leading_ws_len = line.len().saturating_sub(trimmed.len());
+        let bytes = trimmed.as_bytes();
+        let mut idx = 0usize;
+        let mut level = 0usize;
+
+        while idx < bytes.len() && bytes[idx] == b'>' {
+            level += 1;
+            idx += 1;
+            if idx < bytes.len() && bytes[idx] == b' ' {
+                idx += 1;
+            }
+        }
+
+        let prefix_len = leading_ws_len + idx;
+        let prefix = line.get(..prefix_len).unwrap_or("").to_string();
+        (level, prefix, &trimmed[idx..])
     }
 
     fn detect_fence_marker(line: &str) -> Option<(char, usize)> {

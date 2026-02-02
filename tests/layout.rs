@@ -621,3 +621,43 @@ fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
         stdout
     );
 }
+
+#[test]
+fn test_blockquote_backslash_keeps_prefix_on_blank_line() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "> First\\\n> Second\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-W")
+        .arg("none")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for blockquote backslash");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let lines: Vec<&str> = stdout.lines().collect();
+
+    let first_idx = lines
+        .iter()
+        .position(|line| *line == "│ First")
+        .expect("first quote line present");
+    let second_idx = lines
+        .iter()
+        .position(|line| *line == "│ Second")
+        .expect("second quote line present");
+
+    let gap = &lines[first_idx + 1..second_idx];
+    assert!(
+        gap.iter().any(|line| line.trim() == "│"),
+        "expected blank line to keep blockquote prefix, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        gap.iter().all(|line| !line.trim().is_empty()),
+        "expected no unprefixed blank lines inside blockquote, stdout:\n{}",
+        stdout
+    );
+}

@@ -16,14 +16,27 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_explicit_blank_line(&mut self) {
+        let prefix = self.current_line_prefix();
+        let use_prefix = !prefix.is_empty();
+
         if self.has_trailing_blank_line() {
             if self.explicit_blank_line_streak > 0 {
+                if use_prefix {
+                    self.output.push('\n');
+                    self.output.push_str(&prefix);
+                    self.output.push('\n');
+                } else {
+                    self.output.push('\n');
+                }
+            }
+        } else {
+            if !self.output.ends_with('\n') {
                 self.output.push('\n');
             }
-        } else if self.output.ends_with('\n') {
+            if use_prefix {
+                self.output.push_str(&prefix);
+            }
             self.output.push('\n');
-        } else {
-            self.output.push_str("\n\n");
         }
         self.explicit_blank_line_streak = self.explicit_blank_line_streak.saturating_add(1);
     }

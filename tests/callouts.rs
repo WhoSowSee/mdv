@@ -37,6 +37,52 @@ fn test_callout_renders_label_and_body() {
 }
 
 #[test]
+fn test_callout_backslash_keeps_blockquote_context() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "> [!important]\n> Арбуз\\\n> Арбуз\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-W")
+        .arg("none")
+        .arg("--callout-style")
+        .arg("simple")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for callout backslash");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+
+    assert!(
+        stdout.contains("┃ [Important]"),
+        "expected callout header, stdout:\n{}",
+        stdout
+    );
+
+    let arbuz_lines: Vec<&str> = stdout
+        .lines()
+        .filter(|line| line.contains("Арбуз"))
+        .collect();
+
+    assert!(
+        !arbuz_lines.is_empty(),
+        "expected callout body lines, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        arbuz_lines.iter().all(|line| line.starts_with("┃ ")),
+        "expected backslash content to stay inside callout, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("│ Арбуз"),
+        "expected no plain blockquote after backslash, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
 fn test_callout_adds_blank_lines_around() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "Alpha\n> [!info]\n> Example text\nOmega\n").unwrap();
