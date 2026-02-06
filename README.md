@@ -280,16 +280,16 @@ Built-in themes include:
 </details>
 
 <details>
-  <summary><code>catppucin</code></summary>
+  <summary><code>catppuccin</code></summary>
 
   <div style="text-align: center;">
-    <img src="docs/images/theme_catppucin_1.webp" alt="Theme Catppucin preview" width="900px">
+    <img src="docs/images/theme_catppuccin_1.webp" alt="Theme Catppuccin preview" width="900px">
   </div>
   <div style="text-align: center;">
-    <img src="docs/images/theme_catppucin_2.webp" alt="Theme Catppucin preview" width="900px">
+    <img src="docs/images/theme_catppuccin_2.webp" alt="Theme Catppuccin preview" width="900px">
   </div>
   <div style="text-align: center;">
-    <img src="docs/images/theme_catppucin_3.webp" alt="Theme Catppucin preview" width="900px">
+    <img src="docs/images/theme_catppuccin_3.webp" alt="Theme Catppuccin preview" width="900px">
   </div>
 </details>
 

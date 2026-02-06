@@ -466,12 +466,12 @@ static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
         },
     );
 
-    // Catppucin theme
+    // Catppuccin theme
     themes.insert(
-        "catppucin".to_string(),
+        "catppuccin".to_string(),
         Theme {
-            name: "catppucin".to_string(),
-            description: "Catppucin color scheme".to_string(),
+            name: "catppuccin".to_string(),
+            description: "Catppuccin color scheme".to_string(),
             text: rgb(205, 214, 244),
             text_light: rgb(186, 194, 222),
             h1: rgb(180, 190, 254),
@@ -989,6 +989,8 @@ mod tests {
         let manager = ThemeManager::new();
         assert!(manager.get_theme("terminal").is_ok());
         assert!(manager.get_theme("monokai").is_ok());
+        assert!(manager.get_theme("catppuccin").is_ok());
+        assert!(manager.get_theme("Catppuccin").is_ok());
         assert!(manager.get_theme("Terminal").is_ok());
         assert!(manager.get_theme("MoNoKaI").is_ok());
         assert!(manager.get_theme("nonexistent").is_err());

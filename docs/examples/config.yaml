@@ -2,8 +2,8 @@
 # Copy to ~/.config/mdv/config.yaml
 
 # Theme settings
-theme: "monokai"           # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppucin"
-code_theme: "monokai"      # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppucin"
+theme: "monokai"           # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppuccin"
+code_theme: "monokai"      # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppuccin"
 theme_info: false          # Print palette information alongside rendered output
 custom_theme: null         # Override individual UI colors (see formats below)
 custom_code_theme: null    # Override syntax colors (same format as custom_theme)
