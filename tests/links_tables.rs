@@ -68,7 +68,7 @@ fn test_inline_table_link_style_inside_text_code_block_pretty() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("-u")
         .arg("it")
@@ -100,7 +100,7 @@ fn test_inline_table_link_style_inside_text_code_block_simple() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("simple")
         .arg("-u")
         .arg("it")

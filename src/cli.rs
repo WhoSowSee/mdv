@@ -66,11 +66,11 @@ pub struct Cli {
     /// Configure visual style for code blocks
     #[arg(
         short = 's',
-        long = "style-code-block",
+        long = "code-block-style",
         value_enum,
         default_value = "pretty"
     )]
-    pub style_code_block: Option<CodeBlockStyle>,
+    pub code_block_style: Option<CodeBlockStyle>,
 
     #[arg(
         short = 'O',

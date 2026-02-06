@@ -14,7 +14,7 @@ fn test_code_language_pretty_style_named_block() {
     fs::write(&temp_file, "```python\nprint(\"hello\")\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path());
@@ -104,7 +104,7 @@ fn test_pretty_style_empty_code_block_has_right_padding() {
     fs::write(&temp_file, "# T\n\n```\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("--show-empty-elements")
         .arg("-A")
@@ -132,7 +132,7 @@ fn test_pretty_style_empty_block_falls_back_when_too_narrow() {
     fs::write(&temp_file, "```text\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("--show-empty-elements")
         .arg("--wrap")
@@ -156,7 +156,7 @@ fn test_simple_language_label_wraps_under_char_width() {
     fs::write(&temp_file, "```elixir\nIO.puts(\"Hello\")\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("--wrap")
         .arg("char")

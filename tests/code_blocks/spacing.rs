@@ -17,7 +17,7 @@ fn test_pretty_style_consecutive_code_blocks_have_single_blank_line() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path());
@@ -34,7 +34,7 @@ fn test_code_block_followed_by_heading_has_single_blank_line() {
     fs::write(&temp_file, "```python\nprint(\"hi\")\n```\n\n# Heading\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path());
@@ -63,7 +63,7 @@ fn test_code_block_followed_by_rule_has_single_blank_line() {
     fs::write(&temp_file, "```python\nprint(\"hi\")\n```\n\n---\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path());

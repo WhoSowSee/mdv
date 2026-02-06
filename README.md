@@ -90,7 +90,7 @@ mdv [OPTIONS] | mdv
 
 - `-t, --theme <NAME>` chooses a built-in theme (default `terminal`).
 - `-T, --code-theme <NAME>` sets the syntax highlight palette (default `terminal`).
-- `-s, --style-code-block <simple|pretty>` switches between a single gutter and a boxed frame for code blocks (default `pretty`).
+- `-s, --code-block-style <simple|pretty>` switches between a single gutter and a boxed frame for code blocks (default `pretty`).
 - `-y, --custom-theme <key=value;...>` overrides UI colors on top of the selected theme.
 - `-Y, --custom-code-theme <key=value;...>` overrides syntax colors using the same format as `--custom-theme`.
 

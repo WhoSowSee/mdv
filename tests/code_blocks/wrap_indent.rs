@@ -16,7 +16,7 @@ fn capture_indent_spaces(mode: Option<&str>) -> (usize, usize) {
 
     let mut cmd = mdv_cmd();
     cmd.arg("-A")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("--wrap")
         .arg("word")

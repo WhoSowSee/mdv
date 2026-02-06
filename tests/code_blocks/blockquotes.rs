@@ -17,7 +17,7 @@ fn test_blockquote_code_block_preserves_prefix() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -86,7 +86,7 @@ fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
     fs::write(&temp_file, "> ```markdown\n> > Nested reminder\n> ```\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -134,7 +134,7 @@ fn test_pretty_style_consecutive_code_blocks_in_blockquote_have_single_blank_lin
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path());

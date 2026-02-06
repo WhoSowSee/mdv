@@ -15,7 +15,7 @@ fn test_show_empty_elements_flag() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--no-colors")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path());
     let output = cmd.output().expect("mdv executed without flag");
@@ -33,7 +33,7 @@ fn test_show_empty_elements_flag() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--no-colors")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("--show-empty-elements")
         .arg(temp_file.path());

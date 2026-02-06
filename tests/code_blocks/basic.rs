@@ -30,7 +30,7 @@ fn test_no_code_guessing_disables_detection_for_unknown_language() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--no-code-guessing")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path());
 
@@ -50,7 +50,7 @@ fn test_code_language_simple_style_named_block() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path());
@@ -72,7 +72,7 @@ fn test_no_code_language_flag_hides_label() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--no-code-language")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path());
@@ -89,7 +89,7 @@ fn test_code_language_simple_style_plain_block() {
     fs::write(&temp_file, "```\nplain text output\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--style-code-block")
+    cmd.arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path());
@@ -105,7 +105,7 @@ fn test_markdown_code_block_setext_heading_renders_as_heading() {
     fs::write(&temp_file, "```markdown\nTitle\n---\nBody\n```\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg("-W")

@@ -34,7 +34,7 @@ fn test_display_math_renders_block() {
 
     let output = mdv_cmd()
         .arg("-A")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path())
         .output()
@@ -54,7 +54,7 @@ fn test_fenced_math_block_renders() {
 
     let output = mdv_cmd()
         .arg("-A")
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path())
         .output()

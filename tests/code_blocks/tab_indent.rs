@@ -12,7 +12,7 @@ fn tab_indented_fence_after_heading_renders_as_fence() {
     fs::write(&temp_file, "# Test\n\n\t```\n\tprint(\"x\")\n\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -42,7 +42,7 @@ fn tab_indented_fence_after_list_is_not_nested_by_indent() {
     fs::write(&temp_file, "- item\n\n\t```\n\tprint(\"x\")\n\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -77,7 +77,7 @@ fn space_indented_fence_inside_list_renders_without_list_offset() {
     fs::write(&temp_file, "- item\n  ```\n  print(\"x\")\n  ```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -107,7 +107,7 @@ fn tab_inside_regular_fence_stays_as_code_indentation() {
     fs::write(&temp_file, "```\n\tprint(\"x\")\n```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -132,7 +132,7 @@ fn tab_inside_regular_fence_after_heading_stays_as_code_indentation() {
     fs::write(&temp_file, "# Test\n\n```\n\tprint(\"x\")\n```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -157,7 +157,7 @@ fn fully_tab_indented_fence_dedents_code_content() {
     fs::write(&temp_file, "\t```\n\tprint(\"x\")\n\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -187,7 +187,7 @@ fn fully_double_tab_indented_fence_dedents_code_content() {
     fs::write(&temp_file, "\t\t```\n\t\tprint(\"x\")\n\t\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -217,7 +217,7 @@ fn fully_double_tab_indented_fence_preserves_extra_inner_tab() {
     fs::write(&temp_file, "\t\t```\n\t\t\tprint(\"x\")\n\t\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -242,7 +242,7 @@ fn fully_double_tab_indented_fence_with_less_indented_content_dedents_to_plain_c
     fs::write(&temp_file, "\t\t```\n\tprint(\"x\")\n\t\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("simple")
         .arg("-A")
         .arg(temp_file.path())
@@ -272,7 +272,7 @@ fn fully_double_tab_open_with_triple_tab_close_renders_clean_block() {
     fs::write(&temp_file, "\t\t```\n\tprint(\"x\")\n\t\t\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path())
@@ -302,7 +302,7 @@ fn fully_five_tab_open_with_four_tab_close_renders_clean_block() {
     fs::write(&temp_file, "\t\t\t\t\t```\n\tprint(\"x\")\n\t\t\t\t```\n").expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("pretty")
         .arg("-A")
         .arg(temp_file.path())
@@ -341,7 +341,7 @@ fn heading_before_tab_indented_code_does_not_insert_empty_first_line() {
     .expect("write markdown");
 
     let output = mdv_cmd()
-        .arg("--style-code-block")
+        .arg("--code-block-style")
         .arg("pretty")
         .arg("--wrap")
         .arg("word")

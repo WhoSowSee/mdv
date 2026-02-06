@@ -222,8 +222,8 @@ impl Config {
             config.no_code_language = true;
         }
 
-        if let Some(style) = cli.style_code_block {
-            if arg_has_user_value(matches, "style_code_block") {
+        if let Some(style) = cli.code_block_style {
+            if arg_has_user_value(matches, "code_block_style") {
                 config.code_block_style = style;
             }
         }
