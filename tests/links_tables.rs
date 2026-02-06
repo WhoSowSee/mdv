@@ -178,3 +178,102 @@ fn test_end_table_link_style_collects_references_at_document_end() {
         tail
     );
 }
+
+#[test]
+fn test_inline_table_nested_list_uses_single_reference_block_and_monotonic_indices() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "- [one](https://example.com/one)\n  - [two](https://example.com/two)\n    - [three](https://example.com/three)\n- [four](https://example.com/four)\n",
+    )
+    .unwrap();
+
+    let mut cmd = mdv_cmd();
+    cmd.arg("-u")
+        .arg("it")
+        .arg("--no-colors")
+        .arg("--cols")
+        .arg("100")
+        .arg(temp_file.path());
+
+    let output = cmd.output().expect("run mdv with inline table nested list");
+    assert!(
+        output.status.success(),
+        "mdv execution failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout is valid utf-8");
+    assert!(
+        stdout.contains("one[1]"),
+        "first nested link should be [1], stdout:\n{}",
+        stdout
+    );
+    assert!(
+        stdout.contains("two[2]"),
+        "second nested link should be [2], stdout:\n{}",
+        stdout
+    );
+    assert!(
+        stdout.contains("three[3]"),
+        "third nested link should be [3], stdout:\n{}",
+        stdout
+    );
+    assert!(
+        stdout.contains("four[4]"),
+        "fourth nested link should be [4], stdout:\n{}",
+        stdout
+    );
+
+    let lines: Vec<&str> = stdout.lines().collect();
+    let reference_lines: Vec<(usize, &str)> = lines
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, line)| {
+            let trimmed = line.trim_start();
+            if !trimmed.starts_with('[') {
+                return None;
+            }
+
+            let rest = &trimmed[1..];
+            let close = rest.find(']')?;
+            let _index = rest[..close].parse::<usize>().ok()?;
+            let suffix = &rest[close + 1..];
+            if !suffix.starts_with(" https://example.com/") {
+                return None;
+            }
+
+            Some((idx, trimmed))
+        })
+        .collect();
+
+    assert_eq!(
+        reference_lines.len(),
+        4,
+        "expected exactly one 4-line reference block, stdout:\n{}",
+        stdout
+    );
+
+    let expected = [
+        "[1] https://example.com/one",
+        "[2] https://example.com/two",
+        "[3] https://example.com/three",
+        "[4] https://example.com/four",
+    ];
+    for ((_, actual), expected_line) in reference_lines.iter().zip(expected.iter()) {
+        assert_eq!(
+            *actual, *expected_line,
+            "reference lines should preserve order and numbering, stdout:\n{}",
+            stdout
+        );
+    }
+
+    for pair in reference_lines.windows(2) {
+        assert_eq!(
+            pair[1].0,
+            pair[0].0 + 1,
+            "reference lines should be contiguous without split blocks, stdout:\n{}",
+            stdout
+        );
+    }
+}

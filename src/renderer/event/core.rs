@@ -633,7 +633,10 @@ impl<'a> EventRenderer<'a> {
                 self.code_block_language = extract_code_language(&kind);
             }
             Tag::List(start_number) => {
-                if matches!(self.config.link_style, LinkStyle::InlineTable) {
+                let entering_top_level_list = self.list_stack.is_empty();
+                if entering_top_level_list
+                    && matches!(self.config.link_style, LinkStyle::InlineTable)
+                {
                     self.paragraph_link_counter = 0;
                     self.paragraph_links.clear();
                 }
@@ -972,8 +975,10 @@ impl<'a> EventRenderer<'a> {
             }
             TagEnd::List(_) => {
                 self.list_stack.pop();
+                let closed_top_level_list = self.list_stack.is_empty();
 
                 if matches!(self.config.link_style, LinkStyle::InlineTable)
+                    && closed_top_level_list
                     && !self.paragraph_links.is_empty()
                 {
                     self.add_paragraph_link_references();
