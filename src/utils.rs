@@ -451,6 +451,10 @@ fn is_sgr_reset(sequence: &str) -> bool {
         .any(|param| param.trim().is_empty() || param.trim() == "0")
 }
 
+fn is_visually_blank(text: &str) -> bool {
+    strip_ansi(text).trim().is_empty()
+}
+
 /// Wrap a single line using character-based wrapping, handling ANSI codes
 fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
     if width == 0 {
@@ -487,7 +491,7 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
             // Handle whitespace - good breaking point
             let char_width = if ch == '\t' { 4 } else { 1 };
 
-            if current_width + char_width > width && !current_line.trim().is_empty() {
+            if current_width + char_width > width && !is_visually_blank(&current_line) {
                 // Need to wrap before this whitespace
                 result.push(current_line.trim_end().to_string());
                 current_line = ansi_stack.clone(); // Start new line with active ANSI codes
@@ -500,7 +504,7 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
             // Regular character
             let char_width = UnicodeWidthStr::width(ch.to_string().as_str());
 
-            if current_width + char_width > width && !current_line.trim().is_empty() {
+            if current_width + char_width > width && !is_visually_blank(&current_line) {
                 // Character-based wrapping: force break at current position
                 result.push(current_line);
                 current_line = ansi_stack.clone();
@@ -512,7 +516,7 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
         }
     }
 
-    if !current_line.trim().is_empty() {
+    if !is_visually_blank(&current_line) {
         result.push(current_line);
     }
 
@@ -557,7 +561,7 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
             if current_width + word_width <= width {
                 current_line.push_str(&word);
                 current_width += word_width;
-            } else if !current_line.trim().is_empty() {
+            } else if !is_visually_blank(&current_line) {
                 // Start new line
                 result.push(current_line.trim_end().to_string());
                 current_line = ansi_stack.clone();
@@ -566,7 +570,7 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
             }
         } else {
             // Handle word
-            if current_width + word_width <= width || current_line.trim().is_empty() {
+            if current_width + word_width <= width || is_visually_blank(&current_line) {
                 current_line.push_str(&word);
                 current_width += word_width;
             } else {
@@ -578,7 +582,7 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
         }
     }
 
-    if !current_line.trim().is_empty() {
+    if !is_visually_blank(&current_line) {
         result.push(current_line);
     }
 
@@ -859,5 +863,25 @@ mod tests {
                 assert!(text.contains(word), "Word '{}' should be preserved", word);
             }
         }
+    }
+
+    #[test]
+    fn test_word_wrap_with_leading_ansi_and_indent_has_no_blank_first_line() {
+        let text = "\x1b[31m    abcdefghijk\x1b[0m";
+        let wrapped = wrap_text_with_mode(text, 10, WrapMode::Word);
+        let mut lines = wrapped.lines();
+        let first_line = lines.next().expect("wrapped line");
+        let clean_first = strip_ansi(first_line);
+
+        assert!(
+            !clean_first.trim().is_empty(),
+            "first line must contain visible content: {:?}",
+            wrapped
+        );
+        assert!(
+            clean_first.starts_with("    "),
+            "leading indentation must be preserved: {:?}",
+            wrapped
+        );
     }
 }

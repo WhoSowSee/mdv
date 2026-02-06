@@ -123,7 +123,13 @@ impl<'a> EventRenderer<'a> {
     /// Used when we are already at a line start and need to insert the proper
     /// visual prefix (blockquote pipes) and alignment for list content.
     pub(super) fn current_line_prefix(&self) -> String {
-        self.current_line_prefix_for_blockquote_level(self.blockquote_level)
+        self.current_line_prefix_for_blockquote_level_with_options(self.blockquote_level, true)
+    }
+
+    /// Prefix for fenced/indented code blocks.
+    /// Code blocks should not inherit list continuation indentation.
+    pub(super) fn current_code_block_prefix(&self) -> String {
+        self.current_line_prefix_for_blockquote_level_with_options(self.blockquote_level, false)
     }
 
     pub(super) fn current_rule_prefix(&self) -> String {
@@ -132,6 +138,11 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn push_indent_for_line_start(&mut self) {
         let prefix = self.current_line_prefix();
+        self.output.push_str(&prefix);
+    }
+
+    pub(super) fn push_code_block_indent_for_line_start(&mut self) {
+        let prefix = self.current_code_block_prefix();
         self.output.push_str(&prefix);
     }
 
@@ -275,6 +286,11 @@ impl<'a> EventRenderer<'a> {
         let prefix = self.current_line_prefix();
         display_width(&strip_ansi(&prefix))
     }
+
+    pub(super) fn compute_code_block_context_width(&self) -> usize {
+        let prefix = self.current_code_block_prefix();
+        display_width(&strip_ansi(&prefix))
+    }
     pub(super) fn render_blockquote_prefix(&self) -> String {
         self.render_blockquote_prefix_for_level(self.blockquote_level)
     }
@@ -318,6 +334,14 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn current_line_prefix_for_blockquote_level(&self, level: usize) -> String {
+        self.current_line_prefix_for_blockquote_level_with_options(level, true)
+    }
+
+    fn current_line_prefix_for_blockquote_level_with_options(
+        &self,
+        level: usize,
+        include_list_indent: bool,
+    ) -> String {
         let mut prefix = String::new();
         if level > 0 {
             let base_indent = if self.current_heading_start.is_some() {
@@ -333,7 +357,7 @@ impl<'a> EventRenderer<'a> {
             if base_indent > 0 && indent_after_prefix {
                 prefix.push_str(&" ".repeat(base_indent));
             }
-            if !self.list_stack.is_empty() {
+            if include_list_indent && !self.list_stack.is_empty() {
                 let list_indent = self
                     .calculate_list_content_indent()
                     .saturating_sub(self.content_indent);
@@ -341,7 +365,7 @@ impl<'a> EventRenderer<'a> {
                     prefix.push_str(&" ".repeat(list_indent));
                 }
             }
-        } else if !self.list_stack.is_empty() {
+        } else if include_list_indent && !self.list_stack.is_empty() {
             let list_content_indent = self.calculate_list_content_indent();
             prefix.push_str(&" ".repeat(list_content_indent));
         } else {

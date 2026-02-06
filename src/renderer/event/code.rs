@@ -213,7 +213,8 @@ impl<'a> EventRenderer<'a> {
         let wrap_mode = self.config.text_wrap_mode();
 
         // Ensure exactly one contextual blank line before the block.
-        self.ensure_contextual_blank_line();
+        let code_block_prefix = self.current_code_block_prefix();
+        self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
 
         let terminal_width = self.config.get_terminal_width();
 
@@ -243,7 +244,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         if captured_reference_blocks.is_empty() {
-            self.ensure_contextual_blank_line();
+            self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
         } else {
             self.append_captured_reference_blocks(captured_reference_blocks);
         }
@@ -273,7 +274,7 @@ impl<'a> EventRenderer<'a> {
                 trimmed_label
             };
 
-            let context_width = self.compute_line_start_context_width();
+            let context_width = self.compute_code_block_context_width();
             let border_visible_width = display_width(&strip_ansi(&prefix));
             let available_width =
                 terminal_width.saturating_sub(context_width + border_visible_width);
@@ -285,21 +286,21 @@ impl<'a> EventRenderer<'a> {
             };
 
             for part in wrapped_label.split('\n') {
-                self.push_indent_for_line_start();
+                self.push_code_block_indent_for_line_start();
                 self.output.push_str(&prefix);
                 self.output.push_str(&self.style_pretty_accent(part));
                 self.output.push('\n');
             }
 
             if !code_starts_with_blank {
-                self.push_indent_for_line_start();
+                self.push_code_block_indent_for_line_start();
                 self.output.push_str(&prefix);
                 self.output.push('\n');
             }
         }
 
         for (idx, line) in highlighted.lines().enumerate() {
-            let context_width = self.compute_line_start_context_width();
+            let context_width = self.compute_code_block_context_width();
             let border_visible_width = 2usize;
             let available = terminal_width.saturating_sub(context_width + border_visible_width);
 
@@ -309,7 +310,7 @@ impl<'a> EventRenderer<'a> {
                 self.wrap_code_line_segments(line, raw_line, available, should_wrap, wrap_mode);
 
             for segment in segments {
-                self.push_indent_for_line_start();
+                self.push_code_block_indent_for_line_start();
                 self.output.push_str(&prefix);
                 let decorated = self.highlight_footnote_markers_in_ansi(&segment.text);
                 self.output.push_str(&decorated);
@@ -333,7 +334,7 @@ impl<'a> EventRenderer<'a> {
         let left_padding = 1usize;
         let right_padding = 1usize;
 
-        let context_width = self.compute_line_start_context_width();
+        let context_width = self.compute_code_block_context_width();
         let available_frame_width = terminal_width.saturating_sub(context_width);
         if available_frame_width <= 4 {
             return self.render_code_block_simple(
@@ -491,20 +492,20 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        self.push_indent_for_line_start();
+        self.push_code_block_indent_for_line_start();
         let top_line = self.render_pretty_top_border(inner_box_width, language_label);
         self.output.push_str(&top_line);
         self.output.push('\n');
 
         for part in rendered_lines {
-            self.push_indent_for_line_start();
+            self.push_code_block_indent_for_line_start();
             let decorated = self.highlight_footnote_markers_in_ansi(&part);
             let content_line = self.render_pretty_content_line(text_width, &decorated);
             self.output.push_str(&content_line);
             self.output.push('\n');
         }
 
-        self.push_indent_for_line_start();
+        self.push_code_block_indent_for_line_start();
         let bottom_line = self.render_pretty_bottom_border(inner_box_width);
         self.output.push_str(&bottom_line);
         self.output.push('\n');
@@ -885,7 +886,7 @@ impl<'a> EventRenderer<'a> {
             return None;
         }
 
-        let context_width = self.compute_line_start_context_width();
+        let context_width = self.compute_code_block_context_width();
         let available = terminal_width.saturating_sub(context_width);
         if available == 0 {
             return None;
@@ -946,7 +947,7 @@ impl<'a> EventRenderer<'a> {
             if idx > 0 {
                 self.output.push('\n');
             }
-            self.push_indent_for_line_start();
+            self.push_code_block_indent_for_line_start();
             self.output.push_str(&line);
         }
 
