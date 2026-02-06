@@ -115,13 +115,26 @@ impl<'a> EventRenderer<'a> {
         self.register_footnote_reference(name.as_ref());
 
         let marker = format!("[^{}]", name);
-        if self.should_highlight_footnote_reference(name.as_ref()) {
-            let style = create_style(self.theme, ThemeElement::Link);
-            let footnote = style.apply(&marker, self.config.no_colors);
-            self.output.push_str(&footnote);
+        let should_highlight = self.should_highlight_footnote_reference(name.as_ref());
+        if let Some(ref mut table) = self.table_state {
+            if should_highlight {
+                let style = create_style(self.theme, ThemeElement::Link);
+                let styled_marker = style.apply(&marker, self.config.no_colors);
+                table
+                    .inline_references
+                    .push((marker.clone(), styled_marker));
+            }
+            table.current_cell.push_str(&marker);
         } else {
-            self.output.push_str(&marker);
+            let rendered_marker = if should_highlight {
+                let style = create_style(self.theme, ThemeElement::Link);
+                style.apply(&marker, self.config.no_colors)
+            } else {
+                marker
+            };
+            self.output.push_str(&rendered_marker);
         }
+
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }
