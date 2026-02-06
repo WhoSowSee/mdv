@@ -54,9 +54,6 @@ impl TableRenderer {
             if content.contains("\x1b[3m") || content.contains("\x1b[03m") {
                 cell = cell.add_attribute(Attribute::Italic);
             }
-            if content.contains("\x1b[4m") || content.contains("\x1b[04m") {
-                cell = cell.add_attribute(Attribute::Underlined);
-            }
 
             if !self.no_colors {
                 if let Some(ansi_color) = extract_ansi_foreground_color(content) {

@@ -59,6 +59,54 @@ fn test_link_styles() {
 }
 
 #[test]
+fn test_table_link_underlines_only_link_text_fragment() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "| Col1 | Col2 |\n|------|------|\n| Before [link](https://example.com) after | Plain cell |\n",
+    )
+    .unwrap();
+
+    let mut cmd = mdv_cmd();
+    cmd.arg("--no-config")
+        .arg("--cols")
+        .arg("80")
+        .arg("--link-style")
+        .arg("clickable")
+        .arg(temp_file.path());
+
+    let output = cmd
+        .output()
+        .expect("run mdv for table link underline fragment");
+    assert!(
+        output.status.success(),
+        "mdv execution failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout is valid utf-8");
+    let data_line = stdout
+        .lines()
+        .find(|line| line.contains("Before") && line.contains("Plain cell"))
+        .expect("table data line with mixed link text present");
+
+    assert!(
+        data_line.contains("Before \u{1b}[4mlink\u{1b}[24m after"),
+        "only link fragment should be underlined, got: {}",
+        data_line
+    );
+    assert!(
+        !data_line.contains("\u{1b}[4m Before")
+            && !data_line.contains("\u{1b}[4mBefore")
+            && !data_line.contains("\u{1b}[4m Plain")
+            && !data_line.contains("\u{1b}[4mPlain")
+            && !data_line.contains("after\u{1b}[24m"),
+        "underline should not leak to non-link text, got: {}",
+        data_line
+    );
+}
+
+#[test]
 fn test_inline_table_link_style_inside_text_code_block_pretty() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

@@ -1,8 +1,23 @@
 use super::core::CalloutState;
 use super::{
     CapturedReferenceBlock, CowStr, EventRenderer, LinkStyle, LinkTruncationStyle, Result,
-    ThemeElement, create_style, wrap_text_with_mode,
+    TableState, ThemeElement, create_style, wrap_text_with_mode,
 };
+
+fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors: bool) {
+    if link_text.is_empty() {
+        return;
+    }
+
+    if !no_colors {
+        table.inline_references.push((
+            link_text.to_string(),
+            format!("\x1b[4m{}\x1b[24m", link_text),
+        ));
+    }
+
+    table.current_cell.push_str(link_text);
+}
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_link_start(&mut self, dest_url: CowStr) -> Result<()> {
@@ -95,17 +110,11 @@ impl<'a> EventRenderer<'a> {
                 // For clickable links in tables, just show underlined text instead of OSC 8 sequences
                 // to avoid positioning issues with clickable links
                 let link_text = &self.current_link_text;
-                let formatted_text = self.apply_formatting(link_text);
 
                 if let Some(ref mut table) = self.table_state {
-                    // In tables, just underline the link text instead of making it clickable
-                    let underlined_text = if !self.config.no_colors {
-                        format!("\x1b[4m{}\x1b[0m", formatted_text)
-                    } else {
-                        formatted_text
-                    };
-
-                    table.current_cell.push_str(&underlined_text);
+                    // In tables, render plain link text and apply underline to the exact fragment
+                    // after table layout to avoid underlining the full cell content.
+                    push_underlined_table_link(table, link_text, self.config.no_colors);
                 } else {
                     // For non-table content, use clickable links as before
                     if let Some(url) = self
@@ -166,14 +175,9 @@ impl<'a> EventRenderer<'a> {
                 let formatted_text = self.apply_formatting(link_text);
 
                 if let Some(ref mut table) = self.table_state {
-                    // In tables, just underline the link text instead of making it clickable
-                    let underlined_text = if !self.config.no_colors {
-                        format!("\x1b[4m{}\x1b[0m", formatted_text)
-                    } else {
-                        formatted_text
-                    };
-
-                    table.current_cell.push_str(&underlined_text);
+                    // In tables, render plain link text and apply underline to the exact fragment
+                    // after table layout to avoid underlining the full cell content.
+                    push_underlined_table_link(table, link_text, self.config.no_colors);
                 } else {
                     // For non-table content, use clickable forced links as before
                     if let Some(url) = self
@@ -240,18 +244,17 @@ impl<'a> EventRenderer<'a> {
                 if let Some(url) = url {
                     // Check if we're in a table cell
                     if let Some(ref mut table) = self.table_state {
-                        // For tables, format as single unit
-                        let formatted_link_text = if !self.config.no_colors {
-                            format!("\x1b[4m{}\x1b[0m", current_link_text)
-                        } else {
-                            current_link_text.clone()
-                        };
+                        // For tables, apply underline to the exact link fragment after layout.
+                        push_underlined_table_link(
+                            table,
+                            &current_link_text,
+                            self.config.no_colors,
+                        );
                         let url_part = format!("({})", url);
                         let style = create_style(self.theme, ThemeElement::Link);
                         let styled_url = style.apply(&url_part, self.config.no_colors);
 
                         table.inline_references.push((url_part.clone(), styled_url));
-                        table.current_cell.push_str(&formatted_link_text);
                         table.current_cell.push_str(&url_part);
                     } else {
                         // Process link text with underline formatting and normal wrapping logic
@@ -485,16 +488,15 @@ impl<'a> EventRenderer<'a> {
                     let style = create_style(self.theme, ThemeElement::Link);
                     let styled_reference = style.apply(&reference_text, self.config.no_colors);
 
-                    let formatted_link_text = if !self.config.no_colors {
-                        format!("\x1b[4m{}\x1b[0m", self.current_link_text)
-                    } else {
-                        self.current_link_text.clone()
-                    };
+                    push_underlined_table_link(
+                        table,
+                        &self.current_link_text,
+                        self.config.no_colors,
+                    );
 
                     table
                         .inline_references
                         .push((reference_text.clone(), styled_reference));
-                    table.current_cell.push_str(&formatted_link_text);
                     table.current_cell.push_str(&reference_text);
                 } else {
                     // 1) Render the link text underlined with proper wrapping
@@ -533,16 +535,15 @@ impl<'a> EventRenderer<'a> {
                     let style = create_style(self.theme, ThemeElement::Link);
                     let styled_reference = style.apply(&reference_text, self.config.no_colors);
 
-                    let formatted_link_text = if !self.config.no_colors {
-                        format!("\x1b[4m{}\x1b[0m", self.current_link_text)
-                    } else {
-                        self.current_link_text.clone()
-                    };
+                    push_underlined_table_link(
+                        table,
+                        &self.current_link_text,
+                        self.config.no_colors,
+                    );
 
                     table
                         .inline_references
                         .push((reference_text.clone(), styled_reference));
-                    table.current_cell.push_str(&formatted_link_text);
                     table.current_cell.push_str(&reference_text);
                 } else {
                     let link_text = self.current_link_text.clone();
