@@ -7,19 +7,50 @@ use super::{
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
 
-fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors: bool) {
+fn build_underlined_table_link_replacement(link_text: &str, no_colors: bool) -> Option<String> {
+    if no_colors || link_text.is_empty() {
+        None
+    } else {
+        Some(format!("\x1b[4m{}\x1b[24m", link_text))
+    }
+}
+
+fn build_clickable_underlined_table_link_replacement(
+    link_text: &str,
+    url: &str,
+    no_colors: bool,
+) -> Option<String> {
+    if no_colors || link_text.is_empty() {
+        None
+    } else {
+        Some(format!(
+            "\x1b]8;;{}\x1b\\\x1b[4m{}\x1b[24m\x1b]8;;\x1b\\",
+            url, link_text
+        ))
+    }
+}
+
+fn push_table_link_with_replacement(
+    table: &mut TableState,
+    link_text: &str,
+    replacement: Option<String>,
+) {
     if link_text.is_empty() {
         return;
     }
 
-    if !no_colors {
-        table.inline_references.push((
-            link_text.to_string(),
-            format!("\x1b[4m{}\x1b[24m", link_text),
-        ));
+    if let Some(styled) = replacement {
+        table
+            .inline_references
+            .push((link_text.to_string(), styled));
     }
 
     table.current_cell.push_str(link_text);
+}
+
+fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors: bool) {
+    let replacement = build_underlined_table_link_replacement(link_text, no_colors);
+    push_table_link_with_replacement(table, link_text, replacement);
 }
 
 fn push_wrappable_table_reference(cell: &mut String, reference_text: &str) {
@@ -130,24 +161,34 @@ impl<'a> EventRenderer<'a> {
 
         match self.config.link_style {
             LinkStyle::Clickable => {
-                // For clickable links in tables, just show underlined text instead of OSC 8 sequences
-                // to avoid positioning issues with clickable links
-                let link_text = &self.current_link_text;
+                let link_text = self.current_link_text.clone();
+                let current_link_key = format!("current_{}", self.link_counter);
+                let link_url = self.link_references.get(&current_link_key).cloned();
 
                 if let Some(ref mut table) = self.table_state {
-                    // In tables, render plain link text and apply underline to the exact fragment
-                    // after table layout to avoid underlining the full cell content.
-                    push_underlined_table_link(table, link_text, self.config.no_colors);
+                    // Keep table width calculation ANSI-free, then inject clickable styling
+                    // into the rendered fragments after table layout.
+                    let replacement = link_url
+                        .as_deref()
+                        .and_then(|url| {
+                            build_clickable_underlined_table_link_replacement(
+                                &link_text,
+                                url,
+                                self.config.no_colors,
+                            )
+                        })
+                        .or_else(|| {
+                            build_underlined_table_link_replacement(
+                                &link_text,
+                                self.config.no_colors,
+                            )
+                        });
+                    push_table_link_with_replacement(table, &link_text, replacement);
                 } else {
                     // For non-table content, use clickable links as before
-                    if let Some(url) = self
-                        .link_references
-                        .get(&format!("current_{}", self.link_counter))
-                    {
-                        let link_text = &self.current_link_text;
-
+                    if let Some(url) = link_url.as_deref() {
                         // Apply formatting to the link text
-                        let formatted_text = self.apply_formatting(link_text);
+                        let formatted_text = self.apply_formatting(&link_text);
 
                         // Create the complete clickable link
                         let final_link = if !self.config.no_colors {
@@ -173,7 +214,7 @@ impl<'a> EventRenderer<'a> {
                             let terminal_width = self.effective_text_width();
                             let current_line_width =
                                 crate::utils::display_width(&current_line_clean);
-                            let link_width = crate::utils::display_width(link_text);
+                            let link_width = crate::utils::display_width(&link_text);
                             let would_exceed = current_line_width + link_width > terminal_width;
 
                             // If the complete link would exceed the line width, add a line break before it
@@ -192,21 +233,33 @@ impl<'a> EventRenderer<'a> {
                 self.current_link_text.clear();
             }
             LinkStyle::ClickableForced => {
-                // For clickable forced links in tables, just show underlined text instead of OSC 8 sequences
-                // to avoid positioning issues with clickable links
-                let link_text = &self.current_link_text;
-                let formatted_text = self.apply_formatting(link_text);
+                let link_text = self.current_link_text.clone();
+                let formatted_text = self.apply_formatting(&link_text);
+                let current_link_key = format!("current_{}", self.link_counter);
+                let link_url = self.link_references.get(&current_link_key).cloned();
 
                 if let Some(ref mut table) = self.table_state {
-                    // In tables, render plain link text and apply underline to the exact fragment
-                    // after table layout to avoid underlining the full cell content.
-                    push_underlined_table_link(table, link_text, self.config.no_colors);
+                    // Keep table width calculation ANSI-free, then inject clickable styling
+                    // into the rendered fragments after table layout.
+                    let replacement = link_url
+                        .as_deref()
+                        .and_then(|url| {
+                            build_clickable_underlined_table_link_replacement(
+                                &link_text,
+                                url,
+                                self.config.no_colors,
+                            )
+                        })
+                        .or_else(|| {
+                            build_underlined_table_link_replacement(
+                                &link_text,
+                                self.config.no_colors,
+                            )
+                        });
+                    push_table_link_with_replacement(table, &link_text, replacement);
                 } else {
                     // For non-table content, use clickable forced links as before
-                    if let Some(url) = self
-                        .link_references
-                        .get(&format!("current_{}", self.link_counter))
-                    {
+                    if let Some(url) = link_url.as_deref() {
                         let final_link = if !self.config.no_colors {
                             // Wrap the entire OSC 8 construct in underline codes
                             format!(
@@ -235,7 +288,7 @@ impl<'a> EventRenderer<'a> {
                             let terminal_width = self.effective_text_width();
                             let current_line_width =
                                 crate::utils::display_width(&current_line_clean);
-                            let link_width = crate::utils::display_width(link_text);
+                            let link_width = crate::utils::display_width(&link_text);
                             let would_exceed = current_line_width + link_width > terminal_width;
 
                             // If the complete link would exceed the line width, add a line break before it

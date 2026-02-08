@@ -609,7 +609,9 @@ fn prefix_lengths_desc(input: &str) -> Vec<usize> {
 }
 
 fn styled_wrapper<'a>(styled: &'a str, plain: &str) -> Option<(&'a str, &'a str)> {
-    let plain_pos = styled.find(plain)?;
+    // Prefer the last occurrence to support wrappers where `plain` may also
+    // appear in metadata prefixes (e.g. OSC 8 URLs).
+    let plain_pos = styled.rfind(plain)?;
     let plain_end = plain_pos + plain.len();
     Some((&styled[..plain_pos], &styled[plain_end..]))
 }
@@ -1075,6 +1077,23 @@ mod tests {
             "guide url continuation should keep link color, cell={:?}",
             continuation_primary_cell
         );
+    }
+
+    #[test]
+    fn test_styled_wrapper_prefers_visible_text_for_osc8_links() {
+        let plain = "docs";
+        let styled = format!(
+            "\x1b]8;;https://example.com/{}/path\x1b\\{}\x1b]8;;\x1b\\",
+            plain, plain
+        );
+
+        let (prefix, suffix) = styled_wrapper(&styled, plain).expect("wrapper parsed");
+        assert!(
+            prefix.ends_with("\x1b\\"),
+            "expected wrapper to target visible text segment, prefix={:?}",
+            prefix
+        );
+        assert_eq!(format!("{}{}{}", prefix, plain, suffix), styled);
     }
 
     #[test]
