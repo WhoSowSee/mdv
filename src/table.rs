@@ -9,6 +9,8 @@ use pulldown_cmark::Alignment;
 
 use crate::cli::TableWrapMode;
 
+const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
+
 /// Table renderer using comfy-table for proper Unicode handling
 pub struct TableRenderer {
     theme: Theme,
@@ -37,6 +39,9 @@ impl TableRenderer {
         let clean_content = strip_ansi(content);
 
         let mut cell = Cell::new(&clean_content);
+        if clean_content.contains(TABLE_REFERENCE_WRAP_DELIMITER) {
+            cell = cell.set_delimiter(TABLE_REFERENCE_WRAP_DELIMITER);
+        }
 
         if clean_content.starts_with('`') && clean_content.ends_with('`') {
             if !self.no_colors {
@@ -476,10 +481,148 @@ pub fn apply_inline_reference_styles(
             let end = idx + plain.len();
             table_output.replace_range(idx..end, styled);
             search_start = idx + styled.len();
+        } else {
+            search_start =
+                apply_fragmented_inline_style(&mut table_output, search_start, plain, styled)
+                    .unwrap_or(search_start);
         }
     }
 
     table_output
+}
+
+fn apply_fragmented_inline_style(
+    table_output: &mut String,
+    search_start: usize,
+    plain: &str,
+    styled: &str,
+) -> Option<usize> {
+    let (prefix, suffix) = styled_wrapper(styled, plain)?;
+
+    let mut candidate_output = table_output.clone();
+    let mut plain_index = 0usize;
+    let mut output_index = search_start;
+    let mut replaced_count = 0usize;
+    let mut resume_index = None;
+    let mut expected_separator_count = None;
+
+    while plain_index < plain.len() {
+        let remaining = &plain[plain_index..];
+        let (segment_pos, segment_len) = find_segment_in_output(
+            &candidate_output,
+            output_index,
+            remaining,
+            expected_separator_count,
+        )?;
+        let segment = &remaining[..segment_len];
+        let styled_segment = format!("{}{}{}", prefix, segment, suffix);
+
+        let end = segment_pos + segment_len;
+        candidate_output.replace_range(segment_pos..end, &styled_segment);
+
+        output_index = segment_pos + styled_segment.len();
+        if resume_index.is_none() {
+            resume_index = Some(output_index);
+        }
+        if expected_separator_count.is_none() {
+            expected_separator_count =
+                Some(line_separator_count_before(&candidate_output, segment_pos));
+        }
+        plain_index += segment_len;
+        replaced_count += 1;
+    }
+
+    if replaced_count == 0 {
+        return None;
+    }
+
+    *table_output = candidate_output;
+    Some(resume_index.unwrap_or(output_index))
+}
+
+fn find_segment_in_output(
+    output: &str,
+    search_start: usize,
+    remaining_plain: &str,
+    expected_separator_count: Option<usize>,
+) -> Option<(usize, usize)> {
+    const MIN_SEGMENT_LEN: usize = 3;
+    let mut best_match: Option<(usize, usize)> = None;
+
+    for segment_len in prefix_lengths_desc(remaining_plain) {
+        if segment_len < MIN_SEGMENT_LEN && segment_len != remaining_plain.len() {
+            continue;
+        }
+
+        let segment = &remaining_plain[..segment_len];
+        let mut lookup_start = search_start;
+        while let Some(rel_idx) = output[lookup_start..].find(segment) {
+            let segment_pos = lookup_start + rel_idx;
+            if expected_separator_count
+                .is_none_or(|expected| line_separator_count_before(output, segment_pos) == expected)
+            {
+                match best_match {
+                    None => best_match = Some((segment_pos, segment_len)),
+                    Some((best_pos, best_len)) => {
+                        if segment_pos < best_pos
+                            || (segment_pos == best_pos && segment_len > best_len)
+                        {
+                            best_match = Some((segment_pos, segment_len));
+                        }
+                    }
+                }
+                break;
+            }
+
+            lookup_start = segment_pos + 1;
+        }
+    }
+
+    if best_match.is_some() {
+        return best_match;
+    }
+
+    if remaining_plain.chars().count() == 1 {
+        let segment_len = remaining_plain.len();
+        let mut lookup_start = search_start;
+        while let Some(rel_idx) = output[lookup_start..].find(remaining_plain) {
+            let segment_pos = lookup_start + rel_idx;
+            if expected_separator_count
+                .is_none_or(|expected| line_separator_count_before(output, segment_pos) == expected)
+            {
+                return Some((segment_pos, segment_len));
+            }
+
+            lookup_start = segment_pos + 1;
+        }
+    }
+
+    None
+}
+
+fn prefix_lengths_desc(input: &str) -> Vec<usize> {
+    let mut lengths: Vec<usize> = input.char_indices().skip(1).map(|(idx, _)| idx).collect();
+    lengths.push(input.len());
+    lengths.sort_unstable();
+    lengths.reverse();
+    lengths
+}
+
+fn styled_wrapper<'a>(styled: &'a str, plain: &str) -> Option<(&'a str, &'a str)> {
+    let plain_pos = styled.find(plain)?;
+    let plain_end = plain_pos + plain.len();
+    Some((&styled[..plain_pos], &styled[plain_end..]))
+}
+
+fn line_separator_count_before(output: &str, position: usize) -> usize {
+    let line_start = output[..position]
+        .rfind('\n')
+        .map(|idx| idx + 1)
+        .unwrap_or(0);
+    output[line_start..position]
+        .chars()
+        .filter(|ch| matches!(ch, '│' | '┆' | '┃'))
+        .count()
 }
 
 fn extract_ansi_foreground_color(content: &str) -> Option<Color> {
@@ -839,6 +982,98 @@ mod tests {
             !before_reference.contains(color_prefix),
             "link color prefix should not tint link text; line={:?}",
             data_line
+        );
+    }
+
+    #[test]
+    fn test_table_inline_wrapped_url_keeps_link_color() {
+        let theme_manager = ThemeManager::new();
+        let theme = theme_manager.get_theme("terminal").unwrap();
+        let renderer = TableRenderer::new(theme, false, 36, TableWrapMode::Fit);
+
+        let link_text = "dash";
+        let formatted_link_text = format!("\x1b[4m{}\x1b[0m", link_text);
+        let url_part = "(https://example.com/dashboard/alpha)".to_string();
+        let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, false);
+
+        let headers = vec!["Link".to_string()];
+        let rows = vec![vec![format!("{}{}", formatted_link_text, url_part.clone())]];
+        let alignments = vec![Alignment::Left];
+        let replacements = vec![(url_part.clone(), styled_url.clone())];
+
+        let table_output = renderer
+            .render_table(&headers, &rows, &alignments)
+            .expect("table rendered");
+        let table_output = apply_inline_reference_styles(table_output, &replacements, false);
+        let stripped = crate::utils::strip_ansi(&table_output);
+
+        assert!(
+            !stripped.contains(&url_part),
+            "url should be wrapped in narrow table, got:\n{}",
+            stripped
+        );
+
+        let prefix_len = styled_url
+            .find(&url_part)
+            .expect("styled url contains raw url");
+        let color_prefix = &styled_url[..prefix_len];
+
+        assert!(
+            table_output.matches(color_prefix).count() >= 2,
+            "wrapped url should keep link color on every fragment, output:\n{:?}",
+            table_output
+        );
+    }
+
+    #[test]
+    fn test_fragmented_inline_style_prefers_nearest_cell_match() {
+        let theme_manager = ThemeManager::new();
+        let theme = theme_manager.get_theme("terminal").unwrap();
+        let link_style = create_style(theme, ThemeElement::Link);
+
+        let guide_text = "Guide".to_string();
+        let api_text = "API".to_string();
+        let guide_url = "(https://example.com/docs/guide)".to_string();
+        let api_url = "(https://example.com/docs/api)".to_string();
+
+        let raw_table = concat!(
+            "│ Docs ┆ Guide(https://exampl ┆ API(https://example. ┆ short urls │\n",
+            "│      ┆ e.com/docs/guide)    ┆ com/docs/api)        ┆            │"
+        )
+        .to_string();
+
+        let styled_guide_url = link_style.apply(&guide_url, false);
+        let styled_api_url = link_style.apply(&api_url, false);
+        let replacements = vec![
+            (guide_text.clone(), format!("\x1b[4m{}\x1b[24m", guide_text)),
+            (guide_url.clone(), styled_guide_url.clone()),
+            (api_text.clone(), format!("\x1b[4m{}\x1b[24m", api_text)),
+            (api_url.clone(), styled_api_url),
+        ];
+
+        let styled_table = apply_inline_reference_styles(raw_table, &replacements, false);
+        let lines: Vec<&str> = styled_table.lines().collect();
+        assert_eq!(lines.len(), 2, "expected two-line wrapped row");
+
+        let guide_color_prefix_end = styled_guide_url
+            .find(&guide_url)
+            .expect("styled guide url contains plain url");
+        let guide_color_prefix = &styled_guide_url[..guide_color_prefix_end];
+
+        assert!(
+            lines[0].contains(&format!("\x1b[24m{}", guide_color_prefix)),
+            "guide url should start colored immediately after underlined link text, line={:?}",
+            lines[0]
+        );
+
+        let continuation_primary_cell = lines[1]
+            .split('┆')
+            .nth(1)
+            .expect("primary continuation cell present");
+        assert!(
+            continuation_primary_cell.contains(guide_color_prefix),
+            "guide url continuation should keep link color, cell={:?}",
+            continuation_primary_cell
         );
     }
 

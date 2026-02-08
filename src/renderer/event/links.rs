@@ -4,6 +4,8 @@ use super::{
     TableState, ThemeElement, create_style, wrap_text_with_mode,
 };
 
+const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
+
 fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors: bool) {
     if link_text.is_empty() {
         return;
@@ -17,6 +19,26 @@ fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors
     }
 
     table.current_cell.push_str(link_text);
+}
+
+fn push_wrappable_table_reference(cell: &mut String, reference_text: &str) {
+    if reference_text.is_empty() {
+        return;
+    }
+
+    // Insert a zero-width delimiter so comfy-table can wrap before `[N]` when needed
+    // without changing visible content width.
+    let needs_separator = cell
+        .chars()
+        .last()
+        .map(|ch| !ch.is_whitespace() && ch != TABLE_REFERENCE_WRAP_DELIMITER)
+        .unwrap_or(false);
+
+    if needs_separator {
+        cell.push(TABLE_REFERENCE_WRAP_DELIMITER);
+    }
+
+    cell.push_str(reference_text);
 }
 
 impl<'a> EventRenderer<'a> {
@@ -497,7 +519,7 @@ impl<'a> EventRenderer<'a> {
                     table
                         .inline_references
                         .push((reference_text.clone(), styled_reference));
-                    table.current_cell.push_str(&reference_text);
+                    push_wrappable_table_reference(&mut table.current_cell, &reference_text);
                 } else {
                     // 1) Render the link text underlined with proper wrapping
                     let link_text = self.current_link_text.clone();
@@ -544,7 +566,7 @@ impl<'a> EventRenderer<'a> {
                     table
                         .inline_references
                         .push((reference_text.clone(), styled_reference));
-                    table.current_cell.push_str(&reference_text);
+                    push_wrappable_table_reference(&mut table.current_cell, &reference_text);
                 } else {
                     let link_text = self.current_link_text.clone();
                     self.process_underlined_text_with_wrapping(&link_text)?;
@@ -581,13 +603,18 @@ impl<'a> EventRenderer<'a> {
     pub(super) fn add_paragraph_link_references(&mut self) {
         let in_list = !self.list_stack.is_empty();
         let in_table = false; // Regular call, not from table context
-        self.add_paragraph_link_references_with_trailing_newline(true, in_list, in_table);
+        self.add_paragraph_link_references_with_trailing_newline(true, in_list, in_table, 0);
     }
 
-    pub(super) fn add_paragraph_link_references_for_table(&mut self) {
+    pub(super) fn add_paragraph_link_references_for_table(&mut self, table_indent: usize) {
         let in_list = !self.list_stack.is_empty();
         let in_table = true; // Called from table context
-        self.add_paragraph_link_references_with_trailing_newline(true, in_list, in_table);
+        self.add_paragraph_link_references_with_trailing_newline(
+            true,
+            in_list,
+            in_table,
+            table_indent,
+        );
     }
 
     pub(super) fn render_link_reference_blocks(
@@ -596,12 +623,18 @@ impl<'a> EventRenderer<'a> {
         add_trailing_newline: bool,
         in_list: bool,
         in_table: bool,
+        table_indent: usize,
     ) {
         if links.is_empty() {
             return;
         }
 
-        let styled_blocks = self.build_styled_reference_blocks(links);
+        let reference_indent = if in_table {
+            table_indent
+        } else {
+            self.content_indent
+        };
+        let styled_blocks = self.build_styled_reference_blocks(links, reference_indent);
 
         if self.plaintext_code_block_depth > 0 {
             let captured_lines: Vec<String> = styled_blocks
@@ -627,8 +660,8 @@ impl<'a> EventRenderer<'a> {
         }
         for (i, styled_lines) in styled_blocks.iter().enumerate() {
             for (line_idx, styled_line) in styled_lines.iter().enumerate() {
-                if self.content_indent > 0 && !in_table {
-                    self.output.push_str(&" ".repeat(self.content_indent));
+                if reference_indent > 0 {
+                    self.output.push_str(&" ".repeat(reference_indent));
                 }
 
                 self.output.push_str(styled_line);
@@ -654,16 +687,27 @@ impl<'a> EventRenderer<'a> {
         add_trailing_newline: bool,
         in_list: bool,
         in_table: bool,
+        table_indent: usize,
     ) {
         if self.paragraph_links.is_empty() {
             return;
         }
 
         let links = std::mem::take(&mut self.paragraph_links);
-        self.render_link_reference_blocks(&links, add_trailing_newline, in_list, in_table);
+        self.render_link_reference_blocks(
+            &links,
+            add_trailing_newline,
+            in_list,
+            in_table,
+            table_indent,
+        );
     }
 
-    fn build_styled_reference_blocks(&self, links: &[(String, String)]) -> Vec<Vec<String>> {
+    fn build_styled_reference_blocks(
+        &self,
+        links: &[(String, String)],
+        reference_indent: usize,
+    ) -> Vec<Vec<String>> {
         let style = create_style(self.theme, ThemeElement::Link);
         let mut styled_blocks: Vec<Vec<String>> = Vec::new();
 
@@ -671,7 +715,7 @@ impl<'a> EventRenderer<'a> {
             let link_line = format!("{} {}", reference, url);
 
             let wrapped_link = if self.config.is_text_wrapping_enabled() {
-                self.wrap_link_line(&link_line)
+                self.wrap_link_line(&link_line, reference_indent)
             } else {
                 link_line
             };
@@ -691,7 +735,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     /// Wrap a link line (reference + URL) with proper handling of URL breaking
-    pub(super) fn wrap_link_line(&self, link_line: &str) -> String {
+    pub(super) fn wrap_link_line(&self, link_line: &str, reference_indent: usize) -> String {
         let terminal_width = self.effective_text_width();
 
         // Link reference lines are printed later with a leading content indentation
@@ -699,7 +743,7 @@ impl<'a> EventRenderer<'a> {
         // deciding how much of the URL can fit on a visual line, otherwise we risk
         // overflowing by 1–N cells and the trailing "..." gets visually clipped to
         // ".." or ".". Compute an effective width for the visible content area.
-        let effective_width = terminal_width.saturating_sub(self.content_indent);
+        let effective_width = terminal_width.saturating_sub(reference_indent);
 
         // Don't wrap if width is too small
         if effective_width < 20 {
@@ -777,7 +821,8 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        let styled_blocks = self.build_styled_reference_blocks(&self.document_links);
+        let styled_blocks =
+            self.build_styled_reference_blocks(&self.document_links, self.content_indent);
 
         if self.output.ends_with('\n') {
             self.output.push('\n');

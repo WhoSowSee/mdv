@@ -1,24 +1,29 @@
 use super::{EventRenderer, LinkStyle, Result, TableRenderer, TableState};
-use crate::utils::strip_ansi;
+use crate::utils::{display_width, strip_ansi};
 use pulldown_cmark::Alignment;
+
+const TABLE_COLUMN_OVERHEAD: usize = 3;
+const TABLE_BORDER_OVERHEAD: usize = 1;
+const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_table_end(&mut self) -> Result<()> {
+        let mut table_indent = 0usize;
         if let Some(table) = self.table_state.take() {
-            self.render_table(table)?;
+            table_indent = self.render_table(table)?;
         }
 
         // Add accumulated link references for InlineTable mode at the end of the table
         if matches!(self.config.link_style, LinkStyle::InlineTable)
             && !self.paragraph_links.is_empty()
         {
-            self.add_paragraph_link_references_for_table();
+            self.add_paragraph_link_references_for_table(table_indent);
         }
 
         Ok(())
     }
 
-    pub(super) fn render_table(&mut self, mut table: TableState) -> Result<()> {
+    pub(super) fn render_table(&mut self, mut table: TableState) -> Result<usize> {
         let headers_empty = table
             .headers
             .iter()
@@ -29,11 +34,11 @@ impl<'a> EventRenderer<'a> {
             .all(|row| row.iter().all(|cell| strip_ansi(cell).trim().is_empty()));
 
         if table.headers.is_empty() && !self.config.show_empty_elements {
-            return Ok(());
+            return Ok(0);
         }
 
         if headers_empty && rows_empty && !self.config.show_empty_elements {
-            return Ok(());
+            return Ok(0);
         }
 
         if self.config.show_empty_elements {
@@ -76,19 +81,22 @@ impl<'a> EventRenderer<'a> {
                 }
             }
         } else if table.headers.is_empty() {
-            return Ok(());
+            return Ok(0);
         }
 
         let terminal_width = self.config.get_terminal_width();
+        let table_indent = self.compute_table_indent(terminal_width, &table.headers, &table.rows);
+        let available_width = terminal_width.saturating_sub(table_indent).max(1);
         let table_renderer = TableRenderer::new(
             self.theme,
             self.config.no_colors,
-            terminal_width,
+            available_width,
             self.config.table_wrap,
         );
 
         let mut rendered_table =
             table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;
+        rendered_table = rendered_table.replace(TABLE_REFERENCE_WRAP_DELIMITER, "");
 
         if !table.inline_references.is_empty() {
             rendered_table = crate::table::apply_inline_reference_styles(
@@ -97,6 +105,7 @@ impl<'a> EventRenderer<'a> {
                 self.config.no_colors,
             );
         }
+        rendered_table = Self::indent_table_block(rendered_table, table_indent);
 
         self.ensure_contextual_blank_line();
 
@@ -104,6 +113,106 @@ impl<'a> EventRenderer<'a> {
         self.output.push('\n');
         self.commit_pending_heading_placeholder_if_content();
 
-        Ok(())
+        Ok(table_indent)
+    }
+
+    fn compute_table_indent(
+        &self,
+        terminal_width: usize,
+        headers: &[String],
+        rows: &[Vec<String>],
+    ) -> usize {
+        if !self.config.table_smart_indent {
+            return 0;
+        }
+
+        let base_indent = self.content_indent;
+        if base_indent == 0 {
+            return 0;
+        }
+
+        if matches!(self.config.table_wrap, crate::cli::TableWrapMode::None) {
+            return base_indent;
+        }
+
+        let min_table_width = Self::minimum_table_width(headers, rows);
+        if terminal_width <= min_table_width {
+            return 0;
+        }
+
+        let max_indent = terminal_width.saturating_sub(min_table_width);
+        base_indent.min(max_indent)
+    }
+
+    fn minimum_table_width(headers: &[String], rows: &[Vec<String>]) -> usize {
+        let columns = headers
+            .len()
+            .max(rows.iter().map(Vec::len).max().unwrap_or(0))
+            .max(1);
+
+        let mut tokens_per_column: Vec<Vec<usize>> = vec![Vec::new(); columns];
+
+        for (idx, header) in headers.iter().enumerate() {
+            Self::collect_token_widths(header, &mut tokens_per_column[idx]);
+        }
+
+        for row in rows {
+            for (idx, cell) in row.iter().enumerate().take(columns) {
+                Self::collect_token_widths(cell, &mut tokens_per_column[idx]);
+            }
+        }
+
+        let content_width_sum: usize = tokens_per_column
+            .iter()
+            .map(|widths| Self::upper_quartile(widths))
+            .sum();
+
+        content_width_sum
+            .saturating_add(columns.saturating_mul(TABLE_COLUMN_OVERHEAD))
+            .saturating_add(TABLE_BORDER_OVERHEAD)
+    }
+
+    fn collect_token_widths(cell: &str, out: &mut Vec<usize>) {
+        let clean = strip_ansi(cell);
+        let mut collected_any = false;
+
+        for token in clean.split_whitespace() {
+            let width = display_width(token);
+            if width > 0 {
+                out.push(width);
+                collected_any = true;
+            }
+        }
+
+        if !collected_any {
+            let fallback_width = display_width(clean.trim());
+            if fallback_width > 0 {
+                out.push(fallback_width);
+            }
+        }
+    }
+
+    fn upper_quartile(widths: &[usize]) -> usize {
+        if widths.is_empty() {
+            return 1;
+        }
+
+        let mut sorted = widths.to_vec();
+        sorted.sort_unstable();
+        let index = (sorted.len().saturating_sub(1) * 3) / 4;
+        sorted[index].max(1)
+    }
+
+    fn indent_table_block(table: String, indent: usize) -> String {
+        if indent == 0 || table.is_empty() {
+            return table;
+        }
+
+        let prefix = " ".repeat(indent);
+        table
+            .lines()
+            .map(|line| format!("{}{}", prefix, line))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }

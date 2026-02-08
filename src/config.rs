@@ -35,6 +35,7 @@ pub struct Config {
     pub heading_layout: HeadingLayout,
     // Smart heading indentation (applies only to HeadingLayout::Level)
     pub smart_indent: bool,
+    pub table_smart_indent: bool,
     pub hide_comments: bool,
     pub show_empty_elements: bool,
     pub no_code_language: bool,
@@ -78,6 +79,7 @@ impl Default for Config {
             table_wrap: TableWrapMode::Fit,
             heading_layout: HeadingLayout::Level,
             smart_indent: false,
+            table_smart_indent: false,
             hide_comments: false,
             show_empty_elements: false,
             no_code_language: false,
@@ -208,6 +210,9 @@ impl Config {
         }
         if cli.smart_indent {
             config.smart_indent = true;
+        }
+        if cli.table_smart_indent {
+            config.table_smart_indent = true;
         }
 
         if cli.hide_comments {
@@ -358,6 +363,9 @@ impl Config {
         }
         if other.smart_indent {
             self.smart_indent = true;
+        }
+        if other.table_smart_indent {
+            self.table_smart_indent = true;
         }
 
         if other.hide_comments {
@@ -632,6 +640,7 @@ wrap: word
 table_wrap: wrap
 tab_length: 2
 heading_layout: flat
+table_smart_indent: true
 link_style: inline
 link_truncation: cut
 "#,
@@ -642,6 +651,7 @@ link_truncation: cut
         assert!(matches!(config.table_wrap, TableWrapMode::Wrap));
         assert_eq!(config.tab_length, 2);
         assert!(matches!(config.heading_layout, HeadingLayout::Flat));
+        assert!(config.table_smart_indent);
         assert!(matches!(config.link_style, LinkStyle::Inline));
         assert!(matches!(config.link_truncation, LinkTruncationStyle::Cut));
     }

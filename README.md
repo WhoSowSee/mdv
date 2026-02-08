@@ -76,64 +76,65 @@ mdv [OPTIONS] | mdv
 
 ### Output and workflow
 
-- `-H, --html` prints HTML instead of terminal formatting.
-- `-A, --no-colors` strips ANSI styling regardless of the selected theme.
-- `-C, --hide-comments` removes Markdown comments from the rendered output.
-- `-i, --theme-info [FILE]` shows the active palette; when `FILE` is provided it renders the file along with palette information.
-- `-f, --from <TEXT>` starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
-- `-r, --reverse` renders the document starting from the end while keeping block formatting intact.
-- `-m, --monitor` watches the source file and re-renders when it changes.
-- `-F, --config-file <CONFIG_PATH>` reads configuration from the provided file.
-- `-n, --no-config` skips loading configuration files (uses CLI options and defaults only).
+- `-H, --html` — prints HTML instead of terminal formatting.
+- `-A, --no-colors` — strips ANSI styling regardless of the selected theme.
+- `-C, --hide-comments` — removes Markdown comments from the rendered output.
+- `-i, --theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
+- `-f, --from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
+- `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.
+- `-m, --monitor` — watches the source file and re-renders when it changes.
+- `-F, --config-file <CONFIG_PATH>` — reads configuration from the provided file.
+- `-n, --no-config` — skips loading configuration files (uses CLI options and defaults only).
 
 ### Theming
 
-- `-t, --theme <NAME>` chooses a built-in theme (default `terminal`).
-- `-T, --code-theme <NAME>` sets the syntax highlight palette (default `terminal`).
-- `-s, --code-block-style <simple|pretty>` switches between a single gutter and a boxed frame for code blocks (default `pretty`).
-- `-y, --custom-theme <key=value;...>` overrides UI colors on top of the selected theme.
-- `-Y, --custom-code-theme <key=value;...>` overrides syntax colors using the same format as `--custom-theme`.
+- `-t, --theme <NAME>` — chooses a built-in theme (default `terminal`).
+- `-T, --code-theme <NAME>` — sets the syntax highlight palette (default `terminal`).
+- `-s, --code-block-style <simple|pretty>` — switches between a single gutter and a boxed frame for code blocks (default `pretty`).
+- `-y, --custom-theme <key=value;...>` — overrides UI colors on top of the selected theme.
+- `-Y, --custom-code-theme <key=value;...>` — overrides syntax colors using the same format as `--custom-theme`.
 
 ### Callouts
 
-- `--callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` sets the callout layout and label behavior.
+- `--callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` — sets the callout layout and label behavior.
   `label-inside` is only supported with `pretty`, `fold-icons` requires `show-icons`.
-- `--custom-callout <name:icon=...,color=...;...>` overrides or adds callout labels.
+- `--custom-callout <name:icon=...,color=...;...>` — overrides or adds callout labels.
   `icon` and `color` are optional; color formats match `--custom-theme`.
 - Icons require Nerd Fonts in the terminal to render correctly.
 
 ### Layout and wrapping
 
-- `-c, --cols <N>` enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
-- `-b, --tab-length <N>` replaces tab characters with `N` spaces (default 4).
-- `-W, --wrap <char|word|none>` selects the text wrapping mode (default `char`).
-- `-w, --table-wrap <fit|wrap|none>` chooses how wide tables are handled (default `fit`).
-- `-d, --heading-layout <level|center|flat|none>` controls heading indentation (default `level`).
-- `-I, --smart-indent` smooths indentation jumps between heading levels in `level` mode.
-- `-K, --code-wrap-indent <none|base|double>` sets the hanging indent applied to wrapped code block lines (default `double`).
+- `-c, --cols <N>` — enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
+- `-b, --tab-length <N>` — replaces tab characters with `N` spaces (default `4`).
+- `-W, --wrap <char|word|none>` — selects the text wrapping mode (default `char`).
+- `-w, --table-wrap <fit|wrap|none>` — chooses how wide tables are handled (default `fit`).
+- `--table-smart-indent` — automatic table indent adjustment based on available width.
+- `-d, --heading-layout <level|center|flat|none>` — controls heading indentation (default `level`).
+- `-I, --smart-indent` — smooths indentation jumps between heading levels in `level` mode.
+- `-K, --code-wrap-indent <none|base|double>` — sets the hanging indent applied to wrapped code block lines (default `double`).
 
 ### Content visibility
 
-- `-L, --no-code-language` hides the language label above code blocks when metadata is available.
-- `-e, --show-empty-elements` keeps normally hidden empty lists, block quotes, and code blocks in the output.
-- `-g, --no-code-guessing` disables heuristic detection of code block languages (unknown blocks remain plain text).
+- `-L, --no-code-language` — hides the language label above code blocks when metadata is available.
+- `-e, --show-empty-elements` — keeps normally hidden empty lists, block quotes, and code blocks in the output.
+- `-g, --no-code-guessing` — disables heuristic detection of code block languages (unknown blocks remain plain text).
 
 ### Links
 
-- `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` changes how links are displayed (default `clickable`).
-- `-l, --link-truncation <wrap|cut|none>` determines how long links are shortened (default `wrap`).
+- `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` — changes how links are displayed (default `clickable`).
+- `-l, --link-truncation <wrap|cut|none>` — determines how long links are shortened (default `wrap`).
 
 ### Footnotes
 
-- `--footnote-style <endnotes|attached>` places footnotes at the end of the document or after each paragraph.
-- `--missing-footnote-style <show|hide>` controls placeholder entries for missing, invalid, or empty footnote definitions.
+- `--footnote-style <endnotes|attached>` — places footnotes at the end of the document or after each paragraph.
+- `--missing-footnote-style <show|hide>` — controls placeholder entries for missing, invalid, or empty footnote definitions.
   `show` renders a placeholder message in the footnote block
   `hide` omits those entries entirely.
 
 ### Information
 
-- `-h, --help` shows the help text.
-- `-V, --version` prints the current version.
+- `-h, --help` — shows the help text.
+- `-V, --version` — prints the current version.
 
 ## Configuration
 
@@ -160,8 +161,8 @@ link_truncation: 'wrap'
 
 ## Environment variables
 
-- `MDV_CONFIG_PATH` - custom path to configuration file.
-- `MDV_NO_COLOR` - accepts `True` or `False` and enforces color usage regardless of CLI arguments or theme settings.
+- `MDV_CONFIG_PATH` — custom path to configuration file.
+- `MDV_NO_COLOR` — accepts `True` or `False` and enforces color usage regardless of CLI arguments or theme settings.
 
 ## Themes
 

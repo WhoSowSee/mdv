@@ -20,6 +20,7 @@ wrap: "char"               # Options: "char" | "word" | "none"
 table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
 heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 smart_indent: true         # Smooth heading indentation jumps (only with "level" layout)
+table_smart_indent: false  # Automatically adjusts table indentation based on available width
 hide_comments: false       # Hide Markdown comments from the rendered output
 show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
 no_code_language: false    # Disable the language label above code blocks

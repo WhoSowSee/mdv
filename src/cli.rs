@@ -78,7 +78,7 @@ pub struct Cli {
         value_name = "CALLOUT_STYLE",
         default_value = "pretty",
         value_parser = parse_callout_style_config,
-        long_help = "Configure visual style for callouts\npretty:show-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;uppercase;fold-icons)\nOption fold-icons requires show-icons\nIcons require a Nerd Font in the terminal to display correctly"
+        long_help = "Configure visual style for callouts\n(pretty:show-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;uppercase;fold-icons)\nOption fold-icons requires show-icons\nIcons require a Nerd Font in the terminal to display correctly"
     )]
     pub style_callout: Option<CalloutStyleConfig>,
 
@@ -201,6 +201,13 @@ pub struct Cli {
         long_help = "Smart indentation for headings when using `--heading-layout level`\ncompress large jumps between heading levels so consecutive headings \nchange indentation gradually (e.g. H1 → H4 indents like H2)"
     )]
     pub smart_indent: bool,
+
+    #[arg(
+        long = "table-smart-indent",
+        help = "Automatically adjusts table indentation based on available width",
+        long_help = "Automatically adjusts table indentation based on available width.\nUses heading content indentation when space allows and reduces it when width is tight."
+    )]
+    pub table_smart_indent: bool,
 }
 
 #[derive(Debug, Clone, ValueEnum, serde::Serialize, serde::Deserialize)]
@@ -511,5 +518,11 @@ mod tests {
         assert!(matches!(parse_link_style("fc"), LinkStyle::ClickableForced));
         assert!(matches!(parse_link_style("hide"), LinkStyle::Hide));
         assert!(matches!(parse_link_style("et"), LinkStyle::EndTable));
+    }
+
+    #[test]
+    fn table_smart_indent_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "--table-smart-indent"]);
+        assert!(cli.table_smart_indent);
     }
 }

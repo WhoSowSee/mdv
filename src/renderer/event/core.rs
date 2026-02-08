@@ -914,6 +914,7 @@ impl<'a> EventRenderer<'a> {
                             true,
                             in_list,
                             false,
+                            0,
                         );
                     }
 
@@ -962,7 +963,13 @@ impl<'a> EventRenderer<'a> {
                 {
                     self.trim_trailing_blank_lines();
                     let in_list = !self.list_stack.is_empty();
-                    self.render_link_reference_blocks(&callout_inline_links, true, in_list, false);
+                    self.render_link_reference_blocks(
+                        &callout_inline_links,
+                        true,
+                        in_list,
+                        false,
+                        0,
+                    );
                 }
             }
             TagEnd::CodeBlock => {
