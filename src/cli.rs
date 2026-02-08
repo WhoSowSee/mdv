@@ -250,6 +250,10 @@ pub enum LinkTruncationStyle {
     #[value(name = "cut")]
     #[serde(alias = "cut")]
     Cut,
+    /// Cut links in normal flow and inside table cells
+    #[value(name = "tablecut", alias = "table-cut")]
+    #[serde(alias = "tablecut", alias = "table-cut")]
+    TableCut,
     /// No truncation - links overflow horizontally
     #[value(name = "none")]
     #[serde(alias = "none")]
@@ -490,6 +494,12 @@ mod tests {
             .expect("link style parsed")
     }
 
+    fn parse_link_truncation(value: &str) -> LinkTruncationStyle {
+        Cli::parse_from(["mdv", "-l", value])
+            .link_truncation
+            .expect("link truncation parsed")
+    }
+
     #[test]
     fn short_flag_parses_code_wrap_indent() {
         let cli = Cli::parse_from(["mdv", "-K", "base"]);
@@ -524,5 +534,17 @@ mod tests {
     fn table_smart_indent_flag_parses() {
         let cli = Cli::parse_from(["mdv", "--table-smart-indent"]);
         assert!(cli.table_smart_indent);
+    }
+
+    #[test]
+    fn link_truncation_tablecut_aliases_parse() {
+        assert!(matches!(
+            parse_link_truncation("tablecut"),
+            LinkTruncationStyle::TableCut
+        ));
+        assert!(matches!(
+            parse_link_truncation("table-cut"),
+            LinkTruncationStyle::TableCut
+        ));
     }
 }

@@ -1,4 +1,7 @@
-use super::{EventRenderer, LinkStyle, Result, TableRenderer, TableState};
+use super::{
+    EventRenderer, LinkStyle, LinkTruncationStyle, Result, TableInlineUrlTarget, TableRenderer,
+    TableState, ThemeElement, create_style,
+};
 use crate::utils::{display_width, strip_ansi};
 use pulldown_cmark::Alignment;
 
@@ -87,6 +90,13 @@ impl<'a> EventRenderer<'a> {
         let terminal_width = self.config.get_terminal_width();
         let table_indent = self.compute_table_indent(terminal_width, &table.headers, &table.rows);
         let available_width = terminal_width.saturating_sub(table_indent).max(1);
+
+        if matches!(self.config.link_style, LinkStyle::Inline)
+            && matches!(self.config.link_truncation, LinkTruncationStyle::TableCut)
+        {
+            self.apply_table_inline_url_truncation(&mut table, available_width);
+        }
+
         let table_renderer = TableRenderer::new(
             self.theme,
             self.config.no_colors,
@@ -114,6 +124,151 @@ impl<'a> EventRenderer<'a> {
         self.commit_pending_heading_placeholder_if_content();
 
         Ok(table_indent)
+    }
+
+    fn apply_table_inline_url_truncation(&self, table: &mut TableState, table_width: usize) {
+        if table.inline_url_segments.is_empty() {
+            return;
+        }
+
+        let column_width_limits =
+            Self::estimate_table_column_width_limits(&table.headers, &table.rows, table_width);
+        if column_width_limits.is_empty() {
+            return;
+        }
+
+        let link_style = create_style(self.theme, ThemeElement::Link);
+        let mut reference_cursor = 0usize;
+        let segments = table.inline_url_segments.clone();
+
+        for segment in segments {
+            let (column_index, cell) = match segment.target {
+                TableInlineUrlTarget::Header { column_index } => {
+                    let cell = table.headers.get_mut(column_index);
+                    (column_index, cell)
+                }
+                TableInlineUrlTarget::Row {
+                    row_index,
+                    column_index,
+                } => {
+                    let cell = table
+                        .rows
+                        .get_mut(row_index)
+                        .and_then(|row| row.get_mut(column_index));
+                    (column_index, cell)
+                }
+            };
+
+            let Some(cell) = cell else {
+                continue;
+            };
+            let Some(&column_limit) = column_width_limits.get(column_index) else {
+                continue;
+            };
+
+            let cell_width = display_width(&strip_ansi(cell));
+            let url_part_width = display_width(&segment.url_part);
+            if url_part_width == 0 {
+                continue;
+            }
+
+            let other_content_width = cell_width.saturating_sub(url_part_width);
+            let allowed_url_width = column_limit.saturating_sub(other_content_width);
+
+            if allowed_url_width >= url_part_width {
+                continue;
+            }
+
+            let truncated_url_part =
+                self.truncate_table_inline_url_part(&segment.url, allowed_url_width);
+
+            if truncated_url_part == segment.url_part {
+                continue;
+            }
+
+            if let Some(start_idx) = cell.find(&segment.url_part) {
+                let end_idx = start_idx + segment.url_part.len();
+                cell.replace_range(start_idx..end_idx, &truncated_url_part);
+            } else {
+                continue;
+            }
+
+            if let Some((idx, _)) = table
+                .inline_references
+                .iter()
+                .enumerate()
+                .skip(reference_cursor)
+                .find(|(_, (plain, _))| plain == &segment.url_part)
+            {
+                let styled = link_style.apply(&truncated_url_part, self.config.no_colors);
+                table.inline_references[idx] = (truncated_url_part.clone(), styled);
+                reference_cursor = idx.saturating_add(1);
+            }
+        }
+    }
+
+    fn truncate_table_inline_url_part(&self, url: &str, max_width: usize) -> String {
+        if max_width == 0 {
+            return String::new();
+        }
+
+        if max_width <= 2 {
+            return ".".repeat(max_width);
+        }
+
+        let inner_width = max_width.saturating_sub(2);
+        let truncated = self.truncate_url_with_ellipsis(url, inner_width);
+        format!("({})", truncated)
+    }
+
+    fn estimate_table_column_width_limits(
+        headers: &[String],
+        rows: &[Vec<String>],
+        table_width: usize,
+    ) -> Vec<usize> {
+        let columns = headers
+            .len()
+            .max(rows.iter().map(Vec::len).max().unwrap_or(0))
+            .max(1);
+        let mut widths = vec![1usize; columns];
+
+        for (idx, header) in headers.iter().enumerate() {
+            widths[idx] = widths[idx].max(display_width(&strip_ansi(header)).max(1));
+        }
+
+        for row in rows {
+            for (idx, cell) in row.iter().enumerate().take(columns) {
+                widths[idx] = widths[idx].max(display_width(&strip_ansi(cell)).max(1));
+            }
+        }
+
+        let border_width = columns
+            .saturating_mul(TABLE_COLUMN_OVERHEAD)
+            .saturating_add(TABLE_BORDER_OVERHEAD);
+
+        let content_budget = table_width.saturating_sub(border_width);
+        if content_budget == 0 {
+            return vec![1; columns];
+        }
+
+        let mut limits = widths;
+        let mut total_width: usize = limits.iter().sum();
+
+        while total_width > content_budget {
+            let Some((widest_index, _)) = limits
+                .iter()
+                .enumerate()
+                .filter(|(_, width)| **width > 1)
+                .max_by_key(|(_, width)| *width)
+            else {
+                break;
+            };
+
+            limits[widest_index] = limits[widest_index].saturating_sub(1);
+            total_width = total_width.saturating_sub(1);
+        }
+
+        limits
     }
 
     fn compute_table_indent(

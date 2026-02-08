@@ -657,6 +657,23 @@ link_truncation: cut
     }
 
     #[test]
+    fn config_file_parses_tablecut_link_truncation() {
+        let _env_lock = env_lock();
+        let config = parse_with_config(
+            r#"
+link_style: inline
+link_truncation: tablecut
+"#,
+        );
+
+        assert!(matches!(config.link_style, LinkStyle::Inline));
+        assert!(matches!(
+            config.link_truncation,
+            LinkTruncationStyle::TableCut
+        ));
+    }
+
+    #[test]
     fn config_cols_from_file_does_not_mark_cli_override() {
         let _env_lock = env_lock();
         let temp_dir = TempDir::new().expect("create temp dir");

@@ -26,6 +26,25 @@ pub(crate) struct TableState {
     pub(super) current_row: Vec<String>,
     pub(super) current_cell: String,
     pub(super) inline_references: Vec<(String, String)>,
+    pub(super) inline_url_segments: Vec<TableInlineUrlSegment>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum TableInlineUrlTarget {
+    Header {
+        column_index: usize,
+    },
+    Row {
+        row_index: usize,
+        column_index: usize,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TableInlineUrlSegment {
+    pub(super) target: TableInlineUrlTarget,
+    pub(super) url: String,
+    pub(super) url_part: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -731,6 +750,7 @@ impl<'a> EventRenderer<'a> {
                     current_row: Vec::new(),
                     current_cell: String::new(),
                     inline_references: Vec::new(),
+                    inline_url_segments: Vec::new(),
                 });
             }
             Tag::TableHead => {

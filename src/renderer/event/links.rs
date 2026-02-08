@@ -1,7 +1,8 @@
 use super::core::CalloutState;
 use super::{
     CapturedReferenceBlock, CowStr, EventRenderer, LinkStyle, LinkTruncationStyle, Result,
-    TableState, ThemeElement, create_style, wrap_text_with_mode,
+    TableInlineUrlSegment, TableInlineUrlTarget, TableState, ThemeElement, create_style,
+    wrap_text_with_mode,
 };
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
@@ -276,6 +277,25 @@ impl<'a> EventRenderer<'a> {
                         let style = create_style(self.theme, ThemeElement::Link);
                         let styled_url = style.apply(&url_part, self.config.no_colors);
 
+                        if matches!(self.config.link_truncation, LinkTruncationStyle::TableCut) {
+                            let target = if table.in_header {
+                                TableInlineUrlTarget::Header {
+                                    column_index: table.current_row.len(),
+                                }
+                            } else {
+                                TableInlineUrlTarget::Row {
+                                    row_index: table.rows.len(),
+                                    column_index: table.current_row.len(),
+                                }
+                            };
+
+                            table.inline_url_segments.push(TableInlineUrlSegment {
+                                target,
+                                url: url.clone(),
+                                url_part: url_part.clone(),
+                            });
+                        }
+
                         table.inline_references.push((url_part.clone(), styled_url));
                         table.current_cell.push_str(&url_part);
                     } else {
@@ -305,7 +325,7 @@ impl<'a> EventRenderer<'a> {
 
                             // Check truncation style for Inline mode
                             match self.config.link_truncation {
-                                LinkTruncationStyle::Cut => {
+                                LinkTruncationStyle::Cut | LinkTruncationStyle::TableCut => {
                                     // Precisely fit the URL display into the remaining space on the current line.
                                     let available_width =
                                         terminal_width.saturating_sub(current_line_width);
@@ -432,7 +452,7 @@ impl<'a> EventRenderer<'a> {
                         } else {
                             // No wrapping, but still ensure we do not exceed terminal width
                             match self.config.link_truncation {
-                                LinkTruncationStyle::Cut => {
+                                LinkTruncationStyle::Cut | LinkTruncationStyle::TableCut => {
                                     let terminal_width = self.effective_text_width();
                                     let current_line_clean = if let Some(last_newline) =
                                         self.output.rfind('\n')
@@ -775,7 +795,7 @@ impl<'a> EventRenderer<'a> {
                 LinkStyle::InlineTable | LinkStyle::EndTable
             ) {
                 match self.config.link_truncation {
-                    LinkTruncationStyle::Cut => {
+                    LinkTruncationStyle::Cut | LinkTruncationStyle::TableCut => {
                         // Cut the URL and add "..." if it doesn't fit
                         let truncated_url = self.truncate_url_with_ellipsis(url, available_width);
                         return format!("{} {}", reference, truncated_url);

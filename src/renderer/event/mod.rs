@@ -12,8 +12,8 @@ mod text;
 
 use crossterm::style::Color as CrosstermColor;
 
-pub(super) use core::TableState;
 pub(crate) use core::{CapturedReferenceBlock, EventRenderer};
+pub(super) use core::{TableInlineUrlSegment, TableInlineUrlTarget, TableState};
 pub(super) use footnotes::FootnoteDefinition;
 
 pub(super) use crate::cli::{

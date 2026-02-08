@@ -33,7 +33,7 @@ reverse: false             # Render document starting from the end while preserv
 
 # Link handling
 link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
-link_truncation: "wrap"    # Options: "wrap" | "cut" | "none"
+link_truncation: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"
 
 # Footnotes
 footnote_style: "endnotes" # Options: "endnotes" | "attached"

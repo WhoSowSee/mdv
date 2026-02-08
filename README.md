@@ -122,7 +122,7 @@ mdv [OPTIONS] | mdv
 ### Links
 
 - `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` — changes how links are displayed (default `clickable`).
-- `-l, --link-truncation <wrap|cut|none>` — determines how long links are shortened (default `wrap`).
+- `-l, --link-truncation <wrap|cut|tablecut|none>` — determines how long links are shortened (default `wrap`).
 
 ### Footnotes
 

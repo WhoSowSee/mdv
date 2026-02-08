@@ -121,7 +121,7 @@ mdv [OPTIONS] | mdv
 ### Ссылки
 
 - `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` — способ отображения ссылок (по умолчанию `clickable`).
-- `-l, --link-truncation <wrap|cut|none>` — стратегия укорочения длинных ссылок (по умолчанию `wrap`).
+- `-l, --link-truncation <wrap|cut|tablecut|none>` — стратегия укорочения длинных ссылок (по умолчанию `wrap`).
 
 ### Сноски
 
