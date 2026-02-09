@@ -95,6 +95,12 @@ pub(crate) struct CapturedReferenceBlock {
     pub(super) add_trailing_newline: bool,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct DeferredLinkReferenceBlock {
+    pub(super) links: Vec<(String, String)>,
+    pub(super) add_trailing_newline: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FootnoteTextState {
     Idle,
@@ -294,6 +300,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) code_block_language: Option<String>,
     pub(crate) plaintext_code_block_depth: usize,
     pub(crate) captured_reference_blocks: Vec<CapturedReferenceBlock>,
+    pub(crate) deferred_reference_blocks: Vec<DeferredLinkReferenceBlock>,
     pub(crate) footnote_definitions: Vec<FootnoteDefinition>,
     pub(crate) footnote_order: Vec<String>,
     pub(crate) current_inline_footnotes: Vec<String>,
@@ -358,6 +365,7 @@ impl<'a> EventRenderer<'a> {
             code_block_language: None,
             plaintext_code_block_depth: 0,
             captured_reference_blocks: Vec::new(),
+            deferred_reference_blocks: Vec::new(),
             footnote_definitions: Vec::new(),
             footnote_order: Vec::new(),
             current_inline_footnotes: Vec::new(),

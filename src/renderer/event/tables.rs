@@ -88,8 +88,21 @@ impl<'a> EventRenderer<'a> {
         }
 
         let terminal_width = self.config.get_terminal_width();
-        let table_indent = self.compute_table_indent(terminal_width, &table.headers, &table.rows);
-        let available_width = terminal_width.saturating_sub(table_indent).max(1);
+        let line_prefix = if self.blockquote_level > 0 {
+            self.current_line_prefix()
+        } else {
+            String::new()
+        };
+        let prefix_width = display_width(&strip_ansi(&line_prefix));
+        let table_indent = if self.blockquote_level > 0 {
+            0
+        } else {
+            self.compute_table_indent(terminal_width, &table.headers, &table.rows)
+        };
+        let available_width = terminal_width
+            .saturating_sub(prefix_width)
+            .saturating_sub(table_indent)
+            .max(1);
 
         if matches!(self.config.link_style, LinkStyle::Inline)
             && matches!(self.config.link_truncation, LinkTruncationStyle::TableCut)
@@ -116,6 +129,7 @@ impl<'a> EventRenderer<'a> {
             );
         }
         rendered_table = Self::indent_table_block(rendered_table, table_indent);
+        rendered_table = Self::prefix_table_block(rendered_table, &line_prefix);
 
         self.ensure_contextual_blank_line();
 
@@ -364,6 +378,18 @@ impl<'a> EventRenderer<'a> {
         }
 
         let prefix = " ".repeat(indent);
+        table
+            .lines()
+            .map(|line| format!("{}{}", prefix, line))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn prefix_table_block(table: String, prefix: &str) -> String {
+        if prefix.is_empty() || table.is_empty() {
+            return table;
+        }
+
         table
             .lines()
             .map(|line| format!("{}{}", prefix, line))

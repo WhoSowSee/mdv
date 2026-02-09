@@ -12,7 +12,7 @@ mod text;
 
 use crossterm::style::Color as CrosstermColor;
 
-pub(crate) use core::{CapturedReferenceBlock, EventRenderer};
+pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock, EventRenderer};
 pub(super) use core::{TableInlineUrlSegment, TableInlineUrlTarget, TableState};
 pub(super) use footnotes::FootnoteDefinition;
 

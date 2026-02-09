@@ -1,8 +1,8 @@
 use super::core::CalloutState;
 use super::{
-    CapturedReferenceBlock, CowStr, EventRenderer, LinkStyle, LinkTruncationStyle, Result,
-    TableInlineUrlSegment, TableInlineUrlTarget, TableState, ThemeElement, create_style,
-    wrap_text_with_mode,
+    CapturedReferenceBlock, CowStr, DeferredLinkReferenceBlock, EventRenderer, LinkStyle,
+    LinkTruncationStyle, Result, TableInlineUrlSegment, TableInlineUrlTarget, TableState,
+    ThemeElement, create_style, wrap_text_with_mode,
 };
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
@@ -123,12 +123,19 @@ impl<'a> EventRenderer<'a> {
                 self.in_link = true;
             }
             LinkStyle::InlineTable => {
+                let in_table = self.table_state.is_some();
                 if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {
-                    info.inline_link_counter += 1;
-                    info.inline_links.push((
-                        format!("[{}]", info.inline_link_counter),
-                        dest_url.to_string(),
-                    ));
+                    if in_table {
+                        self.paragraph_link_counter += 1;
+                        self.paragraph_links.push((
+                            format!("[{}]", self.paragraph_link_counter),
+                            dest_url.to_string(),
+                        ));
+                    } else {
+                        info.inline_link_counter += 1;
+                        let reference = format!("[{}]", info.inline_link_counter);
+                        info.inline_links.push((reference, dest_url.to_string()));
+                    }
                 } else {
                     // Store URL for paragraph-scoped references and start collecting link text
                     self.paragraph_link_counter += 1;
@@ -573,9 +580,13 @@ impl<'a> EventRenderer<'a> {
                 // link text outside the table. If we're inside a table cell, write the
                 // entire link (underlined text + reference) directly into the cell and
                 // skip any rendering to the main output buffer.
-                let reference_index = match self.callout_stack.last() {
-                    Some(CalloutState::Active(info)) => info.inline_link_counter,
-                    _ => self.paragraph_link_counter,
+                let reference_index = if self.table_state.is_some() {
+                    self.paragraph_link_counter
+                } else {
+                    match self.callout_stack.last() {
+                        Some(CalloutState::Active(info)) => info.inline_link_counter,
+                        _ => self.paragraph_link_counter,
+                    }
                 };
                 let reference_text = format!("[{}]", reference_index);
 
@@ -707,32 +718,68 @@ impl<'a> EventRenderer<'a> {
         } else {
             self.content_indent
         };
-        let styled_blocks = self.build_styled_reference_blocks(links, reference_indent);
+        let reference_prefix = if in_table && self.blockquote_level > 0 {
+            self.current_line_prefix()
+        } else {
+            String::new()
+        };
+        let pretty_callout_padding = if matches!(
+            self.config.callout_style.style,
+            crate::cli::CalloutStyle::Pretty
+        ) && self
+            .callout_stack
+            .iter()
+            .any(|state| matches!(state, CalloutState::Active(_)))
+        {
+            2
+        } else {
+            0
+        };
+        let reference_wrap_padding = reference_indent
+            .saturating_add(crate::utils::display_width(&crate::utils::strip_ansi(
+                &reference_prefix,
+            )))
+            .saturating_add(pretty_callout_padding);
+        let styled_blocks = self.build_styled_reference_blocks(links, reference_wrap_padding);
 
         if self.plaintext_code_block_depth > 0 {
-            let captured_lines: Vec<String> = styled_blocks
-                .iter()
-                .flat_map(|lines| lines.clone())
-                .collect();
+            if in_table {
+                let captured_lines: Vec<String> = styled_blocks
+                    .iter()
+                    .flat_map(|lines| lines.clone())
+                    .collect();
 
-            self.captured_reference_blocks.push(CapturedReferenceBlock {
-                lines: captured_lines,
-                add_trailing_newline,
-            });
+                self.captured_reference_blocks.push(CapturedReferenceBlock {
+                    lines: captured_lines,
+                    add_trailing_newline,
+                });
+            } else {
+                self.deferred_reference_blocks
+                    .push(DeferredLinkReferenceBlock {
+                        links: links.to_vec(),
+                        add_trailing_newline,
+                    });
+            }
 
             return;
         }
 
-        // Add empty line before link references for consistent formatting
-        // Check if we already have a newline at the end, if so add only one more
-        if self.output.ends_with('\n') {
-            self.output.push('\n');
+        // Add empty line before link references for consistent formatting.
+        if reference_prefix.is_empty() {
+            if self.output.ends_with('\n') {
+                self.output.push('\n');
+            } else {
+                self.output.push('\n');
+                self.output.push('\n');
+            }
         } else {
-            self.output.push('\n');
-            self.output.push('\n');
+            self.ensure_contextual_blank_line_with_prefix(&reference_prefix);
         }
         for (i, styled_lines) in styled_blocks.iter().enumerate() {
             for (line_idx, styled_line) in styled_lines.iter().enumerate() {
+                if !reference_prefix.is_empty() {
+                    self.output.push_str(&reference_prefix);
+                }
                 if reference_indent > 0 {
                     self.output.push_str(&" ".repeat(reference_indent));
                 }
@@ -745,12 +792,16 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        // Add trailing newline after the link block if requested
+        // Add trailing spacing after the link block if requested.
         if add_trailing_newline {
-            self.output.push('\n');
-            // Add extra newline only when in list for proper spacing
-            if in_list {
+            if reference_prefix.is_empty() {
                 self.output.push('\n');
+                // Add extra newline only when in list for proper spacing
+                if in_list {
+                    self.output.push('\n');
+                }
+            } else {
+                self.ensure_contextual_blank_line_with_prefix(&reference_prefix);
             }
         }
     }

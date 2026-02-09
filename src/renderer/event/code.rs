@@ -1,7 +1,7 @@
 use super::{
-    CapturedReferenceBlock, CodeBlockStyle, CodeWrapIndent, CowStr, EventRenderer, HighlightLines,
-    LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR, Result, ThemeElement, WrapMode,
-    as_24_bit_terminal_escaped, create_style, detect_source_code,
+    CapturedReferenceBlock, CodeBlockStyle, CodeWrapIndent, CowStr, DeferredLinkReferenceBlock,
+    EventRenderer, HighlightLines, LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR,
+    Result, ThemeElement, WrapMode, as_24_bit_terminal_escaped, create_style, detect_source_code,
 };
 use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
@@ -155,19 +155,28 @@ impl<'a> EventRenderer<'a> {
         let (
             mut highlighted,
             captured_reference_blocks,
+            deferred_reference_blocks,
             collected_document_links,
             reference_counter,
         ) = if treat_as_plaintext {
             let PlaintextRenderResult {
                 body,
                 references,
+                deferred_references,
                 document_links,
                 reference_counter,
             } = self.render_plaintext_code_block(&raw_code)?;
-            (body, references, document_links, reference_counter)
+            (
+                body,
+                references,
+                deferred_references,
+                document_links,
+                reference_counter,
+            )
         } else {
             (
                 self.highlight_code(&raw_code, language_hint.as_deref())?,
+                Vec::new(),
                 Vec::new(),
                 Vec::new(),
                 self.paragraph_link_counter,
@@ -179,6 +188,13 @@ impl<'a> EventRenderer<'a> {
                 self.document_links.extend(collected_document_links);
             }
             self.paragraph_link_counter = reference_counter;
+        }
+
+        if !captured_reference_blocks.is_empty() {
+            highlighted = Self::embed_captured_reference_blocks_in_code_body(
+                highlighted,
+                captured_reference_blocks,
+            );
         }
 
         let highlighted_is_empty = strip_ansi(&highlighted).trim().is_empty();
@@ -243,10 +259,20 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        if captured_reference_blocks.is_empty() {
-            self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
-        } else {
-            self.append_captured_reference_blocks(captured_reference_blocks);
+        self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
+
+        if !deferred_reference_blocks.is_empty() {
+            let in_list = !self.list_stack.is_empty();
+            for block in deferred_reference_blocks {
+                self.trim_trailing_blank_lines();
+                self.render_link_reference_blocks(
+                    &block.links,
+                    block.add_trailing_newline,
+                    in_list,
+                    false,
+                    0,
+                );
+            }
         }
 
         self.commit_pending_heading_placeholder_if_content();
@@ -869,12 +895,14 @@ impl<'a> EventRenderer<'a> {
         rendered = rendered.trim_end_matches('\n').to_string();
 
         let references = std::mem::take(&mut nested_renderer.captured_reference_blocks);
+        let deferred_references = std::mem::take(&mut nested_renderer.deferred_reference_blocks);
         let document_links = std::mem::take(&mut nested_renderer.document_links);
         let reference_counter = nested_renderer.paragraph_link_counter;
 
         Ok(PlaintextRenderResult {
             body: rendered,
             references,
+            deferred_references,
             document_links,
             reference_counter,
         })
@@ -924,40 +952,29 @@ impl<'a> EventRenderer<'a> {
         Some(sanitized)
     }
 
-    pub(super) fn append_captured_reference_blocks(&mut self, blocks: Vec<CapturedReferenceBlock>) {
-        if blocks.is_empty() {
-            return;
-        }
-
+    fn embed_captured_reference_blocks_in_code_body(
+        mut body: String,
+        blocks: Vec<CapturedReferenceBlock>,
+    ) -> String {
         for block in blocks {
-            self.trim_trailing_blank_lines();
-            if !self.output.is_empty() {
-                if !self.output.ends_with('\n') {
-                    self.output.push('\n');
+            if !body.is_empty() && !body.ends_with('\n') {
+                body.push('\n');
+            }
+            body.push('\n');
+
+            for (idx, line) in block.lines.into_iter().enumerate() {
+                if idx > 0 {
+                    body.push('\n');
                 }
-                self.output.push('\n');
+                body.push_str(&line);
             }
 
-            self.write_captured_reference_block(block);
-        }
-    }
-
-    fn write_captured_reference_block(&mut self, block: CapturedReferenceBlock) {
-        for (idx, line) in block.lines.into_iter().enumerate() {
-            if idx > 0 {
-                self.output.push('\n');
+            if block.add_trailing_newline {
+                body.push('\n');
             }
-            self.push_code_block_indent_for_line_start();
-            self.output.push_str(&line);
         }
 
-        if block.add_trailing_newline {
-            self.trim_trailing_blank_lines();
-            if !self.output.ends_with('\n') {
-                self.output.push('\n');
-            }
-            self.output.push('\n');
-        }
+        body.trim_end_matches('\n').to_string()
     }
 
     fn resolve_syntax<'s>(
@@ -1507,6 +1524,7 @@ impl<'a> EventRenderer<'a> {
 struct PlaintextRenderResult {
     body: String,
     references: Vec<CapturedReferenceBlock>,
+    deferred_references: Vec<DeferredLinkReferenceBlock>,
     document_links: Vec<(String, String)>,
     reference_counter: usize,
 }

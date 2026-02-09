@@ -727,6 +727,9 @@ impl<'a> EventRenderer<'a> {
         while matches!(content_lines.first(), Some(line) if strip_ansi(line).trim().is_empty()) {
             content_lines.remove(0);
         }
+        while matches!(content_lines.last(), Some(line) if strip_ansi(line).trim().is_empty()) {
+            content_lines.pop();
+        }
 
         let label_inside = self.config.callout_style.label_inside;
         if label_inside {
