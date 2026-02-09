@@ -95,6 +95,16 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
+        if let Some(start) = self.current_paragraph_start {
+            if !self.current_paragraph_has_content {
+                if start <= self.output.len() {
+                    self.output.truncate(start);
+                }
+                self.current_paragraph_has_leading_break = false;
+                self.suppress_next_paragraph_break = true;
+            }
+        }
+
         let rendered = render_math(math.as_ref(), MathMode::Display);
         self.render_math_block(&rendered, None)
     }
