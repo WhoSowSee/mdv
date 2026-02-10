@@ -849,11 +849,13 @@ impl<'a> EventRenderer<'a> {
                 let skip_blank_line = self.blockquote_level > 0
                     && self.trailing_blank_line_matches(&self.current_line_prefix());
 
-                if self.list_stack.is_empty()
-                    && !inline_footnotes_rendered
-                    && !suppress_break
-                    && !skip_blank_line
-                {
+                if self.list_stack.is_empty() {
+                    if !inline_footnotes_rendered && !suppress_break && !skip_blank_line {
+                        self.output.push('\n');
+                    }
+                } else if has_visible_content && !suppress_break && !self.output.ends_with('\n') {
+                    // Paragraph boundaries inside list items must end with a line break
+                    // so continuation blocks (e.g. indented images/media) start on next line.
                     self.output.push('\n');
                 }
             }
