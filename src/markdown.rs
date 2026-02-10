@@ -58,8 +58,6 @@ impl MarkdownProcessor {
         processed = self.separate_callout_markers_from_setext(&processed);
         processed = self.preprocess_blockquotes(&processed);
 
-        processed = processed.replace('\t', &" ".repeat(self.config.tab_length));
-
         Ok(processed)
     }
 
@@ -832,7 +830,7 @@ impl MarkdownProcessor {
 
     fn postprocess_events(
         &self,
-        _content: &str,
+        content: &str,
         events: Vec<(Event, Range<usize>)>,
     ) -> Result<Vec<Event<'static>>> {
         let mut processed = Vec::with_capacity(events.len());
@@ -851,6 +849,21 @@ impl MarkdownProcessor {
                 }
             }
 
+            if let Some((Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)), start_range)) =
+                events.get(idx)
+            {
+                if let Some(end_idx) = Self::find_code_block_end_index(&events, idx + 1) {
+                    if Self::is_tab_indented_code_block_start(content, start_range.start) {
+                        self.push_demoted_code_block_as_paragraph(
+                            &mut processed,
+                            &events[idx + 1..end_idx],
+                        );
+                        idx = end_idx + 1;
+                        continue;
+                    }
+                }
+            }
+
             let (event, _range) = &events[idx];
             match event {
                 Event::Start(tag) => {
@@ -864,7 +877,7 @@ impl MarkdownProcessor {
                     processed.push(Event::Text(processed_text.to_string().into()));
                 }
                 Event::Code(code) => {
-                    processed.push(Event::Code(code.to_string().into()));
+                    processed.push(Event::Code(self.expand_tabs(code.as_ref()).into()));
                 }
                 other => processed.push(self.convert_to_static(other.clone())),
             }
@@ -872,6 +885,65 @@ impl MarkdownProcessor {
         }
 
         Ok(processed)
+    }
+
+    fn find_code_block_end_index(
+        events: &[(Event, Range<usize>)],
+        start_idx: usize,
+    ) -> Option<usize> {
+        events
+            .iter()
+            .enumerate()
+            .skip(start_idx)
+            .find_map(|(idx, (event, _))| {
+                if matches!(event, Event::End(TagEnd::CodeBlock)) {
+                    Some(idx)
+                } else {
+                    None
+                }
+            })
+    }
+
+    fn is_tab_indented_code_block_start(content: &str, start_offset: usize) -> bool {
+        let safe_start = start_offset.min(content.len());
+        let line_start = content[..safe_start].rfind('\n').map_or(0, |idx| idx + 1);
+        let indent = &content[line_start..safe_start];
+
+        !indent.is_empty()
+            && indent.chars().all(|ch| ch == ' ' || ch == '\t')
+            && indent.contains('\t')
+    }
+
+    fn push_demoted_code_block_as_paragraph(
+        &self,
+        processed: &mut Vec<Event<'static>>,
+        events: &[(Event, Range<usize>)],
+    ) {
+        let mut text = String::new();
+        for (event, _) in events {
+            match event {
+                Event::Text(chunk) => text.push_str(chunk.as_ref()),
+                Event::SoftBreak | Event::HardBreak => text.push('\n'),
+                _ => {}
+            }
+        }
+
+        let text = text.trim_end_matches('\n');
+        if text.is_empty() {
+            return;
+        }
+
+        processed.push(Event::Start(Tag::Paragraph));
+        for (line_idx, line) in text.split('\n').enumerate() {
+            if line_idx > 0 {
+                processed.push(Event::SoftBreak);
+            }
+
+            if !line.is_empty() {
+                processed.push(Event::Text(self.expand_tabs(line).into()));
+            }
+        }
+        processed.push(Event::End(TagEnd::Paragraph));
     }
 
     fn reverse_events(&self, events: Vec<Event<'static>>) -> Vec<Event<'static>> {
@@ -1002,7 +1074,15 @@ impl MarkdownProcessor {
     }
 
     fn process_text<'a>(&self, text: &CowStr<'a>) -> CowStr<'a> {
-        text.clone()
+        if text.as_ref().contains('\t') {
+            self.expand_tabs(text.as_ref()).into()
+        } else {
+            text.clone()
+        }
+    }
+
+    fn expand_tabs(&self, text: &str) -> String {
+        text.replace('\t', &" ".repeat(self.config.tab_length))
     }
 }
 
@@ -1220,6 +1300,42 @@ mod tests {
                 Event::Text(second),
                 Event::End(TagEnd::Paragraph)
             ] if first.as_ref() == "Title" && second.as_ref() == "Body"
+        ));
+    }
+
+    #[test]
+    fn top_level_tab_indented_text_is_not_code_block() {
+        use pulldown_cmark::{Event, Tag, TagEnd};
+
+        let config = Config::default();
+        let processor = MarkdownProcessor::new(&config);
+        let events = processor.parse("\tTest text\n").unwrap();
+
+        assert!(matches!(
+            events.as_slice(),
+            [
+                Event::Start(Tag::Paragraph),
+                Event::Text(text),
+                Event::End(TagEnd::Paragraph)
+            ] if text.as_ref() == "Test text"
+        ));
+    }
+
+    #[test]
+    fn space_indented_text_stays_indented_code_block() {
+        use pulldown_cmark::{Event, Tag, TagEnd};
+
+        let config = Config::default();
+        let processor = MarkdownProcessor::new(&config);
+        let events = processor.parse("    Test text\n").unwrap();
+
+        assert!(matches!(
+            events.as_slice(),
+            [
+                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)),
+                Event::Text(text),
+                Event::End(TagEnd::CodeBlock)
+            ] if text.as_ref().trim_end_matches('\n') == "Test text"
         ));
     }
 }

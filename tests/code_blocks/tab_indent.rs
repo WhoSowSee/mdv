@@ -376,3 +376,59 @@ fn heading_before_tab_indented_code_does_not_insert_empty_first_line() {
         normalized
     );
 }
+
+#[test]
+fn top_level_tab_indented_text_renders_as_paragraph() {
+    let temp_file = NamedTempFile::new().expect("create temp file");
+    fs::write(&temp_file, "\tTest text\n").expect("write markdown");
+
+    let output = mdv_cmd()
+        .arg("--code-block-style")
+        .arg("simple")
+        .arg("-A")
+        .arg(temp_file.path())
+        .output()
+        .expect("run mdv");
+
+    assert!(output.status.success(), "mdv failed: {:?}", output.status);
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let normalized = stdout.replace("\r\n", "\n");
+    let visible: Vec<&str> = normalized
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    assert_eq!(
+        visible,
+        vec!["Test text"],
+        "expected paragraph output, stdout:\n{}",
+        normalized
+    );
+}
+
+#[test]
+fn top_level_space_indented_text_stays_code_block() {
+    let temp_file = NamedTempFile::new().expect("create temp file");
+    fs::write(&temp_file, "    Test text\n").expect("write markdown");
+
+    let output = mdv_cmd()
+        .arg("--code-block-style")
+        .arg("simple")
+        .arg("-A")
+        .arg(temp_file.path())
+        .output()
+        .expect("run mdv");
+
+    assert!(output.status.success(), "mdv failed: {:?}", output.status);
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let normalized = stdout.replace("\r\n", "\n");
+
+    assert!(
+        normalized.contains("\n│ Text\n") || normalized.starts_with("│ Text\n"),
+        "expected code block label for space-indented block, stdout:\n{}",
+        normalized
+    );
+}
