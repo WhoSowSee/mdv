@@ -116,29 +116,29 @@ impl Config {
             config.no_colors = true;
         }
 
-        if let Some(cols) = cli.cols {
-            if arg_has_user_value(matches, "cols") {
-                config.cols = Some(cols);
-                config.cols_from_cli = true;
-            }
+        if let Some(cols) = cli.cols
+            && arg_has_user_value(matches, "cols")
+        {
+            config.cols = Some(cols);
+            config.cols_from_cli = true;
         }
 
-        if let Some(tab_length) = cli.tab_length {
-            if arg_has_user_value(matches, "tab_length") {
-                config.tab_length = tab_length;
-            }
+        if let Some(tab_length) = cli.tab_length
+            && arg_has_user_value(matches, "tab_length")
+        {
+            config.tab_length = tab_length;
         }
 
-        if let Some(wrap) = cli.wrap_mode {
-            if arg_has_user_value(matches, "wrap_mode") {
-                config.wrap = wrap;
-            }
+        if let Some(wrap) = cli.wrap_mode
+            && arg_has_user_value(matches, "wrap_mode")
+        {
+            config.wrap = wrap;
         }
 
-        if let Some(table_wrap) = cli.table_wrap_mode {
-            if arg_has_user_value(matches, "table_wrap_mode") {
-                config.table_wrap = table_wrap;
-            }
+        if let Some(table_wrap) = cli.table_wrap_mode
+            && arg_has_user_value(matches, "table_wrap_mode")
+        {
+            config.table_wrap = table_wrap;
         }
 
         if cli.theme_info.is_some() {
@@ -149,64 +149,64 @@ impl Config {
             config.code_guessing = false;
         }
 
-        if let Some(theme) = &cli.theme {
-            if arg_has_user_value(matches, "theme") {
-                config.theme = theme.clone();
-            }
+        if let Some(theme) = &cli.theme
+            && arg_has_user_value(matches, "theme")
+        {
+            config.theme = theme.clone();
         }
 
-        if let Some(code_theme) = &cli.code_theme {
-            if arg_has_user_value(matches, "code_theme") {
-                config.code_theme = Some(code_theme.clone());
-            }
+        if let Some(code_theme) = &cli.code_theme
+            && arg_has_user_value(matches, "code_theme")
+        {
+            config.code_theme = Some(code_theme.clone());
         }
 
-        if let Some(custom_theme) = &cli.custom_theme {
-            if arg_has_user_value(matches, "custom_theme") {
-                config.custom_theme = Some(custom_theme.clone());
-            }
+        if let Some(custom_theme) = &cli.custom_theme
+            && arg_has_user_value(matches, "custom_theme")
+        {
+            config.custom_theme = Some(custom_theme.clone());
         }
 
-        if let Some(custom_code_theme) = &cli.custom_code_theme {
-            if arg_has_user_value(matches, "custom_code_theme") {
-                config.custom_code_theme = Some(custom_code_theme.clone());
-            }
+        if let Some(custom_code_theme) = &cli.custom_code_theme
+            && arg_has_user_value(matches, "custom_code_theme")
+        {
+            config.custom_code_theme = Some(custom_code_theme.clone());
         }
 
-        if let Some(custom_callout) = &cli.custom_callout {
-            if arg_has_user_value(matches, "custom_callout") {
-                config.custom_callout = Some(custom_callout.clone());
-            }
+        if let Some(custom_callout) = &cli.custom_callout
+            && arg_has_user_value(matches, "custom_callout")
+        {
+            config.custom_callout = Some(custom_callout.clone());
         }
 
-        if let Some(link_style) = cli.link_style.clone() {
-            if arg_has_user_value(matches, "link_style") {
-                config.link_style = link_style;
-            }
+        if let Some(link_style) = cli.link_style.clone()
+            && arg_has_user_value(matches, "link_style")
+        {
+            config.link_style = link_style;
         }
 
-        if let Some(link_truncation) = cli.link_truncation.clone() {
-            if arg_has_user_value(matches, "link_truncation") {
-                config.link_truncation = link_truncation;
-            }
+        if let Some(link_truncation) = cli.link_truncation.clone()
+            && arg_has_user_value(matches, "link_truncation")
+        {
+            config.link_truncation = link_truncation;
         }
 
-        if let Some(footnote_style) = cli.footnote_style {
-            if arg_has_user_value(matches, "footnote_style") {
-                config.footnote_style = footnote_style;
-            }
+        if let Some(footnote_style) = cli.footnote_style
+            && arg_has_user_value(matches, "footnote_style")
+        {
+            config.footnote_style = footnote_style;
         }
 
-        if let Some(missing_style) = cli.missing_footnote_style {
-            if arg_has_user_value(matches, "missing_footnote_style") {
-                config.missing_footnote_style = missing_style;
-            }
+        if let Some(missing_style) = cli.missing_footnote_style
+            && arg_has_user_value(matches, "missing_footnote_style")
+        {
+            config.missing_footnote_style = missing_style;
         }
 
-        if let Some(heading_layout) = cli.heading_layout.clone() {
-            if arg_has_user_value(matches, "heading_layout") {
-                config.heading_layout = heading_layout;
-            }
+        if let Some(heading_layout) = cli.heading_layout.clone()
+            && arg_has_user_value(matches, "heading_layout")
+        {
+            config.heading_layout = heading_layout;
         }
         if cli.smart_indent {
             config.smart_indent = true;
@@ -227,28 +227,28 @@ impl Config {
             config.no_code_language = true;
         }
 
-        if let Some(style) = cli.code_block_style {
-            if arg_has_user_value(matches, "code_block_style") {
-                config.code_block_style = style;
-            }
+        if let Some(style) = cli.code_block_style
+            && arg_has_user_value(matches, "code_block_style")
+        {
+            config.code_block_style = style;
         }
 
-        if let Some(style) = cli.style_callout {
-            if arg_has_user_value(matches, "style_callout") {
-                config.callout_style = style;
-            }
+        if let Some(style) = cli.style_callout
+            && arg_has_user_value(matches, "style_callout")
+        {
+            config.callout_style = style;
         }
 
-        if let Some(indent) = cli.code_wrap_indent {
-            if arg_has_user_value(matches, "code_wrap_indent") {
-                config.code_wrap_indent = indent;
-            }
+        if let Some(indent) = cli.code_wrap_indent
+            && arg_has_user_value(matches, "code_wrap_indent")
+        {
+            config.code_wrap_indent = indent;
         }
 
-        if let Some(from_text) = &cli.from_txt {
-            if arg_has_user_value(matches, "from_txt") {
-                config.from_text = Some(from_text.clone());
-            }
+        if let Some(from_text) = &cli.from_txt
+            && arg_has_user_value(matches, "from_txt")
+        {
+            config.from_text = Some(from_text.clone());
         }
 
         if cli.reverse {
@@ -291,16 +291,16 @@ impl Config {
     fn get_config_paths(cli: &Cli, matches: &ArgMatches) -> Vec<PathBuf> {
         let mut paths = Vec::new();
 
-        if let Some(config_file) = &cli.config_file {
-            if arg_has_user_value(matches, "config_file") {
-                paths.push(config_file.clone());
-            }
+        if let Some(config_file) = &cli.config_file
+            && arg_has_user_value(matches, "config_file")
+        {
+            paths.push(config_file.clone());
         }
 
-        if let Some(env_path) = std::env::var_os(CONFIG_FILE_ENV) {
-            if !env_path.is_empty() {
-                paths.push(PathBuf::from(env_path));
-            }
+        if let Some(env_path) = std::env::var_os(CONFIG_FILE_ENV)
+            && !env_path.is_empty()
+        {
+            paths.push(PathBuf::from(env_path));
         }
 
         if cfg!(target_os = "windows") {
@@ -447,10 +447,10 @@ impl Config {
     }
 
     pub fn get_terminal_width(&self) -> usize {
-        if self.cols_from_cli {
-            if let Some(cols) = self.cols {
-                return cols;
-            }
+        if self.cols_from_cli
+            && let Some(cols) = self.cols
+        {
+            return cols;
         }
 
         if let Ok((width, _)) = crossterm::terminal::size() {
@@ -472,10 +472,10 @@ impl Config {
             self.theme = "terminal".to_string();
         }
 
-        if let Some(code_theme) = self.code_theme.as_ref() {
-            if code_theme.trim().is_empty() {
-                self.code_theme = None;
-            }
+        if let Some(code_theme) = self.code_theme.as_ref()
+            && code_theme.trim().is_empty()
+        {
+            self.code_theme = None;
         }
     }
 

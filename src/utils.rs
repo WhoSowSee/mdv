@@ -5,7 +5,6 @@ use std::str::Chars;
 use unicode_width::UnicodeWidthStr;
 
 /// Utility functions for mdv
-
 /// Calculate the display width of a string, accounting for Unicode characters
 pub fn display_width(s: &str) -> usize {
     UnicodeWidthStr::width(s)
@@ -72,106 +71,105 @@ pub enum Alignment {
 
 /// Check if a file is likely to be a text file based on its extension
 pub fn is_text_file(path: &Path) -> bool {
-    if let Some(ext) = path.extension() {
-        if let Some(ext_str) = ext.to_str() {
-            return matches!(
-                ext_str.to_lowercase().as_str(),
-                "md" | "markdown"
-                    | "mdown"
-                    | "txt"
-                    | "text"
-                    | "rst"
-                    | "adoc"
-                    | "asciidoc"
-                    | "org"
-                    | "wiki"
-                    | "creole"
-                    | "textile"
-                    | "rdoc"
-                    | "pod"
-                    | "man"
-                    | "1"
-                    | "2"
-                    | "3"
-                    | "4"
-                    | "5"
-                    | "6"
-                    | "7"
-                    | "8"
-                    | "9"
-                    | "py"
-                    | "rs"
-                    | "js"
-                    | "ts"
-                    | "go"
-                    | "c"
-                    | "cpp"
-                    | "h"
-                    | "hpp"
-                    | "java"
-                    | "rb"
-                    | "php"
-                    | "pl"
-                    | "sh"
-                    | "bash"
-                    | "zsh"
-                    | "fish"
-                    | "json"
-                    | "yaml"
-                    | "yml"
-                    | "toml"
-                    | "xml"
-                    | "html"
-                    | "css"
-                    | "sql"
-                    | "r"
-                    | "m"
-                    | "scala"
-                    | "clj"
-                    | "hs"
-                    | "elm"
-                    | "ex"
-                    | "swift"
-                    | "kt"
-                    | "dart"
-                    | "lua"
-                    | "vim"
-                    | "el"
-                    | "lisp"
-                    | "cfg"
-                    | "conf"
-                    | "ini"
-                    | "properties"
-                    | "env"
-                    | "log"
-                    | "diff"
-                    | "patch"
-            );
-        }
+    if let Some(ext) = path.extension()
+        && let Some(ext_str) = ext.to_str()
+    {
+        return matches!(
+            ext_str.to_lowercase().as_str(),
+            "md" | "markdown"
+                | "mdown"
+                | "txt"
+                | "text"
+                | "rst"
+                | "adoc"
+                | "asciidoc"
+                | "org"
+                | "wiki"
+                | "creole"
+                | "textile"
+                | "rdoc"
+                | "pod"
+                | "man"
+                | "1"
+                | "2"
+                | "3"
+                | "4"
+                | "5"
+                | "6"
+                | "7"
+                | "8"
+                | "9"
+                | "py"
+                | "rs"
+                | "js"
+                | "ts"
+                | "go"
+                | "c"
+                | "cpp"
+                | "h"
+                | "hpp"
+                | "java"
+                | "rb"
+                | "php"
+                | "pl"
+                | "sh"
+                | "bash"
+                | "zsh"
+                | "fish"
+                | "json"
+                | "yaml"
+                | "yml"
+                | "toml"
+                | "xml"
+                | "html"
+                | "css"
+                | "sql"
+                | "r"
+                | "m"
+                | "scala"
+                | "clj"
+                | "hs"
+                | "elm"
+                | "ex"
+                | "swift"
+                | "kt"
+                | "dart"
+                | "lua"
+                | "vim"
+                | "el"
+                | "lisp"
+                | "cfg"
+                | "conf"
+                | "ini"
+                | "properties"
+                | "env"
+                | "log"
+                | "diff"
+                | "patch"
+        );
     }
 
     // Also check for files without extension that might be text
-    if path.extension().is_none() {
-        if let Some(filename) = path.file_name() {
-            if let Some(filename_str) = filename.to_str() {
-                return matches!(
-                    filename_str.to_uppercase().as_str(),
-                    "README"
-                        | "LICENSE"
-                        | "CHANGELOG"
-                        | "CONTRIBUTING"
-                        | "AUTHORS"
-                        | "COPYING"
-                        | "INSTALL"
-                        | "NEWS"
-                        | "TODO"
-                        | "HISTORY"
-                        | "MAKEFILE"
-                        | "DOCKERFILE"
-                        | "VAGRANTFILE"
-                );
-            }
-        }
+    if path.extension().is_none()
+        && let Some(filename) = path.file_name()
+        && let Some(filename_str) = filename.to_str()
+    {
+        return matches!(
+            filename_str.to_uppercase().as_str(),
+            "README"
+                | "LICENSE"
+                | "CHANGELOG"
+                | "CONTRIBUTING"
+                | "AUTHORS"
+                | "COPYING"
+                | "INSTALL"
+                | "NEWS"
+                | "TODO"
+                | "HISTORY"
+                | "MAKEFILE"
+                | "DOCKERFILE"
+                | "VAGRANTFILE"
+        );
     }
 
     false
@@ -403,7 +401,7 @@ fn consume_escape_sequence(chars: &mut Peekable<Chars<'_>>) -> String {
         match next {
             '[' => {
                 sequence.push(chars.next().unwrap());
-                while let Some(ch) = chars.next() {
+                for ch in chars.by_ref() {
                     sequence.push(ch);
                     if ('@'..='~').contains(&ch) {
                         break;
@@ -417,13 +415,12 @@ fn consume_escape_sequence(chars: &mut Peekable<Chars<'_>>) -> String {
                     if ch == '\x07' {
                         break;
                     }
-                    if ch == '\x1b' {
-                        if let Some(&following) = chars.peek() {
-                            if following == '\\' {
-                                sequence.push(chars.next().unwrap());
-                                break;
-                            }
-                        }
+                    if ch == '\x1b'
+                        && let Some(&following) = chars.peek()
+                        && following == '\\'
+                    {
+                        sequence.push(chars.next().unwrap());
+                        break;
                     }
                 }
             }
@@ -858,7 +855,7 @@ mod tests {
 
         // Should not break words
         for line in wrapped.lines() {
-            let words: Vec<&str> = line.trim().split_whitespace().collect();
+            let words: Vec<&str> = line.split_whitespace().collect();
             for word in words {
                 assert!(text.contains(word), "Word '{}' should be preserved", word);
             }

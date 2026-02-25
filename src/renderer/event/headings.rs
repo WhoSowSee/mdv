@@ -277,10 +277,11 @@ impl<'a> EventRenderer<'a> {
             } else {
                 ""
             };
-            if crate::utils::strip_ansi(slice).trim().is_empty() {
-                if start <= end && end <= self.output.len() {
-                    self.output.replace_range(start..end, "");
-                }
+            if crate::utils::strip_ansi(slice).trim().is_empty()
+                && start <= end
+                && end <= self.output.len()
+            {
+                self.output.replace_range(start..end, "");
             }
         }
     }

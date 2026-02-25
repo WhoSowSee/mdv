@@ -621,16 +621,16 @@ impl<'a> EventRenderer<'a> {
             return;
         }
         let mut header = None;
-        if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {
-            if !info.header_rendered {
-                info.header_rendered = true;
-                header = Some((
-                    info.kind,
-                    info.label.clone(),
-                    info.label_override.clone(),
-                    info.fold,
-                ));
-            }
+        if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut()
+            && !info.header_rendered
+        {
+            info.header_rendered = true;
+            header = Some((
+                info.kind,
+                info.label.clone(),
+                info.label_override.clone(),
+                info.fold,
+            ));
         }
 
         if let Some((kind, label, label_override, fold)) = header {

@@ -95,21 +95,21 @@ impl<'a> EventRenderer<'a> {
             if self.pending_callout_label_buffer.is_empty() {
                 let mut remaining = raw_text;
 
-                if let Some(first) = remaining.chars().next() {
-                    if matches!(first, '+' | '-') {
-                        if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {
-                            if info.fold.is_none() {
-                                info.fold = Some(match first {
-                                    '+' => CalloutFold::Expanded,
-                                    '-' => CalloutFold::Collapsed,
-                                    _ => unreachable!(),
-                                });
-                            }
-                        }
-                        remaining = &remaining[first.len_utf8()..];
-                        if remaining.is_empty() {
-                            return Ok(());
-                        }
+                if let Some(first) = remaining.chars().next()
+                    && matches!(first, '+' | '-')
+                {
+                    if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut()
+                        && info.fold.is_none()
+                    {
+                        info.fold = Some(match first {
+                            '+' => CalloutFold::Expanded,
+                            '-' => CalloutFold::Collapsed,
+                            _ => unreachable!(),
+                        });
+                    }
+                    remaining = &remaining[first.len_utf8()..];
+                    if remaining.is_empty() {
+                        return Ok(());
                     }
                 }
 
@@ -134,36 +134,34 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
         let mut callout_decision = None;
-        if self.blockquote_level > 0 && self.list_stack.is_empty() {
-            if let Some(state) = self.callout_stack.last_mut() {
-                if matches!(state, CalloutState::Pending) {
-                    if self.pending_callout_marker {
-                        self.pending_callout_marker_buffer.push_str(raw_text);
-                        let evaluation =
-                            Self::evaluate_callout_buffer(&self.pending_callout_marker_buffer);
-                        callout_decision = Some(Self::apply_callout_buffer_evaluation(
-                            state,
-                            evaluation,
-                            &self.pending_callout_marker_buffer,
-                        ));
-                    } else if raw_text.trim().is_empty() {
-                        // Keep pending until we see meaningful content.
-                        return Ok(());
-                    } else if raw_text.trim_start().starts_with('[') {
-                        self.pending_callout_marker = true;
-                        self.pending_callout_marker_buffer.clear();
-                        self.pending_callout_marker_buffer.push_str(raw_text);
-                        let evaluation =
-                            Self::evaluate_callout_buffer(&self.pending_callout_marker_buffer);
-                        callout_decision = Some(Self::apply_callout_buffer_evaluation(
-                            state,
-                            evaluation,
-                            &self.pending_callout_marker_buffer,
-                        ));
-                    } else {
-                        *state = CalloutState::None;
-                    }
-                }
+        if self.blockquote_level > 0
+            && self.list_stack.is_empty()
+            && let Some(state) = self.callout_stack.last_mut()
+            && matches!(state, CalloutState::Pending)
+        {
+            if self.pending_callout_marker {
+                self.pending_callout_marker_buffer.push_str(raw_text);
+                let evaluation = Self::evaluate_callout_buffer(&self.pending_callout_marker_buffer);
+                callout_decision = Some(Self::apply_callout_buffer_evaluation(
+                    state,
+                    evaluation,
+                    &self.pending_callout_marker_buffer,
+                ));
+            } else if raw_text.trim().is_empty() {
+                // Keep pending until we see meaningful content.
+                return Ok(());
+            } else if raw_text.trim_start().starts_with('[') {
+                self.pending_callout_marker = true;
+                self.pending_callout_marker_buffer.clear();
+                self.pending_callout_marker_buffer.push_str(raw_text);
+                let evaluation = Self::evaluate_callout_buffer(&self.pending_callout_marker_buffer);
+                callout_decision = Some(Self::apply_callout_buffer_evaluation(
+                    state,
+                    evaluation,
+                    &self.pending_callout_marker_buffer,
+                ));
+            } else {
+                *state = CalloutState::None;
             }
         }
 
@@ -319,15 +317,15 @@ impl<'a> EventRenderer<'a> {
         let mut rest = &trimmed[closing + 1..];
         let mut fold = None;
 
-        if let Some(first) = rest.chars().next() {
-            if matches!(first, '+' | '-') {
-                fold = Some(match first {
-                    '+' => CalloutFold::Expanded,
-                    '-' => CalloutFold::Collapsed,
-                    _ => unreachable!(),
-                });
-                rest = &rest[first.len_utf8()..];
-            }
+        if let Some(first) = rest.chars().next()
+            && matches!(first, '+' | '-')
+        {
+            fold = Some(match first {
+                '+' => CalloutFold::Expanded,
+                '-' => CalloutFold::Collapsed,
+                _ => unreachable!(),
+            });
+            rest = &rest[first.len_utf8()..];
         }
 
         if rest.is_empty() {
@@ -1112,7 +1110,7 @@ impl<'a> EventRenderer<'a> {
             };
 
             // Process each unit individually
-            for (_i, unit) in units.iter().enumerate() {
+            for unit in units.iter() {
                 if unit.trim().is_empty() {
                     // Handle whitespace cautiously: don't let a trailing space overflow the line
                     let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {

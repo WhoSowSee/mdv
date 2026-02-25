@@ -58,10 +58,11 @@ impl<'a> EventRenderer<'a> {
         while let Some(segment) = segments.next() {
             if !first_segment {
                 self.output.push('\n');
-                if let Some(prefix) = followup_prefix.as_ref() {
-                    if !prefix.is_empty() && (!segment.is_empty() || segments.peek().is_some()) {
-                        self.output.push_str(prefix);
-                    }
+                if let Some(prefix) = followup_prefix.as_ref()
+                    && !prefix.is_empty()
+                    && (!segment.is_empty() || segments.peek().is_some())
+                {
+                    self.output.push_str(prefix);
                 }
             } else {
                 first_segment = false;

@@ -10,6 +10,7 @@ use pulldown_cmark::Alignment;
 use crate::cli::TableWrapMode;
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
+type TableBlock = (Vec<String>, Vec<Vec<String>>, Vec<Alignment>);
 
 /// Table renderer using comfy-table for proper Unicode handling
 pub struct TableRenderer {
@@ -43,13 +44,13 @@ impl TableRenderer {
             cell = cell.set_delimiter(TABLE_REFERENCE_WRAP_DELIMITER);
         }
 
-        if clean_content.starts_with('`') && clean_content.ends_with('`') {
-            if !self.no_colors {
-                if let Some(theme_color) = theme_color_to_comfy(&self.theme.code) {
-                    // Use only foreground color, no background
-                    cell = cell.fg(theme_color);
-                }
-            }
+        if clean_content.starts_with('`')
+            && clean_content.ends_with('`')
+            && !self.no_colors
+            && let Some(theme_color) = theme_color_to_comfy(&self.theme.code)
+        {
+            // Use only foreground color, no background
+            cell = cell.fg(theme_color);
         }
 
         if clean_content.len() != content.len() {
@@ -60,10 +61,10 @@ impl TableRenderer {
                 cell = cell.add_attribute(Attribute::Italic);
             }
 
-            if !self.no_colors {
-                if let Some(ansi_color) = extract_ansi_foreground_color(content) {
-                    cell = cell.fg(ansi_color);
-                }
+            if !self.no_colors
+                && let Some(ansi_color) = extract_ansi_foreground_color(content)
+            {
+                cell = cell.fg(ansi_color);
             }
         }
 
@@ -120,7 +121,7 @@ impl TableRenderer {
         headers: &[String],
         rows: &[Vec<String>],
         alignments: &[Alignment],
-    ) -> Vec<(Vec<String>, Vec<Vec<String>>, Vec<Alignment>)> {
+    ) -> Vec<TableBlock> {
         let column_widths = self.calculate_column_widths(headers, rows);
         let mut blocks = Vec::new();
         let mut current_block_start = 0;
@@ -138,8 +139,12 @@ impl TableRenderer {
                 current_block_end = current_block_start + 1;
             }
 
-            for i in (current_block_start + 1)..headers.len() {
-                let additional_width = column_widths[i] + 3; // column width + borders
+            for (i, width) in column_widths
+                .iter()
+                .enumerate()
+                .skip(current_block_start + 1)
+            {
+                let additional_width = *width + 3; // column width + borders
 
                 if current_width + additional_width <= self.terminal_width {
                     current_width += additional_width;
@@ -220,7 +225,7 @@ impl TableRenderer {
 
             // Render this block as a regular table
             let block_table =
-                self.render_single_table_block(block_headers, block_rows, &block_alignments)?;
+                self.render_single_table_block(block_headers, block_rows, block_alignments)?;
             result.push_str(&block_table);
         }
 
@@ -862,7 +867,7 @@ mod tests {
         let blocks = renderer.split_table_into_blocks(&headers, &rows, &alignments);
 
         // Should split into multiple blocks for narrow terminal with long content
-        assert!(blocks.len() >= 1);
+        assert!(!blocks.is_empty());
 
         // Each block should have at least one column
         for (block_headers, _, _) in &blocks {
@@ -918,7 +923,7 @@ mod tests {
             .find(|line| line.contains(link_text))
             .expect("data row present");
         assert!(data_line.contains(&styled_reference));
-        let stripped_line = crate::utils::strip_ansi(&data_line);
+        let stripped_line = crate::utils::strip_ansi(data_line);
         assert!(stripped_line.contains("Link text[1]"));
 
         let prefix_len = styled_reference
@@ -968,7 +973,7 @@ mod tests {
 
         assert!(data_line.contains(&styled_url));
 
-        let stripped_line = crate::utils::strip_ansi(&data_line);
+        let stripped_line = crate::utils::strip_ansi(data_line);
         assert!(stripped_line.contains(&format!("{}{}", link_text, url_part)));
 
         let prefix_len = styled_url

@@ -565,10 +565,10 @@ impl<'a> EventRenderer<'a> {
                 }
                 if self.current_paragraph_start.is_some() && !self.current_paragraph_has_content {
                     self.current_paragraph_has_leading_break = true;
-                    if let Some(start) = self.current_paragraph_start {
-                        if start <= self.output.len() {
-                            self.output.truncate(start);
-                        }
+                    if let Some(start) = self.current_paragraph_start
+                        && start <= self.output.len()
+                    {
+                        self.output.truncate(start);
                     }
                 } else {
                     self.handle_hard_break();
@@ -607,10 +607,9 @@ impl<'a> EventRenderer<'a> {
                     && self.table_state.is_none()
                     && self.list_stack.is_empty()
                     && self.blockquote_level == 0
+                    && (self.output.ends_with('\n') || self.output.is_empty())
                 {
-                    if self.output.ends_with('\n') || self.output.is_empty() {
-                        self.output.push_str(&" ".repeat(self.content_indent));
-                    }
+                    self.output.push_str(&" ".repeat(self.content_indent));
                 }
             }
             Tag::Heading { level, .. } => {
@@ -823,7 +822,7 @@ impl<'a> EventRenderer<'a> {
                 self.finalize_inline_footnotes(true, !self.list_stack.is_empty())?;
 
                 let has_visible_content = paragraph_has_content
-                    || paragraph_start.map_or(false, |start| {
+                    || paragraph_start.is_some_and(|start| {
                         let slice = if start <= self.output.len() {
                             &self.output[start..]
                         } else {
@@ -873,10 +872,7 @@ impl<'a> EventRenderer<'a> {
                     .map(|info| info.inline_links.clone())
                     .unwrap_or_default();
                 let callout_level = self.blockquote_level;
-                let start_index = self
-                    .blockquote_starts
-                    .pop()
-                    .unwrap_or_else(|| self.output.len());
+                let start_index = self.blockquote_starts.pop().unwrap_or(self.output.len());
                 let slice = if start_index <= self.output.len() {
                     self.output[start_index..].to_string()
                 } else {
@@ -913,24 +909,24 @@ impl<'a> EventRenderer<'a> {
                     }
                     self.active_blockquote_smart_indents.pop();
 
-                    if has_visible_content || self.config.show_empty_elements {
-                        if let Some(info) = callout_info {
-                            let rendered = self.render_callout_pretty_block(
-                                &slice,
-                                callout_level,
-                                info.kind,
-                                &info.label,
-                                info.label_override.as_deref(),
-                                info.fold,
-                            );
+                    if (has_visible_content || self.config.show_empty_elements)
+                        && let Some(info) = callout_info
+                    {
+                        let rendered = self.render_callout_pretty_block(
+                            &slice,
+                            callout_level,
+                            info.kind,
+                            &info.label,
+                            info.label_override.as_deref(),
+                            info.fold,
+                        );
 
-                            if !rendered {
-                                self.output.push_str(&slice);
-                                if !self.output.ends_with('\n') {
-                                    self.output.push('\n');
-                                }
-                                self.ensure_contextual_blank_line();
+                        if !rendered {
+                            self.output.push_str(&slice);
+                            if !self.output.ends_with('\n') {
+                                self.output.push('\n');
                             }
+                            self.ensure_contextual_blank_line();
                         }
                     }
 
@@ -1031,7 +1027,7 @@ impl<'a> EventRenderer<'a> {
                 if let Some(list_state) = self.list_stack.last_mut() {
                     start_index = list_state
                         .current_item_start
-                        .unwrap_or_else(|| self.output.len())
+                        .unwrap_or(self.output.len())
                         .min(self.output.len());
                     let marker_end = list_state
                         .current_item_marker_end
@@ -1083,10 +1079,10 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             TagEnd::TableRow => {
-                if let Some(ref mut table) = self.table_state {
-                    if !table.in_header {
-                        table.rows.push(table.current_row.clone());
-                    }
+                if let Some(ref mut table) = self.table_state
+                    && !table.in_header
+                {
+                    table.rows.push(table.current_row.clone());
                 }
             }
             TagEnd::TableCell => {

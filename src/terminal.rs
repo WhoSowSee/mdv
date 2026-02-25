@@ -40,10 +40,10 @@ impl Terminal {
 /// Check if terminal supports color output
 pub fn supports_color() -> bool {
     // Check various environment variables that indicate color support
-    if let Ok(term) = std::env::var("TERM") {
-        if term.contains("color") || term.contains("256") || term == "xterm" {
-            return true;
-        }
+    if let Ok(term) = std::env::var("TERM")
+        && (term.contains("color") || term.contains("256") || term == "xterm")
+    {
+        return true;
     }
 
     if std::env::var("COLORTERM").is_ok() {
@@ -51,10 +51,10 @@ pub fn supports_color() -> bool {
     }
 
     // Honor mdv-specific override for disabling color output
-    if let Some(no_color_override) = mdv_no_color_override() {
-        if no_color_override {
-            return false;
-        }
+    if let Some(no_color_override) = mdv_no_color_override()
+        && no_color_override
+    {
+        return false;
     }
 
     // Default to true for most modern terminals
@@ -62,7 +62,7 @@ pub fn supports_color() -> bool {
 }
 
 /// ANSI color and style utilities
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AnsiStyle {
     pub fg_color: Option<Color>,
     pub bg_color: Option<Color>,
@@ -70,19 +70,6 @@ pub struct AnsiStyle {
     pub italic: bool,
     pub underline: bool,
     pub strikethrough: bool,
-}
-
-impl Default for AnsiStyle {
-    fn default() -> Self {
-        Self {
-            fg_color: None,
-            bg_color: None,
-            bold: false,
-            italic: false,
-            underline: false,
-            strikethrough: false,
-        }
-    }
 }
 
 impl AnsiStyle {

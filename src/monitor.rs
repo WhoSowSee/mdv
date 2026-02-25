@@ -35,16 +35,16 @@ pub fn watch_file(filename: &str, config: &Config) -> Result<()> {
     loop {
         match rx.recv_timeout(Duration::from_millis(50)) {
             Ok(event) => {
-                if let Ok(event) = event {
-                    if should_trigger_render(&event) {
-                        let now = Instant::now();
-                        if now.duration_since(last_render) > debounce_duration {
-                            println!("\n--- File changed, re-rendering ---\n");
-                            if let Err(e) = render_file(&path, config, &renderer) {
-                                eprintln!("Error rendering file: {}", e);
-                            }
-                            last_render = now;
+                if let Ok(event) = event
+                    && should_trigger_render(&event)
+                {
+                    let now = Instant::now();
+                    if now.duration_since(last_render) > debounce_duration {
+                        println!("\n--- File changed, re-rendering ---\n");
+                        if let Err(e) = render_file(&path, config, &renderer) {
+                            eprintln!("Error rendering file: {}", e);
                         }
+                        last_render = now;
                     }
                 }
             }

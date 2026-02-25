@@ -205,7 +205,7 @@ pub struct Cli {
     #[arg(
         long = "table-smart-indent",
         help = "Automatically adjusts table indentation based on available width",
-        long_help = "Automatically adjusts table indentation based on available width.\nUses heading content indentation when space allows and reduces it when width is tight."
+        long_help = "Automatically adjusts table indentation based on available width\nUses heading content indentation when space allows and reduces it when width is tight"
     )]
     pub table_smart_indent: bool,
 }

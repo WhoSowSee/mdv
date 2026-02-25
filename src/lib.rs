@@ -25,10 +25,10 @@ use std::path::Path;
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     let config = Config::from_cli(&cli, matches)?;
 
-    if let Some(Some(path)) = &cli.theme_info {
-        if cli.filename.is_none() {
-            cli.filename = Some(path.to_string_lossy().into_owned());
-        }
+    if let Some(Some(path)) = &cli.theme_info
+        && cli.filename.is_none()
+    {
+        cli.filename = Some(path.to_string_lossy().into_owned());
     }
 
     if matches!(cli.theme_info, Some(None)) {
@@ -64,10 +64,10 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         print!("{}", output);
     }
 
-    if cli.monitor_file {
-        if let Some(filename) = &cli.filename {
-            monitor::watch_file(filename, &config)?;
-        }
+    if cli.monitor_file
+        && let Some(filename) = &cli.filename
+    {
+        monitor::watch_file(filename, &config)?;
     }
 
     Ok(())

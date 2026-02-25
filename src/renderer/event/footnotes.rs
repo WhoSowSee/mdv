@@ -515,24 +515,23 @@ impl<'a> EventRenderer<'a> {
 
         let mut idx = 0usize;
         while idx < events.len() {
-            if matches!(events[idx], Event::Start(Tag::Paragraph)) {
-                if let Some((end_idx, placeholders)) =
+            if matches!(events[idx], Event::Start(Tag::Paragraph))
+                && let Some((end_idx, placeholders)) =
                     Self::extract_bare_footnote_paragraph(&events, idx)
-                {
-                    for (name, kind) in placeholders {
-                        if known_names.contains(&name) {
-                            continue;
-                        }
-                        definitions.push(FootnoteDefinition {
-                            name: name.clone(),
-                            events: Vec::new(),
-                            kind,
-                        });
-                        known_names.insert(name);
+            {
+                for (name, kind) in placeholders {
+                    if known_names.contains(&name) {
+                        continue;
                     }
-                    idx = end_idx + 1;
-                    continue;
+                    definitions.push(FootnoteDefinition {
+                        name: name.clone(),
+                        events: Vec::new(),
+                        kind,
+                    });
+                    known_names.insert(name);
                 }
+                idx = end_idx + 1;
+                continue;
             }
 
             cleaned.push(events[idx].clone());
@@ -588,9 +587,7 @@ impl<'a> EventRenderer<'a> {
                 continue;
             }
 
-            let Some((name, kind)) = Self::parse_placeholder_footnote_line(line) else {
-                return None;
-            };
+            let (name, kind) = Self::parse_placeholder_footnote_line(line)?;
             placeholders.push((name, kind));
         }
 

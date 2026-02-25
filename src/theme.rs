@@ -607,7 +607,7 @@ pub fn apply_custom_code_theme(theme: &mut Theme, overrides: &str) -> Result<()>
 fn parse_override_pairs(input: &str) -> Result<Vec<(String, String)>> {
     let mut pairs = Vec::new();
 
-    for raw in input.split(|c| c == ';' || c == '\n') {
+    for raw in input.split([';', '\n']) {
         let trimmed = raw.trim();
         if trimmed.is_empty() {
             continue;
@@ -1000,7 +1000,7 @@ mod tests {
     fn test_theme_luminosity() {
         let theme = Theme::default();
         let lum = calculate_theme_luminosity(&theme);
-        assert!(lum >= 0.0 && lum <= 1.0);
+        assert!((0.0..=1.0).contains(&lum));
     }
 
     #[test]

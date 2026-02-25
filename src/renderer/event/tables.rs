@@ -56,10 +56,10 @@ impl<'a> EventRenderer<'a> {
             }
 
             if table.alignments.len() < table.headers.len() {
-                table.alignments.extend(
-                    std::iter::repeat(Alignment::Left)
-                        .take(table.headers.len().saturating_sub(table.alignments.len())),
-                );
+                table.alignments.extend(std::iter::repeat_n(
+                    Alignment::Left,
+                    table.headers.len().saturating_sub(table.alignments.len()),
+                ));
             }
 
             if rows_empty {
@@ -70,10 +70,10 @@ impl<'a> EventRenderer<'a> {
                 } else {
                     for row in table.rows.iter_mut() {
                         if row.len() < table.headers.len() {
-                            row.extend(
-                                std::iter::repeat(String::new())
-                                    .take(table.headers.len().saturating_sub(row.len())),
-                            );
+                            row.extend(std::iter::repeat_n(
+                                String::new(),
+                                table.headers.len().saturating_sub(row.len()),
+                            ));
                         }
                         for cell in row.iter_mut() {
                             if strip_ansi(cell).trim().is_empty() {

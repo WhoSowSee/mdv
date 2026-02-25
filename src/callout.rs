@@ -12,7 +12,7 @@ pub(crate) fn parse_custom_callouts(input: &str) -> Result<HashMap<String, Custo
     let mut callouts = HashMap::new();
     let mut has_entries = false;
 
-    for raw_entry in input.split(|ch| ch == ';' || ch == '\n') {
+    for raw_entry in input.split([';', '\n']) {
         let entry = raw_entry.trim();
         if entry.is_empty() {
             continue;

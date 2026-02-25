@@ -15,14 +15,12 @@ pub(crate) fn default_theme_set() -> &'static ThemeSet {
 }
 
 pub(crate) fn build_syntect_theme(theme: &Theme) -> SyntectTheme {
-    let mut syntect_theme = SyntectTheme::default();
-    syntect_theme.name = Some(format!("mdv:{}", theme.name));
+    let mut syntect_theme = SyntectTheme {
+        name: Some(format!("mdv:{}", theme.name)),
+        ..SyntectTheme::default()
+    };
     syntect_theme.settings.foreground = Some(to_syntect_color(&theme.text));
-    if let Some(background) = theme
-        .background
-        .as_ref()
-        .map(|color| to_syntect_color(color))
-    {
+    if let Some(background) = theme.background.as_ref().map(to_syntect_color) {
         syntect_theme.settings.background = Some(background);
     }
     syntect_theme.settings.caret = Some(to_syntect_color(&theme.text));

@@ -27,7 +27,7 @@ fn test_callout_pretty_style_renders_frame() {
         stdout
     );
     assert!(
-        lines.iter().any(|line| *line == "│ Example text │"),
+        lines.contains(&"│ Example text │"),
         "expected callout body inside frame, stdout:\n{}",
         stdout
     );

@@ -14,7 +14,7 @@ pub fn render_math(input: &str, mode: MathMode) -> String {
 
 pub fn is_math_language_hint(language_hint: &str) -> bool {
     let lower = language_hint.to_ascii_lowercase();
-    for token in lower.split(|ch: char| matches!(ch, ' ' | '\t' | ',' | ';' | '|')) {
+    for token in lower.split([' ', '\t', ',', ';', '|']) {
         let trimmed = token.trim();
         if trimmed.is_empty() {
             continue;
@@ -312,10 +312,10 @@ fn normalize_output(mut rendered: String, mode: MathMode) -> String {
 }
 
 fn render_text_command(command: &str, content: &str) -> String {
-    if command == "mathbb" {
-        if let Some(symbol) = mathbb_symbol(content.trim()) {
-            return symbol.to_string();
-        }
+    if command == "mathbb"
+        && let Some(symbol) = mathbb_symbol(content.trim())
+    {
+        return symbol.to_string();
     }
     content.to_string()
 }

@@ -1,3 +1,4 @@
+use super::code::CodeBlockRenderInput;
 use super::{CodeBlockStyle, CowStr, EventRenderer, Result, ThemeElement, WrapMode, create_style};
 use crate::math::{MathMode, render_math};
 
@@ -95,14 +96,14 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        if let Some(start) = self.current_paragraph_start {
-            if !self.current_paragraph_has_content {
-                if start <= self.output.len() {
-                    self.output.truncate(start);
-                }
-                self.current_paragraph_has_leading_break = false;
-                self.suppress_next_paragraph_break = true;
+        if let Some(start) = self.current_paragraph_start
+            && !self.current_paragraph_has_content
+        {
+            if start <= self.output.len() {
+                self.output.truncate(start);
             }
+            self.current_paragraph_has_leading_break = false;
+            self.suppress_next_paragraph_break = true;
         }
 
         let rendered = render_math(math.as_ref(), MathMode::Display);
@@ -163,31 +164,24 @@ impl<'a> EventRenderer<'a> {
         let should_wrap = self.config.is_text_wrapping_enabled();
         let wrap_mode = self.config.text_wrap_mode();
         let terminal_width = self.effective_text_width();
+        let render_input = CodeBlockRenderInput::new(
+            &highlighted,
+            label,
+            false,
+            should_wrap,
+            wrap_mode,
+            terminal_width,
+            &rendered,
+        );
 
         self.ensure_contextual_blank_line();
 
         match self.config.code_block_style {
             CodeBlockStyle::Simple => {
-                self.render_code_block_simple(
-                    &highlighted,
-                    label,
-                    false,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    &rendered,
-                )?;
+                self.render_code_block_simple(render_input)?;
             }
             CodeBlockStyle::Pretty => {
-                self.render_code_block_pretty(
-                    &highlighted,
-                    label,
-                    false,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    &rendered,
-                )?;
+                self.render_code_block_pretty(render_input)?;
             }
         }
 

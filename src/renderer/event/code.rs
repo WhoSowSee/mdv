@@ -20,12 +20,46 @@ const CUSTOM_LANGUAGE_LABELS: &[(&str, &str)] = &[
     ("console", "Shell"),
     ("sh", "Shell"),
     ("objective-c", "Objective-C"),
+    ("Javascript (Babel)", "JavaScript"),
 ];
 
 #[derive(Debug, Clone)]
 struct WrappedCodeSegment {
     text: String,
     visible_width: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct CodeBlockRenderInput<'a> {
+    highlighted: &'a str,
+    language_label: Option<&'a str>,
+    code_starts_with_blank: bool,
+    should_wrap: bool,
+    wrap_mode: WrapMode,
+    terminal_width: usize,
+    raw_code: &'a str,
+}
+
+impl<'a> CodeBlockRenderInput<'a> {
+    pub(super) fn new(
+        highlighted: &'a str,
+        language_label: Option<&'a str>,
+        code_starts_with_blank: bool,
+        should_wrap: bool,
+        wrap_mode: WrapMode,
+        terminal_width: usize,
+        raw_code: &'a str,
+    ) -> Self {
+        Self {
+            highlighted,
+            language_label,
+            code_starts_with_blank,
+            should_wrap,
+            wrap_mode,
+            terminal_width,
+            raw_code,
+        }
+    }
 }
 
 impl<'a> EventRenderer<'a> {
@@ -143,12 +177,11 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let language_hint = language_hint;
-        if let Some(hint) = language_hint.as_deref() {
-            if is_math_language_hint(hint) {
-                self.code_block_language = None;
-                return self.handle_math_code_block(&raw_code, language_hint.as_deref());
-            }
+        if let Some(hint) = language_hint.as_deref()
+            && is_math_language_hint(hint)
+        {
+            self.code_block_language = None;
+            return self.handle_math_code_block(&raw_code, language_hint.as_deref());
         }
         let treat_as_plaintext =
             self.should_render_code_block_as_plaintext(language_hint.as_deref());
@@ -232,30 +265,22 @@ impl<'a> EventRenderer<'a> {
         let code_block_prefix = self.current_code_block_prefix();
         self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
 
-        let terminal_width = self.config.get_terminal_width();
+        let render_input = CodeBlockRenderInput::new(
+            &highlighted,
+            language_label.as_deref(),
+            code_starts_with_blank,
+            should_wrap,
+            wrap_mode,
+            self.config.get_terminal_width(),
+            &raw_code,
+        );
 
         match self.config.code_block_style {
             CodeBlockStyle::Simple => {
-                self.render_code_block_simple(
-                    &highlighted,
-                    language_label.as_deref(),
-                    code_starts_with_blank,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    &raw_code,
-                )?;
+                self.render_code_block_simple(render_input)?;
             }
             CodeBlockStyle::Pretty => {
-                self.render_code_block_pretty(
-                    &highlighted,
-                    language_label.as_deref(),
-                    code_starts_with_blank,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    &raw_code,
-                )?;
+                self.render_code_block_pretty(render_input)?;
             }
         }
 
@@ -281,18 +306,12 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn render_code_block_simple(
         &mut self,
-        highlighted: &str,
-        language_label: Option<&str>,
-        code_starts_with_blank: bool,
-        should_wrap: bool,
-        wrap_mode: WrapMode,
-        terminal_width: usize,
-        raw_code: &str,
+        input: CodeBlockRenderInput<'_>,
     ) -> Result<()> {
         let prefix = self.render_code_block_border();
-        let raw_lines: Vec<&str> = raw_code.lines().collect();
+        let raw_lines: Vec<&str> = input.raw_code.lines().collect();
 
-        if let Some(label) = language_label {
+        if let Some(label) = input.language_label {
             let trimmed_label = label.trim();
             let base_label = if trimmed_label.is_empty() {
                 "Text"
@@ -302,11 +321,12 @@ impl<'a> EventRenderer<'a> {
 
             let context_width = self.compute_code_block_context_width();
             let border_visible_width = display_width(&strip_ansi(&prefix));
-            let available_width =
-                terminal_width.saturating_sub(context_width + border_visible_width);
+            let available_width = input
+                .terminal_width
+                .saturating_sub(context_width + border_visible_width);
 
-            let wrapped_label = if should_wrap && available_width > 0 {
-                crate::utils::wrap_text_with_mode(base_label, available_width, wrap_mode)
+            let wrapped_label = if input.should_wrap && available_width > 0 {
+                crate::utils::wrap_text_with_mode(base_label, available_width, input.wrap_mode)
             } else {
                 base_label.to_string()
             };
@@ -318,22 +338,29 @@ impl<'a> EventRenderer<'a> {
                 self.output.push('\n');
             }
 
-            if !code_starts_with_blank {
+            if !input.code_starts_with_blank {
                 self.push_code_block_indent_for_line_start();
                 self.output.push_str(&prefix);
                 self.output.push('\n');
             }
         }
 
-        for (idx, line) in highlighted.lines().enumerate() {
+        for (idx, line) in input.highlighted.lines().enumerate() {
             let context_width = self.compute_code_block_context_width();
             let border_visible_width = 2usize;
-            let available = terminal_width.saturating_sub(context_width + border_visible_width);
+            let available = input
+                .terminal_width
+                .saturating_sub(context_width + border_visible_width);
 
             let raw_line = raw_lines.get(idx).copied();
 
-            let segments =
-                self.wrap_code_line_segments(line, raw_line, available, should_wrap, wrap_mode);
+            let segments = self.wrap_code_line_segments(
+                line,
+                raw_line,
+                available,
+                input.should_wrap,
+                input.wrap_mode,
+            );
 
             for segment in segments {
                 self.push_code_block_indent_for_line_start();
@@ -349,47 +376,25 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn render_code_block_pretty(
         &mut self,
-        highlighted: &str,
-        language_label: Option<&str>,
-        code_starts_with_blank: bool,
-        should_wrap: bool,
-        wrap_mode: WrapMode,
-        terminal_width: usize,
-        raw_code: &str,
+        input: CodeBlockRenderInput<'_>,
     ) -> Result<()> {
         let left_padding = 1usize;
         let right_padding = 1usize;
 
         let context_width = self.compute_code_block_context_width();
-        let available_frame_width = terminal_width.saturating_sub(context_width);
+        let available_frame_width = input.terminal_width.saturating_sub(context_width);
         if available_frame_width <= 4 {
-            return self.render_code_block_simple(
-                highlighted,
-                language_label,
-                code_starts_with_blank,
-                should_wrap,
-                wrap_mode,
-                terminal_width,
-                raw_code,
-            );
+            return self.render_code_block_simple(input);
         }
 
         let max_inner_box_width = available_frame_width;
         let max_text_width_allowed = max_inner_box_width.saturating_sub(2);
         if max_text_width_allowed < left_padding + right_padding + 1 {
-            return self.render_code_block_simple(
-                highlighted,
-                language_label,
-                code_starts_with_blank,
-                should_wrap,
-                wrap_mode,
-                terminal_width,
-                raw_code,
-            );
+            return self.render_code_block_simple(input);
         }
 
-        let highlight_lines: Vec<&str> = highlighted.lines().collect();
-        let raw_code_lines: Vec<&str> = raw_code.lines().collect();
+        let highlight_lines: Vec<&str> = input.highlighted.lines().collect();
+        let raw_code_lines: Vec<&str> = input.raw_code.lines().collect();
         let mut max_line_width = 0usize;
         for line in &highlight_lines {
             max_line_width = max_line_width.max(display_width(&strip_ansi(line)));
@@ -397,23 +402,15 @@ impl<'a> EventRenderer<'a> {
 
         let wrap_width_allowed =
             max_text_width_allowed.saturating_sub(left_padding + right_padding);
-        let needs_wrap =
-            should_wrap && max_line_width + left_padding + right_padding > max_text_width_allowed;
+        let needs_wrap = input.should_wrap
+            && max_line_width + left_padding + right_padding > max_text_width_allowed;
 
         let mut rendered_lines: Vec<String> = Vec::new();
         let mut max_part_width = 0usize;
 
         if needs_wrap {
             if wrap_width_allowed == 0 {
-                return self.render_code_block_simple(
-                    highlighted,
-                    language_label,
-                    code_starts_with_blank,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    raw_code,
-                );
+                return self.render_code_block_simple(input);
             }
 
             for (idx, line) in highlight_lines.iter().enumerate() {
@@ -422,8 +419,8 @@ impl<'a> EventRenderer<'a> {
                     line,
                     raw_line,
                     wrap_width_allowed,
-                    should_wrap,
-                    wrap_mode,
+                    input.should_wrap,
+                    input.wrap_mode,
                 );
 
                 for segment in segments {
@@ -433,15 +430,7 @@ impl<'a> EventRenderer<'a> {
             }
 
             if max_part_width > wrap_width_allowed {
-                return self.render_code_block_simple(
-                    highlighted,
-                    language_label,
-                    code_starts_with_blank,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    raw_code,
-                );
+                return self.render_code_block_simple(input);
             }
         } else {
             if highlight_lines.is_empty() {
@@ -454,7 +443,7 @@ impl<'a> EventRenderer<'a> {
                         raw_line,
                         wrap_width_allowed,
                         false,
-                        wrap_mode,
+                        input.wrap_mode,
                     );
 
                     for segment in segments {
@@ -465,15 +454,7 @@ impl<'a> EventRenderer<'a> {
             }
 
             if max_part_width + left_padding + right_padding > max_text_width_allowed {
-                return self.render_code_block_simple(
-                    highlighted,
-                    language_label,
-                    code_starts_with_blank,
-                    should_wrap,
-                    wrap_mode,
-                    terminal_width,
-                    raw_code,
-                );
+                return self.render_code_block_simple(input);
             }
         }
 
@@ -488,22 +469,14 @@ impl<'a> EventRenderer<'a> {
         let mut text_width = left_padding + max_part_width + right_padding;
         let mut inner_box_width = text_width + 2;
 
-        if let Some(label) = language_label {
+        if let Some(label) = input.language_label {
             let trimmed = label.trim();
             if !trimmed.is_empty() {
                 if block_is_empty {
                     let label_width = display_width(trimmed);
                     let required_inner_width = label_width + 6;
                     if required_inner_width > max_inner_box_width {
-                        return self.render_code_block_simple(
-                            highlighted,
-                            language_label,
-                            code_starts_with_blank,
-                            should_wrap,
-                            wrap_mode,
-                            terminal_width,
-                            raw_code,
-                        );
+                        return self.render_code_block_simple(input);
                     }
                 }
 
@@ -519,7 +492,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.push_code_block_indent_for_line_start();
-        let top_line = self.render_pretty_top_border(inner_box_width, language_label);
+        let top_line = self.render_pretty_top_border(inner_box_width, input.language_label);
         self.output.push_str(&top_line);
         self.output.push('\n');
 
@@ -747,7 +720,7 @@ impl<'a> EventRenderer<'a> {
 
         for line in LinesWithEndings::from(code) {
             let ranges = highlighter
-                .highlight_line(line, &self.syntax_set)
+                .highlight_line(line, self.syntax_set)
                 .map_err(|e| MdvError::SyntaxError(e.to_string()))?;
 
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
@@ -781,13 +754,15 @@ impl<'a> EventRenderer<'a> {
         let bytes = line.as_bytes();
         let mut i = 0usize;
         while i < line.len() {
-            if bytes[i] == 0x1b && i + 1 < bytes.len() && bytes[i + 1] == b'[' {
-                if let Some(rel) = line[i + 2..].find('m') {
-                    let end = i + 2 + rel;
-                    current_sgr = Some(line[i..=end].to_string());
-                    i = end + 1;
-                    continue;
-                }
+            if bytes[i] == 0x1b
+                && i + 1 < bytes.len()
+                && bytes[i + 1] == b'['
+                && let Some(rel) = line[i + 2..].find('m')
+            {
+                let end = i + 2 + rel;
+                current_sgr = Some(line[i..=end].to_string());
+                i = end + 1;
+                continue;
             }
 
             let ch = line[i..].chars().next().unwrap_or('\0');
@@ -808,7 +783,7 @@ impl<'a> EventRenderer<'a> {
             let start_v = matched.start();
             let end_v = matched.end();
 
-            if start_v >= mapping.len() || end_v == 0 || end_v - 1 >= mapping.len() {
+            if start_v >= mapping.len() || end_v == 0 || end_v > mapping.len() {
                 continue;
             }
 
@@ -1003,10 +978,10 @@ impl<'a> EventRenderer<'a> {
             return first_line_match;
         }
 
-        if let Some(guessed) = detect_source_code(code, None) {
-            if let Some(hit) = self.try_lookup(&[guessed], &mut seen) {
-                return hit;
-            }
+        if let Some(guessed) = detect_source_code(code, None)
+            && let Some(hit) = self.try_lookup(&[guessed], &mut seen)
+        {
+            return hit;
         }
 
         self.syntax_set.find_syntax_plain_text()
@@ -1076,9 +1051,9 @@ impl<'a> EventRenderer<'a> {
             return String::new();
         }
 
-        if token.contains(|c: char| matches!(c, '-' | '_' | '/' | '.')) {
+        if token.contains(['-', '_', '/', '.']) {
             let parts: Vec<String> = token
-                .split(|c: char| matches!(c, '-' | '_' | '/' | '.'))
+                .split(['-', '_', '/', '.'])
                 .filter(|part| !part.is_empty())
                 .map(Self::humanize_language_token)
                 .filter(|part| !part.is_empty())
@@ -1539,8 +1514,10 @@ mod tests {
 
     #[test]
     fn resolve_syntax_returns_plain_text_when_guessing_disabled() {
-        let mut config = Config::default();
-        config.code_guessing = false;
+        let config = Config {
+            code_guessing: false,
+            ..Config::default()
+        };
 
         let theme = Theme::default();
         let syntax_set = SyntaxSet::load_defaults_newlines();

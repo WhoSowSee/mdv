@@ -149,20 +149,20 @@ impl MarkdownProcessor {
             let trimmed_start = line.trim_start();
             let indent_columns = Self::leading_indent_columns(line);
 
-            if indent_columns <= 3 {
-                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
-                    if in_fence && marker == fence_char && count >= fence_len {
-                        in_fence = false;
-                        fence_char = '\0';
-                        fence_len = 0;
-                    } else if !in_fence {
-                        in_fence = true;
-                        fence_char = marker;
-                        fence_len = count;
-                    }
-                    result.push(line.to_string());
-                    continue;
+            if indent_columns <= 3
+                && let Some((marker, count)) = Self::detect_fence_marker(trimmed_start)
+            {
+                if in_fence && marker == fence_char && count >= fence_len {
+                    in_fence = false;
+                    fence_char = '\0';
+                    fence_len = 0;
+                } else if !in_fence {
+                    in_fence = true;
+                    fence_char = marker;
+                    fence_len = count;
                 }
+                result.push(line.to_string());
+                continue;
             }
 
             if in_fence {
@@ -381,17 +381,17 @@ impl MarkdownProcessor {
             let trimmed_start = line.trim_start();
             let indent_columns = Self::leading_indent_columns(line);
 
-            if indent_columns <= 3 {
-                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
-                    if in_fence && marker == fence_char && count >= fence_len {
-                        in_fence = false;
-                        fence_char = '\0';
-                        fence_len = 0;
-                    } else if !in_fence {
-                        in_fence = true;
-                        fence_char = marker;
-                        fence_len = count;
-                    }
+            if indent_columns <= 3
+                && let Some((marker, count)) = Self::detect_fence_marker(trimmed_start)
+            {
+                if in_fence && marker == fence_char && count >= fence_len {
+                    in_fence = false;
+                    fence_char = '\0';
+                    fence_len = 0;
+                } else if !in_fence {
+                    in_fence = true;
+                    fence_char = marker;
+                    fence_len = count;
                 }
             }
 
@@ -421,10 +421,11 @@ impl MarkdownProcessor {
 
             let next_trimmed = next_line.trim_start();
             let next_indent_columns = Self::leading_indent_columns(next_line);
-            if next_indent_columns == 0 && !Self::is_list_item(next_trimmed) {
-                if !matches!(result.last(), Some(last) if last.is_empty()) {
-                    result.push(String::new());
-                }
+            if next_indent_columns == 0
+                && !Self::is_list_item(next_trimmed)
+                && !matches!(result.last(), Some(last) if last.is_empty())
+            {
+                result.push(String::new());
             }
         }
 
@@ -450,20 +451,20 @@ impl MarkdownProcessor {
             let leading_ws_len = line.len().saturating_sub(trimmed_start.len());
             let indent_columns = Self::leading_indent_columns(line);
 
-            if indent_columns <= 3 {
-                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
-                    if in_fence && marker == fence_char && count >= fence_len {
-                        in_fence = false;
-                        fence_char = '\0';
-                        fence_len = 0;
-                    } else if !in_fence {
-                        in_fence = true;
-                        fence_char = marker;
-                        fence_len = count;
-                    }
-                    result.push(line.to_string());
-                    continue;
+            if indent_columns <= 3
+                && let Some((marker, count)) = Self::detect_fence_marker(trimmed_start)
+            {
+                if in_fence && marker == fence_char && count >= fence_len {
+                    in_fence = false;
+                    fence_char = '\0';
+                    fence_len = 0;
+                } else if !in_fence {
+                    in_fence = true;
+                    fence_char = marker;
+                    fence_len = count;
                 }
+                result.push(line.to_string());
+                continue;
             }
 
             if in_fence {
@@ -674,20 +675,20 @@ impl MarkdownProcessor {
             let trimmed_start = line.trim_start();
             let indent_columns = Self::leading_indent_columns(line);
 
-            if indent_columns <= 3 {
-                if let Some((marker, count)) = Self::detect_fence_marker(trimmed_start) {
-                    if in_fence && marker == fence_char && count >= fence_len {
-                        in_fence = false;
-                        fence_char = '\0';
-                        fence_len = 0;
-                    } else if !in_fence {
-                        in_fence = true;
-                        fence_char = marker;
-                        fence_len = count;
-                    }
-                    result.push(line.to_string());
-                    continue;
+            if indent_columns <= 3
+                && let Some((marker, count)) = Self::detect_fence_marker(trimmed_start)
+            {
+                if in_fence && marker == fence_char && count >= fence_len {
+                    in_fence = false;
+                    fence_char = '\0';
+                    fence_len = 0;
+                } else if !in_fence {
+                    in_fence = true;
+                    fence_char = marker;
+                    fence_len = count;
                 }
+                result.push(line.to_string());
+                continue;
             }
 
             result.push(line.to_string());
@@ -837,31 +838,27 @@ impl MarkdownProcessor {
 
         let mut idx = 0usize;
         while idx < events.len() {
-            if let Some((Event::Start(Tag::Paragraph), _)) = events.get(idx) {
-                if let (Some((Event::Text(text), _)), Some((Event::End(TagEnd::Paragraph), _))) =
+            if let Some((Event::Start(Tag::Paragraph), _)) = events.get(idx)
+                && let (Some((Event::Text(text), _)), Some((Event::End(TagEnd::Paragraph), _))) =
                     (events.get(idx + 1), events.get(idx + 2))
-                {
-                    if text.as_ref().trim() == BLANK_LINE_MARKER {
-                        processed.push(Event::Html(BLANK_LINE_MARKER.into()));
-                        idx += 3;
-                        continue;
-                    }
-                }
+                && text.as_ref().trim() == BLANK_LINE_MARKER
+            {
+                processed.push(Event::Html(BLANK_LINE_MARKER.into()));
+                idx += 3;
+                continue;
             }
 
             if let Some((Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)), start_range)) =
                 events.get(idx)
+                && let Some(end_idx) = Self::find_code_block_end_index(&events, idx + 1)
+                && Self::is_tab_indented_code_block_start(content, start_range.start)
             {
-                if let Some(end_idx) = Self::find_code_block_end_index(&events, idx + 1) {
-                    if Self::is_tab_indented_code_block_start(content, start_range.start) {
-                        self.push_demoted_code_block_as_paragraph(
-                            &mut processed,
-                            &events[idx + 1..end_idx],
-                        );
-                        idx = end_idx + 1;
-                        continue;
-                    }
-                }
+                self.push_demoted_code_block_as_paragraph(
+                    &mut processed,
+                    &events[idx + 1..end_idx],
+                );
+                idx = end_idx + 1;
+                continue;
             }
 
             let (event, _range) = &events[idx];
@@ -870,7 +867,7 @@ impl MarkdownProcessor {
                     processed.push(Event::Start(self.convert_tag_to_static(tag.clone())));
                 }
                 Event::End(tag_end) => {
-                    processed.push(Event::End(tag_end.clone()));
+                    processed.push(Event::End(*tag_end));
                 }
                 Event::Text(text) => {
                     let processed_text = self.process_text(text);
@@ -1095,8 +1092,8 @@ pub fn extract_code_language(kind: &CodeBlockKind) -> Option<String> {
                 None
             } else {
                 // Handle language-specific prefixes
-                let lang = if lang.starts_with("language-") {
-                    &lang[9..]
+                let lang = if let Some(stripped) = lang.strip_prefix("language-") {
+                    stripped
                 } else {
                     lang
                 };
@@ -1110,47 +1107,46 @@ pub fn extract_code_language(kind: &CodeBlockKind) -> Option<String> {
 /// Check if content looks like source code based on file extension or content
 pub fn detect_source_code(content: &str, filename: Option<&str>) -> Option<String> {
     // Check file extension first
-    if let Some(filename) = filename {
-        if let Some(ext) = std::path::Path::new(filename).extension() {
-            if let Some(ext_str) = ext.to_str() {
-                return match ext_str.to_lowercase().as_str() {
-                    "rs" => Some("rust".to_string()),
-                    "py" => Some("python".to_string()),
-                    "js" => Some("javascript".to_string()),
-                    "ts" => Some("typescript".to_string()),
-                    "go" => Some("go".to_string()),
-                    "c" => Some("c".to_string()),
-                    "cpp" | "cc" | "cxx" => Some("cpp".to_string()),
-                    "java" => Some("java".to_string()),
-                    "rb" => Some("ruby".to_string()),
-                    "php" => Some("php".to_string()),
-                    "sh" | "bash" => Some("bash".to_string()),
-                    "sql" => Some("sql".to_string()),
-                    "json" => Some("json".to_string()),
-                    "yaml" | "yml" => Some("yaml".to_string()),
-                    "toml" => Some("toml".to_string()),
-                    "xml" => Some("xml".to_string()),
-                    "html" => Some("html".to_string()),
-                    "css" => Some("css".to_string()),
-                    _ => None,
-                };
-            }
-        }
+    if let Some(filename) = filename
+        && let Some(ext) = std::path::Path::new(filename).extension()
+        && let Some(ext_str) = ext.to_str()
+    {
+        return match ext_str.to_lowercase().as_str() {
+            "rs" => Some("rust".to_string()),
+            "py" => Some("python".to_string()),
+            "js" => Some("javascript".to_string()),
+            "ts" => Some("typescript".to_string()),
+            "go" => Some("go".to_string()),
+            "c" => Some("c".to_string()),
+            "cpp" | "cc" | "cxx" => Some("cpp".to_string()),
+            "java" => Some("java".to_string()),
+            "rb" => Some("ruby".to_string()),
+            "php" => Some("php".to_string()),
+            "sh" | "bash" => Some("bash".to_string()),
+            "sql" => Some("sql".to_string()),
+            "json" => Some("json".to_string()),
+            "yaml" | "yml" => Some("yaml".to_string()),
+            "toml" => Some("toml".to_string()),
+            "xml" => Some("xml".to_string()),
+            "html" => Some("html".to_string()),
+            "css" => Some("css".to_string()),
+            _ => None,
+        };
     }
 
     // Try to detect from content patterns
     let lines: Vec<&str> = content.lines().take(10).collect();
 
     // Look for shebangs
-    if let Some(first_line) = lines.first() {
-        if first_line.starts_with("#!") {
-            if first_line.contains("python") {
-                return Some("python".to_string());
-            } else if first_line.contains("bash") || first_line.contains("sh") {
-                return Some("bash".to_string());
-            } else if first_line.contains("node") {
-                return Some("javascript".to_string());
-            }
+    if let Some(first_line) = lines.first()
+        && first_line.starts_with("#!")
+    {
+        if first_line.contains("python") {
+            return Some("python".to_string());
+        } else if first_line.contains("bash") || first_line.contains("sh") {
+            return Some("bash".to_string());
+        } else if first_line.contains("node") {
+            return Some("javascript".to_string());
         }
     }
 

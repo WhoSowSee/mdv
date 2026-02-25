@@ -109,12 +109,12 @@ fn test_callout_inline_table_references_render_outside() {
     );
     let lines: Vec<&str> = stdout.lines().collect();
     assert!(
-        lines.iter().any(|line| *line == "[1] README.md"),
+        lines.contains(&"[1] README.md"),
         "expected reference list to render outside callout, stdout:\n{}",
         stdout
     );
     assert!(
-        !lines.iter().any(|line| *line == "┃ [1] README.md"),
+        !lines.contains(&"┃ [1] README.md"),
         "expected no inline-table reference list inside callout body, stdout:\n{}",
         stdout
     );
@@ -173,16 +173,12 @@ fn test_callout_inline_table_references_increment_and_compact() {
     );
 
     assert!(
-        !lines
-            .iter()
-            .any(|line| *line == "┃ [1] https://example.com/one"),
+        !lines.contains(&"┃ [1] https://example.com/one"),
         "expected callout body to not contain [1] reference table line, stdout:\n{}",
         stdout
     );
     assert!(
-        !lines
-            .iter()
-            .any(|line| *line == "┃ [2] https://example.com/two"),
+        !lines.contains(&"┃ [2] https://example.com/two"),
         "expected callout body to not contain [2] reference table line, stdout:\n{}",
         stdout
     );
@@ -368,7 +364,7 @@ fn test_callout_inline_links_render_outside_while_table_links_stay_inside() {
         stdout
     );
     assert!(
-        lines.iter().any(|line| *line == "[1] example.com"),
+        lines.contains(&"[1] example.com"),
         "expected callout-level reference block outside callout, stdout:\n{}",
         stdout
     );

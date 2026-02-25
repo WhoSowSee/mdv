@@ -29,10 +29,10 @@ impl TerminalRenderer {
             apply_custom_code_theme(&mut theme, overrides)?;
         }
 
-        if config.custom_theme.is_some() || config.custom_code_theme.is_some() {
-            if !theme.name.ends_with("+custom") {
-                theme.name = format!("{}+custom", theme.name);
-            }
+        if (config.custom_theme.is_some() || config.custom_code_theme.is_some())
+            && !theme.name.ends_with("+custom")
+        {
+            theme.name = format!("{}+custom", theme.name);
         }
 
         let syntax_set = load_full_syntax_set();
@@ -63,12 +63,8 @@ impl TerminalRenderer {
     }
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
-        let mut renderer = EventRenderer::new(
-            &self.config,
-            &self.theme,
-            &self.syntax_set,
-            &self.code_theme,
-        );
+        let mut renderer =
+            EventRenderer::new(&self.config, &self.theme, self.syntax_set, &self.code_theme);
         renderer.render_events(events)
     }
 

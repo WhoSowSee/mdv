@@ -24,9 +24,7 @@ fn test_callout_pretty_style_respects_heading_indent() {
     let lines: Vec<&str> = stdout.lines().collect();
 
     assert!(
-        lines
-            .iter()
-            .any(|line| *line == "  │ Base informational callout. │"),
+        lines.contains(&"  │ Base informational callout. │"),
         "expected heading indent on callout frame, stdout:\n{}",
         stdout
     );
