@@ -784,11 +784,12 @@ impl<'a> EventRenderer<'a> {
             max_content_width = max_content_width.max(display_width(&strip_ansi(line)));
         }
 
+        let wrap_mode = match self.config.text_wrap_mode() {
+            WrapMode::None => WrapMode::Character,
+            other => other,
+        };
+
         if max_content_width > available_content_width {
-            let wrap_mode = match self.config.text_wrap_mode() {
-                WrapMode::None => WrapMode::Character,
-                other => other,
-            };
             let mut wrapped_lines = Vec::new();
             for line in content_lines {
                 let line_width = display_width(&strip_ansi(&line));
@@ -796,15 +797,22 @@ impl<'a> EventRenderer<'a> {
                     wrapped_lines.push(line);
                     continue;
                 }
-                let wrapped = wrap_text_with_mode(&line, available_content_width, wrap_mode);
-                wrapped_lines.extend(wrapped.split('\n').map(|part| part.to_string()));
+                let wrapped =
+                    self.wrap_callout_line_for_frame(&line, available_content_width, wrap_mode);
+                wrapped_lines.extend(wrapped);
             }
             content_lines = wrapped_lines;
+        }
 
-            max_content_width = 0usize;
-            for line in &content_lines {
-                max_content_width = max_content_width.max(display_width(&strip_ansi(line)));
-            }
+        self.normalize_callout_single_char_tail_lines(
+            &mut content_lines,
+            available_content_width,
+            wrap_mode,
+        );
+
+        max_content_width = 0usize;
+        for line in &content_lines {
+            max_content_width = max_content_width.max(display_width(&strip_ansi(line)));
         }
 
         let label_text = if label_inside {
@@ -1090,6 +1098,93 @@ impl<'a> EventRenderer<'a> {
                 .fg(PRETTY_ACCENT_COLOR)
                 .apply(text, self.config.no_colors)
         }
+    }
+
+    fn wrap_callout_line_for_frame(
+        &self,
+        line: &str,
+        width: usize,
+        wrap_mode: WrapMode,
+    ) -> Vec<String> {
+        let wrapped = wrap_text_with_mode(line, width, wrap_mode);
+        let mut lines: Vec<String> = wrapped.split('\n').map(|part| part.to_string()).collect();
+
+        if !matches!(wrap_mode, WrapMode::Character) || !Self::has_single_visible_char_tail(&lines)
+        {
+            return lines;
+        }
+
+        // In char mode, prefer word fallback when char wrapping leaves a 1-char orphan tail.
+        let word_wrapped = wrap_text_with_mode(line, width, WrapMode::Word);
+        let word_lines: Vec<String> = word_wrapped
+            .split('\n')
+            .map(|part| part.to_string())
+            .collect();
+        let word_fits = word_lines
+            .iter()
+            .all(|part| display_width(&strip_ansi(part)) <= width);
+
+        if word_fits && !Self::has_single_visible_char_tail(&word_lines) {
+            lines = word_lines;
+        }
+
+        lines
+    }
+
+    fn normalize_callout_single_char_tail_lines(
+        &self,
+        lines: &mut Vec<String>,
+        width: usize,
+        wrap_mode: WrapMode,
+    ) {
+        if !matches!(wrap_mode, WrapMode::Character) || width == 0 || lines.len() < 2 {
+            return;
+        }
+
+        let mut idx = 1usize;
+        while idx < lines.len() {
+            let has_single_char_tail = Self::is_single_visible_char_line(&lines[idx]);
+            let previous_visible = strip_ansi(&lines[idx - 1]);
+            let current_visible = strip_ansi(&lines[idx]);
+            let previous_tail = previous_visible.trim_end().chars().next_back();
+            let current_head = current_visible.trim_start().chars().next();
+            let is_word_boundary_split = previous_tail.is_some_and(|ch| ch.is_alphanumeric())
+                && current_head.is_some_and(|ch| ch.is_alphanumeric());
+
+            if !has_single_char_tail || !is_word_boundary_split {
+                idx += 1;
+                continue;
+            }
+
+            let merged = format!("{}{}", lines[idx - 1].trim_end(), lines[idx].trim_start());
+            let replacement = self.wrap_callout_line_for_frame(&merged, width, wrap_mode);
+            let replacement_valid = !replacement.is_empty()
+                && replacement
+                    .iter()
+                    .all(|part| display_width(&strip_ansi(part)) <= width)
+                && replacement
+                    .iter()
+                    .all(|part| !Self::is_single_visible_char_line(part));
+
+            if replacement_valid {
+                lines.splice(idx - 1..=idx, replacement);
+                idx = idx.saturating_sub(1).max(1);
+            } else {
+                idx += 1;
+            }
+        }
+    }
+
+    fn has_single_visible_char_tail(lines: &[String]) -> bool {
+        lines
+            .last()
+            .is_some_and(|line| Self::is_single_visible_char_line(line))
+    }
+
+    fn is_single_visible_char_line(line: &str) -> bool {
+        let visible = strip_ansi(line);
+        let trimmed = visible.trim();
+        !trimmed.is_empty() && display_width(trimmed) == 1
     }
 
     pub(super) fn render_code_block_border(&self) -> String {

@@ -144,6 +144,83 @@ fn test_callout_pretty_style_keeps_padding_when_wrapping_for_frame() {
 }
 
 #[test]
+fn test_callout_pretty_char_wrap_avoids_single_character_tail_line() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "> [!warning]\n> On environments without terminfo/`tput` (especially some Windows setups), `pipes` startup may fail\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("101")
+        .arg("--callout-style")
+        .arg("pretty")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for pretty callout single-character tail");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+
+    for line in stdout
+        .lines()
+        .filter(|line| line.starts_with('│') && line.ends_with('│'))
+    {
+        let inner = line.trim_start_matches('│').trim_end_matches('│').trim();
+        if !inner.is_empty() {
+            assert_ne!(
+                inner.chars().count(),
+                1,
+                "expected no single-character tail line in pretty callout, stdout:\n{}",
+                stdout
+            );
+        }
+    }
+}
+
+#[test]
+fn test_callout_pretty_char_wrap_avoids_single_character_tail_with_heading_indent() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "## Bench\n\n> [!warning]\n> On environments without terminfo/`tput` (especially some Windows setups), `pipes` startup may fail\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("101")
+        .arg("--callout-style")
+        .arg("pretty")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for pretty callout single-character tail with heading indent");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+
+    for line in stdout
+        .lines()
+        .filter(|line| line.trim_start().starts_with('│') && line.trim_end().ends_with('│'))
+    {
+        let trimmed = line.trim_start();
+        let inner = trimmed.trim_start_matches('│').trim_end_matches('│').trim();
+        if !inner.is_empty() {
+            assert_ne!(
+                inner.chars().count(),
+                1,
+                "expected no single-character tail line with heading indent, stdout:\n{}",
+                stdout
+            );
+        }
+    }
+}
+
+#[test]
 fn test_callout_pretty_style_preserves_heading_content_indent() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
