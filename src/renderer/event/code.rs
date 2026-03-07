@@ -1525,7 +1525,7 @@ mod tests {
 
         let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
 
-        let syntax_with_hint = renderer.resolve_syntax(Some("dasdasdas"), "fn main() {}");
+        let syntax_with_hint = renderer.resolve_syntax(Some("unknownlang"), "fn main() {}");
         assert_eq!(syntax_with_hint.name, "Plain Text");
 
         let syntax_without_hint = renderer.resolve_syntax(None, "fn main() {}");

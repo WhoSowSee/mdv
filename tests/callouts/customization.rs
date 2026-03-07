@@ -121,7 +121,7 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        ">[!info]Информация\n>dsadasasasasasasasasasasasasasasasasasasasasas\n",
+        ">[!info]Информация\n>terminalconfigurationterminalconfiguration\n",
     )
     .unwrap();
 
@@ -152,7 +152,7 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
         stdout
     );
     assert!(
-        body_line.contains("dsadasa"),
+        body_line.contains("terminalconfiguration"),
         "expected body to follow spacer line, stdout:\n{}",
         stdout
     );
@@ -169,6 +169,57 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
     assert!(
         !stdout.contains("Информация"),
         "expected inline label to be ignored, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_callout_word_wrap_does_not_insert_extra_blank_line_after_header() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        ">[!info]- Информация\n>配置配置配置配置配置配置配置配置配置配置配置配置配置配置配置\n>terminalconfigurationterminalconfigurationterminalconfiguration\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("60")
+        .arg("-W")
+        .arg("word")
+        .arg("--callout-style")
+        .arg("simple:show-icons;fold-icons")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for word-wrapped callout header spacing");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let lines: Vec<&str> = stdout.lines().collect();
+
+    let header_idx = lines
+        .iter()
+        .position(|line| *line == "┃   Информация ")
+        .expect("callout header present");
+
+    assert_eq!(
+        lines.get(header_idx + 1).copied(),
+        Some("┃ "),
+        "expected single spacer line after header, stdout:\n{}",
+        stdout
+    );
+    assert_ne!(
+        lines.get(header_idx + 2).copied(),
+        Some("┃ "),
+        "expected body to start right after spacer line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !lines[header_idx + 1..]
+            .windows(2)
+            .any(|pair| pair == ["┃ ", "┃ "]),
+        "expected no doubled spacer lines inside callout, stdout:\n{}",
         stdout
     );
 }

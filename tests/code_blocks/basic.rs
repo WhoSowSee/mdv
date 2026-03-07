@@ -26,7 +26,7 @@ fn test_code_highlighting() {
 #[test]
 fn test_no_code_guessing_disables_detection_for_unknown_language() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "```dasdasdas\nfn main() {}\n```").unwrap();
+    fs::write(&temp_file, "```unknownlang\nfn main() {}\n```").unwrap();
 
     let mut cmd = mdv_cmd();
     cmd.arg("--no-code-guessing")
@@ -36,7 +36,7 @@ fn test_no_code_guessing_disables_detection_for_unknown_language() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Dasdasdas"))
+        .stdout(predicate::str::contains("Unknownlang"))
         .stdout(predicate::str::contains("Rust").not());
 }
 

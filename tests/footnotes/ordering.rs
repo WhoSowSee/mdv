@@ -38,7 +38,7 @@ fn footnotes_with_duplicate_names_preserve_bodies() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        "One[^clear] Two[^clear]\n\n[^clear]: clear\n[^clear]: dasdas\n",
+        "One[^clear] Two[^clear]\n\n[^clear]: clear\n[^clear]: updated\n",
     )
     .unwrap();
 
@@ -58,7 +58,7 @@ fn footnotes_with_duplicate_names_preserve_bodies() {
         .find("[^clear] clear")
         .expect("first clear footnote present");
     let second = stdout[first + 1..]
-        .find("[^clear] dasdas")
+        .find("[^clear] updated")
         .map(|offset| offset + first + 1)
         .expect("second clear footnote present");
     assert!(

@@ -40,6 +40,11 @@ enum CalloutDecision {
 }
 
 impl<'a> EventRenderer<'a> {
+    fn line_has_visible_text(line: &str) -> bool {
+        line.chars()
+            .any(|ch| !ch.is_whitespace() && ch != '│' && ch != '┃')
+    }
+
     pub(super) fn handle_text(&mut self, text: CowStr) -> Result<()> {
         if !self.in_code_block && !self.in_link {
             self.scan_footnotes_in_text_stream(&text);
@@ -661,7 +666,10 @@ impl<'a> EventRenderer<'a> {
             let would_exceed = current_line_width + unit_width + additional_width > effective_width;
 
             // Force line break if needed (but not for the first unit on a line)
-            if would_exceed && current_line_width > 0 && !current_line_clean.trim().is_empty() {
+            if would_exceed
+                && current_line_width > 0
+                && Self::line_has_visible_text(&current_line_clean)
+            {
                 // Check if we should break before this unit
                 let should_break = match wrap_mode {
                     crate::utils::WrapMode::Word => {
@@ -1170,7 +1178,10 @@ impl<'a> EventRenderer<'a> {
                     current_line_width + unit_width + additional_width > effective_width;
 
                 // Force line break if needed (but not for the first unit on a line)
-                if would_exceed && current_line_width > 0 && !current_line_clean.trim().is_empty() {
+                if would_exceed
+                    && current_line_width > 0
+                    && Self::line_has_visible_text(&current_line_clean)
+                {
                     // Check if we should break before this unit
                     let should_break = match wrap_mode {
                         crate::utils::WrapMode::Word => {

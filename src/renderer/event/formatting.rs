@@ -1109,6 +1109,22 @@ impl<'a> EventRenderer<'a> {
         let wrapped = wrap_text_with_mode(line, width, wrap_mode);
         let mut lines: Vec<String> = wrapped.split('\n').map(|part| part.to_string()).collect();
 
+        if matches!(wrap_mode, WrapMode::Word) {
+            let mut normalized = Vec::with_capacity(lines.len());
+            for part in lines {
+                if display_width(&strip_ansi(&part)) <= width {
+                    normalized.push(part);
+                    continue;
+                }
+
+                // Keep pretty callouts renderable when word wrap meets a single
+                // token that is wider than the available frame width.
+                let char_wrapped = wrap_text_with_mode(&part, width, WrapMode::Character);
+                normalized.extend(char_wrapped.split('\n').map(|segment| segment.to_string()));
+            }
+            lines = normalized;
+        }
+
         if !matches!(wrap_mode, WrapMode::Character) || !Self::has_single_visible_char_tail(&lines)
         {
             return lines;

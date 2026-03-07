@@ -144,6 +144,52 @@ fn test_callout_pretty_style_keeps_padding_when_wrapping_for_frame() {
 }
 
 #[test]
+fn test_callout_pretty_word_wrap_keeps_frame_for_long_unbroken_lines() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        ">[!info]- Информация\n>配置配置配置配置配置配置配置配置配置配置配置配置配置配置配置\n>terminalconfigurationterminalconfigurationterminalconfiguration\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("60")
+        .arg("-W")
+        .arg("word")
+        .arg("--callout-style")
+        .arg("pretty")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for pretty callout word wrap");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let lines: Vec<&str> = stdout.lines().collect();
+
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains('╭') && line.contains("Информация")),
+        "expected pretty top border with label, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.starts_with('│') && line.ends_with('│') && line.contains("配置")),
+        "expected wrapped body inside pretty frame, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("┃ [Информация]") && !stdout.contains("┃ [Info]"),
+        "expected no fallback to raw blockquote callout rendering, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
 fn test_callout_pretty_char_wrap_avoids_single_character_tail_line() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
