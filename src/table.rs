@@ -313,7 +313,8 @@ impl TableRenderer {
             table.add_row(row_cells);
         }
 
-        Ok(table.to_string())
+        let rendered = table.to_string();
+        Ok(Self::collapse_header_only_separator(rendered, rows))
     }
 
     /// Render a single table block
@@ -398,7 +399,22 @@ impl TableRenderer {
             table.add_row(row_cells);
         }
 
-        Ok(table.to_string())
+        let rendered = table.to_string();
+        Ok(Self::collapse_header_only_separator(rendered, rows))
+    }
+
+    fn collapse_header_only_separator(rendered: String, rows: &[Vec<String>]) -> String {
+        if !rows.is_empty() {
+            return rendered;
+        }
+
+        let mut lines: Vec<&str> = rendered.lines().collect();
+        if lines.len() < 4 {
+            return rendered;
+        }
+
+        lines.remove(lines.len() - 2);
+        lines.join("\n")
     }
 
     pub fn render_table(

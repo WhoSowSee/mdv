@@ -17,6 +17,20 @@ fn test_table_rendering() {
 }
 
 #[test]
+fn test_header_only_table_does_not_render_empty_body_separator() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "| Col1 | Col2 |\n|------|------|\n").unwrap();
+
+    let mut cmd = mdv_cmd();
+    cmd.arg("--no-colors").arg(temp_file.path());
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Col1"))
+        .stdout(predicate::str::contains("Col2"))
+        .stdout(predicate::str::contains("╞").not());
+}
+
+#[test]
 fn test_link_styles() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Link Test\n\n[Example](https://example.com)").unwrap();
