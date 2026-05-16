@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.0.0] - 2026-05-16
+
+### Breaking Changes
+
+- Renamed: `catppucin` theme to `catppuccin`
+- Renamed: `--style-code-block` to `--code-block-style`
+
+### Bug Fixes
+
+- Fixed: incorrect links inside nested lists
+- Fixed: footnote rendering inside tables
+- Fixed: indentation for code blocks before lists and inside code blocks
+- Fixed: table link underline leakage
+- Fixed: extra blank lines around display math blocks
+- Fixed: rendering of tables and inline table links for callouts, code blocks, and blockquotes
+- Fixed: tab-prefixed lines incorrectly rendered as indented code blocks
+- Fixed: pretty callout wrapping that splits trailing single letters
+- Fixed: callout rendering with word wrap for long unbroken lines
+- Fixed: header-only table rendering
+
+### Features
+
+- Added: new parameter `--table-smart-indent`
+- Added: `tablecut` link truncation for inline table links
+- Added: support for OSC8 hyperlinks within tables
+- Added: support for additional media tags beyond `[image]`
+
+### Refactoring
+
+- Refactored: split tests into multiple files
+
+### Maintenance
+
+- Updated: `syntaxes.bin`
+
 ## [2.2.0] - 2026-02-02
 
 ### Bug Fixes
