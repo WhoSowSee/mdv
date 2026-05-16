@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 22 660 212"
+     fill="none">
+  <defs>
+    <style>
+      .p_loop {
+        stroke-dasharray: var(--len);
+        stroke-dashoffset: 0;
+        animation-name: p_dashLoop;
+        animation-duration: var(--dur, 2000ms);
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+        animation-delay: var(--delay, 0ms);
+        animation-fill-mode: both;
+      }
+
+      @keyframes p_dashLoop {
+        0%   { stroke-dashoffset: var(--len); }
+        100% { stroke-dashoffset: 0; }
+      }
+
+      .raw-text {
+        animation: breathe 4s ease-in-out infinite;
+      }
+      @keyframes breathe {
+        0%, 100% { opacity: 0.95; }
+        50%      { opacity: 0.55; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .p_loop { animation: none; stroke-dashoffset: 0; }
+        .raw-text { animation: none; opacity: 1; }
+      }
+    </style>
+  </defs>
+
+  <g transform="translate(2 0)">
+    <rect x="16" y="24" width="224" height="208" rx="16" fill="#111116" stroke="#333340" stroke-width="4"/>
+
+    <rect x="35" y="37" width="12" height="12" rx="3" fill="#bf616a"/>
+    <rect x="55" y="37" width="12" height="12" rx="3" fill="#ebcb8b"/>
+    <rect x="75" y="37" width="12" height="12" rx="3" fill="#a3be8c"/>
+
+    <text x="122" y="48" text-anchor="middle" font-family="monospace" font-size="14" fill="#6b7089" letter-spacing="1">$ mdv</text>
+
+    <line x1="128" y1="66" x2="128" y2="216" stroke="#333340" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 6" opacity="0.6"/>
+
+    <g class="raw-text" font-family="monospace" font-size="12" fill="#a6accd">
+      <text x="28" y="78"><tspan fill="#f38ba8">#</tspan> Heading</text>
+      <text x="28" y="104"><tspan fill="#fab387">##</tspan> Sub</text>
+      <text x="28" y="130"><tspan fill="#cba6f7">**</tspan>bold<tspan fill="#cba6f7">**</tspan></text>
+      <text x="28" y="156"><tspan fill="#89dceb">-</tspan> item</text>
+      <text x="28" y="182"><tspan fill="#a6e3a1">&gt;</tspan> quote</text>
+      <text x="28" y="208"><tspan fill="#f9e2af">`</tspan>code<tspan fill="#f9e2af">`</tspan></text>
+    </g>
+
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+      <path class="p_loop" stroke="#111116" stroke-width="18" style="--len: 80; --delay: 0ms;" d="M 148 74 L 220 74" />
+      <path class="p_loop" stroke="#f38ba8" stroke-width="12" style="--len: 80; --delay: 0ms;" d="M 148 74 L 220 74" />
+
+      <path class="p_loop" stroke="#111116" stroke-width="15" style="--len: 55; --delay: 200ms;" d="M 148 100 L 198 100" />
+      <path class="p_loop" stroke="#fab387" stroke-width="9" style="--len: 55; --delay: 200ms;" d="M 148 100 L 198 100" />
+
+      <path class="p_loop" stroke="#111116" stroke-width="14" style="--len: 35; --delay: 400ms;" d="M 148 126 L 178 126" />
+      <path class="p_loop" stroke="#cba6f7" stroke-width="8" style="--len: 35; --delay: 400ms;" d="M 148 126 L 178 126" />
+
+      <path class="p_loop" stroke="#111116" stroke-width="9" style="--len: 1; --delay: 600ms;" d="M 150 152 L 150.01 152" />
+      <path class="p_loop" stroke="#89dceb" stroke-width="5" style="--len: 1; --delay: 600ms;" d="M 150 152 L 150.01 152" />
+      <path class="p_loop" stroke="#111116" stroke-width="10" style="--len: 40; --delay: 700ms;" d="M 164 152 L 200 152" />
+      <path class="p_loop" stroke="#89dceb" stroke-width="4" style="--len: 40; --delay: 700ms;" d="M 164 152 L 200 152" />
+
+      <path class="p_loop" stroke="#111116" stroke-width="9" style="--len: 16; --delay: 900ms;" d="M 148 170 L 148 186" />
+      <path class="p_loop" stroke="#a6e3a1" stroke-width="3" style="--len: 16; --delay: 900ms;" d="M 148 170 L 148 186" />
+      <path class="p_loop" stroke="#111116" stroke-width="10" style="--len: 45; --delay: 1000ms;" d="M 158 178 L 203 178" />
+      <path class="p_loop" stroke="#a6e3a1" stroke-width="4" style="--len: 45; --delay: 1000ms;" d="M 158 178 L 203 178" />
+
+      <path class="p_loop" stroke="#111116" stroke-width="6" style="--len: 142; --delay: 1200ms;" d="M 148 196 h 50 a 4 4 0 0 1 4 4 v 8 a 4 4 0 0 1 -4 4 h -50 a 4 4 0 0 1 -4 -4 v -8 a 4 4 0 0 1 4 -4 Z" />
+      <path class="p_loop" stroke="#f9e2af" stroke-width="2" style="--len: 142; --delay: 1200ms;" d="M 148 196 h 50 a 4 4 0 0 1 4 4 v 8 a 4 4 0 0 1 -4 4 h -50 a 4 4 0 0 1 -4 -4 v -8 a 4 4 0 0 1 4 -4 Z" />
+      <path class="p_loop" stroke="#111116" stroke-width="10" style="--len: 30; --delay: 1400ms;" d="M 154 204 L 184 204" />
+      <path class="p_loop" stroke="#f9e2af" stroke-width="4" style="--len: 30; --delay: 1400ms;" d="M 154 204 L 184 204" />
+
+    </g>
+  </g>
+
+  <text
+    x="270"
+    y="128"
+    text-anchor="start"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="150"
+    fill="#89b4fa"
+    opacity="0.95"
+    dominant-baseline="middle"
+    letter-spacing="-4"
+  >mdv</text>
+</svg>

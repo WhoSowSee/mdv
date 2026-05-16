@@ -1,11 +1,32 @@
-<div style="text-align: center;">
-  <img src="docs/images/banner.png" alt="Banner">
-</div>
-
-<h1 align="center">🗒️mdv</h1>
 <p align="center">
-  <b>Fast, themeable Markdown viewer for the terminal</b><br>
-  <i>Render, tweak, and monitor Markdown without leaving your shell</i>
+  <img src="docs/images/icon.svg" height="128" alt="mdv icon" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/WhoSowSee/mdv/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="CONTRIBUTORS">
+  </a>
+  <a href="https://github.com/WhoSowSee/mdv/forks">
+    <img src="https://img.shields.io/github/forks/WhoSowSee/mdv?style=for-the-badge&color=89B4FA&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="FORKS">
+  </a>
+  <a href="https://github.com/WhoSowSee/mdv/stargazers">
+    <img src="https://img.shields.io/github/stars/WhoSowSee/mdv?style=for-the-badge&color=F9E2AF&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="STARS">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://crates.io/crates/mdv">
+    <img src="https://img.shields.io/crates/v/mdv?style=for-the-badge&color=FAB387&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="CRATES.IO">
+  </a>
+  <a href="https://crates.io/crates/mdv">
+    <img src="https://img.shields.io/crates/d/mdv?style=for-the-badge&color=A6E3A1&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="DOWNLOADS">
+  </a>
+</p>
+
+<h2 align="center">Fast, themeable Markdown viewer for the terminal</h2>
+
+<p align="center">
+  <img src="docs/images/overview.webp" width="750" alt="Overview" />
 </p>
 
 > [!TIP]
@@ -28,10 +49,6 @@
 > - Rust toolchain
 > - Terminal with ANSI color support for the best experience
 
-<div style="text-align: center;">
-  <img src="docs/images/overview.webp" alt="Overview" width="900px">
-</div>
-
 ## Installation
 
 ### Install from crates.io
@@ -45,7 +62,7 @@ This installs the latest published release from crates.io into your Cargo bin di
 ### Install from source
 
 ```bash
-git clone https://github.com/WhoSowSee/mdv.git mdv
+git clone https://github.com/WhoSowSee/mdv.git
 cd mdv
 cargo install --path .
 ```
@@ -148,15 +165,15 @@ Configuration files must be written in YAML (`.yaml` or `.yml`). See `docs/examp
 
 ```yaml
 # docs/examples/config.yaml
-theme: 'monokai'
-code_theme: 'monokai'
-wrap: 'char'
-table_wrap: 'fit'
-heading_layout: 'level'
+theme: "monokai"
+code_theme: "monokai"
+wrap: "char"
+table_wrap: "fit"
+heading_layout: "level"
 smart_indent: true
-code_wrap_indent: 'double'
-link_style: 'inlinetable'
-link_truncation: 'wrap'
+code_wrap_indent: "double"
+link_style: "inlinetable"
+link_truncation: "wrap"
 ```
 
 ## Environment variables
@@ -302,8 +319,33 @@ Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-i
 
 ## Star History
 
-[![Star History](https://api.star-history.com/svg?repos=WhoSowSee/mdv&type=Date)](https://star-history.com/#WhoSowSee/mdv&Date)
+<p align="center">
+  <a href="https://starchart.cc/WhoSowSee/mdv">
+    <picture>
+      <source
+        media="(prefers-color-scheme: dark)"
+        srcset="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%230d1117&axis=%238b949e&line=%232f81f7"
+      />
+      <source
+        media="(prefers-color-scheme: light)"
+        srcset="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%23ffffff&axis=%2357606a&line=%230969da"
+      />
+      <img
+        alt="Stargazers over time"
+        src="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%23ffffff&axis=%2357606a&line=%230969da"
+      />
+    </picture>
+  </a>
+</p>
 
-## License
+<p align="center">
+  <img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/footers/gray0_ctp_on_line.svg?sanitize=true" alt="catppuccin" />
+</p>
 
-Product is MIT-licensed. For more information check the [LICENSE](LICENSE) file
+<p align="center">
+  <i><code>&copy 2026-present <a href="https://github.com/WhoSowSee">WhoSowSee</a></code></i>
+</p>
+
+<p align="center">
+  <a href="https://github.com/WhoSowSee/mdv/blob/main/LICENSE"><img src="https://img.shields.io/github/license/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&logoColor=cdd6f4&labelColor=302D41" alt="LICENSE"></a>
+</p>

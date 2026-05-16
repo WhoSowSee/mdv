@@ -1,15 +1,36 @@
-<div style="text-align: center;">
-  <img src="docs/images/banner.png" alt="Баннер">
-</div>
-
-<h1 align="center">🗒️mdv</h1>
 <p align="center">
-  <b>Быстрый и настраиваемый просмотрщик Markdown для терминала</b><br>
-  <i>Отображайте, настраивайте и отслеживайте Markdown, не покидая командную строку</i>
+  <img src="docs/images/icon.svg" height="128" alt="Иконка mdv" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/WhoSowSee/mdv/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="CONTRIBUTORS">
+  </a>
+  <a href="https://github.com/WhoSowSee/mdv/forks">
+    <img src="https://img.shields.io/github/forks/WhoSowSee/mdv?style=for-the-badge&color=89B4FA&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="FORKS">
+  </a>
+  <a href="https://github.com/WhoSowSee/mdv/stargazers">
+    <img src="https://img.shields.io/github/stars/WhoSowSee/mdv?style=for-the-badge&color=F9E2AF&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="STARS">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://crates.io/crates/mdv">
+    <img src="https://img.shields.io/crates/v/mdv?style=for-the-badge&color=FAB387&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="CRATES.IO">
+  </a>
+  <a href="https://crates.io/crates/mdv">
+    <img src="https://img.shields.io/crates/d/mdv?style=for-the-badge&color=A6E3A1&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="DOWNLOADS">
+  </a>
+</p>
+
+<h2 align="center">Быстрый и настраиваемый просмотрщик Markdown для терминала</h2>
+
+<p align="center">
+  <img src="docs/images/overview.webp" width="750" alt="Обзор" />
 </p>
 
 > [!TIP]
-> **English version:** [README.md](README.md)
+> **Английская версия:** [README.md](README.md)
 
 > [!NOTE]
 > mdv — терминальная утилита для точного рендеринга Markdown в ANSI-совместимых терминалах. В её арсенале:
@@ -27,10 +48,6 @@
 >
 > - Установленный Rust
 > - Терминал с поддержкой ANSI-цветов для полноценного отображения
-
-<div style="text-align: center;">
-  <img src="docs/images/overview.webp" alt="Overview" width="900px">
-</div>
 
 ## Установка
 
@@ -301,8 +318,33 @@ link_truncation: "wrap"
 
 ## История звёзд
 
-[![История звёзд](https://api.star-history.com/svg?repos=WhoSowSee/mdv&type=Date)](https://star-history.com/#WhoSowSee/mdv&Date)
+<p align="center">
+  <a href="https://starchart.cc/WhoSowSee/mdv">
+    <picture>
+      <source
+        media="(prefers-color-scheme: dark)"
+        srcset="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%230d1117&axis=%238b949e&line=%232f81f7"
+      />
+      <source
+        media="(prefers-color-scheme: light)"
+        srcset="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%23ffffff&axis=%2357606a&line=%230969da"
+      />
+      <img
+        alt="История звёзд"
+        src="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%23ffffff&axis=%2357606a&line=%230969da"
+      />
+    </picture>
+  </a>
+</p>
 
-## Лицензия
+<p align="center">
+  <img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/footers/gray0_ctp_on_line.svg?sanitize=true" alt="catppuccin" />
+</p>
 
-Продукт распространяется под лицензией MIT. Для получения дополнительной информации ознакомьтесь с файлом [LICENSE](LICENSE)
+<p align="center">
+  <i><code>&copy 2026-present <a href="https://github.com/WhoSowSee">WhoSowSee</a></code></i>
+</p>
+
+<p align="center">
+  <a href="https://github.com/WhoSowSee/mdv/blob/main/LICENSE"><img src="https://img.shields.io/github/license/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&logoColor=cdd6f4&labelColor=302D41" alt="LICENSE"></a>
+</p>
