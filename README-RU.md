@@ -3,24 +3,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/WhoSowSee/mdv/graphs/contributors">
-    <img src="https://img.shields.io/github/contributors/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="CONTRIBUTORS">
-  </a>
-  <a href="https://github.com/WhoSowSee/mdv/forks">
-    <img src="https://img.shields.io/github/forks/WhoSowSee/mdv?style=for-the-badge&color=89B4FA&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="FORKS">
-  </a>
-  <a href="https://github.com/WhoSowSee/mdv/stargazers">
-    <img src="https://img.shields.io/github/stars/WhoSowSee/mdv?style=for-the-badge&color=F9E2AF&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="STARS">
-  </a>
+  <a href="https://github.com/WhoSowSee/mdv/graphs/contributors"><img src="https://img.shields.io/github/contributors/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="CONTRIBUTORS"></a>
+  <a href="https://github.com/WhoSowSee/mdv/forks"><img src="https://img.shields.io/github/forks/WhoSowSee/mdv?style=for-the-badge&color=89B4FA&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="FORKS"></a>
+  <a href="https://github.com/WhoSowSee/mdv/stargazers"><img src="https://img.shields.io/github/stars/WhoSowSee/mdv?style=for-the-badge&color=F9E2AF&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="STARS"></a>
 </p>
 
 <p align="center">
-  <a href="https://crates.io/crates/mdv">
-    <img src="https://img.shields.io/crates/v/mdv?style=for-the-badge&color=FAB387&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="CRATES.IO">
-  </a>
-  <a href="https://crates.io/crates/mdv">
-    <img src="https://img.shields.io/crates/d/mdv?style=for-the-badge&color=A6E3A1&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="DOWNLOADS">
-  </a>
+  <a href="https://crates.io/crates/mdv"><img src="https://img.shields.io/crates/v/mdv?style=for-the-badge&color=FAB387&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="CRATES.IO"></a>
+  <a href="https://crates.io/crates/mdv"><img src="https://img.shields.io/crates/d/mdv?style=for-the-badge&color=A6E3A1&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="DOWNLOADS"></a>
 </p>
 
 <h2 align="center">Быстрый и настраиваемый просмотрщик Markdown для терминала</h2>
