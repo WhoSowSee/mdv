@@ -13,6 +13,8 @@ fn media_marker(dest_url: &str) -> &'static str {
         "[VIDEO] "
     } else if is_audio_extension(&extension) {
         "[AUDIO] "
+    } else if is_gif_extension(&extension) {
+        "[GIF] "
     } else if is_image_extension(&extension) {
         "[IMAGE] "
     } else {
@@ -45,11 +47,17 @@ fn media_marker_from_data_uri(dest_url: &str) -> Option<&'static str> {
         Some("[VIDEO] ")
     } else if mime.starts_with("audio/") {
         Some("[AUDIO] ")
+    } else if mime == "image/gif" {
+        Some("[GIF] ")
     } else if mime.starts_with("image/") {
         Some("[IMAGE] ")
     } else {
         Some("[MEDIA] ")
     }
+}
+
+fn is_gif_extension(extension: &str) -> bool {
+    extension == "gif"
 }
 
 fn is_image_extension(extension: &str) -> bool {
@@ -62,7 +70,6 @@ fn is_image_extension(extension: &str) -> bool {
             | "dib"
             | "emf"
             | "exr"
-            | "gif"
             | "hdr"
             | "heic"
             | "heif"
