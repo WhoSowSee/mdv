@@ -78,8 +78,9 @@
 
       <path class="p_loop" stroke="#111116" stroke-width="6" style="--len: 142; --delay: 1200ms;" d="M 148 196 h 50 a 4 4 0 0 1 4 4 v 8 a 4 4 0 0 1 -4 4 h -50 a 4 4 0 0 1 -4 -4 v -8 a 4 4 0 0 1 4 -4 Z" />
       <path class="p_loop" stroke="#f9e2af" stroke-width="2" style="--len: 142; --delay: 1200ms;" d="M 148 196 h 50 a 4 4 0 0 1 4 4 v 8 a 4 4 0 0 1 -4 4 h -50 a 4 4 0 0 1 -4 -4 v -8 a 4 4 0 0 1 4 -4 Z" />
-      <path class="p_loop" stroke="#111116" stroke-width="10" style="--len: 30; --delay: 1400ms;" d="M 154 204 L 184 204" />
-      <path class="p_loop" stroke="#f9e2af" stroke-width="4" style="--len: 30; --delay: 1400ms;" d="M 154 204 L 184 204" />
+
+      <path class="p_loop" stroke="#111116" stroke-width="10" style="--len: 38; --delay: 1400ms;" d="M 154 204 L 192 204" />
+      <path class="p_loop" stroke="#f9e2af" stroke-width="4" style="--len: 38; --delay: 1400ms;" d="M 154 204 L 192 204" />
 
     </g>
   </g>
