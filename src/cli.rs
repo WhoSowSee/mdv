@@ -203,6 +203,7 @@ pub struct Cli {
     pub smart_indent: bool,
 
     #[arg(
+        short = 'S',
         long = "table-smart-indent",
         help = "Automatically adjusts table indentation based on available width",
         long_help = "Automatically adjusts table indentation based on available width\nUses heading content indentation when space allows and reduces it when width is tight"
@@ -533,6 +534,9 @@ mod tests {
     #[test]
     fn table_smart_indent_flag_parses() {
         let cli = Cli::parse_from(["mdv", "--table-smart-indent"]);
+        assert!(cli.table_smart_indent);
+
+        let cli = Cli::parse_from(["mdv", "-S"]);
         assert!(cli.table_smart_indent);
     }
 

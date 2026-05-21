@@ -115,7 +115,7 @@ mdv [OPTIONS] | mdv
 - `-b, --tab-length <N>` — replaces tab characters with `N` spaces (default `4`).
 - `-W, --wrap <char|word|none>` — selects the text wrapping mode (default `char`).
 - `-w, --table-wrap <fit|wrap|none>` — chooses how wide tables are handled (default `fit`).
-- `--table-smart-indent` — automatic table indent adjustment based on available width.
+- `-S, --table-smart-indent` — automatic table indent adjustment based on available width.
 - `-d, --heading-layout <level|center|flat|none>` — controls heading indentation (default `level`).
 - `-I, --smart-indent` — smooths indentation jumps between heading levels in `level` mode.
 - `-K, --code-wrap-indent <none|base|double>` — sets the hanging indent applied to wrapped code block lines (default `double`).
