@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/WhoSowSee/mdv/graphs/contributors"><img src="https://img.shields.io/github/contributors/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="CONTRIBUTORS"></a>
-  <a href="https://github.com/WhoSowSee/mdv/forks"><img src="https://img.shields.io/github/forks/WhoSowSee/mdv?style=for-the-badge&color=89B4FA&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="FORKS"></a>
-  <a href="https://github.com/WhoSowSee/mdv/stargazers"><img src="https://img.shields.io/github/stars/WhoSowSee/mdv?style=for-the-badge&color=F9E2AF&labelColor=302D41&logo=github&logoColor=cdd6f4" alt="STARS"></a>
+  <a href="https://github.com/WhoSowSee/mdv/graphs/contributors"><img src="https://img.shields.io/github/contributors/WhoSowSee/mdv?style=for-the-badge&color=CBA6F7&labelColor=302D41&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2NkZDZmNCIgZD0iTTkgMTFhNCA0IDAgMSAwIDAtOCA0IDQgMCAwIDAgMCA4Wm0wIDJjLTMuOSAwLTcgMi03IDQuNVYyMGgxNHYtMi41QzE2IDE1IDEyLjkgMTMgOSAxM1ptOC41LTEuNWEzLjI1IDMuMjUgMCAxIDAgMC02LjUgMy4yNSAzLjI1IDAgMCAwIDAgNi41Wm0wIDEuOGMtLjkgMC0xLjc1LjE1LTIuNS40MiAxLjcgMS4wNSAyLjcgMi40NSAyLjcgMy45OFYyMEgyMnYtMi4zYzAtMi40LTItNC40LTQuNS00LjRaIi8+PC9zdmc+" alt="CONTRIBUTORS"></a>
+  <a href="https://github.com/WhoSowSee/mdv/forks"><img src="https://img.shields.io/github/forks/WhoSowSee/mdv?style=for-the-badge&color=89B4FA&labelColor=302D41&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTIgMTIpIHNjYWxlKDEuMDgpIHRyYW5zbGF0ZSgtMTIgLTEyKSI%2BPHBhdGggZmlsbD0iI2NkZDZmNCIgZD0iTTYgM2EzIDMgMCAxIDAgMCA2IDMgMyAwIDAgMCAwLTZabTEyIDBhMyAzIDAgMSAwIDAgNiAzIDMgMCAwIDAgMC02Wk0xMiAxNWEzIDMgMCAxIDAgMCA2IDMgMyAwIDAgMCAwLTZaIi8%2BPHBhdGggZmlsbD0iI2NkZDZmNCIgZD0iTTUgOGgydjIuNGMwIC4zMy4yNy42LjYuNmg4LjhjLjMzIDAgLjYtLjI3LjYtLjZWOGgydjIuNGEyLjYgMi42IDAgMCAxLTIuNiAyLjZIMTN2MmgtMnYtMkg3LjZBMi42IDIuNiAwIDAgMSA1IDEwLjRWOFoiLz48L2c%2BPC9zdmc%2B" alt="FORKS"></a>
+  <a href="https://github.com/WhoSowSee/mdv/stargazers"><img src="https://img.shields.io/github/stars/WhoSowSee/mdv?style=for-the-badge&color=F9E2AF&labelColor=302D41&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAtMS42KSI%2BPHBhdGggZmlsbD0iI2NkZDZmNCIgZD0iTTEyIDIuNSAxNC45IDguNGw2LjUgMWEuOC44IDAgMCAxIC40NSAxLjM2bC00LjcgNC41OCAxLjEgNi40NWEuOC44IDAgMCAxLTEuMTYuODRMMTIgMTkuOTUgNi4yIDIyLjYzYS44LjggMCAwIDEtMS4xNi0uODRsMS4xLTYuNDUtNC43LTQuNThBLjguOCAwIDAgMSAxLjkgOS40bDYuNS0xTDEyIDIuNVoiLz48L2c%2BPC9zdmc%2B" alt="STARS"></a>
 </p>
 
 <p align="center">
-  <a href="https://crates.io/crates/mdv"><img src="https://img.shields.io/crates/v/mdv?style=for-the-badge&color=FAB387&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="CRATES.IO"></a>
-  <a href="https://crates.io/crates/mdv"><img src="https://img.shields.io/crates/d/mdv?style=for-the-badge&color=A6E3A1&logo=rust&logoColor=cdd6f4&labelColor=302D41" alt="DOWNLOADS"></a>
+  <a href="https://crates.io/crates/mdv"><img src="https://img.shields.io/crates/v/mdv?style=for-the-badge&color=FAB387&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI%2BCjxwYXRoIGZpbGw9IiNjZGQ2ZjQiIGQ9Ik0xLjUgNi45ODRWMTFsNi41MDMgMy41TDE0LjUgMTFWM0wxMSAxLjVsLTYuNSAzdjF6Ii8%2BCjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzMwMkQ0MSIgc3Ryb2tlLXdpZHRoPSIuOSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KPHBhdGggZD0iTTEuNSA3TDggMTAuNUwxNC41IDdtLTEwLTIuNWwzLjUwMyAyTDE0LjQ5OCAzTTQuNSA1LjV2N20zLjUtNlYxNCIvPgo8cGF0aCBkPSJNOC4wMDMgM0wxMS41IDQuNXY4Ii8%2BCjwvZz4KPC9zdmc%2B&labelColor=302D41" alt="CRATES.IO"></a>
+  <a href="https://crates.io/crates/mdv"><img src="https://img.shields.io/crates/d/mdv?style=for-the-badge&color=A6E3A1&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI%2BCjxwYXRoIGZpbGw9IiNjZGQ2ZjQiIGQ9Ik0xLjUgNi45ODRWMTFsNi41MDMgMy41TDE0LjUgMTFWM0wxMSAxLjVsLTYuNSAzdjF6Ii8%2BCjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzMwMkQ0MSIgc3Ryb2tlLXdpZHRoPSIuOSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KPHBhdGggZD0iTTEuNSA3TDggMTAuNUwxNC41IDdtLTEwLTIuNWwzLjUwMyAyTDE0LjQ5OCAzTTQuNSA1LjV2N20zLjUtNlYxNCIvPgo8cGF0aCBkPSJNOC4wMDMgM0wxMS41IDQuNXY4Ii8%2BCjwvZz4KPC9zdmc%2B&labelColor=302D41" alt="DOWNLOADS"></a>
 </p>
 
 <h2 align="center">Быстрый и настраиваемый просмотрщик Markdown для терминала</h2>
@@ -78,7 +78,7 @@ mdv [OPTIONS] [FILE]
 
 ```text
 mdv [OPTIONS] -
-mdv [OPTIONS] | mdv
+cat <FILE> | mdv
 ```
 
 ### Вывод и рабочий процесс
