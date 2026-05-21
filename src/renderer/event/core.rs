@@ -1,7 +1,7 @@
 use super::{
     Alignment, CalloutStyle, Config, Event, FootnoteDefinition, FootnoteStyle, HashMap,
-    HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement, create_style,
-    extract_code_language,
+    HeadingLevel, LinkStyle, Result, SoftBreakFollowingText, SyntaxSet, Tag, TagEnd, Theme,
+    ThemeElement, create_style, extract_code_language,
 };
 use crate::theme::Color;
 use crate::utils::strip_ansi;
@@ -331,6 +331,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) pending_callout_label_buffer: String,
     pub(crate) suppress_next_soft_break: bool,
     pub(crate) suppress_next_paragraph_break: bool,
+    pub(crate) current_soft_break_segment_start: usize,
 }
 
 impl<'a> EventRenderer<'a> {
@@ -396,6 +397,7 @@ impl<'a> EventRenderer<'a> {
             pending_callout_label_buffer: String::new(),
             suppress_next_soft_break: false,
             suppress_next_paragraph_break: false,
+            current_soft_break_segment_start: 0,
         }
     }
 
@@ -419,8 +421,14 @@ impl<'a> EventRenderer<'a> {
             self.smart_level_indents.clear();
         }
 
-        for event in events {
-            self.process_event(event)?;
+        for idx in 0..events.len() {
+            let next_soft_break_text = if matches!(&events[idx], Event::SoftBreak) {
+                Self::collect_soft_break_following_text(&events[idx + 1..])
+            } else {
+                None
+            };
+
+            self.process_event(events[idx].clone(), next_soft_break_text.as_ref())?;
         }
 
         self.finalize_pending_heading_placeholder();
@@ -538,7 +546,11 @@ impl<'a> EventRenderer<'a> {
         }
     }
 
-    fn process_event(&mut self, event: Event) -> Result<()> {
+    fn process_event(
+        &mut self,
+        event: Event,
+        next_soft_break_text: Option<&SoftBreakFollowingText>,
+    ) -> Result<()> {
         if !matches!(event, Event::Text(_)) {
             self.reset_footnote_text_scan();
         }
@@ -550,14 +562,7 @@ impl<'a> EventRenderer<'a> {
             Event::Html(html) => self.handle_html(html)?,
             Event::InlineHtml(html) => self.handle_inline_html(html)?,
             Event::SoftBreak => {
-                if self.finalize_pending_callout_label_override() {
-                    self.suppress_next_soft_break = true;
-                }
-                if self.suppress_next_soft_break {
-                    self.suppress_next_soft_break = false;
-                } else {
-                    self.output.push('\n');
-                }
+                self.handle_soft_break(next_soft_break_text)?;
             }
             Event::HardBreak => {
                 if self.finalize_pending_callout_label_override() {
@@ -611,9 +616,11 @@ impl<'a> EventRenderer<'a> {
                 {
                     self.output.push_str(&" ".repeat(self.content_indent));
                 }
+                self.current_soft_break_segment_start = self.output.len();
             }
             Tag::Heading { level, .. } => {
                 self.handle_header_start(level)?;
+                self.current_soft_break_segment_start = self.output.len();
             }
             Tag::BlockQuote(kind) => {
                 self.blockquote_indent_stack

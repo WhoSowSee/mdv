@@ -350,3 +350,189 @@ fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
         stdout
     );
 }
+
+#[test]
+fn test_soft_break_inside_paragraph_collapses_when_next_line_fits() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Alpha beta\nGamma delta\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("80")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for wide soft break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("Alpha beta Gamma delta\n"),
+        "expected soft break to collapse into a space, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("Alpha beta\nGamma delta"),
+        "expected no preserved soft break when the next line fits, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_soft_break_inside_paragraph_preserves_when_next_line_does_not_fit() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Alpha beta\nGamma delta epsilon\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("26")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for narrow soft break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("Alpha beta\nGamma delta epsilon\n"),
+        "expected source soft break to stay before a non-fitting next line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("Alpha beta Gamma"),
+        "expected renderer not to fill the previous line with part of the next line, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_soft_break_inside_paragraph_preserves_short_final_tail_on_full_line() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "Alpha beta gamma delta epsilon zeta eta\ntheta iota kappa\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("58")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for balanced final soft break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("Alpha beta gamma delta epsilon zeta eta\ntheta iota kappa\n"),
+        "expected short final tail to remain on its source line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("Alpha beta gamma delta epsilon zeta eta theta"),
+        "expected renderer not to overfill the previous line with a short final tail, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_soft_break_inside_paragraph_preserves_long_single_word_final_tail() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "- Keep `docs/architecture.md` aligned with the actual crate graph and\n  responsibilities.\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("110")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for single-word final tail");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("actual crate graph and\n  responsibilities."),
+        "expected long single-word final tail to remain on its source line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("actual crate graph and responsibilities."),
+        "expected renderer not to glue a long single-word final tail, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_soft_break_inside_paragraph_collapses_single_word_tail_after_wrapped_line() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "- Keep `docs/architecture.md` aligned with the actual crate graph and\n  responsibilities.\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("60")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for wrapped single-word final tail");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("graph and responsibilities."),
+        "expected single-word tail to join a short wrapped line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("graph and\n  responsibilities."),
+        "expected renderer not to leave a dangling single-word tail after a wrapped source line, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_soft_break_inside_paragraph_collapses_long_fragment_after_short_wrapped_line() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "Alpha beta gamma delta epsilon zeta would\ngrow past that limit, split into focused submodules under a same-name directory.\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-W")
+        .arg("word")
+        .arg("-c")
+        .arg("37")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for long fragment after short wrapped line");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("would grow"),
+        "expected long next fragment to join a short wrapped line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("would\ngrow"),
+        "expected renderer not to leave a short wrapped line before a long fragment, stdout:\n{}",
+        stdout
+    );
+}
