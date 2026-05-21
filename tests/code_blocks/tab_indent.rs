@@ -409,7 +409,7 @@ fn top_level_tab_indented_text_renders_as_paragraph() {
 }
 
 #[test]
-fn top_level_space_indented_text_stays_code_block() {
+fn top_level_space_indented_text_renders_as_paragraph() {
     let temp_file = NamedTempFile::new().expect("create temp file");
     fs::write(&temp_file, "    Test text\n").expect("write markdown");
 
@@ -425,10 +425,16 @@ fn top_level_space_indented_text_stays_code_block() {
 
     let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
     let normalized = stdout.replace("\r\n", "\n");
+    let visible: Vec<&str> = normalized
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
 
-    assert!(
-        normalized.contains("\n│ Text\n") || normalized.starts_with("│ Text\n"),
-        "expected code block label for space-indented block, stdout:\n{}",
+    assert_eq!(
+        visible,
+        vec!["Test text"],
+        "expected paragraph output, stdout:\n{}",
         normalized
     );
 }

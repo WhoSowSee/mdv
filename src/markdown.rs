@@ -851,7 +851,7 @@ impl MarkdownProcessor {
             if let Some((Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)), start_range)) =
                 events.get(idx)
                 && let Some(end_idx) = Self::find_code_block_end_index(&events, idx + 1)
-                && Self::is_tab_indented_code_block_start(content, start_range.start)
+                && Self::is_plain_indented_code_block_start(content, start_range.start)
             {
                 self.push_demoted_code_block_as_paragraph(
                     &mut processed,
@@ -901,14 +901,12 @@ impl MarkdownProcessor {
             })
     }
 
-    fn is_tab_indented_code_block_start(content: &str, start_offset: usize) -> bool {
+    fn is_plain_indented_code_block_start(content: &str, start_offset: usize) -> bool {
         let safe_start = start_offset.min(content.len());
         let line_start = content[..safe_start].rfind('\n').map_or(0, |idx| idx + 1);
         let indent = &content[line_start..safe_start];
 
-        !indent.is_empty()
-            && indent.chars().all(|ch| ch == ' ' || ch == '\t')
-            && indent.contains('\t')
+        !indent.is_empty() && indent.chars().all(|ch| ch == ' ' || ch == '\t')
     }
 
     fn push_demoted_code_block_as_paragraph(
@@ -1318,7 +1316,7 @@ mod tests {
     }
 
     #[test]
-    fn space_indented_text_stays_indented_code_block() {
+    fn top_level_space_indented_text_is_not_code_block() {
         use pulldown_cmark::{Event, Tag, TagEnd};
 
         let config = Config::default();
@@ -1328,10 +1326,10 @@ mod tests {
         assert!(matches!(
             events.as_slice(),
             [
-                Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)),
+                Event::Start(Tag::Paragraph),
                 Event::Text(text),
-                Event::End(TagEnd::CodeBlock)
-            ] if text.as_ref().trim_end_matches('\n') == "Test text"
+                Event::End(TagEnd::Paragraph)
+            ] if text.as_ref() == "Test text"
         ));
     }
 }
