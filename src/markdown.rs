@@ -853,10 +853,7 @@ impl MarkdownProcessor {
                 && let Some(end_idx) = Self::find_code_block_end_index(&events, idx + 1)
                 && Self::is_plain_indented_code_block_start(content, start_range.start)
             {
-                self.push_demoted_code_block_as_paragraph(
-                    &mut processed,
-                    &events[idx + 1..end_idx],
-                );
+                self.push_demoted_code_block_events(&mut processed, &events[idx + 1..end_idx])?;
                 idx = end_idx + 1;
                 continue;
             }
@@ -909,11 +906,11 @@ impl MarkdownProcessor {
         !indent.is_empty() && indent.chars().all(|ch| ch == ' ' || ch == '\t')
     }
 
-    fn push_demoted_code_block_as_paragraph(
+    fn push_demoted_code_block_events(
         &self,
         processed: &mut Vec<Event<'static>>,
         events: &[(Event, Range<usize>)],
-    ) {
+    ) -> Result<()> {
         let mut text = String::new();
         for (event, _) in events {
             match event {
@@ -925,20 +922,13 @@ impl MarkdownProcessor {
 
         let text = text.trim_end_matches('\n');
         if text.is_empty() {
-            return;
+            return Ok(());
         }
 
-        processed.push(Event::Start(Tag::Paragraph));
-        for (line_idx, line) in text.split('\n').enumerate() {
-            if line_idx > 0 {
-                processed.push(Event::SoftBreak);
-            }
-
-            if !line.is_empty() {
-                processed.push(Event::Text(self.expand_tabs(line).into()));
-            }
-        }
-        processed.push(Event::End(TagEnd::Paragraph));
+        let parser = Parser::new_ext(text, self.options).into_offset_iter();
+        let reparsed_events: Vec<(Event, Range<usize>)> = parser.collect();
+        processed.extend(self.postprocess_events(text, reparsed_events)?);
+        Ok(())
     }
 
     fn reverse_events(&self, events: Vec<Event<'static>>) -> Vec<Event<'static>> {
@@ -1330,6 +1320,29 @@ mod tests {
                 Event::Text(text),
                 Event::End(TagEnd::Paragraph)
             ] if text.as_ref() == "Test text"
+        ));
+    }
+
+    #[test]
+    fn top_level_indented_atx_headings_are_headings() {
+        use pulldown_cmark::{Event, Tag, TagEnd};
+
+        let config = Config::default();
+        let processor = MarkdownProcessor::new(&config);
+        let events = processor
+            .parse("    # Space heading\n\t# Tab heading\n")
+            .unwrap();
+
+        assert!(matches!(
+            events.as_slice(),
+            [
+                Event::Start(Tag::Heading { level: HeadingLevel::H1, .. }),
+                Event::Text(first),
+                Event::End(TagEnd::Heading(HeadingLevel::H1)),
+                Event::Start(Tag::Heading { level: HeadingLevel::H1, .. }),
+                Event::Text(second),
+                Event::End(TagEnd::Heading(HeadingLevel::H1))
+            ] if first.as_ref() == "Space heading" && second.as_ref() == "Tab heading"
         ));
     }
 }
