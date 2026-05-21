@@ -511,7 +511,7 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    fn process_segment_with_wrapping_and_formatting(
+    pub(super) fn process_segment_with_wrapping_and_formatting(
         &mut self,
         text: &str,
         highlighted: bool,
@@ -623,12 +623,23 @@ impl<'a> EventRenderer<'a> {
         for (i, unit) in units.iter().enumerate() {
             if unit.trim().is_empty() && i > 0 {
                 // Handle whitespace between units
-                let formatted_unit = if highlighted {
-                    self.apply_formatting_with_highlight(unit, true)
+                let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
+                    crate::utils::strip_ansi(&self.output[last_newline + 1..])
                 } else {
-                    unit.to_string()
+                    crate::utils::strip_ansi(&self.output)
                 };
-                self.output.push_str(&formatted_unit);
+                let current_line_width = crate::utils::display_width(&current_line_clean);
+                let space_width = crate::utils::display_width(unit);
+                if current_line_width + space_width > effective_width {
+                    self.push_newline_with_context();
+                } else {
+                    let formatted_unit = if highlighted {
+                        self.apply_formatting_with_highlight(unit, true)
+                    } else {
+                        unit.to_string()
+                    };
+                    self.output.push_str(&formatted_unit);
+                }
                 continue;
             }
 

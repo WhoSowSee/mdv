@@ -30,7 +30,6 @@ impl<'a> EventRenderer<'a> {
 
         self.note_paragraph_content();
 
-        let style = create_style(self.theme, ThemeElement::Text);
         let mut followup_prefix: Option<String> = None;
         let line_start = self
             .output
@@ -72,13 +71,24 @@ impl<'a> EventRenderer<'a> {
                 continue;
             }
 
-            let rendered = style.apply(segment, self.config.no_colors);
-            self.output.push_str(&rendered);
+            self.render_wrapped_html_comment_segment(segment)?;
         }
 
         self.commit_pending_heading_placeholder_if_content();
 
         Ok(())
+    }
+
+    fn render_wrapped_html_comment_segment(&mut self, segment: &str) -> Result<()> {
+        let formatting_stack =
+            std::mem::replace(&mut self.formatting_stack, vec![ThemeElement::Text]);
+        let result = self.process_segment_with_wrapping_and_formatting(
+            segment,
+            false,
+            self.table_state.is_some(),
+        );
+        self.formatting_stack = formatting_stack;
+        result
     }
 
     pub(super) fn handle_horizontal_rule(&mut self) -> Result<()> {
