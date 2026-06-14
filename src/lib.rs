@@ -23,6 +23,12 @@ use std::path::Path;
 
 /// Main entry point for the mdv application
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
+    if cli.init_config.is_some() {
+        let path = Config::write_default_config(&cli, matches)?;
+        println!("Created config file: {}", path.display());
+        return Ok(());
+    }
+
     let config = Config::from_cli(&cli, matches)?;
 
     if let Some(Some(path)) = &cli.theme_info

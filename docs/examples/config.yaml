@@ -1,10 +1,11 @@
-# Example MDV configuration file
+# Default MDV configuration file
+# Create it with: mdv --init-config
 # Place this file as ~/.config/mdv/config.yaml (or ~/.config/mdv/config.yml)
 # and use --config-file ~/.config/mdv or MDV_CONFIG_PATH=~/.config/mdv to load it.
 
 # Theme settings
-theme: "monokai"           # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppuccin"
-code_theme: "monokai"      # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppuccin"
+theme: "terminal"          # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "material-ocean" | "catppuccin"
+code_theme: null           # Use null to follow theme; accepts the same values as theme
 theme_info: false          # Print palette information alongside rendered output
 custom_theme: null         # Override individual UI colors (see formats below)
 custom_code_theme: null    # Override syntax colors (same format as custom_theme)
@@ -14,13 +15,13 @@ custom_callout: null       # Override or create callout styles (e.g. tip:icon=*,
 
 # Display behaviour
 # Keys must use snake_case (e.g. no_colors, tab_length).
-cols: 100                  # Fallback width when terminal size cannot be detected
+cols: null                 # Use detected terminal width; fallback is 80 when detection fails
 tab_length: 4              # Replace tab characters with this many spaces
 no_colors: false           # Strip all ANSI colors from output
 wrap: "char"               # Options: "char" | "word" | "none"
 table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
 heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
-smart_indent: true         # Smooth heading indentation jumps (only with "level" layout)
+smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
 table_smart_indent: false  # Automatically adjusts table indentation based on available width
 hide_comments: false       # Hide Markdown comments from the rendered output
 show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
@@ -33,7 +34,7 @@ code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hangi
 reverse: false             # Render document starting from the end while preserving layout
 
 # Link handling
-link_style: "inlinetable"  # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
+link_style: "clickable"    # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
 link_truncation: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"
 
 # Footnotes

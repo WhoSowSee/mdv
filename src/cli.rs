@@ -31,6 +31,10 @@ pub struct Cli {
     #[arg(short = 'n', long = "no-config")]
     pub no_config: bool,
 
+    /// Create the default configuration file
+    #[arg(short = 'G', long = "init-config", num_args = 0..=1, value_name = "CONFIG_DIR")]
+    pub init_config: Option<Option<PathBuf>>,
+
     /// Strip all ANSI colors
     #[arg(short = 'A', long = "no-colors")]
     pub no_colors: bool,
@@ -550,5 +554,19 @@ mod tests {
             parse_link_truncation("table-cut"),
             LinkTruncationStyle::TableCut
         ));
+    }
+
+    #[test]
+    fn init_config_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "--init-config"]);
+        assert!(cli.init_config.is_some());
+        assert!(cli.init_config.unwrap().is_none());
+
+        let cli = Cli::parse_from(["mdv", "-G"]);
+        assert!(cli.init_config.is_some());
+        assert!(cli.init_config.unwrap().is_none());
+
+        let cli = Cli::parse_from(["mdv", "--init-config", "."]);
+        assert_eq!(cli.init_config.unwrap().unwrap(), PathBuf::from("."));
     }
 }

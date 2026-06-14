@@ -92,6 +92,7 @@ cat <FILE> | mdv
 - `-m, --monitor` — наблюдение за файлом и автоматический перерендер при изменениях.
 - `-F, --config-file <CONFIG_DIR>` — чтение настроек из указанного каталога.
 - `-n, --no-config` — игнорирование конфигурационных файлов (используются только параметры CLI и значения по умолчанию).
+- `-G, --init-config [CONFIG_DIR]` — создание конфигурационного файла по умолчанию. Используется указанный каталог, `--config-file`, `MDV_CONFIG_PATH` или каталог по умолчанию.
 
 ### Темы
 
@@ -150,24 +151,26 @@ mdv объединяет настройки из нескольких источ
 2. Переменная окружения `MDV_CONFIG_PATH` или флаг `--config-file`.
 3. Пользовательские файлы в `~/.config/mdv/` (`~\.config\mdv\` в Windows).
 
+Создать конфиг по умолчанию можно командой `mdv --init-config` или `mdv -G`. Укажите каталог (`mdv -G custom/dir`), используйте `--config-file <CONFIG_DIR>` или задайте `MDV_CONFIG_PATH`, чтобы записать его в другой путь.
+
 Файлы конфигурации поддерживают YAML (`.yaml` или `.yml`). В каталоге `docs/examples/config.yaml` расположен полный шаблон с комментариями:
 
 ```yaml
 # docs/examples/config.yaml
-theme: "monokai"
-code_theme: "monokai"
+theme: "terminal"
+code_theme: null
 wrap: "char"
 table_wrap: "fit"
 heading_layout: "level"
-smart_indent: true
+smart_indent: false
 code_wrap_indent: "double"
-link_style: "inlinetable"
+link_style: "clickable"
 link_truncation: "wrap"
 ```
 
 ## Переменные окружения
 
-- `MDV_CONFIG_PATH` — кастомный путь к конфигурационному файлу.
+- `MDV_CONFIG_PATH` — кастомный путь к каталогу с конфигурацией; также используется `mdv --init-config`, если каталог не указан.
 - `MDV_NO_COLOR` — принимает `True` или `False` и принудительно включает или отключает цвета независимо от темы и параметров CLI.
 
 ## Темы

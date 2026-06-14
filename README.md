@@ -92,6 +92,7 @@ cat <FILE> | mdv
 - `-m, --monitor` — watches the source file and re-renders when it changes.
 - `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
 - `-n, --no-config` — skips loading configuration files (uses CLI options and defaults only).
+- `-G, --init-config [CONFIG_DIR]` — creates the default config file. Uses the provided directory, `--config-file`, `MDV_CONFIG_PATH`, or the default config directory.
 
 ### Theming
 
@@ -151,24 +152,26 @@ mdv merges settings from several sources in the following order of precedence:
 2. Environment variable `MDV_CONFIG_PATH` or the `--config-file` flag.
 3. User-level configuration under `~/.config/mdv/` (`~\.config\mdv\` on Windows).
 
+Create the default user config with `mdv --init-config` or `mdv -G`. Add a directory path (`mdv -G custom/dir`), use `--config-file <CONFIG_DIR>`, or set `MDV_CONFIG_PATH` to write it somewhere else.
+
 Configuration files must be written in YAML (`.yaml` or `.yml`). See `docs/examples/config.yaml` for a complete template including inline documentation:
 
 ```yaml
 # docs/examples/config.yaml
-theme: "monokai"
-code_theme: "monokai"
+theme: "terminal"
+code_theme: null
 wrap: "char"
 table_wrap: "fit"
 heading_layout: "level"
-smart_indent: true
+smart_indent: false
 code_wrap_indent: "double"
-link_style: "inlinetable"
+link_style: "clickable"
 link_truncation: "wrap"
 ```
 
 ## Environment variables
 
-- `MDV_CONFIG_PATH` — custom path to configuration file.
+- `MDV_CONFIG_PATH` — custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
 - `MDV_NO_COLOR` — accepts `True` or `False` and enforces color usage regardless of CLI arguments or theme settings.
 
 ## Themes

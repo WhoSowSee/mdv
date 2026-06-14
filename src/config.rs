@@ -9,10 +9,14 @@ use clap::{ArgMatches, parser::ValueSource};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 const CONFIG_FILE_ENV: &str = "MDV_CONFIG_PATH";
 const NO_COLOR_ENV: &str = "MDV_NO_COLOR";
+const DEFAULT_CONFIG_TEMPLATE: &str = include_str!("../docs/examples/config.yaml");
+const DEFAULT_CONFIG_FILE_NAME: &str = "config.yaml";
 
 fn arg_has_user_value(matches: &ArgMatches, id: &str) -> bool {
     matches
@@ -107,6 +111,7 @@ pub struct Config {
     pub from_text: Option<String>,
 
     // File paths
+    #[serde(skip)]
     pub config_file: Option<PathBuf>,
 }
 
@@ -302,6 +307,43 @@ impl Config {
         config.apply_custom_callouts()?;
 
         Ok(config)
+    }
+
+    pub(crate) fn write_default_config(cli: &Cli, matches: &ArgMatches) -> Result<PathBuf> {
+        let dir = if let Some(Some(ref path)) = cli.init_config {
+            resolve_config_dir(path)?
+        } else if let Some(ref config_file) = cli.config_file
+            && arg_has_user_value(matches, "config_file")
+        {
+            resolve_config_dir(config_file)?
+        } else if let Some(env_path) = std::env::var_os(CONFIG_FILE_ENV)
+            && !env_path.is_empty()
+        {
+            resolve_config_dir(Path::new(&env_path))?
+        } else {
+            default_config_dir()
+                .ok_or_else(|| anyhow::anyhow!("Unable to determine user config directory"))?
+        };
+
+        let path = dir.join(DEFAULT_CONFIG_FILE_NAME);
+
+        if let Some(parent) = path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+        {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        let mut file = match OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                anyhow::bail!("Config file already exists: {}", path.display());
+            }
+            Err(error) => return Err(error.into()),
+        };
+        file.write_all(DEFAULT_CONFIG_TEMPLATE.as_bytes())?;
+
+        Ok(path)
     }
 
     fn load_config_files(cli: &Cli, matches: &ArgMatches) -> Result<Self> {
@@ -887,6 +929,121 @@ link_truncation: tablecut
         assert_eq!(
             expand_tilde(Path::new("not/tilde/path")),
             Path::new("not/tilde/path")
+        );
+    }
+
+    #[test]
+    fn default_config_template_matches_default_settings() {
+        let config: Config =
+            serde_yaml::from_str(DEFAULT_CONFIG_TEMPLATE).expect("default config template parses");
+
+        assert_eq!(config.theme, "terminal");
+        assert!(config.code_theme.is_none());
+        assert!(config.cols.is_none());
+        assert!(!config.smart_indent);
+        assert!(matches!(config.link_style, LinkStyle::Clickable));
+    }
+
+    #[test]
+    fn write_default_config_uses_init_config_path() {
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--init-config"),
+            temp_dir.path().as_os_str().to_owned(),
+        ]);
+
+        let written_path =
+            Config::write_default_config(&cli, &matches).expect("write default config");
+        let expected_path = temp_dir.path().join("config.yaml");
+
+        assert_eq!(written_path, expected_path);
+        assert!(expected_path.exists());
+        assert_eq!(
+            std::fs::read_to_string(&expected_path).expect("read generated config"),
+            DEFAULT_CONFIG_TEMPLATE
+        );
+    }
+
+    #[test]
+    fn write_default_config_uses_config_file_path() {
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--init-config"),
+            OsString::from("--config-file"),
+            temp_dir.path().join("nested").as_os_str().to_owned(),
+        ]);
+
+        let written_path =
+            Config::write_default_config(&cli, &matches).expect("write default config");
+        let expected_path = temp_dir.path().join("nested").join("config.yaml");
+
+        assert_eq!(written_path, expected_path);
+        assert!(expected_path.exists());
+    }
+
+    #[test]
+    fn write_default_config_uses_environment_config_path() {
+        let _env_lock = env_lock();
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let _guard = EnvVarGuard::set_temp(CONFIG_FILE_ENV, temp_dir.path().as_os_str());
+        let (cli, matches) =
+            parse_cli_from(vec![OsString::from("mdv"), OsString::from("--init-config")]);
+
+        let written_path =
+            Config::write_default_config(&cli, &matches).expect("write default config from env");
+        let expected_path = temp_dir.path().join("config.yaml");
+
+        assert_eq!(written_path, expected_path);
+        assert!(expected_path.exists());
+    }
+
+    #[test]
+    fn write_default_config_prefers_init_config_path_over_config_file_and_environment() {
+        let _env_lock = env_lock();
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let env_path = temp_dir.path().join("env");
+        let config_file_path = temp_dir.path().join("config-file");
+        let init_path = temp_dir.path().join("init");
+        let _guard = EnvVarGuard::set_temp(CONFIG_FILE_ENV, env_path.as_os_str());
+
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--init-config"),
+            init_path.clone().into_os_string(),
+            OsString::from("--config-file"),
+            config_file_path.clone().into_os_string(),
+        ]);
+
+        let written_path =
+            Config::write_default_config(&cli, &matches).expect("write default config");
+        let expected_path = init_path.join("config.yaml");
+
+        assert_eq!(written_path, expected_path);
+        assert!(expected_path.exists());
+        assert!(!config_file_path.join("config.yaml").exists());
+        assert!(!env_path.join("config.yaml").exists());
+    }
+
+    #[test]
+    fn write_default_config_refuses_existing_file() {
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let config_path = temp_dir.path().join("config.yaml");
+        std::fs::write(&config_path, "theme: \"monokai\"\n").expect("write config file");
+
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--init-config"),
+            temp_dir.path().as_os_str().to_owned(),
+        ]);
+
+        let error =
+            Config::write_default_config(&cli, &matches).expect_err("existing config must fail");
+        assert!(error.to_string().contains("Config file already exists"));
+        assert_eq!(
+            std::fs::read_to_string(&config_path).expect("read existing config"),
+            "theme: \"monokai\"\n"
         );
     }
 }
