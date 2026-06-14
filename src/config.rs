@@ -8,7 +8,8 @@ use anyhow::Result;
 use clap::{ArgMatches, parser::ValueSource};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::ffi::OsStr;
+use std::path::{Component, Path, PathBuf};
 
 const CONFIG_FILE_ENV: &str = "MDV_CONFIG_PATH";
 const NO_COLOR_ENV: &str = "MDV_NO_COLOR";
@@ -18,6 +19,48 @@ fn arg_has_user_value(matches: &ArgMatches, id: &str) -> bool {
         .value_source(id)
         .map(|source| matches!(source, ValueSource::CommandLine | ValueSource::EnvVariable))
         .unwrap_or(false)
+}
+
+/// Expand a leading `~` to the user's home directory.
+fn expand_tilde(path: &Path) -> PathBuf {
+    let mut components = path.components();
+    let Some(Component::Normal(first)) = components.next() else {
+        return path.to_path_buf();
+    };
+    if first != OsStr::new("~") {
+        return path.to_path_buf();
+    }
+    let Some(home) = dirs::home_dir() else {
+        return path.to_path_buf();
+    };
+    components.fold(home, |mut acc, component| {
+        match component {
+            Component::Normal(part) => acc.push(part),
+            Component::RootDir | Component::Prefix(_) => {}
+            Component::CurDir | Component::ParentDir => acc.push(component.as_os_str()),
+        }
+        acc
+    })
+}
+
+/// Validate that a user-supplied config path is a directory (or a path that can become one).
+fn resolve_config_dir(path: &Path) -> Result<PathBuf> {
+    let path = expand_tilde(path);
+    if path.exists() && !path.is_dir() {
+        anyhow::bail!(
+            "Config path must be a directory, got a file: {}",
+            path.display()
+        );
+    }
+    Ok(path)
+}
+
+fn default_config_dir() -> Option<PathBuf> {
+    if cfg!(target_os = "windows") {
+        dirs::home_dir().map(|home_dir| home_dir.join(".config").join("mdv"))
+    } else {
+        dirs::config_dir().map(|config_dir| config_dir.join("mdv"))
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -268,7 +311,7 @@ impl Config {
 
         let mut config = Self::default();
 
-        let config_paths = Self::get_config_paths(cli, matches);
+        let config_paths = Self::get_config_paths(cli, matches)?;
 
         for path in config_paths {
             if path.exists() {
@@ -288,34 +331,31 @@ impl Config {
         Ok(config)
     }
 
-    fn get_config_paths(cli: &Cli, matches: &ArgMatches) -> Vec<PathBuf> {
+    fn get_config_paths(cli: &Cli, matches: &ArgMatches) -> Result<Vec<PathBuf>> {
         let mut paths = Vec::new();
 
         if let Some(config_file) = &cli.config_file
             && arg_has_user_value(matches, "config_file")
         {
-            paths.push(config_file.clone());
+            let dir = resolve_config_dir(config_file)?;
+            paths.push(dir.join("config.yaml"));
+            paths.push(dir.join("config.yml"));
         }
 
         if let Some(env_path) = std::env::var_os(CONFIG_FILE_ENV)
             && !env_path.is_empty()
         {
-            paths.push(PathBuf::from(env_path));
+            let dir = resolve_config_dir(Path::new(&env_path))?;
+            paths.push(dir.join("config.yaml"));
+            paths.push(dir.join("config.yml"));
         }
 
-        if cfg!(target_os = "windows") {
-            if let Some(home_dir) = dirs::home_dir() {
-                let mdv_dir = home_dir.join(".config").join("mdv");
-                paths.push(mdv_dir.join("config.yaml"));
-                paths.push(mdv_dir.join("config.yml"));
-            }
-        } else if let Some(config_dir) = dirs::config_dir() {
-            let mdv_dir = config_dir.join("mdv");
+        if let Some(mdv_dir) = default_config_dir() {
             paths.push(mdv_dir.join("config.yaml"));
             paths.push(mdv_dir.join("config.yml"));
         }
 
-        paths
+        Ok(paths)
     }
 
     fn load_from_file(path: &Path) -> Result<Self> {
@@ -603,7 +643,7 @@ mod tests {
         let (cli, matches) = parse_cli_from(vec![
             OsString::from("mdv"),
             OsString::from("--config-file"),
-            config_path.clone().into_os_string(),
+            temp_dir.path().as_os_str().to_owned(),
         ]);
 
         Config::from_cli(&cli, &matches).expect("load config")
@@ -619,7 +659,7 @@ mod tests {
         let (cli, matches) = parse_cli_from(vec![
             OsString::from("mdv"),
             OsString::from("--config-file"),
-            config_path.clone().into_os_string(),
+            temp_dir.path().as_os_str().to_owned(),
             OsString::from("--no-config"),
         ]);
 
@@ -683,7 +723,7 @@ link_truncation: tablecut
         let (cli, matches) = parse_cli_from(vec![
             OsString::from("mdv"),
             OsString::from("--config-file"),
-            config_path.clone().into_os_string(),
+            temp_dir.path().as_os_str().to_owned(),
         ]);
 
         let config = Config::from_cli(&cli, &matches).expect("load config");
@@ -702,7 +742,7 @@ link_truncation: tablecut
         let (cli, matches) = parse_cli_from(vec![
             OsString::from("mdv"),
             OsString::from("--config-file"),
-            config_path.clone().into_os_string(),
+            temp_dir.path().as_os_str().to_owned(),
             OsString::from("--wrap"),
             OsString::from("none"),
             OsString::from("--link-style"),
@@ -784,7 +824,7 @@ link_truncation: tablecut
         let config_path = temp_dir.path().join("config.yaml");
         std::fs::write(&config_path, "no_colors: true\n").expect("write config file");
 
-        let _guard = EnvVarGuard::set_temp(CONFIG_FILE_ENV, config_path.as_os_str());
+        let _guard = EnvVarGuard::set_temp(CONFIG_FILE_ENV, temp_dir.path().as_os_str());
         let (cli, matches) = parse_cli_from(vec![OsString::from("mdv")]);
 
         let config = Config::from_cli(&cli, &matches).expect("load config from env");
@@ -814,5 +854,39 @@ link_truncation: tablecut
             .get_matches_from(vec!["mdv-test"]);
 
         assert!(!arg_has_user_value(&matches, "opt"));
+    }
+
+    #[test]
+    fn config_file_rejects_existing_file_path() {
+        let _env_lock = env_lock();
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let config_path = temp_dir.path().join("config.yaml");
+        std::fs::write(&config_path, "no_colors: true\n").expect("write config file");
+
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--config-file"),
+            config_path.as_os_str().to_owned(),
+        ]);
+
+        let error = Config::from_cli(&cli, &matches).expect_err("file path must fail");
+        assert!(
+            error.to_string().contains("must be a directory"),
+            "error: {error}"
+        );
+    }
+
+    #[test]
+    fn expand_tilde_replaces_leading_tilde_with_home_dir() {
+        let home = dirs::home_dir().expect("home directory");
+        assert_eq!(expand_tilde(Path::new("~")), home);
+        assert_eq!(
+            expand_tilde(Path::new("~/.config/mdv")),
+            home.join(".config").join("mdv")
+        );
+        assert_eq!(
+            expand_tilde(Path::new("not/tilde/path")),
+            Path::new("not/tilde/path")
+        );
     }
 }

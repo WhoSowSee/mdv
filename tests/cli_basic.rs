@@ -2,7 +2,7 @@ use assert_cmd::Command;
 use mdv::utils::strip_ansi;
 use predicates::prelude::*;
 use std::fs;
-use tempfile::NamedTempFile;
+use tempfile::{NamedTempFile, TempDir};
 
 fn mdv_cmd() -> Command {
     Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
@@ -291,14 +291,15 @@ fn test_theme_info_with_file_outputs_file_contents() {
 
 #[test]
 fn test_theme_info_from_config_prints_current_theme() {
-    let config_file = NamedTempFile::new().unwrap();
-    fs::write(config_file.path(), "theme_info: true\n").unwrap();
+    let config_dir = TempDir::new().unwrap();
+    let config_path = config_dir.path().join("config.yaml");
+    fs::write(&config_path, "theme_info: true\n").unwrap();
 
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Config Theme Info\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--config-file").arg(config_file.path());
+    cmd.arg("--config-file").arg(config_dir.path());
     cmd.arg(temp_file.path());
     cmd.assert()
         .success()

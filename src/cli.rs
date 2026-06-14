@@ -23,8 +23,8 @@ pub struct Cli {
     #[arg(value_name = "FILE")]
     pub filename: Option<String>,
 
-    /// Alternative config file path
-    #[arg(short = 'F', long = "config-file", value_name = "CONFIG_PATH")]
+    /// Directory containing the configuration file (mdv looks for config.yaml or config.yml inside it)
+    #[arg(short = 'F', long = "config-file", value_name = "CONFIG_DIR")]
     pub config_file: Option<PathBuf>,
 
     /// Skip loading configuration files

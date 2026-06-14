@@ -1,5 +1,6 @@
 # Example MDV configuration file
-# Copy to ~/.config/mdv/config.yaml
+# Place this file as ~/.config/mdv/config.yaml (or ~/.config/mdv/config.yml)
+# and use --config-file ~/.config/mdv or MDV_CONFIG_PATH=~/.config/mdv to load it.
 
 # Theme settings
 theme: "monokai"           # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "tokyonight" | " material-ocean" | "catppuccin"

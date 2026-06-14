@@ -90,7 +90,7 @@ cat <FILE> | mdv
 - `-f, --from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
 - `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.
 - `-m, --monitor` — watches the source file and re-renders when it changes.
-- `-F, --config-file <CONFIG_PATH>` — reads configuration from the provided file.
+- `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
 - `-n, --no-config` — skips loading configuration files (uses CLI options and defaults only).
 
 ### Theming
