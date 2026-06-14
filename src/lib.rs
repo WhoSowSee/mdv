@@ -5,6 +5,7 @@ pub mod error;
 pub mod markdown;
 pub mod math;
 pub mod monitor;
+mod pager;
 pub mod renderer;
 pub mod table;
 pub mod terminal;
@@ -53,20 +54,26 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
 
     let renderer = TerminalRenderer::new(&config)?;
 
+    let mut output = String::new();
     if cli.do_html {
         let events_clone = processor.parse(&content)?; // Re-parse for HTML
-        let html_output = renderer.to_html(events_clone)?;
-        print!("{}", html_output);
+        output = renderer.to_html(events_clone)?;
     } else {
         if show_current_theme {
-            print_current_themes(&config);
+            output.push_str(&format_current_themes(&config));
         }
 
         // Add a leading blank line before content for readability
         if std::io::stdout().is_terminal() {
-            println!();
+            output.push('\n');
         }
-        let output = renderer.render(events)?;
+        let rendered = renderer.render(events)?;
+        output.push_str(&rendered);
+    }
+
+    if cli.pager && std::io::stdout().is_terminal() {
+        pager::page_or_print(&output)?;
+    } else {
         print!("{}", output);
     }
 
@@ -79,10 +86,19 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn format_current_themes(config: &Config) -> String {
+    let mut result = String::new();
+    result.push('\n');
+    result.push_str(&format!("Current theme: {}\n", config.theme));
+    result.push_str(&format!(
+        "Current code theme: {}\n",
+        current_code_theme_name(config)
+    ));
+    result
+}
+
 fn print_current_themes(config: &Config) {
-    println!();
-    println!("Current theme: {}", config.theme);
-    println!("Current code theme: {}", current_code_theme_name(config));
+    print!("{}", format_current_themes(config));
 }
 
 fn current_code_theme_name(config: &Config) -> String {

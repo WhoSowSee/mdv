@@ -47,6 +47,10 @@ pub struct Cli {
     #[arg(short = 'H', long = "html")]
     pub do_html: bool,
 
+    /// Show output in a pager instead of printing everything at once
+    #[arg(short = 'p', long = "pager")]
+    pub pager: bool,
+
     /// Set theme
     #[arg(short = 't', long = "theme", default_value = "terminal")]
     pub theme: Option<String>,
@@ -568,5 +572,14 @@ mod tests {
 
         let cli = Cli::parse_from(["mdv", "--init-config", "."]);
         assert_eq!(cli.init_config.unwrap().unwrap(), PathBuf::from("."));
+    }
+
+    #[test]
+    fn pager_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "--pager"]);
+        assert!(cli.pager);
+
+        let cli = Cli::parse_from(["mdv", "-p"]);
+        assert!(cli.pager);
     }
 }
