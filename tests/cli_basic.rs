@@ -448,13 +448,12 @@ fn test_init_config_positional_path_overrides_config_file_arg() {
 }
 
 #[test]
-fn test_pager_mode_falls_back_to_stdout_without_pager() {
+fn test_pager_mode_prints_to_stdout_when_output_is_not_a_terminal() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "# Fallback\n").unwrap();
+    fs::write(&temp_file, "# Pager output\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--pager")
-        .env("PAGER", "nonexistent_pager_xyz")
         .arg(temp_file.path())
         .output()
         .unwrap();
@@ -463,5 +462,16 @@ fn test_pager_mode_falls_back_to_stdout_without_pager() {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     let clean = strip_ansi(&stdout);
-    assert!(clean.contains("Fallback"), "stdout:\n{}", stdout);
+    assert!(clean.contains("Pager output"), "stdout:\n{}", stdout);
+}
+
+#[test]
+fn test_interactive_flag_is_rejected() {
+    mdv_cmd()
+        .arg("--interactive")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unexpected argument '--interactive'",
+        ));
 }

@@ -89,7 +89,7 @@ cat <FILE> | mdv
 - `-i, --theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
 - `-f, --from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
 - `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.
-- `-p, --pager` — shows the rendered output in a pager instead of printing everything at once.
+- `-p, --pager` — opens the rendered output in the built-in `minus` pager. Press `E`|`e` or `У`|`у` to open the current file in the configured editor; saved changes are rendered automatically.
 - `-m, --monitor` — watches the source file and re-renders when it changes.
 - `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
 - `-n, --no-config` — skips loading configuration files (uses CLI options and defaults only).
@@ -173,7 +173,8 @@ link_truncation: "wrap"
 ## Environment variables
 
 - `MDV_CONFIG_PATH` — custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
-- `MDV_PAGER` — pager program used by `mdv --pager` (overrides `PAGER`).
+- `MDV_EDITOR` — editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors.
+- `MDV_EDITOR_MODE` — optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
 - `MDV_NO_COLOR` — accepts `True` or `False` and enforces color usage regardless of CLI arguments or theme settings.
 
 ## Themes

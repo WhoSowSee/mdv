@@ -1,6 +1,7 @@
 mod callout;
 pub mod cli;
 pub mod config;
+mod editor;
 pub mod error;
 pub mod markdown;
 pub mod math;
@@ -20,7 +21,8 @@ use markdown::MarkdownProcessor;
 use renderer::TerminalRenderer;
 use std::io::IsTerminal;
 use std::io::{self, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 /// Main entry point for the mdv application
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
@@ -49,41 +51,79 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
 
     let content = get_input_content(&cli)?;
 
-    let processor = MarkdownProcessor::new(&config);
-    let events = processor.parse(&content)?;
+    let stdout_is_terminal = std::io::stdout().is_terminal();
+    let output = render_document(
+        &content,
+        &config,
+        cli.do_html,
+        show_current_theme,
+        stdout_is_terminal,
+    )?;
 
-    let renderer = TerminalRenderer::new(&config)?;
-
-    let mut output = String::new();
-    if cli.do_html {
-        let events_clone = processor.parse(&content)?; // Re-parse for HTML
-        output = renderer.to_html(events_clone)?;
-    } else {
-        if show_current_theme {
-            output.push_str(&format_current_themes(&config));
-        }
-
-        // Add a leading blank line before content for readability
-        if std::io::stdout().is_terminal() {
-            output.push('\n');
-        }
-        let rendered = renderer.render(events)?;
-        output.push_str(&rendered);
-    }
-
-    if cli.pager && std::io::stdout().is_terminal() {
-        pager::page_or_print(&output)?;
+    let pager_active = cli.pager && stdout_is_terminal;
+    if pager_active {
+        let pager_file = cli
+            .filename
+            .as_deref()
+            .filter(|filename| *filename != "-")
+            .map(PathBuf::from);
+        let refresh = pager_file.as_ref().map(|path| {
+            let path = path.clone();
+            let config = config.clone();
+            let do_html = cli.do_html;
+            Arc::new(move || render_document_file(&path, &config, do_html, show_current_theme))
+                as pager::RefreshCallback
+        });
+        pager::page(output, pager_file, refresh)?;
     } else {
         print!("{}", output);
     }
 
     if cli.monitor_file
+        && !pager_active
         && let Some(filename) = &cli.filename
     {
         monitor::watch_file(filename, &config)?;
     }
 
     Ok(())
+}
+
+fn render_document(
+    content: &str,
+    config: &Config,
+    do_html: bool,
+    show_current_theme: bool,
+    add_leading_blank: bool,
+) -> Result<String> {
+    let processor = MarkdownProcessor::new(config);
+    let events = processor.parse(content)?;
+    let renderer = TerminalRenderer::new(config)?;
+
+    if do_html {
+        return renderer.to_html(events);
+    }
+
+    let mut output = String::new();
+    if show_current_theme {
+        output.push_str(&format_current_themes(config));
+    }
+    if add_leading_blank {
+        output.push('\n');
+    }
+    output.push_str(&renderer.render(events)?);
+    Ok(output)
+}
+
+fn render_document_file(
+    path: &Path,
+    config: &Config,
+    do_html: bool,
+    show_current_theme: bool,
+) -> Result<String> {
+    let mut content = std::fs::read_to_string(path)?;
+    strip_leading_bom(&mut content);
+    render_document(&content, config, do_html, show_current_theme, true)
 }
 
 fn format_current_themes(config: &Config) -> String {

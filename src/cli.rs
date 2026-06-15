@@ -47,7 +47,7 @@ pub struct Cli {
     #[arg(short = 'H', long = "html")]
     pub do_html: bool,
 
-    /// Show output in a pager instead of printing everything at once
+    /// Show output in the built-in pager instead of printing everything at once
     #[arg(short = 'p', long = "pager")]
     pub pager: bool,
 
