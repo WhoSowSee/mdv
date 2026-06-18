@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Features
+
+- Added: `--reflow` flag (and `reflow` config option) to collapse in-paragraph source newlines and refill lines to the wrap width
+
 ## [3.0.0] - 2026-05-16
 
 ### Breaking Changes

@@ -79,6 +79,7 @@ pub struct Config {
     pub theme_info: bool,
     pub wrap: TextWrapMode,
     pub table_wrap: TableWrapMode,
+    pub reflow: bool,
     pub heading_layout: HeadingLayout,
     // Smart heading indentation (applies only to HeadingLayout::Level)
     pub smart_indent: bool,
@@ -125,6 +126,7 @@ impl Default for Config {
             theme_info: false,
             wrap: TextWrapMode::Char,
             table_wrap: TableWrapMode::Fit,
+            reflow: false,
             heading_layout: HeadingLayout::Level,
             smart_indent: false,
             table_smart_indent: false,
@@ -181,6 +183,10 @@ impl Config {
             && arg_has_user_value(matches, "wrap_mode")
         {
             config.wrap = wrap;
+        }
+
+        if cli.reflow {
+            config.reflow = true;
         }
 
         if let Some(table_wrap) = cli.table_wrap_mode
@@ -434,6 +440,10 @@ impl Config {
 
         if !matches!(other.wrap, TextWrapMode::Char) {
             self.wrap = other.wrap;
+        }
+
+        if other.reflow {
+            self.reflow = true;
         }
 
         if !matches!(other.table_wrap, TableWrapMode::Fit) {

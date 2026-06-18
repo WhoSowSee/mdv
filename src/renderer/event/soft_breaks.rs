@@ -94,6 +94,12 @@ impl<'a> EventRenderer<'a> {
             return false;
         }
 
+        // Reflow: every in-paragraph soft break becomes a space so the wrapper
+        // refills lines to the target width (CommonMark behaviour).
+        if self.config.reflow {
+            return true;
+        }
+
         let Some(next_text) = next_text else {
             return false;
         };

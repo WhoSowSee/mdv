@@ -122,6 +122,10 @@ pub struct Cli {
     )]
     pub wrap_mode: Option<TextWrapMode>,
 
+    /// Reflow paragraphs: collapse in-paragraph source newlines and refill to width
+    #[arg(long = "reflow")]
+    pub reflow: bool,
+
     /// Configure table wrapping behavior
     #[arg(
         short = 'w',

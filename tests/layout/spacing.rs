@@ -536,3 +536,56 @@ fn test_soft_break_inside_paragraph_collapses_long_fragment_after_short_wrapped_
         stdout
     );
 }
+
+#[test]
+fn test_reflow_collapses_soft_break_that_would_otherwise_be_preserved() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Alpha beta\nGamma delta epsilon\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("--reflow")
+        .arg("-c")
+        .arg("26")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for reflow soft break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("Alpha beta Gamma delta"),
+        "expected reflow to collapse the soft break and refill the line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("Alpha beta\nGamma delta epsilon"),
+        "expected reflow not to preserve the source soft break, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_reflow_preserves_hard_breaks() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Line one\\\nLine two\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("--reflow")
+        .arg("-c")
+        .arg("40")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for reflow hard break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        !stdout.contains("Line one Line two"),
+        "expected reflow to keep hard breaks on separate lines, stdout:\n{}",
+        stdout
+    );
+}

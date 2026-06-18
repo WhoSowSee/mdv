@@ -19,6 +19,7 @@ cols: null                 # Use detected terminal width; fallback is 80 when de
 tab_length: 4              # Replace tab characters with this many spaces
 no_colors: false           # Strip all ANSI colors from output
 wrap: "char"               # Options: "char" | "word" | "none"
+reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
 table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
 heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
