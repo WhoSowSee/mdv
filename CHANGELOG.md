@@ -1,5 +1,34 @@
 # Changelog
 
+## [4.0.0] - 2026-06-26
+
+### Breaking Changes
+
+- Changed: `--config-file` and `MDV_CONFIG_PATH` now accept directories containing `config.yaml` or `config.yml`
+
+### Features
+
+- Added: short `-S` alias for `--table-smart-indent`
+- Added: `-G`/`--init-config` for creating a default configuration file
+- Added: `-p` pager output flag
+- Added: built-in pager and editor support
+- Added: code block icons and per-language customization
+- Added: `-R`/`--reflow` flag and named soft-break thresholds
+
+### Bug Fixes
+
+- Fixed: GIF media links rendered as `[IMAGE]`
+- Fixed: long Markdown comments wrapping
+- Fixed: space-indented text rendered as code block
+- Fixed: parsing headings after spaces and tabs
+- Fixed: soft break handling
+
+### Documentation
+
+- Updated: README badge markup
+- Updated: icon in READMEs
+- Updated: README badges to embedded SVG logos and pipeline examples
+
 ## [3.0.0] - 2026-05-16
 
 ### Breaking Changes
