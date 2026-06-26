@@ -536,3 +536,94 @@ fn test_soft_break_inside_paragraph_collapses_long_fragment_after_short_wrapped_
         stdout
     );
 }
+
+#[test]
+fn test_reflow_collapses_soft_break_that_would_otherwise_be_preserved() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Alpha beta\nGamma delta epsilon\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("--reflow")
+        .arg("-c")
+        .arg("26")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for reflow soft break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        stdout.contains("Alpha beta Gamma delta"),
+        "expected reflow to collapse the soft break and refill the line, stdout:\n{}",
+        stdout
+    );
+    assert!(
+        !stdout.contains("Alpha beta\nGamma delta epsilon"),
+        "expected reflow not to preserve the source soft break, stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_reflow_preserves_hard_breaks() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "Line one\\\nLine two\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("--reflow")
+        .arg("-c")
+        .arg("40")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs for reflow hard break");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(
+        !stdout.contains("Line one Line two"),
+        "expected reflow to keep hard breaks on separate lines, stdout:\n{}",
+        stdout
+    );
+}
+
+fn render_at_cols(input: &str, cols: u32) -> String {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, input).unwrap();
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg(cols.to_string())
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs");
+    String::from_utf8(output.stdout).expect("stdout utf8")
+}
+
+#[test]
+fn test_soft_break_nearly_full_threshold_boundary() {
+    // Documents the NEARLY_FULL_LINE (95%) threshold in
+    // should_preserve_short_final_soft_break. The joined width of this paragraph
+    // is 56 columns. At 58 cols the line is >=95% full, so the short final tail
+    // is kept on its own source line; at 59 cols it drops just below 95% and the
+    // tail collapses onto the previous line. Tightening or loosening
+    // NEARLY_FULL_LINE flips exactly one side of this assertion.
+    let input = "Alpha beta gamma delta epsilon zeta eta\ntheta iota kappa\n";
+
+    let preserved = render_at_cols(input, 58);
+    assert!(
+        preserved.contains("Alpha beta gamma delta epsilon zeta eta\ntheta iota kappa"),
+        "at 58 cols the short final tail should stay on its own line:\n{}",
+        preserved
+    );
+
+    let collapsed = render_at_cols(input, 59);
+    assert!(
+        collapsed.contains("zeta eta theta iota kappa"),
+        "at 59 cols the tail should collapse onto the previous line:\n{}",
+        collapsed
+    );
+}

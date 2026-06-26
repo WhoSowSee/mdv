@@ -1,5 +1,49 @@
 use super::{Event, EventRenderer, Result, Tag, TagEnd};
 
+// ---------------------------------------------------------------------------
+// Soft-break collapse thresholds
+//
+// These decide whether an in-paragraph source newline ("soft break") is kept
+// as a visual line break or collapsed into a space so the wrapper refills the
+// line. Ratios are stored as integer (numerator, denominator) pairs to avoid
+// floating point. They are tuned for hard-wrapped prose viewed at or near the
+// source width; the `--reflow` flag bypasses all of them.
+// ---------------------------------------------------------------------------
+
+/// A line is "substantial" once it fills at least 65% of the width. Below this
+/// a trailing fragment glued on would leave a ragged gap.
+const SUBSTANTIAL_LINE: (usize, usize) = (13, 20);
+
+/// A line is "nearly full" once the joined width reaches 95% of the width. Past
+/// this a short final tail reads better on its own line than barely overflowing.
+const NEARLY_FULL_LINE: (usize, usize) = (19, 20);
+
+/// A wrapped line is "short" if it fills less than half the width; it should
+/// absorb the next fragment instead of dangling.
+const SHORT_WRAPPED_LINE: (usize, usize) = (1, 2);
+
+/// Minimum fill ratio for the current line before a long single-word tail is
+/// worth keeping on its own line (60%).
+const SUBSTANTIAL_FOR_SINGLE_WORD: (usize, usize) = (3, 5);
+
+/// Maximum word count for a tail to count as a "short final tail".
+const SHORT_TAIL_MAX_WORDS: usize = 5;
+
+/// Minimum display width for a single-word tail to be treated as "long".
+const LONG_SINGLE_WORD_MIN_WIDTH: usize = 12;
+
+/// A short final tail is at most this fraction of the effective width.
+const SHORT_TAIL_WIDTH_DIVISOR: usize = 3;
+
+/// Floor for the short-tail width ceiling so very narrow widths still work.
+const SHORT_TAIL_WIDTH_FLOOR: usize = 24;
+
+/// Whether `a` fills at least `ratio.0 / ratio.1` of `b` (`a * den >= b * num`).
+#[inline]
+fn fills_at_least(a: usize, b: usize, ratio: (usize, usize)) -> bool {
+    a * ratio.1 >= b * ratio.0
+}
+
 pub(crate) struct SoftBreakFollowingText {
     text: String,
     ends_paragraph: bool,
@@ -93,6 +137,11 @@ impl<'a> EventRenderer<'a> {
         if !self.config.is_text_wrapping_enabled() {
             return false;
         }
+        // Reflow: collapse every in-paragraph soft break so the wrapper refills
+        // lines to the target width (CommonMark behavior).
+        if self.config.reflow {
+            return true;
+        }
 
         let Some(next_text) = next_text else {
             return false;
@@ -151,13 +200,21 @@ impl<'a> EventRenderer<'a> {
         }
 
         let word_count = next_text_trimmed.split_whitespace().count();
-        let short_tail_width = (effective_width / 3).max(24);
-        let short_final_tail = word_count <= 5 && next_text_width <= short_tail_width;
+        let short_tail_width =
+            (effective_width / SHORT_TAIL_WIDTH_DIVISOR).max(SHORT_TAIL_WIDTH_FLOOR);
+        let short_final_tail =
+            word_count <= SHORT_TAIL_MAX_WORDS && next_text_width <= short_tail_width;
         let long_single_word_tail = word_count == 1
-            && next_text_width >= 12
-            && current_line_width * 5 >= effective_width * 3;
-        let current_line_is_substantial = current_line_width * 20 >= effective_width * 13;
-        let joined_line_is_nearly_full = joined_width * 20 >= effective_width * 19;
+            && next_text_width >= LONG_SINGLE_WORD_MIN_WIDTH
+            && fills_at_least(
+                current_line_width,
+                effective_width,
+                SUBSTANTIAL_FOR_SINGLE_WORD,
+            );
+        let current_line_is_substantial =
+            fills_at_least(current_line_width, effective_width, SUBSTANTIAL_LINE);
+        let joined_line_is_nearly_full =
+            fills_at_least(joined_width, effective_width, NEARLY_FULL_LINE);
 
         long_single_word_tail
             || (short_final_tail && current_line_is_substantial && joined_line_is_nearly_full)
@@ -174,7 +231,11 @@ impl<'a> EventRenderer<'a> {
             .unwrap_or("");
         let segment_wrapped = segment.contains('\n');
 
-        segment_wrapped && current_line_width > 0 && current_line_width * 2 < effective_width
+        // The wrapped line fills less than half the width — keep absorbing the
+        // next fragment rather than leaving a short dangling line.
+        let line_is_short =
+            !fills_at_least(current_line_width, effective_width, SHORT_WRAPPED_LINE);
+        segment_wrapped && current_line_width > 0 && line_is_short
     }
 
     fn push_collapsed_soft_break_space(&mut self) {
