@@ -245,13 +245,33 @@ impl<'a> EventRenderer<'a> {
         let code_starts_with_blank = raw_code.starts_with('\n');
 
         let language_label = if !self.config.no_code_language {
-            Some(match language_hint.as_deref() {
+            let (base_label, hint_key) = match language_hint.as_deref() {
                 Some(raw) => {
                     let syntax = self.resolve_syntax(Some(raw), &raw_code);
-                    Self::resolve_language_label(raw, syntax)
+                    let resolved = Self::resolve_language_label(raw, syntax);
+                    let custom_label = self
+                        .find_custom_code_block(raw)
+                        .and_then(|b| b.label.clone());
+                    (custom_label.unwrap_or(resolved), raw)
                 }
-                None => "Text".to_string(),
-            })
+                None => {
+                    let custom_label = self
+                        .find_custom_code_block("text")
+                        .and_then(|b| b.label.clone());
+                    (custom_label.unwrap_or_else(|| "Text".to_string()), "text")
+                }
+            };
+            if self.config.code_block_style.show_icons {
+                let icon = self.code_block_icon_for_hint(hint_key, &base_label);
+                if self.config.code_block_style.icon_only {
+                    Some(self.clamp_code_block_icon(&icon, &base_label, true))
+                } else {
+                    let clamped = self.clamp_code_block_icon(&icon, &base_label, false);
+                    Some(format!("{} {}", clamped, base_label))
+                }
+            } else {
+                Some(base_label)
+            }
         } else {
             None
         };
@@ -275,7 +295,7 @@ impl<'a> EventRenderer<'a> {
             &raw_code,
         );
 
-        match self.config.code_block_style {
+        match self.config.code_block_style.style {
             CodeBlockStyle::Simple => {
                 self.render_code_block_simple(render_input)?;
             }
@@ -310,13 +330,11 @@ impl<'a> EventRenderer<'a> {
     ) -> Result<()> {
         let prefix = self.render_code_block_border();
         let raw_lines: Vec<&str> = input.raw_code.lines().collect();
-
         if let Some(label) = input.language_label {
-            let trimmed_label = label.trim();
-            let base_label = if trimmed_label.is_empty() {
+            let base_label = if label.trim().is_empty() {
                 "Text"
             } else {
-                trimmed_label
+                label
             };
 
             let context_width = self.compute_code_block_context_width();
@@ -469,25 +487,24 @@ impl<'a> EventRenderer<'a> {
         let mut text_width = left_padding + max_part_width + right_padding;
         let mut inner_box_width = text_width + 2;
 
-        if let Some(label) = input.language_label {
-            let trimmed = label.trim();
-            if !trimmed.is_empty() {
-                if block_is_empty {
-                    let label_width = display_width(trimmed);
-                    let required_inner_width = label_width + 6;
-                    if required_inner_width > max_inner_box_width {
-                        return self.render_code_block_simple(input);
-                    }
+        if let Some(label) = input.language_label
+            && !label.trim().is_empty()
+        {
+            if block_is_empty {
+                let label_width = display_width(label);
+                let required_inner_width = label_width + 6;
+                if required_inner_width > max_inner_box_width {
+                    return self.render_code_block_simple(input);
                 }
+            }
 
-                let label_width = display_width(trimmed);
-                // Ensure at least one trailing dash after the label on the top border
-                // so frames like an empty "Text" block appear balanced: "╭─ Text ─╮".
-                let required_inner_width = (label_width + 6).min(max_inner_box_width);
-                if inner_box_width < required_inner_width {
-                    inner_box_width = required_inner_width;
-                    text_width = inner_box_width.saturating_sub(2);
-                }
+            let label_width = display_width(label);
+            // Ensure at least one trailing dash after the label on the top border
+            // so frames like an empty "Text" block appear balanced: "╭─ Text ─╮".
+            let required_inner_width = (label_width + 6).min(max_inner_box_width);
+            if inner_box_width < required_inner_width {
+                inner_box_width = required_inner_width;
+                text_width = inner_box_width.saturating_sub(2);
             }
         }
 
@@ -622,32 +639,32 @@ impl<'a> EventRenderer<'a> {
             middle_width = middle_width.saturating_sub(1);
         }
 
-        if let Some(raw_label) = label {
-            let trimmed = raw_label.trim();
-            if !trimmed.is_empty() && middle_width > 0 {
-                line.push(' ');
-                middle_width = middle_width.saturating_sub(1);
+        if let Some(raw_label) = label
+            && !raw_label.trim().is_empty()
+            && middle_width > 0
+        {
+            line.push(' ');
+            middle_width = middle_width.saturating_sub(1);
 
-                if middle_width > 0 {
-                    let mut label_text = trimmed.to_string();
-                    if display_width(&label_text) > middle_width {
-                        label_text = self.take_prefix_by_width(&label_text, middle_width).0;
+            if middle_width > 0 {
+                let mut label_text = raw_label.to_string();
+                if display_width(&label_text) > middle_width {
+                    label_text = self.take_prefix_by_width(&label_text, middle_width).0;
+                }
+
+                let label_width = display_width(&label_text);
+                if label_width > 0 && label_width <= middle_width {
+                    line.push_str(&label_text);
+                    middle_width = middle_width.saturating_sub(label_width);
+                    if middle_width > 0 {
+                        line.push(' ');
+                        middle_width = middle_width.saturating_sub(1);
                     }
-
-                    let label_width = display_width(&label_text);
-                    if label_width > 0 && label_width <= middle_width {
-                        line.push_str(&label_text);
-                        middle_width = middle_width.saturating_sub(label_width);
-                        if middle_width > 0 {
-                            line.push(' ');
-                            middle_width = middle_width.saturating_sub(1);
-                        }
-                    } else {
-                        // Not enough room for the label – remove the preceding space
-                        if line.ends_with(' ') {
-                            line.pop();
-                            middle_width = middle_width.saturating_add(1);
-                        }
+                } else {
+                    // Not enough room for the label – remove the preceding space
+                    if line.ends_with(' ') {
+                        line.pop();
+                        middle_width = middle_width.saturating_add(1);
                     }
                 }
             }
@@ -895,7 +912,7 @@ impl<'a> EventRenderer<'a> {
             return None;
         }
 
-        let width = match self.config.code_block_style {
+        let width = match self.config.code_block_style.style {
             CodeBlockStyle::Simple => available.saturating_sub(2),
             CodeBlockStyle::Pretty => {
                 let left_padding = 1usize;
@@ -1000,6 +1017,177 @@ impl<'a> EventRenderer<'a> {
         }
 
         syntax_name.to_string()
+    }
+
+    fn find_custom_code_block(
+        &self,
+        hint: &str,
+    ) -> Option<&crate::custom_code_block::CustomCodeBlock> {
+        let key = hint.to_ascii_lowercase();
+        self.config.custom_code_blocks.get(&key).or_else(|| {
+            self.config
+                .custom_code_blocks
+                .values()
+                .find(|b| b.aliases.contains(&key))
+        })
+    }
+
+    fn code_block_icon_for_hint(&self, hint: &str, fallback_label: &str) -> String {
+        if let Some(block) = self.find_custom_code_block(hint)
+            && let Some(icon) = block.icon.as_ref()
+        {
+            return icon.clone();
+        }
+        let built_in = Self::default_code_block_icon_for_label(hint).to_string();
+        if built_in != Self::DEFAULT_CODE_BLOCK_ICON {
+            return built_in;
+        }
+        let built_in = Self::default_code_block_icon_for_label(fallback_label).to_string();
+        if built_in != Self::DEFAULT_CODE_BLOCK_ICON {
+            return built_in;
+        }
+        self.config
+            .custom_code_default_icon
+            .clone()
+            .unwrap_or(built_in)
+    }
+
+    /// Keeps leading and trailing spaces in icons, but clamps trailing spaces
+    /// so the label still fits in the terminal.
+    fn clamp_code_block_icon(&self, icon: &str, base_label: &str, icon_only: bool) -> String {
+        let terminal_width = self.config.get_terminal_width();
+        let context_width = self.compute_code_block_context_width();
+        // Reserve the larger pretty-mode border overhead (label + 6) so the
+        // label fits in both simple and pretty frames.
+        let max_label_width = terminal_width.saturating_sub(context_width + 6);
+        let min_icon_width = display_width(icon.trim_end());
+
+        let separator_width = if icon_only { 0 } else { 1 };
+        let label_width = if icon_only {
+            0
+        } else {
+            display_width(base_label)
+        };
+        let max_icon_width = max_label_width
+            .saturating_sub(separator_width + label_width)
+            .max(min_icon_width);
+
+        let mut result = icon.to_string();
+        while display_width(&result) > max_icon_width && result.ends_with(' ') {
+            result.pop();
+        }
+        result
+    }
+
+    const DEFAULT_CODE_BLOCK_ICON: &'static str = " ";
+
+    fn default_code_block_icon_for_label(label: &str) -> &'static str {
+        match label.to_ascii_lowercase().as_str() {
+            "rust" | "rs" => "",
+            "python" | "py" => "",
+            "javascript" | "js" | "jsx" => "",
+            "typescript" | "ts" | "tsx" => "󰛦",
+            "go" | "golang" => "",
+            "java" => "",
+            "c" => "",
+            "c++" | "cpp" | "cxx" => "",
+            "c#" | "csharp" | "cs" => "",
+            "ruby" => "",
+            "php" => "",
+            "html" => "",
+            "css" => "",
+            "scss" | "sass" => "",
+            "markdown" | "md" | "mdx" => " ",
+            "json" => "",
+            "yaml" | "yml" => "",
+            "toml" => "",
+            "sql" => "",
+            "shell" | "bash" | "sh" | "zsh" | "fish" => "",
+            "powershell" | "ps1" | "ps" | "pwsh" => "",
+            "cmd" | "bat" => "",
+            "lua" => "",
+            "vim" | "vimscript" => "",
+            "docker" | "dockerfile" => "",
+            "nix" => "",
+            "haskell" => "",
+            "kotlin" => "󱈙",
+            "swift" => "",
+            "dart" => "",
+            "scala" => "",
+            "elixir" => "",
+            "erlang" => "",
+            "clojure" => "",
+            "f#" | "fsharp" | "fs" => "",
+            "perl" => "",
+            "objective-c" | "objc" => "",
+            "text" | "plain" | "plaintext" => "󰦪",
+            "diff" => "",
+            "makefile" => "",
+            "cmake" => "",
+            "groovy" => "",
+            "r" => "",
+            "asm" => "",
+            "vue" => "",
+            "svelte" => "",
+            "tailwind" | "tw" => "󱏿",
+            "zig" => "",
+            "ocaml" => "",
+            "nim" => "",
+            "csv" => "",
+            "xml" => "󰗀",
+            "ini" | "conf" | "config" => "",
+            "log" => "󰌱",
+            "graphql" | "gql" => "",
+            "redis" => "",
+            "julia" | "jl" => "",
+            "d" | "dlang" => "",
+            "crystal" | "cr" => "",
+            "elm" => "",
+            "haxe" | "hx" => "",
+            "fortran" | "f90" => "",
+            "cobol" => "",
+            "ada" => "",
+            "pascal" | "pas" | "delphi" => "",
+            "racket" | "scheme" | "lisp" | "rkt" => "",
+            "reason" | "reasonml" | "rescript" => "",
+            "solidity" | "sol" => "",
+            "v" | "vlang" => "",
+            "astro" => "",
+            "nextjs" | "next" => "",
+            "nuxtjs" | "nuxt" => "󱄆",
+            "angular" => "",
+            "react" => "󰜈",
+            "jinja" | "django" => "",
+            "pug" => "",
+            "jade" => "",
+            "less" => "",
+            "stylus" | "styl" => "",
+            "postcss" => "",
+            "protobuf" | "proto" => "",
+            "terraform" | "hcl" | "tf" => "󱁢",
+            "pulumi" => "",
+            "ansible" => "󱂚",
+            "nginx" => "",
+            "apache" => "",
+            "latex" | "tex" => "",
+            "typst" => "",
+            "mermaid" => "󱁉",
+            "plantuml" => "",
+            "postgresql" | "postgres" => "",
+            "mysql" => "",
+            "mongodb" | "mongo" => "",
+            "sqlite" => "",
+            "cassandra" | "cql" => "󰆼",
+            "cypher" | "neo4j" => "",
+            "llvm" | "llvm-ir" => "",
+            "opencl" | "cl" => "",
+            "tcl" => "󱜧",
+            "awk" => "󱎸",
+            "sed" => "󰛔",
+            "gherkin" | "cucumber" => "",
+            "qml" => "",
+            _ => Self::DEFAULT_CODE_BLOCK_ICON,
+        }
     }
 
     fn fallback_language_label(raw_hint: &str) -> Option<String> {
@@ -1530,5 +1718,97 @@ mod tests {
 
         let syntax_without_hint = renderer.resolve_syntax(None, "fn main() {}");
         assert_eq!(syntax_without_hint.name, "Plain Text");
+    }
+
+    #[test]
+    fn code_block_icon_mapping_recognises_common_languages() {
+        let config = Config::default();
+        let theme = Theme::default();
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let code_theme = SyntectTheme::default();
+        let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+
+        assert_eq!(
+            renderer.code_block_icon_for_hint("rust", "Rust"),
+            "".to_string()
+        );
+        assert_eq!(
+            renderer.code_block_icon_for_hint("python", "Python"),
+            "".to_string()
+        );
+        assert_eq!(
+            renderer.code_block_icon_for_hint("javascript", "JavaScript"),
+            "".to_string()
+        );
+        assert_eq!(
+            renderer.code_block_icon_for_hint("text", "Text"),
+            "󰦪".to_string()
+        );
+        assert_eq!(
+            renderer.code_block_icon_for_hint("shell", "Shell"),
+            "".to_string()
+        );
+    }
+
+    #[test]
+    fn code_block_icon_mapping_uses_default_icon_for_unknown_language() {
+        let config = Config::default();
+        let theme = Theme::default();
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let code_theme = SyntectTheme::default();
+        let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+
+        assert_eq!(
+            renderer.code_block_icon_for_hint("unknownlang", "Unknownlang"),
+            " ".to_string()
+        );
+    }
+    #[test]
+    fn custom_code_block_icon_overrides_default() {
+        let config = Config {
+            custom_code_blocks: std::collections::HashMap::from([(
+                "rust".to_string(),
+                crate::custom_code_block::CustomCodeBlock {
+                    icon: Some("🦀".to_string()),
+                    label: None,
+                    aliases: Vec::new(),
+                },
+            )]),
+            ..Config::default()
+        };
+        let theme = Theme::default();
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let code_theme = SyntectTheme::default();
+        let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+
+        assert_eq!(
+            renderer.code_block_icon_for_hint("rust", "Rust"),
+            "🦀".to_string()
+        );
+        assert_eq!(
+            renderer.code_block_icon_for_hint("python", "Python"),
+            "".to_string()
+        );
+    }
+
+    #[test]
+    fn custom_default_icon_overrides_builtin_default() {
+        let config = Config {
+            custom_code_default_icon: Some("🚀".to_string()),
+            ..Config::default()
+        };
+        let theme = Theme::default();
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let code_theme = SyntectTheme::default();
+        let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+
+        assert_eq!(
+            renderer.code_block_icon_for_hint("unknownlang", "Unknownlang"),
+            "🚀".to_string()
+        );
+        assert_eq!(
+            renderer.code_block_icon_for_hint("rust", "Rust"),
+            "".to_string()
+        );
     }
 }

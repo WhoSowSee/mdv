@@ -176,7 +176,7 @@ impl<'a> EventRenderer<'a> {
 
         self.ensure_contextual_blank_line();
 
-        match self.config.code_block_style {
+        match self.config.code_block_style.style {
             CodeBlockStyle::Simple => {
                 self.render_code_block_simple(render_input)?;
             }

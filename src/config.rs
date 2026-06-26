@@ -1,8 +1,9 @@
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
-    CalloutStyleConfig, Cli, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, HeadingLayout,
+    CalloutStyleConfig, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle, HeadingLayout,
     LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, TableWrapMode, TextWrapMode,
 };
+use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
 use anyhow::Result;
 use clap::{ArgMatches, parser::ValueSource};
@@ -87,7 +88,7 @@ pub struct Config {
     pub show_empty_elements: bool,
     pub no_code_language: bool,
     pub code_guessing: bool,
-    pub code_block_style: CodeBlockStyle,
+    pub code_block_style: CodeBlockStyleConfig,
     pub callout_style: CalloutStyleConfig,
     pub code_wrap_indent: CodeWrapIndent,
     pub reverse: bool,
@@ -100,6 +101,11 @@ pub struct Config {
     pub custom_callout: Option<String>,
     #[serde(skip)]
     pub(crate) custom_callouts: HashMap<String, CustomCalloutStyle>,
+    pub custom_code_block: Option<String>,
+    #[serde(skip)]
+    pub(crate) custom_code_blocks: HashMap<String, CustomCodeBlock>,
+    #[serde(skip)]
+    pub(crate) custom_code_default_icon: Option<String>,
 
     // Link handling
     pub link_style: LinkStyle,
@@ -132,7 +138,7 @@ impl Default for Config {
             show_empty_elements: false,
             no_code_language: false,
             code_guessing: true,
-            code_block_style: CodeBlockStyle::Pretty,
+            code_block_style: CodeBlockStyleConfig::default(),
             callout_style: CalloutStyleConfig::default(),
             code_wrap_indent: CodeWrapIndent::Double,
             reverse: false,
@@ -142,6 +148,9 @@ impl Default for Config {
             custom_code_theme: None,
             custom_callout: None,
             custom_callouts: HashMap::new(),
+            custom_code_block: None,
+            custom_code_blocks: HashMap::new(),
+            custom_code_default_icon: None,
             link_style: LinkStyle::Clickable,
             link_truncation: LinkTruncationStyle::Wrap,
             footnote_style: FootnoteStyle::Endnotes,
@@ -227,6 +236,12 @@ impl Config {
             config.custom_callout = Some(custom_callout.clone());
         }
 
+        if let Some(custom_code_block) = &cli.custom_code_block
+            && arg_has_user_value(matches, "custom_code_block")
+        {
+            config.custom_code_block = Some(custom_code_block.clone());
+        }
+
         if let Some(link_style) = cli.link_style.clone()
             && arg_has_user_value(matches, "link_style")
         {
@@ -280,7 +295,6 @@ impl Config {
         {
             config.code_block_style = style;
         }
-
         if let Some(style) = cli.style_callout
             && arg_has_user_value(matches, "style_callout")
         {
@@ -305,6 +319,7 @@ impl Config {
 
         config.normalize_theme_settings();
         config.apply_custom_callouts()?;
+        config.apply_custom_code_blocks()?;
 
         Ok(config)
     }
@@ -462,7 +477,7 @@ impl Config {
         if !other.code_guessing {
             self.code_guessing = false;
         }
-        if !matches!(other.code_block_style, CodeBlockStyle::Pretty) {
+        if other.code_block_style != CodeBlockStyleConfig::default() {
             self.code_block_style = other.code_block_style;
         }
         if other.callout_style != CalloutStyleConfig::default() {
@@ -489,6 +504,14 @@ impl Config {
         }
         if other.custom_callout.is_some() {
             self.custom_callout = other.custom_callout;
+        }
+
+        if other.custom_code_block.is_some() {
+            self.custom_code_block = other.custom_code_block;
+        }
+
+        if other.custom_code_default_icon.is_some() {
+            self.custom_code_default_icon = other.custom_code_default_icon;
         }
 
         if !matches!(other.link_style, LinkStyle::Clickable) {
@@ -565,6 +588,19 @@ impl Config {
         self.custom_callouts.clear();
         if let Some(raw) = &self.custom_callout {
             self.custom_callouts = parse_custom_callouts(raw)?;
+        }
+        Ok(())
+    }
+
+    fn apply_custom_code_blocks(&mut self) -> Result<()> {
+        self.custom_code_blocks.clear();
+        self.custom_code_default_icon = None;
+        if let Some(raw) = &self.custom_code_block {
+            let mut parsed = parse_custom_code_blocks(raw)?;
+            if let Some(block) = parsed.remove("default") {
+                self.custom_code_default_icon = block.icon;
+            }
+            self.custom_code_blocks = parsed;
         }
         Ok(())
     }

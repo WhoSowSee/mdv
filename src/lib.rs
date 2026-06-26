@@ -1,6 +1,7 @@
 mod callout;
 pub mod cli;
 pub mod config;
+mod custom_code_block;
 mod editor;
 pub mod error;
 pub mod markdown;

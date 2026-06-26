@@ -99,9 +99,10 @@ cat <FILE> | mdv
 
 - `-t, --theme <NAME>` — chooses a built-in theme (default `terminal`).
 - `-T, --code-theme <NAME>` — sets the syntax highlight palette (default `terminal`).
-- `-s, --code-block-style <simple|pretty>` — switches between a single gutter and a boxed frame for code blocks (default `pretty`).
+- `-s, --code-block-style <simple|pretty>[:show-icons;icon-only]` — switches between a single gutter and a boxed frame for code blocks. `show-icons` adds a language icon to the label, and `icon-only` shows only the icon while hiding the language text (default `pretty`).
 - `-y, --custom-theme <key=value;...>` — overrides UI colors on top of the selected theme.
 - `-Y, --custom-code-theme <key=value;...>` — overrides syntax colors using the same format as `--custom-theme`.
+- `-J, --custom-code-block <lang:icon=...,label=...,aliases=...>[;...]` — overrides the icon, label, and aliases for specific code block languages. Multiple languages are separated by `;`, options within one language by `,`, and aliases by `|` (for example, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Works for any language hint, even if it is not in the built-in icon mapping. Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic. Use `default:icon=...` to set the fallback icon for unknown languages.
 
 ### Callouts
 
