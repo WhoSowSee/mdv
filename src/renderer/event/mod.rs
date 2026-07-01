@@ -3,6 +3,7 @@ mod core;
 mod footnotes;
 mod formatting;
 mod headings;
+mod html;
 mod images;
 mod links;
 mod math;
@@ -14,7 +15,7 @@ mod text;
 use crossterm::style::Color as CrosstermColor;
 
 pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock, EventRenderer};
-pub(super) use core::{TableInlineUrlSegment, TableInlineUrlTarget, TableState};
+pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
 pub(super) use footnotes::FootnoteDefinition;
 pub(super) use soft_breaks::SoftBreakFollowingText;
 

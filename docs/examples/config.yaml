@@ -30,6 +30,7 @@ heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
 table_smart_indent: false  # Automatically adjusts table indentation based on available width
 hide_comments: false       # Hide Markdown comments from the rendered output
+render_html: false         # Render raw HTML fragments as terminal-formatted content
 show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
 no_code_language: false    # Disable the language label above code blocks
 code_guessing: true        # Disable to keep unknown code blocks as plain text

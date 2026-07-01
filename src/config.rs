@@ -86,6 +86,7 @@ pub struct Config {
     pub smart_indent: bool,
     pub table_smart_indent: bool,
     pub hide_comments: bool,
+    pub render_html: bool,
     pub show_empty_elements: bool,
     pub no_code_language: bool,
     pub code_guessing: bool,
@@ -137,6 +138,7 @@ impl Default for Config {
             smart_indent: false,
             table_smart_indent: false,
             hide_comments: false,
+            render_html: false,
             show_empty_elements: false,
             no_code_language: false,
             code_guessing: true,
@@ -285,6 +287,10 @@ impl Config {
 
         if cli.hide_comments {
             config.hide_comments = true;
+        }
+
+        if cli.render_html {
+            config.render_html = true;
         }
 
         if cli.show_empty_elements {
@@ -475,6 +481,9 @@ impl Config {
 
         if other.hide_comments {
             self.hide_comments = true;
+        }
+        if other.render_html {
+            self.render_html = true;
         }
         if other.show_empty_elements {
             self.show_empty_elements = true;
@@ -985,6 +994,7 @@ link_truncation: tablecut
         assert!(config.code_theme.is_none());
         assert!(config.cols.is_none());
         assert!(!config.smart_indent);
+        assert!(!config.render_html);
         assert!(matches!(config.link_style, LinkStyle::Clickable));
     }
 

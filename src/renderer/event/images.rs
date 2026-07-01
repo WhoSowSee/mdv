@@ -1,6 +1,7 @@
 use super::{CowStr, EventRenderer, Result, ThemeElement, create_style};
+use crate::utils::strip_ansi;
 
-fn media_marker(dest_url: &str) -> &'static str {
+pub(super) fn media_marker(dest_url: &str) -> &'static str {
     if let Some(marker) = media_marker_from_data_uri(dest_url) {
         return marker;
     }
@@ -20,6 +21,44 @@ fn media_marker(dest_url: &str) -> &'static str {
     } else {
         "[MEDIA] "
     }
+}
+
+pub(super) fn media_marker_leading_separator(buffer: &str) -> &'static str {
+    if needs_media_marker_leading_separator(buffer) {
+        " "
+    } else {
+        ""
+    }
+}
+
+fn needs_media_marker_leading_separator(buffer: &str) -> bool {
+    let current_line = buffer
+        .rsplit_once('\n')
+        .map(|(_, line)| line)
+        .unwrap_or(buffer);
+    let clean_line = strip_ansi(current_line);
+
+    let has_visible_text = clean_line
+        .chars()
+        .any(|ch| !ch.is_whitespace() && ch != '│' && ch != '┃');
+    if !has_visible_text {
+        return false;
+    }
+
+    if clean_line
+        .chars()
+        .next_back()
+        .map(char::is_whitespace)
+        .unwrap_or(false)
+    {
+        return false;
+    }
+
+    let Some(last_visible) = clean_line.trim_end().chars().next_back() else {
+        return false;
+    };
+
+    !matches!(last_visible, '(' | '[' | '{')
 }
 
 fn media_marker_from_data_uri(dest_url: &str) -> Option<&'static str> {
@@ -207,6 +246,8 @@ impl<'a> EventRenderer<'a> {
         if let Some(ref mut table) = self.table_state {
             let style = create_style(self.theme, ThemeElement::Link);
             let image_marker = style.apply(marker, self.config.no_colors);
+            let separator = media_marker_leading_separator(&table.current_cell);
+            table.current_cell.push_str(separator);
             table.current_cell.push_str(&image_marker);
             self.commit_pending_heading_placeholder_if_content();
             return Ok(());
@@ -230,6 +271,8 @@ impl<'a> EventRenderer<'a> {
 
         let style = create_style(self.theme, ThemeElement::Link);
         let image_marker = style.apply(marker, self.config.no_colors);
+        let separator = media_marker_leading_separator(&self.output);
+        self.output.push_str(separator);
         self.output.push_str(&image_marker);
         self.commit_pending_heading_placeholder_if_content();
         Ok(())

@@ -29,6 +29,13 @@ pub(crate) struct TableState {
     pub(super) inline_url_segments: Vec<TableInlineUrlSegment>,
 }
 
+#[derive(Debug)]
+pub(crate) struct HtmlBlockBuffer {
+    pub(super) tag: &'static str,
+    pub(super) content: String,
+    pub(super) captures_markdown_events: bool,
+}
+
 #[derive(Debug, Clone)]
 pub(crate) enum TableInlineUrlTarget {
     Header {
@@ -288,6 +295,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) callout_palette: HashMap<CalloutKind, Color>,
     pub(crate) list_stack: Vec<ListState>,
     pub(crate) table_state: Option<TableState>,
+    pub(crate) pending_html_block_buffer: Option<HtmlBlockBuffer>,
     pub(crate) link_references: HashMap<String, String>,
     pub(crate) link_counter: usize,
     pub(crate) current_link_text: String,
@@ -354,6 +362,7 @@ impl<'a> EventRenderer<'a> {
             callout_palette: build_callout_palette(theme),
             list_stack: Vec::new(),
             table_state: None,
+            pending_html_block_buffer: None,
             link_references: HashMap::new(),
             link_counter: 0,
             current_link_text: String::new(),
@@ -431,6 +440,7 @@ impl<'a> EventRenderer<'a> {
             self.process_event(events[idx].clone(), next_soft_break_text.as_ref())?;
         }
 
+        self.flush_pending_html_block_buffer()?;
         self.finalize_pending_heading_placeholder();
         if matches!(self.config.footnote_style, FootnoteStyle::Attached)
             && !self.current_inline_footnotes.is_empty()
@@ -554,17 +564,44 @@ impl<'a> EventRenderer<'a> {
         if !matches!(event, Event::Text(_)) {
             self.reset_footnote_text_scan();
         }
+        if self.config.render_html
+            && self.pending_html_block_buffer.is_some()
+            && !matches!(event, Event::Html(_) | Event::InlineHtml(_))
+            && !(self.pending_html_buffer_captures_markdown_events()
+                && matches!(
+                    event,
+                    Event::Text(_) | Event::Code(_) | Event::SoftBreak | Event::HardBreak
+                ))
+        {
+            self.flush_pending_html_block_buffer()?;
+        }
         match event {
             Event::Start(tag) => self.handle_start_tag(tag)?,
             Event::End(tag_end) => self.handle_end_tag(tag_end)?,
-            Event::Text(text) => self.handle_text(text)?,
-            Event::Code(code) => self.handle_inline_code(code)?,
+            Event::Text(text) => {
+                if self.append_pending_html_buffer_text(text.as_ref()) {
+                    return Ok(());
+                }
+                self.handle_text(text)?;
+            }
+            Event::Code(code) => {
+                if self.append_pending_html_buffer_text(code.as_ref()) {
+                    return Ok(());
+                }
+                self.handle_inline_code(code)?;
+            }
             Event::Html(html) => self.handle_html(html)?,
             Event::InlineHtml(html) => self.handle_inline_html(html)?,
             Event::SoftBreak => {
+                if self.append_pending_html_buffer_soft_break() {
+                    return Ok(());
+                }
                 self.handle_soft_break(next_soft_break_text)?;
             }
             Event::HardBreak => {
+                if self.append_pending_html_buffer_hard_break() {
+                    return Ok(());
+                }
                 if self.finalize_pending_callout_label_override() {
                     return Ok(());
                 }

@@ -20,11 +20,15 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn render_html_fragment(&mut self, html: &CowStr) -> Result<()> {
+        if self.config.render_html {
+            return self.render_html_fragment_buffering_blocks(html.as_ref());
+        }
+
         let html_str = html.as_ref();
         let trimmed = html_str.trim();
 
         let is_comment = trimmed.starts_with("<!--") && trimmed.ends_with("-->");
-        if !is_comment || self.config.hide_comments {
+        if is_comment && self.config.hide_comments {
             return Ok(());
         }
 
@@ -71,7 +75,7 @@ impl<'a> EventRenderer<'a> {
                 continue;
             }
 
-            self.render_wrapped_html_comment_segment(segment)?;
+            self.render_wrapped_html_segment(segment)?;
         }
 
         self.commit_pending_heading_placeholder_if_content();
@@ -79,7 +83,7 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    fn render_wrapped_html_comment_segment(&mut self, segment: &str) -> Result<()> {
+    fn render_wrapped_html_segment(&mut self, segment: &str) -> Result<()> {
         let formatting_stack =
             std::mem::replace(&mut self.formatting_stack, vec![ThemeElement::Text]);
         let result = self.process_segment_with_wrapping_and_formatting(

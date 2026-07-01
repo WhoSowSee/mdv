@@ -917,6 +917,7 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
         ThemeElement::Emphasis => &theme.emphasis,
         ThemeElement::Strong => &theme.strong,
         ThemeElement::Strikethrough => &theme.strikethrough,
+        ThemeElement::Underline => &theme.text,
         ThemeElement::Border => &theme.border,
         ThemeElement::ListMarker => &theme.list_marker,
         ThemeElement::TableHeader => &theme.table_header,
@@ -949,6 +950,7 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
         ThemeElement::Strong | ThemeElement::H1 => style = style.bold(),
         ThemeElement::Emphasis => style = style.italic(),
         ThemeElement::Strikethrough => style = style.strikethrough(),
+        ThemeElement::Underline => style = style.underline(),
         _ => {}
     }
 
@@ -972,6 +974,7 @@ pub enum ThemeElement {
     Emphasis,
     Strong,
     Strikethrough,
+    Underline,
     Border,
     ListMarker,
     TableHeader,

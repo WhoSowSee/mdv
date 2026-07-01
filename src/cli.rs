@@ -15,6 +15,7 @@ Examples:
   mdv -t monokai README.md         # Use monokai theme
   mdv -m README.md                 # Monitor file for changes
   mdv -H README.md                 # Output HTML instead of terminal formatting
+  mdv -E README.md                 # Render embedded HTML in terminal output
   cat README.md | mdv              # Read from stdin
 "#
 )]
@@ -42,6 +43,10 @@ pub struct Cli {
     /// Hide Markdown comments from the rendered output
     #[arg(short = 'C', long = "hide-comments")]
     pub hide_comments: bool,
+
+    /// Render raw HTML fragments as terminal-formatted content
+    #[arg(short = 'E', long = "render-html")]
+    pub render_html: bool,
 
     /// Print HTML version instead of terminal formatting
     #[arg(short = 'H', long = "html")]
@@ -670,6 +675,12 @@ mod tests {
 
         let cli = Cli::parse_from(["mdv", "-S"]);
         assert!(cli.table_smart_indent);
+    }
+
+    #[test]
+    fn render_html_short_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "-E"]);
+        assert!(cli.render_html);
     }
 
     #[test]

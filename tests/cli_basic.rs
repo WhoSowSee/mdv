@@ -110,6 +110,580 @@ fn test_comments_rendered_by_default() {
 }
 
 #[test]
+fn test_raw_html_rendered_as_literal_text() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "<div align=\"center\">Centered</div>\n\nText with <span class=\"raw\">inline</span> HTML.\n",
+    )
+    .unwrap();
+
+    let mut cmd = mdv_cmd();
+    cmd.arg("-A").arg(temp_file.path());
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "<div align=\"center\">Centered</div>",
+        ))
+        .stdout(predicate::str::contains(
+            "<span class=\"raw\">inline</span>",
+        ));
+}
+
+#[test]
+fn test_render_html_option_formats_raw_html() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "<head><title>Hidden</title></head><div align=\"center\"><strong>Centered</strong></div>\n\n<p>Clip <img src=\"photo.png\" alt=\"photo\"><img src=\"animation.gif\" alt=\"demo gif\"><video src=\"movie.mp4\" title=\"demo video\"></video><video><source src=\"trailer.webm\" title=\"source video\"></video></p>\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("40")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        stdout.contains("                Centered"),
+        "stdout:\n{}",
+        stdout
+    );
+    assert!(stdout.contains("Clip [IMAGE] photo"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("[GIF] demo gif"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("[VIDEO] demo video"), "stdout:\n{}", stdout);
+    assert!(
+        stdout.contains("[VIDEO] source video"),
+        "stdout:\n{}",
+        stdout
+    );
+    assert!(!stdout.contains("Hidden"), "stdout:\n{}", stdout);
+    assert!(!stdout.contains("<div"), "stdout:\n{}", stdout);
+    assert!(!stdout.contains("align=\"center\""), "stdout:\n{}", stdout);
+}
+
+#[test]
+fn test_render_html_buffers_centered_semantic_blocks() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<section align="center">
+  <img src="logo.png" alt="Logo">
+</section>
+
+<figure style="text-align:center">
+  <a href="https://example.com/one"><img src="one.svg" alt="ONE"></a>
+  <a href="https://example.com/two"><img src="two.svg" alt="TWO"></a>
+</figure>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("80")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let image_lines: Vec<_> = stdout
+        .lines()
+        .filter(|line| line.contains("[IMAGE]"))
+        .collect();
+    assert_eq!(image_lines.len(), 2, "stdout:\n{}", stdout);
+    assert!(
+        image_lines[0].starts_with("                              "),
+        "stdout:\n{}",
+        stdout
+    );
+    assert!(
+        image_lines[1].starts_with("                    "),
+        "stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_render_html_right_aligns_regular_blocks() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<div align="right">Right edge</div>
+<section style="text-align:right">
+  <span>CSS right</span>
+</section>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("40")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        stdout
+            .lines()
+            .any(|line| line == "                              Right edge"),
+        "stdout:\n{}",
+        stdout
+    );
+    assert!(
+        stdout
+            .lines()
+            .any(|line| line == "                               CSS right"),
+        "stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_render_html_formats_inline_semantic_tags() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<p><code>cargo test</code> <kbd>Ctrl+C</kbd> <samp>ok</samp> <mark>marked</mark> <small>tiny</small> H<sub>2</sub> x<sup>2</sup> <abbr title="HyperText Markup Language">HTML</abbr></p>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("120")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        strip_ansi(&stdout).contains(
+            "`cargo test` [Ctrl+C] `ok` marked tiny H_2 x^2 HTML (HyperText Markup Language)"
+        ),
+        "stdout:\n{}",
+        stdout
+    );
+}
+
+#[test]
+fn test_render_html_details_summary_static_output() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<details>
+  <summary>Install</summary>
+  <p>Run <code>cargo install mdv</code>.</p>
+</details>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let clean = strip_ansi(&stdout);
+    let summary_pos = clean.find("Install").expect("summary missing");
+    let body_pos = clean
+        .find("Run `cargo install mdv`.")
+        .expect("details body missing");
+    assert!(summary_pos < body_pos, "stdout:\n{}", stdout);
+}
+
+#[test]
+fn test_render_html_preserves_pre_and_textarea_whitespace() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<pre>
+pre keeps spaces:
+    indented line
+        deeper line
+</pre>
+<textarea>
+textarea keeps spaces:
+    typed content
+</textarea>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg("-c")
+        .arg("80")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    assert!(
+        clean.contains("pre keeps spaces:\n    indented line\n        deeper line"),
+        "stdout:\n{}",
+        clean
+    );
+    assert!(
+        clean.contains("textarea keeps spaces:\n    typed content"),
+        "stdout:\n{}",
+        clean
+    );
+}
+
+#[test]
+fn test_render_html_blockquote_uses_quote_prefix() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<blockquote>
+  <p>Quote <strong>body</strong></p>
+  <p>Second line</p>
+</blockquote>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    assert!(clean.contains("│ Quote body"), "stdout:\n{}", clean);
+    assert!(clean.contains("│ Second line"), "stdout:\n{}", clean);
+}
+
+#[test]
+fn test_render_html_definition_lists() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<dl>
+  <dt>Config</dt>
+  <dd>Path to the config file.</dd>
+  <dt>Theme</dt>
+  <dd><a href="https://example.com/theme">Theme docs</a></dd>
+</dl>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    assert!(
+        clean.contains("Config\n  Path to the config file."),
+        "stdout:\n{}",
+        clean
+    );
+    assert!(clean.contains("Theme\n  Theme docs"), "stdout:\n{}", clean);
+}
+
+#[test]
+fn test_render_html_figure_caption_is_rendered_after_content() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<figure align="center">
+  <img src="overview.png" alt="Overview">
+  <figcaption>Overview caption</figcaption>
+</figure>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg("-c")
+        .arg("80")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    let image_pos = clean
+        .find("[IMAGE] Overview")
+        .expect("figure image missing");
+    let caption_pos = clean.find("Overview caption").expect("figcaption missing");
+    assert!(image_pos < caption_pos, "stdout:\n{}", clean);
+    assert!(
+        clean
+            .lines()
+            .any(|line| line.trim() == "Overview caption" && line.starts_with(" ")),
+        "stdout:\n{}",
+        clean
+    );
+}
+
+#[test]
+fn test_render_html_basic_inline_css_styles() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<p><span style="font-weight:bold">bold css</span> <span style="font-style:italic">italic css</span> <span style="text-decoration:line-through">strike css</span> <span style="text-decoration:underline">underlined css</span></p>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-E")
+        .arg("-c")
+        .arg("120")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let clean = strip_ansi(&stdout);
+    assert!(
+        clean.contains("bold css italic css strike css underlined css"),
+        "stdout:\n{}",
+        stdout
+    );
+    assert!(stdout.contains("\u{1b}[1m"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("\u{1b}[3m"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("\u{1b}[9m"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("\u{1b}[4m"), "stdout:\n{}", stdout);
+}
+
+#[test]
+fn test_render_html_inline_table_references_inside_html_containers() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<details>
+  <summary><a href="https://example.com/details">Details docs</a></summary>
+  <p><img src="details.png" alt="Details image"></p>
+</details>
+
+<figure>
+  <a href="https://example.com/figure"><img src="figure.png" alt="Figure image"></a>
+  <figcaption><a href="https://example.com/caption">Caption docs</a></figcaption>
+</figure>
+
+<blockquote>
+  <p><a href="https://example.com/quote">Quote link</a> <a href="https://example.com/quote-image"><img src="quote.png" alt="Quote image"></a></p>
+</blockquote>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg("-u")
+        .arg("inlinetable")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    for expected in [
+        "Details docs[",
+        "[IMAGE] Details image",
+        "[IMAGE] Figure image[",
+        "Caption docs[",
+        "Quote link[",
+        "[IMAGE] Quote image[",
+        "https://example.com/details",
+        "https://example.com/figure",
+        "https://example.com/caption",
+        "https://example.com/quote",
+        "https://example.com/quote-image",
+    ] {
+        assert!(
+            clean.contains(expected),
+            "missing {expected}; stdout:\n{}",
+            clean
+        );
+    }
+}
+
+#[test]
+fn test_render_html_ordered_list_attributes() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<ol start="5">
+  <li>Five</li>
+  <li>Six</li>
+</ol>
+<ol start="3" reversed>
+  <li>Three</li>
+  <li>Two</li>
+  <li>One</li>
+</ol>
+<ol type="a">
+  <li>Alpha</li>
+  <li>Beta</li>
+</ol>
+<ol type="A" start="27">
+  <li>Upper alpha</li>
+</ol>
+<ol type="i" start="4">
+  <li>Lower roman</li>
+</ol>
+<ol type="I" start="9">
+  <li>Upper roman</li>
+</ol>
+<ol>
+  <li value="4">Explicit value</li>
+  <li>After explicit value</li>
+</ol>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    for expected in [
+        "5. Five",
+        "6. Six",
+        "3. Three",
+        "2. Two",
+        "1. One",
+        "a. Alpha",
+        "b. Beta",
+        "AA. Upper alpha",
+        "iv. Lower roman",
+        "IX. Upper roman",
+        "4. Explicit value",
+        "5. After explicit value",
+    ] {
+        assert!(
+            clean.contains(expected),
+            "missing {expected}; stdout:\n{}",
+            clean
+        );
+    }
+}
+
+#[test]
+fn test_render_html_unordered_list_type_markers() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<ul type="circle"><li>Circle</li></ul>
+<ul type="square"><li>Square</li></ul>
+<ul type="disc"><li>Disc</li></ul>
+<ul><li>Default</li></ul>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    assert!(clean.contains("◦ Circle"), "stdout:\n{}", clean);
+    assert!(clean.contains("▪ Square"), "stdout:\n{}", clean);
+    assert!(clean.contains("• Disc"), "stdout:\n{}", clean);
+    assert!(clean.contains("- Default"), "stdout:\n{}", clean);
+}
+
+#[test]
+fn test_render_html_option_formats_html_tables() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"<table>
+  <thead>
+    <tr>
+      <th align="left">Project</th>
+      <th style="text-align:center">Status</th>
+      <th align="right">Asset</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Alpha</strong></td>
+      <td><a href="https://example.com/ready">Ready</a></td>
+      <td><img src="logo.gif" alt="Logo"></td>
+    </tr>
+    <tr>
+      <td>Beta</td>
+      <td>Blocked</td>
+      <td><video src="demo.mp4" title="Demo"></video></td>
+    </tr>
+  </tbody>
+</table>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-c")
+        .arg("80")
+        .arg("--render-html")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("Project"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("Status"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("Alpha"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("Ready"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("[GIF] Logo"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("[VIDEO] Demo"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("│ Project"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("│ Alpha"), "stdout:\n{}", stdout);
+    assert!(!stdout.contains("<table"), "stdout:\n{}", stdout);
+    assert!(!stdout.contains("<td"), "stdout:\n{}", stdout);
+}
+
+#[test]
 fn test_comments_wrap_to_column_width() {
     for wrap_mode in ["char", "word"] {
         let temp_file = NamedTempFile::new().unwrap();
