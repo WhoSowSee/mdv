@@ -41,6 +41,8 @@ callout_style: "pretty"    # Options: "simple:show-icons;fold-icons;uppercase" |
                            # label-inside is supported only with "pretty", fold-icons requires show-icons. Icons require Nerd Fonts.
 code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hanging indent inside code blocks
 reverse: false             # Render document starting from the end while preserving layout
+pretty_checkbox: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
+custom_checkbox: null      # Override icons or add states with optional color, only with pretty_checkbox (e.g. " :icon:yellow;*:icon:#ff0000")
 
 # Link handling
 link_style: "clickable"    # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)

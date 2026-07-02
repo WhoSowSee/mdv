@@ -103,6 +103,25 @@ pub struct Cli {
     )]
     pub style_callout: Option<CalloutStyleConfig>,
 
+    /// Render task-list checkboxes as Nerd Font icons (requires a Nerd Font terminal)
+    #[arg(
+        short = 'P',
+        long = "pretty-checkbox",
+        value_enum,
+        value_name = "SHAPE",
+        long_help = "Render task-list checkboxes as Nerd Font icons\nChoose 'square' or 'circle' icon set\nDisabled by default; requires a Nerd Font to display correctly"
+    )]
+    pub pretty_checkbox: Option<CheckboxShape>,
+
+    /// Override or add checkbox icons with optional color (e.g. ` :icon:yellow`). Requires --pretty-checkbox
+    #[arg(
+        short = 'B',
+        long = "custom-checkbox",
+        value_name = "PAIRS",
+        long_help = "Override built-in checkbox icons or add new checkbox states (only with --pretty-checkbox)\n\nFormat: '<char>:<icon>[:<color>];<char>:<icon>[:<color>]'\nIcon is optional: '<char>:<color>' keeps the default icon, just changes the color\n\nOverride:  -B ' :icon'        replaces the unchecked icon\nAdd:       -B '*:icon'        adds a new '[*]' checkbox state\nColor:     -B ' :icon:yellow' or '#ffffff' or '128,1,1' or 'ansi(200)'\nIconless:  -B '?:red'         keeps default [?] icon, applies red color\n           -B '*:yellow'      new '[*]' uses default unchecked icon + yellow"
+    )]
+    pub custom_checkbox: Option<String>,
+
     /// Set hanging indent style for wrapped code block lines
     #[arg(
         short = 'K',
@@ -480,6 +499,15 @@ pub enum CalloutStyle {
     Simple,
     #[value(help = "Box-drawn frame with callout label on top")]
     Pretty,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CheckboxShape {
+    #[value(help = "Square Nerd Font icons for task-list checkboxes")]
+    Square,
+    #[value(help = "Circular Nerd Font icons for task-list checkboxes")]
+    Circle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

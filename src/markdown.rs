@@ -54,6 +54,9 @@ impl MarkdownProcessor {
         processed = self.normalize_tab_indented_fences(&processed);
         processed = self.normalize_explicit_blank_lines(&processed);
         processed = self.ensure_task_list_termination(&processed);
+        if self.config.pretty_checkbox.is_some() {
+            processed = Self::normalize_backslash_checkbox(&processed);
+        }
         processed = self.convert_admonitions_to_callouts(&processed);
         processed = self.separate_callout_markers_from_setext(&processed);
         processed = self.preprocess_blockquotes(&processed);
@@ -430,6 +433,90 @@ impl MarkdownProcessor {
         }
 
         result.join("\n")
+    }
+
+    fn normalize_backslash_checkbox(content: &str) -> String {
+        let lines: Vec<&str> = content.lines().collect();
+        let mut result = Vec::with_capacity(lines.len());
+        let mut in_fence = false;
+        let mut fence_char = '\0';
+        let mut fence_len = 0usize;
+
+        for line in &lines {
+            let trimmed_start = line.trim_start();
+            let indent_cols = Self::leading_indent_columns(line);
+
+            if indent_cols <= 3
+                && let Some((marker, count)) = Self::detect_fence_marker(trimmed_start)
+            {
+                if in_fence && marker == fence_char && count >= fence_len {
+                    in_fence = false;
+                    fence_char = '\0';
+                    fence_len = 0;
+                } else if !in_fence {
+                    in_fence = true;
+                    fence_char = marker;
+                    fence_len = count;
+                }
+            }
+
+            if in_fence {
+                result.push((*line).to_string());
+                continue;
+            }
+
+            result.push(Self::fix_backslash_checkbox_line(line));
+        }
+
+        result.join("\n")
+    }
+
+    fn fix_backslash_checkbox_line(line: &str) -> String {
+        let bytes = line.as_bytes();
+        let mut i = 0;
+        while i < bytes.len() && matches!(bytes[i], b' ' | b'\t') {
+            i += 1;
+        }
+        if i >= bytes.len() {
+            return line.to_string();
+        }
+
+        if matches!(bytes[i], b'-' | b'*' | b'+') {
+            i += 1;
+        } else if bytes[i].is_ascii_digit() {
+            while i < bytes.len() && bytes[i].is_ascii_digit() {
+                i += 1;
+            }
+            if !matches!(bytes.get(i), Some(b'.') | Some(b')')) {
+                return line.to_string();
+            }
+            i += 1;
+        } else {
+            return line.to_string();
+        }
+
+        let marker_end = i;
+        while i < bytes.len() && bytes[i] == b' ' {
+            i += 1;
+        }
+        if i == marker_end {
+            return line.to_string();
+        }
+
+        let is_backslash_checkbox = bytes.get(i) == Some(&b'[')
+            && bytes.get(i + 1) == Some(&b'\\')
+            && bytes.get(i + 2) == Some(&b']')
+            && matches!(bytes.get(i + 3), None | Some(b' ') | Some(b'\t'));
+
+        if !is_backslash_checkbox {
+            return line.to_string();
+        }
+
+        let mut fixed = String::with_capacity(line.len() + 1);
+        fixed.push_str(&line[..=i]);
+        fixed.push('\\');
+        fixed.push_str(&line[i + 1..]);
+        fixed
     }
 
     fn convert_admonitions_to_callouts(&self, content: &str) -> String {

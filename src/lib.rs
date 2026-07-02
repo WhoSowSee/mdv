@@ -1,4 +1,6 @@
 mod callout;
+mod checkbox;
+mod checkbox_override;
 pub mod cli;
 pub mod config;
 mod custom_code_block;

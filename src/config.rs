@@ -1,7 +1,8 @@
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
-    CalloutStyleConfig, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle, HeadingLayout,
-    LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, TableWrapMode, TextWrapMode,
+    CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
+    HeadingLayout, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, TableWrapMode,
+    TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -92,6 +93,10 @@ pub struct Config {
     pub code_guessing: bool,
     pub code_block_style: CodeBlockStyleConfig,
     pub callout_style: CalloutStyleConfig,
+    pub pretty_checkbox: Option<CheckboxShape>,
+    pub custom_checkbox: Option<String>,
+    #[serde(skip)]
+    pub(crate) checkbox_overrides: HashMap<char, crate::checkbox_override::CheckboxOverride>,
     pub code_wrap_indent: CodeWrapIndent,
     pub reverse: bool,
 
@@ -144,6 +149,9 @@ impl Default for Config {
             code_guessing: true,
             code_block_style: CodeBlockStyleConfig::default(),
             callout_style: CalloutStyleConfig::default(),
+            pretty_checkbox: None,
+            custom_checkbox: None,
+            checkbox_overrides: HashMap::new(),
             code_wrap_indent: CodeWrapIndent::Double,
             reverse: false,
             theme: "terminal".to_string(),
@@ -311,6 +319,17 @@ impl Config {
         {
             config.callout_style = style;
         }
+        if let Some(shape) = cli.pretty_checkbox
+            && arg_has_user_value(matches, "pretty_checkbox")
+        {
+            config.pretty_checkbox = Some(shape);
+        }
+
+        if let Some(raw) = &cli.custom_checkbox
+            && arg_has_user_value(matches, "custom_checkbox")
+        {
+            config.custom_checkbox = Some(raw.clone());
+        }
 
         if let Some(indent) = cli.code_wrap_indent
             && arg_has_user_value(matches, "code_wrap_indent")
@@ -331,6 +350,7 @@ impl Config {
         config.normalize_theme_settings();
         config.apply_custom_callouts()?;
         config.apply_custom_code_blocks()?;
+        config.apply_checkbox_overrides()?;
 
         Ok(config)
     }
@@ -500,6 +520,12 @@ impl Config {
         if other.callout_style != CalloutStyleConfig::default() {
             self.callout_style = other.callout_style;
         }
+        if other.pretty_checkbox.is_some() {
+            self.pretty_checkbox = other.pretty_checkbox;
+        }
+        if other.custom_checkbox.is_some() {
+            self.custom_checkbox = other.custom_checkbox.clone();
+        }
         if !matches!(other.code_wrap_indent, CodeWrapIndent::Double) {
             self.code_wrap_indent = other.code_wrap_indent;
         }
@@ -605,6 +631,26 @@ impl Config {
         self.custom_callouts.clear();
         if let Some(raw) = &self.custom_callout {
             self.custom_callouts = parse_custom_callouts(raw)?;
+        }
+        Ok(())
+    }
+
+    fn apply_checkbox_overrides(&mut self) -> Result<()> {
+        self.checkbox_overrides.clear();
+        if self.pretty_checkbox.is_none() {
+            return Ok(());
+        }
+        let Some(raw) = &self.custom_checkbox else {
+            return Ok(());
+        };
+        for entry in raw.split(';') {
+            match crate::checkbox_override::CheckboxOverride::parse_entry(entry) {
+                Ok(Some((ch, ov))) => {
+                    self.checkbox_overrides.insert(ch, ov);
+                }
+                Ok(None) => {}
+                Err(e) => return Err(e),
+            }
         }
         Ok(())
     }

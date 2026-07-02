@@ -235,7 +235,6 @@ impl<'a> EventRenderer<'a> {
             if self.pending_task_marker_buffer.is_empty() && !raw_text.starts_with('[') {
                 self.pending_task_marker = false;
                 self.pending_task_marker_buffer.clear();
-                // Fall through to normal text handling when this isn't a task marker.
             } else {
                 self.pending_task_marker_buffer.push_str(raw_text);
                 if self.pending_task_marker_buffer.chars().count() < 3 {
@@ -246,9 +245,18 @@ impl<'a> EventRenderer<'a> {
                 let buffer = std::mem::take(&mut self.pending_task_marker_buffer);
                 if let Some((marker, remainder)) = self.split_custom_task_marker_prefix(&buffer) {
                     self.note_paragraph_content();
-                    let style = create_style(self.theme, ThemeElement::ListMarker);
-                    let styled_marker = style.apply(marker, self.config.no_colors);
-                    self.output.push_str(&styled_marker);
+                    if self.config.pretty_checkbox.is_some() {
+                        self.strip_bullet_for_checkbox_item();
+                        if let Some(list_state) = self.list_stack.last_mut() {
+                            list_state.current_item_marker_end = Some(self.output.len());
+                        }
+                        let state = marker.chars().nth(1).unwrap_or(' ');
+                        self.output.push_str(&self.styled_checkbox_marker(state));
+                    } else {
+                        let style = create_style(self.theme, ThemeElement::ListMarker);
+                        let styled_marker = style.apply(marker, self.config.no_colors);
+                        self.output.push_str(&styled_marker);
+                    }
                     if !remainder.is_empty() {
                         self.process_text_with_wrapping_and_formatting(remainder)?;
                     }
@@ -279,7 +287,7 @@ impl<'a> EventRenderer<'a> {
             return None;
         }
 
-        if !Self::is_supported_task_marker(bytes[1]) {
+        if !self.is_supported_task_marker(bytes[1]) {
             return None;
         }
 
@@ -481,11 +489,16 @@ impl<'a> EventRenderer<'a> {
         (kind, lower)
     }
 
-    fn is_supported_task_marker(marker: u8) -> bool {
-        matches!(
+    fn is_supported_task_marker(&self, marker: u8) -> bool {
+        let base = matches!(
             marker,
-            b' ' | b'x' | b'X' | b'/' | b'-' | b'?' | b'\\' | b'|'
-        )
+            b' ' | b'x' | b'X' | b'/' | b'-' | b'?' | b'!' | b'\\' | b'|'
+        );
+        base || (self.config.pretty_checkbox.is_some()
+            && self
+                .config
+                .checkbox_overrides
+                .contains_key(&(marker as char)))
     }
 
     /// Process text with wrapping and formatting, handling styled text properly

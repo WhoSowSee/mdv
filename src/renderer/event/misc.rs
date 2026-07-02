@@ -158,11 +158,111 @@ impl<'a> EventRenderer<'a> {
         self.note_paragraph_content();
         self.pending_task_marker = false;
         self.pending_task_marker_buffer.clear();
-        let marker = if checked { "[✓] " } else { "[ ] " };
-        let style = create_style(self.theme, ThemeElement::ListMarker);
-        let styled_marker = style.apply(marker, self.config.no_colors);
-        self.output.push_str(&styled_marker);
+        if self.config.pretty_checkbox.is_some() {
+            self.strip_bullet_for_checkbox_item();
+            if let Some(list_state) = self.list_stack.last_mut() {
+                list_state.current_item_marker_end = Some(self.output.len());
+            }
+        }
+        let marker = if self.config.pretty_checkbox.is_some() {
+            self.styled_checkbox_marker(if checked { 'x' } else { ' ' })
+        } else if checked {
+            let style = create_style(self.theme, ThemeElement::ListMarker);
+            style.apply("[✓] ", self.config.no_colors)
+        } else {
+            let style = create_style(self.theme, ThemeElement::ListMarker);
+            style.apply("[ ] ", self.config.no_colors)
+        };
+        self.output.push_str(&marker);
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
+    }
+
+    pub(super) fn styled_checkbox_marker(&self, state: char) -> String {
+        let shape = self
+            .config
+            .pretty_checkbox
+            .expect("pretty checkbox rendering is enabled");
+
+        let (icon, custom_color) = match self.config.checkbox_overrides.get(&state) {
+            Some(ov) => {
+                let icon = ov.icon.clone().or_else(|| {
+                    crate::checkbox::default_icon(shape, state)
+                        .or_else(|| crate::checkbox::default_icon(shape, ' '))
+                        .map(|ch| ch.to_string())
+                });
+                (icon, ov.color.clone())
+            }
+            None => (
+                crate::checkbox::default_icon(shape, state).map(|ch| ch.to_string()),
+                None,
+            ),
+        };
+
+        let style = match custom_color {
+            Some(color) => create_style(self.theme, ThemeElement::ListMarker).fg(color.into()),
+            None => create_style(self.theme, ThemeElement::ListMarker),
+        };
+
+        match icon {
+            Some(glyph) => style.apply(&format!("{glyph} "), self.config.no_colors),
+            None => style.apply(&format!("[{state}] "), self.config.no_colors),
+        }
+    }
+
+    pub(super) fn strip_bullet_for_checkbox_item(&mut self) {
+        let Some(list_state) = self.list_state_for_strip() else {
+            return;
+        };
+        let (start, marker_end) = list_state;
+        if start >= marker_end || marker_end > self.output.len() {
+            return;
+        }
+        let segment = &self.output[start..marker_end];
+        let stripped = strip_ansi(segment);
+        if let Some(pos) = stripped.rfind("- ") {
+            let byte_pos = Self::ansi_aware_byte_offset(segment, pos);
+            let keep_until = start + byte_pos;
+            let after = self.output[marker_end..].to_string();
+            self.output.truncate(keep_until);
+            self.output.push_str(&after);
+        }
+    }
+
+    fn list_state_for_strip(&self) -> Option<(usize, usize)> {
+        let list_state = self.list_stack.last()?;
+        if list_state.is_ordered {
+            return None;
+        }
+        Some((
+            list_state.current_item_start?,
+            list_state.current_item_marker_end?,
+        ))
+    }
+
+    fn ansi_aware_byte_offset(original: &str, char_offset: usize) -> usize {
+        let stripped = strip_ansi(original);
+        let prefix = stripped[..char_offset.min(stripped.len())].to_string();
+        let mut consumed = 0usize;
+        let mut byte_idx = 0usize;
+        let original_bytes = original.as_bytes();
+        while byte_idx < original_bytes.len() && consumed < prefix.len() {
+            if original_bytes[byte_idx] == 0x1b {
+                byte_idx += 1;
+                while byte_idx < original_bytes.len() && original_bytes[byte_idx] != b'm' {
+                    byte_idx += 1;
+                }
+                byte_idx = byte_idx.saturating_add(1);
+                continue;
+            }
+            let ch_len = std::str::from_utf8(&original_bytes[byte_idx..])
+                .ok()
+                .and_then(|s| s.chars().next())
+                .map(|ch| ch.len_utf8())
+                .unwrap_or(1);
+            consumed += ch_len;
+            byte_idx += ch_len;
+        }
+        byte_idx
     }
 }
