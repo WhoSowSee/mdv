@@ -37,7 +37,6 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     let config = Config::from_cli(&cli, matches)?;
-
     if let Some(Some(path)) = &cli.theme_info
         && cli.filename.is_none()
     {
@@ -55,7 +54,6 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     let show_current_theme = config.theme_info || cli.theme_info.is_some();
 
     let content = get_input_content(&cli)?;
-
     let stdout_is_terminal = std::io::stdout().is_terminal();
     let output = render_document(
         &content,
@@ -168,6 +166,11 @@ fn get_input_content(cli: &Cli) -> Result<String> {
             std::fs::read_to_string(path)?
         }
         None => {
+            if io::stdin().is_terminal() {
+                anyhow::bail!(
+                    "No input file: provide a file path or pipe content via stdin"
+                );
+            }
             let mut content = String::new();
             io::stdin().read_to_string(&mut content)?;
             content
