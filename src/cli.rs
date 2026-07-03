@@ -24,8 +24,13 @@ pub struct Cli {
     #[arg(value_name = "FILE")]
     pub filename: Option<String>,
 
-    /// Directory containing the configuration file (mdv looks for config.yaml or config.yml inside it)
-    #[arg(short = 'F', long = "config-file", value_name = "CONFIG_DIR")]
+    /// Directory containing the configuration file.
+    #[arg(
+        short = 'F',
+        long = "config-file",
+        value_name = "CONFIG_DIR",
+        long_help = "Directory containing the configuration file.\nmdv looks for config.yaml or config.yml inside it"
+    )]
     pub config_file: Option<PathBuf>,
 
     /// Skip loading configuration files
@@ -88,9 +93,12 @@ pub struct Cli {
     pub code_block_style: Option<CodeBlockStyleConfig>,
 
     /// Override code block icon/label/aliases.
-    /// Entries are separated by ';', options by ',', aliases by '|'.
-    /// Example: rust:icon=*,label=russst,aliases=rs|rst;py:icon=?,label=pyt4on
-    #[arg(short = 'J', long = "custom-code-block", value_name = "BLOCKS")]
+    #[arg(
+        short = 'J',
+        long = "custom-code-block",
+        value_name = "BLOCKS",
+        long_help = "Override code block icon/label/aliases.\nEntries are separated by ';', options by ',', aliases by '|'.\nAt least one of 'icon' or 'label' is required; 'aliases' is optional.\nExample: rust:icon=*,label=russst;py:icon=?,aliases=py|py3"
+    )]
     pub custom_code_block: Option<String>,
 
     #[arg(
@@ -154,7 +162,7 @@ pub struct Cli {
     )]
     pub wrap_mode: Option<TextWrapMode>,
 
-    /// Reflow paragraphs: collapse in-paragraph source newlines and refill to width
+    /// Reflow paragraphs by collapsing source newlines and refilling to width
     #[arg(short = 'R', long = "reflow")]
     pub reflow: bool,
 
