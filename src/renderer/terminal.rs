@@ -3,6 +3,7 @@ use super::syntax_set::load_full_syntax_set;
 use super::syntax_theme::{build_syntect_theme, default_theme_set};
 use crate::config::Config;
 use crate::theme::{Theme, ThemeManager, apply_custom_code_theme, apply_custom_theme};
+use crate::user_themes;
 use anyhow::Result;
 use pulldown_cmark::Event;
 use syntect::highlighting::{Theme as SyntectTheme, ThemeSet};
@@ -18,9 +19,8 @@ pub struct TerminalRenderer {
 
 impl TerminalRenderer {
     pub fn new(config: &Config) -> Result<Self> {
-        let theme_manager = ThemeManager::new();
+        let theme_manager = build_theme_manager(config);
         let mut theme = theme_manager.get_theme(&config.theme)?.clone();
-
         if let Some(overrides) = &config.custom_theme {
             apply_custom_theme(&mut theme, overrides)?;
         }
@@ -144,4 +144,25 @@ fn find_builtin_theme<'a>(
         .into_iter()
         .find(|name| name.to_ascii_lowercase() == requested_lower)
         .and_then(|matched_name| theme_manager.get_theme(matched_name).ok())
+}
+
+pub(crate) fn build_theme_manager(config: &Config) -> ThemeManager {
+    let mut manager = ThemeManager::new();
+    if let Some(config_dir) = &config.config_dir {
+        match user_themes::load_user_themes(config_dir, &manager) {
+            Ok(themes) => {
+                for theme in themes {
+                    manager.add_theme(theme);
+                }
+            }
+            Err(err) => {
+                log::warn!(
+                    "Failed to load user themes from '{}': {}",
+                    config_dir.display(),
+                    err
+                );
+            }
+        }
+    }
+    manager
 }

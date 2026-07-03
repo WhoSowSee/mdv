@@ -1,0 +1,68 @@
+# Standalone user theme for mdv — no `extends`.
+#
+# This file lists every available field of a user theme, so it can be
+# used as a reference or as a starting point for a fully custom palette.
+# Place it (renamed) under `<config_dir>/themes/`, where the directory is
+# resolved the same way as `config.yaml`:
+#   - --config-file <DIR>   (highest priority)
+#   - $MDV_CONFIG_PATH
+#   - ~/.config/mdv/         (default)
+#
+# After the file is in place it shows up in `mdv --theme-info` and can be
+# selected with `--theme custom` (or any other name you put in `name:`).
+#
+# Color values follow the same syntax as `--custom-theme`:
+#   named: red, darkgrey, dark_grey
+#   hex:   "#ff5577"
+#   rgb:   187,154,247
+#   ansi:  ansi(42) or just 42
+
+name: custom
+description: Fully standalone palette with every field set explicitly.
+
+# Text colors
+text: white
+text_light: grey
+
+# Heading colors (H1..H6)
+h1: red
+h2: green
+h3: yellow
+h4: blue
+h5: magenta
+h6: cyan
+
+# Special elements
+code: red
+code_block: white
+quote: darkgrey
+link: blue
+emphasis: yellow
+strong: red
+strikethrough: darkgrey
+
+# Background and borders
+# background is the only field that accepts `null` (meaning "no background").
+highlight_background: "ansi(236)"
+background: "rgb(30,30,46)"
+border: grey
+
+# Lists and tables
+list_marker: green
+table_header: yellow
+table_border: grey
+
+# Error and warning
+error: red
+warning: yellow
+
+# Syntax highlight palette
+syntax:
+  keyword: red
+  string: green
+  comment: darkgrey
+  number: magenta
+  operator: red
+  function: green
+  variable: white
+  type_name: blue

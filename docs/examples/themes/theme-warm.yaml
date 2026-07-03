@@ -1,0 +1,43 @@
+# Example user theme for mdv (uses `extends:` to inherit from a built-in).
+#
+# Place this file as `<config_dir>/themes/warm.yaml`. The directory is
+# resolved the same way as `config.yaml`:
+#   - --config-file <DIR>   (highest priority)
+#   - $MDV_CONFIG_PATH
+#   - ~/.config/mdv/         (default)
+#
+# After the file is in place it shows up in `mdv --theme-info` and can be
+# selected with `--theme warm` (or set as the `theme:` value in config.yaml).
+#
+# Rules of the file format:
+#   * `name` is required and is what `--theme` accepts.
+#   * `description` is optional; falls back to the base theme's description.
+#   * `extends` is optional and may name a built-in theme or any other
+#     theme file loaded earlier in the same directory (alphabetical order).
+#     When omitted, missing fields are filled from the default terminal theme.
+#   * Every color field is optional; the rest is inherited from the base.
+#   * The `syntax:` block is also optional and merges field-by-field against
+#     the base theme's syntax palette.
+#   * Color values follow the same syntax as `--custom-theme`:
+#       named: red, darkgrey, dark_grey
+#       hex:   "#ff5577"
+#       rgb:   187,154,247
+#       ansi:  ansi(42) or just 42
+
+name: warm
+description: Warm red accent layered on top of monokai.
+extends: monokai
+
+# Override only the colors you want to tweak. Everything else stays
+# inherited from monokai.
+h1: "#ff5577"
+h2: "#ffaa33"
+link: "#66ccff"
+emphasis: "#ffaa33"
+background: "#1c1c1c"
+
+# `syntax` is optional too. Each field overrides a single syntax color.
+syntax:
+  keyword: "#ff5577"
+  string: "#a6e3a1"
+  type_name: "#66ccff"

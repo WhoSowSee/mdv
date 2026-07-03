@@ -20,7 +20,7 @@
 </p>
 
 > [!TIP]
-> **Russian version:** [README-RU.md](README-RU.md)
+> **Русская версия:** [README-RU.md](README-RU.md)
 
 > [!NOTE]
 > mdv is a terminal Markdown viewer focused on precise rendering inside ANSI-capable terminals. It offers:
@@ -314,6 +314,38 @@ Switch between them with `--theme` or set a default in your configuration file.
 Use `--custom-theme` to override UI colors and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match palette fields (for example `text`, `h1`, `border`, `keyword`, `function`). Color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
 
 Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-info README.md`) to inspect how colors apply to a document. Starting from `examples/config.yaml` you can build your own theme variants and keep them in version control.
+
+### User themes
+
+Drop one or more `*.yaml`/`*.yml` files into `<config_dir>/themes/` to register your own themes. The directory follows the same resolution order as `config.yaml` (the `--config-file` flag, `$MDV_CONFIG_PATH`, then `~/.config/mdv/`). Two ready-to-use examples ship with the repository:
+
+- [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) — uses `extends: monokai` to override just a handful of fields.
+- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) — fully standalone palette that lists every available field for reference.
+
+```yaml
+# <config_dir>/themes/warm.yaml
+name: warm
+description: Warm red accent layered on top of monokai.
+extends: monokai
+
+h1: "#ff5577"
+link: "#66ccff"
+background: "#1c1c1c"
+
+syntax:
+  keyword: "#ff5577"
+```
+
+Field reference:
+
+- `name` (required) — the value accepted by `--theme`.
+- `description` (optional) — shown in `mdv --theme-info`; falls back to the base theme's description.
+- `extends` (optional) — names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
+- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `h1`..`h6`, `code`, `code_block`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
+- `syntax:` (optional) — overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
+- Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).
+
+A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying all 33 fields. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.
 
 ## Star History
 

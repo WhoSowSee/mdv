@@ -12,6 +12,7 @@ pub mod monitor;
 mod pager;
 pub mod renderer;
 pub mod table;
+mod user_themes;
 pub mod terminal;
 pub mod theme;
 pub mod utils;
@@ -44,9 +45,10 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     if matches!(cli.theme_info, Some(None)) {
+        let theme_manager = renderer::terminal::build_theme_manager(&config);
         print_current_themes(&config);
         println!();
-        theme::list_themes();
+        theme::list_themes(&theme_manager);
         return Ok(());
     }
 

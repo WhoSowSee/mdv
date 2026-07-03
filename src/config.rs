@@ -126,6 +126,10 @@ pub struct Config {
     // File paths
     #[serde(skip)]
     pub config_file: Option<PathBuf>,
+    /// Directory used to look up `themes/*.yaml`. Mirrors the directory
+    /// that produced `config_file` (or the default config dir).
+    #[serde(skip)]
+    pub config_dir: Option<PathBuf>,
 }
 
 impl Default for Config {
@@ -169,6 +173,7 @@ impl Default for Config {
             missing_footnote_style: MissingFootnoteStyle::Show,
             from_text: None,
             config_file: None,
+            config_dir: None,
         }
     }
 }
@@ -391,15 +396,18 @@ impl Config {
 
         Ok(path)
     }
-
     fn load_config_files(cli: &Cli, matches: &ArgMatches) -> Result<Self> {
         if cli.no_config {
             return Ok(Self::default());
         }
 
         let mut config = Self::default();
-
         let config_paths = Self::get_config_paths(cli, matches)?;
+        if let Some(first_path) = config_paths.first()
+            && let Some(parent) = first_path.parent()
+        {
+            config.config_dir = Some(parent.to_path_buf());
+        }
 
         for path in config_paths {
             if path.exists() {
@@ -407,6 +415,9 @@ impl Config {
                     Ok(file_config) => {
                         config.merge_with(file_config);
                         config.config_file = Some(path.clone());
+                        if let Some(parent) = path.parent() {
+                            config.config_dir = Some(parent.to_path_buf());
+                        }
                         break;
                     }
                     Err(e) => {
@@ -418,9 +429,9 @@ impl Config {
 
         Ok(config)
     }
-
     fn get_config_paths(cli: &Cli, matches: &ArgMatches) -> Result<Vec<PathBuf>> {
         let mut paths = Vec::new();
+        let mut has_explicit = false;
 
         if let Some(config_file) = &cli.config_file
             && arg_has_user_value(matches, "config_file")
@@ -428,6 +439,7 @@ impl Config {
             let dir = resolve_config_dir(config_file)?;
             paths.push(dir.join("config.yaml"));
             paths.push(dir.join("config.yml"));
+            has_explicit = true;
         }
 
         if let Some(env_path) = std::env::var_os(CONFIG_FILE_ENV)
@@ -436,9 +448,12 @@ impl Config {
             let dir = resolve_config_dir(Path::new(&env_path))?;
             paths.push(dir.join("config.yaml"));
             paths.push(dir.join("config.yml"));
+            has_explicit = true;
         }
 
-        if let Some(mdv_dir) = default_config_dir() {
+        if !has_explicit
+            && let Some(mdv_dir) = default_config_dir()
+        {
             paths.push(mdv_dir.join("config.yaml"));
             paths.push(mdv_dir.join("config.yml"));
         }

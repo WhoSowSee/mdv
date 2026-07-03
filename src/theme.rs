@@ -883,9 +883,8 @@ fn color_to_rgb(color: &Color) -> Option<(u8, u8, u8)> {
     }
 }
 
-/// List all available themes
-pub fn list_themes() {
-    let manager = ThemeManager::new();
+/// List all available themes from the given manager.
+pub fn list_themes(manager: &ThemeManager) {
     let themes = manager.get_themes_by_luminosity();
 
     println!("Available themes:");

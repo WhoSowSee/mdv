@@ -1,7 +1,7 @@
 mod event;
 mod syntax_set;
 mod syntax_theme;
-mod terminal;
+pub(super) mod terminal;
 
 pub use terminal::TerminalRenderer;
 
