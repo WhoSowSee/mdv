@@ -112,6 +112,23 @@ cat <FILE> | mdv
   `icon` and `color` are optional; color formats match `--custom-theme`.
 - Icons require Nerd Fonts in the terminal to render correctly.
 
+### Checkboxes
+
+- `-P, --pretty-checkbox <square|circle>` — renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers. Requires a Nerd Font in the terminal.
+- `-B, --custom-checkbox <char>:<icon>[:<color>];...` — overrides the built-in checkbox icons or adds new states (only with `--pretty-checkbox`). `<char>` is the checkbox character (`, `, `x`, `*`, `?`, `!`, etc.); `<icon>` is the new glyph; `<color>` is optional. Colors accept named, hex, rgb, and `ansi(N)` values.
+  - Override:  `-B ' :icon'`          replace the unchecked icon
+  - Add:       `-B '*:icon'`          add a new `[*]` checkbox state
+  - Color:     `-B ' :icon:yellow'`   or `#ff0000`, `128,1,1`, `ansi(200)`
+  - Iconless:  `-B '?:red'`           keep the default `[?]` icon, apply red color
+
+### Lists
+
+- `--pretty-list` — replaces the default `-` unordered list markers with Nerd Font icons per nesting level. Requires a Nerd Font to render correctly.
+- `--custom-list <level>:<icon>[:<color>];...` — overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
+  - Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
+  - Icon only:     `--custom-list '1:>'`          marker `>` in theme color
+  - Color only:    `--custom-list '1:red'`        keep built-in icon, red color
+
 ### Layout and wrapping
 
 - `-c, --cols <N>` — enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.

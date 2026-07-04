@@ -731,18 +731,25 @@ impl<'a> EventRenderer<'a> {
                 self.reset_explicit_blank_line_streak();
 
                 let indent_level = self.list_stack.len().saturating_sub(1);
-                let marker = if let Some(list_state) = self.list_stack.last() {
-                    if list_state.is_ordered {
-                        format!("{}. ", list_state.counter)
+                let styled_marker = if let Some(list_state) = self.list_stack.last() {
+                    let (marker, color) = if list_state.is_ordered {
+                        (format!("{}. ", list_state.counter), None)
+                    } else if let Some((icon, color)) =
+                        self.config.list_marker.resolve(indent_level + 1)
+                    {
+                        (format!("{icon} "), color)
                     } else {
-                        "- ".to_string()
+                        ("- ".to_string(), None)
+                    };
+                    let mut style = create_style(self.theme, ThemeElement::ListMarker);
+                    if let Some(c) = color {
+                        style = style.fg(c.into());
                     }
+                    style.apply(&marker, self.config.no_colors)
                 } else {
                     String::new()
                 };
 
-                let style = create_style(self.theme, ThemeElement::ListMarker);
-                let styled_marker = style.apply(&marker, self.config.no_colors);
                 let at_line_start = self.output.ends_with('\n') || self.output.is_empty();
 
                 let start_index = self.output.len();

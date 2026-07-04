@@ -43,7 +43,9 @@ code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hangi
 reverse: false             # Render document starting from the end while preserving layout
 pretty_checkbox: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
 custom_checkbox: null      # Override icons or add states with optional color, only with pretty_checkbox (e.g. " :icon:yellow;*:icon:#ff0000")
-
+pretty_list: false         # Replace the default "-" unordered list marker with Nerd Font icons per nesting level
+custom_list: null          # Override list marker icon and/or color per level, only with pretty_list (e.g. "1:*:yellow;2:>:red;3:blue")
+                           # Icon is optional: "1:red" keeps the built-in icon and switches to red.
 # Link handling
 link_style: "clickable"    # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
 link_truncation: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"

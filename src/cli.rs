@@ -130,6 +130,20 @@ pub struct Cli {
     )]
     pub custom_checkbox: Option<String>,
 
+    /// Render list markers as Nerd Font icons (requires a Nerd Font terminal)
+    #[arg(
+        long = "pretty-list",
+        long_help = "Render unordered list markers as Nerd Font icons per nesting level\nRequires a Nerd Font to display correctly"
+    )]
+    pub pretty_list: bool,
+
+    /// Override list marker icon and/or color per nesting level. Requires --pretty-list
+    #[arg(
+        long = "custom-list",
+        value_name = "PAIRS",
+        long_help = "Override list marker icon and/or color per nesting level (only with --pretty-list)\n\nFormat: '<level>:<icon>[:<color>];<level>:<color>'\nLevel is 1-based nesting depth; icon is the marker glyph\n\nIcon + color:  --custom-list '1:*:yellow'   marker '*' in yellow\nIcon only:     --custom-list '1:>'          marker '>' in theme color\nColor only:    --custom-list '1:red'        keep built-in icon, red color\n\nColors accept: named ('red', 'blue'), hex ('#ff0000'), rgb ('255,0,0'), ansi ('ansi(200)')"
+    )]
+    pub custom_list: Option<String>,
     /// Set hanging indent style for wrapped code block lines
     #[arg(
         short = 'K',

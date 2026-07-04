@@ -6,6 +6,7 @@ use crate::cli::{
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
+use crate::list_marker::ListMarkerConfig;
 use anyhow::Result;
 use clap::{ArgMatches, parser::ValueSource};
 use serde::{Deserialize, Serialize};
@@ -97,6 +98,10 @@ pub struct Config {
     pub custom_checkbox: Option<String>,
     #[serde(skip)]
     pub(crate) checkbox_overrides: HashMap<char, crate::checkbox_override::CheckboxOverride>,
+    pub pretty_list: bool,
+    pub custom_list: Option<String>,
+    #[serde(skip)]
+    pub(crate) list_marker: ListMarkerConfig,
     pub code_wrap_indent: CodeWrapIndent,
     pub reverse: bool,
 
@@ -153,6 +158,9 @@ impl Default for Config {
             code_guessing: true,
             code_block_style: CodeBlockStyleConfig::default(),
             callout_style: CalloutStyleConfig::default(),
+            pretty_list: false,
+            custom_list: None,
+            list_marker: ListMarkerConfig::default(),
             pretty_checkbox: None,
             custom_checkbox: None,
             checkbox_overrides: HashMap::new(),
@@ -329,6 +337,15 @@ impl Config {
         {
             config.pretty_checkbox = Some(shape);
         }
+        if cli.pretty_list {
+            config.pretty_list = true;
+        }
+
+        if let Some(raw) = &cli.custom_list
+            && arg_has_user_value(matches, "custom_list")
+        {
+            config.custom_list = Some(raw.clone());
+        }
 
         if let Some(raw) = &cli.custom_checkbox
             && arg_has_user_value(matches, "custom_checkbox")
@@ -356,6 +373,7 @@ impl Config {
         config.apply_custom_callouts()?;
         config.apply_custom_code_blocks()?;
         config.apply_checkbox_overrides()?;
+        config.apply_list_markers()?;
 
         Ok(config)
     }
@@ -451,9 +469,7 @@ impl Config {
             has_explicit = true;
         }
 
-        if !has_explicit
-            && let Some(mdv_dir) = default_config_dir()
-        {
+        if !has_explicit && let Some(mdv_dir) = default_config_dir() {
             paths.push(mdv_dir.join("config.yaml"));
             paths.push(mdv_dir.join("config.yml"));
         }
@@ -540,6 +556,12 @@ impl Config {
         }
         if other.custom_checkbox.is_some() {
             self.custom_checkbox = other.custom_checkbox.clone();
+        }
+        if other.pretty_list {
+            self.pretty_list = true;
+        }
+        if other.custom_list.is_some() {
+            self.custom_list = other.custom_list.clone();
         }
         if !matches!(other.code_wrap_indent, CodeWrapIndent::Double) {
             self.code_wrap_indent = other.code_wrap_indent;
@@ -680,6 +702,23 @@ impl Config {
             }
             self.custom_code_blocks = parsed;
         }
+        Ok(())
+    }
+
+    fn apply_list_markers(&mut self) -> Result<()> {
+        // `--custom-list` is a no-op without `--pretty-list`, mirroring `--custom-checkbox`.
+        if !self.pretty_list {
+            self.list_marker = ListMarkerConfig::default();
+            return Ok(());
+        }
+        self.list_marker = ListMarkerConfig {
+            pretty: true,
+            overrides: if let Some(raw) = &self.custom_list {
+                ListMarkerConfig::parse_custom_list(raw)?
+            } else {
+                HashMap::new()
+            },
+        };
         Ok(())
     }
 }

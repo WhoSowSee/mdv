@@ -6,15 +6,16 @@ pub mod config;
 mod custom_code_block;
 mod editor;
 pub mod error;
+mod list_marker;
 pub mod markdown;
 pub mod math;
 pub mod monitor;
 mod pager;
 pub mod renderer;
 pub mod table;
-mod user_themes;
 pub mod terminal;
 pub mod theme;
+mod user_themes;
 pub mod utils;
 
 use anyhow::Result;
@@ -167,9 +168,7 @@ fn get_input_content(cli: &Cli) -> Result<String> {
         }
         None => {
             if io::stdin().is_terminal() {
-                anyhow::bail!(
-                    "No input file: provide a file path or pipe content via stdin"
-                );
+                anyhow::bail!("No input file: provide a file path or pipe content via stdin");
             }
             let mut content = String::new();
             io::stdin().read_to_string(&mut content)?;
