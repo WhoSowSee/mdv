@@ -117,6 +117,11 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
+        if self.pending_task_marker && self.is_custom_task_marker(&self.pending_task_marker_buffer)
+        {
+            self.pending_task_marker_buffer.push(' ');
+        }
+
         let collapse = self.should_collapse_soft_break(next_text);
         if self.in_link {
             self.current_link_text

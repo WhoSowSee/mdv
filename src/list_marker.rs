@@ -206,7 +206,11 @@ mod tests {
         assert_eq!(overrides.get(&2).unwrap().icon, None);
         assert_eq!(
             overrides.get(&2).unwrap().color,
-            Some(Color::Rgb { r: 0, g: 0xff, b: 0 })
+            Some(Color::Rgb {
+                r: 0,
+                g: 0xff,
+                b: 0
+            })
         );
     }
 

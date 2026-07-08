@@ -237,7 +237,7 @@ impl<'a> EventRenderer<'a> {
                 self.pending_task_marker_buffer.clear();
             } else {
                 self.pending_task_marker_buffer.push_str(raw_text);
-                if self.pending_task_marker_buffer.chars().count() < 3 {
+                if self.pending_task_marker_buffer.chars().count() < 4 {
                     return Ok(());
                 }
 
@@ -252,13 +252,16 @@ impl<'a> EventRenderer<'a> {
                         }
                         let state = marker.chars().nth(1).unwrap_or(' ');
                         self.output.push_str(&self.styled_checkbox_marker(state));
+                        if !remainder.is_empty() {
+                            self.process_text_with_wrapping_and_formatting(remainder)?;
+                        }
                     } else {
                         let style = create_style(self.theme, ThemeElement::ListMarker);
                         let styled_marker = style.apply(marker, self.config.no_colors);
                         self.output.push_str(&styled_marker);
-                    }
-                    if !remainder.is_empty() {
-                        self.process_text_with_wrapping_and_formatting(remainder)?;
+                        if !remainder.is_empty() {
+                            self.process_text_with_wrapping_and_formatting(remainder)?;
+                        }
                     }
                 } else {
                     // Process text with wrapping and formatting
@@ -291,23 +294,15 @@ impl<'a> EventRenderer<'a> {
             return None;
         }
 
-        let mut marker_end = 3;
-        if bytes.len() == marker_end {
-            return Some((&text[..marker_end], &text[marker_end..]));
-        }
+        Some((&text[..3], &text[3..]))
+    }
 
-        while marker_end < bytes.len() {
-            match bytes[marker_end] {
-                b' ' | b'\t' => marker_end += 1,
-                _ => break,
-            }
-        }
-
-        if marker_end == 3 {
-            return None;
-        }
-
-        Some((&text[..marker_end], &text[marker_end..]))
+    pub(super) fn is_custom_task_marker(&self, text: &str) -> bool {
+        let bytes = text.as_bytes();
+        bytes.len() == 3
+            && bytes[0] == b'['
+            && bytes[2] == b']'
+            && self.is_supported_task_marker(bytes[1])
     }
 
     fn parse_callout_marker(text: &str) -> Option<CalloutMarker> {

@@ -1,5 +1,5 @@
 //! User-defined themes loaded from `<config_dir>/themes/*.yaml`.
-use crate::theme::{parse_color_value, Color, SyntaxTheme, Theme, ThemeManager};
+use crate::theme::{Color, SyntaxTheme, Theme, ThemeManager, parse_color_value};
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
 use std::fs;
@@ -20,7 +20,9 @@ impl<'de> Deserialize<'de> for ColorYaml {
         D: serde::Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        parse_color_value(&raw).map(ColorYaml).map_err(serde::de::Error::custom)
+        parse_color_value(&raw)
+            .map(ColorYaml)
+            .map_err(serde::de::Error::custom)
     }
 }
 
@@ -81,12 +83,13 @@ impl ThemeFile {
                 .map(|c| c.0.clone())
                 .unwrap_or_else(|| base_color.clone())
         };
-        let pick_bg = |override_color: &Option<ColorYaml>, base_color: &Option<Color>| -> Option<Color> {
-            override_color
-                .as_ref()
-                .map(|c| c.0.clone())
-                .or_else(|| base_color.clone())
-        };
+        let pick_bg =
+            |override_color: &Option<ColorYaml>, base_color: &Option<Color>| -> Option<Color> {
+                override_color
+                    .as_ref()
+                    .map(|c| c.0.clone())
+                    .or_else(|| base_color.clone())
+            };
 
         let syntax = match &self.syntax {
             Some(syntax_file) => SyntaxTheme {
@@ -183,41 +186,37 @@ pub fn load_user_themes(config_dir: &Path, manager: &ThemeManager) -> Result<Vec
     Ok(loaded)
 }
 
-fn load_one_theme(
-    path: &Path,
-    already_loaded: &[Theme],
-    manager: &ThemeManager,
-) -> Result<Theme> {
+fn load_one_theme(path: &Path, already_loaded: &[Theme], manager: &ThemeManager) -> Result<Theme> {
     let content = fs::read_to_string(path)
         .with_context(|| format!("Failed to read theme file: {}", path.display()))?;
-    let file: ThemeFile = serde_yaml::from_str(&content).with_context(|| {
-        format!(
-            "Failed to parse YAML theme file: {}",
-            path.display()
-        )
-    })?;
+    let file: ThemeFile = serde_yaml::from_str(&content)
+        .with_context(|| format!("Failed to parse YAML theme file: {}", path.display()))?;
 
     if file.name.trim().is_empty() {
         bail!("Theme file is missing 'name' field");
     }
 
-    let base = match file.extends.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-        Some(parent_name) => find_base_theme(parent_name, already_loaded, manager)
-            .with_context(|| format!(
-                "Theme '{}' extends unknown theme '{}'",
-                file.name, parent_name
-            ))?,
+    let base = match file
+        .extends
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        Some(parent_name) => {
+            find_base_theme(parent_name, already_loaded, manager).with_context(|| {
+                format!(
+                    "Theme '{}' extends unknown theme '{}'",
+                    file.name, parent_name
+                )
+            })?
+        }
         None => Theme::default(),
     };
 
     Ok(file.resolve(&base))
 }
 
-fn find_base_theme(
-    name: &str,
-    already_loaded: &[Theme],
-    manager: &ThemeManager,
-) -> Result<Theme> {
+fn find_base_theme(name: &str, already_loaded: &[Theme], manager: &ThemeManager) -> Result<Theme> {
     if let Ok(theme) = manager.get_theme(name) {
         return Ok(theme.clone());
     }
@@ -283,7 +282,14 @@ mod tests {
         let theme = &loaded[0];
         assert_eq!(theme.name, "warm");
         assert_eq!(theme.description, "warm palette");
-        assert_eq!(theme.h1, Color::Rgb { r: 0xff, g: 0x55, b: 0x77 });
+        assert_eq!(
+            theme.h1,
+            Color::Rgb {
+                r: 0xff,
+                g: 0x55,
+                b: 0x77
+            }
+        );
         assert_eq!(theme.syntax.keyword, Color::Red);
     }
 
@@ -335,11 +341,7 @@ mod tests {
             "name: a\nextends: monokai\nh1: red\n",
         )
         .unwrap();
-        fs::write(
-            themes.join("b.yaml"),
-            "name: b\nextends: a\nh2: green\n",
-        )
-        .unwrap();
+        fs::write(themes.join("b.yaml"), "name: b\nextends: a\nh2: green\n").unwrap();
 
         let loaded = load_user_themes(tmp.path(), &ThemeManager::new()).unwrap();
         assert_eq!(loaded.len(), 2);

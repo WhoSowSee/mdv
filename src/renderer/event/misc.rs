@@ -168,16 +168,18 @@ impl<'a> EventRenderer<'a> {
             self.styled_checkbox_marker(if checked { 'x' } else { ' ' })
         } else if checked {
             let style = create_style(self.theme, ThemeElement::ListMarker);
-            style.apply("[✓] ", self.config.no_colors)
+            style.apply("[✓]", self.config.no_colors)
         } else {
             let style = create_style(self.theme, ThemeElement::ListMarker);
-            style.apply("[ ] ", self.config.no_colors)
+            style.apply("[ ]", self.config.no_colors)
         };
         self.output.push_str(&marker);
+        self.output.push(' ');
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }
 
+    /// Returns the checkbox icon. Callers add the separating space.
     pub(super) fn styled_checkbox_marker(&self, state: char) -> String {
         let shape = self
             .config
@@ -205,8 +207,8 @@ impl<'a> EventRenderer<'a> {
         };
 
         match icon {
-            Some(glyph) => style.apply(&format!("{glyph} "), self.config.no_colors),
-            None => style.apply(&format!("[{state}] "), self.config.no_colors),
+            Some(glyph) => style.apply(&glyph, self.config.no_colors),
+            None => style.apply(&format!("[{state}]"), self.config.no_colors),
         }
     }
 
