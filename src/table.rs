@@ -71,23 +71,24 @@ impl TableRenderer {
         cell
     }
 
-    /// Calculate estimated table width
-    fn estimate_table_width(&self, headers: &[String], rows: &[Vec<String>]) -> usize {
-        let mut max_widths = vec![0; headers.len()];
-
-        for (i, header) in headers.iter().enumerate() {
-            let clean_header = strip_ansi(header);
-            max_widths[i] = display_width(&clean_header);
-        }
+    fn maximum_column_widths(headers: &[String], rows: &[Vec<String>]) -> Vec<usize> {
+        let mut max_widths = headers
+            .iter()
+            .map(|header| display_width(&strip_ansi(header)))
+            .collect::<Vec<_>>();
 
         for row in rows {
-            for (i, cell) in row.iter().enumerate() {
-                if i < max_widths.len() {
-                    let clean_cell = strip_ansi(cell);
-                    max_widths[i] = max_widths[i].max(display_width(&clean_cell));
-                }
+            for (cell, max_width) in row.iter().zip(&mut max_widths) {
+                *max_width = (*max_width).max(display_width(&strip_ansi(cell)));
             }
         }
+
+        max_widths
+    }
+
+    /// Calculate estimated table width
+    fn estimate_table_width(&self, headers: &[String], rows: &[Vec<String>]) -> usize {
+        let max_widths = Self::maximum_column_widths(headers, rows);
 
         // Add borders and padding: 3 chars per column (│ x │) + 1 for final border
         max_widths.iter().sum::<usize>() + (headers.len() * 3) + 1
@@ -95,24 +96,10 @@ impl TableRenderer {
 
     /// Calculate column widths for each column
     fn calculate_column_widths(&self, headers: &[String], rows: &[Vec<String>]) -> Vec<usize> {
-        let mut max_widths = vec![0; headers.len()];
-
-        for (i, header) in headers.iter().enumerate() {
-            let clean_header = strip_ansi(header);
-            max_widths[i] = display_width(&clean_header);
-        }
-
-        for row in rows {
-            for (i, cell) in row.iter().enumerate() {
-                if i < max_widths.len() {
-                    let clean_cell = strip_ansi(cell);
-                    max_widths[i] = max_widths[i].max(display_width(&clean_cell));
-                }
-            }
-        }
-
-        // Add minimum padding (at least 3 characters per column for borders)
-        max_widths.iter().map(|&w| w.max(3)).collect()
+        Self::maximum_column_widths(headers, rows)
+            .into_iter()
+            .map(|width| width.max(3))
+            .collect()
     }
 
     /// Split table into column blocks that fit terminal width

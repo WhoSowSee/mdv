@@ -1,14 +1,14 @@
 use crate::terminal::ansi256_to_rgb;
 use crate::theme::{Color, Theme};
-use once_cell::sync::Lazy;
 use std::str::FromStr;
+use std::sync::LazyLock;
 use syntect::highlighting::ScopeSelectors;
 use syntect::highlighting::{
     Color as SyntectColor, FontStyle, StyleModifier, Theme as SyntectTheme, ThemeItem, ThemeSet,
 };
 
 /// Global cache of themes
-static DEFAULT_THEME_SET: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
+static DEFAULT_THEME_SET: LazyLock<ThemeSet> = LazyLock::new(ThemeSet::load_defaults);
 
 pub(crate) fn default_theme_set() -> &'static ThemeSet {
     &DEFAULT_THEME_SET

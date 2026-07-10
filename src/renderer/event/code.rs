@@ -6,8 +6,8 @@ use super::{
 use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 use syntect::parsing::SyntaxReference;
 use syntect::util::LinesWithEndings;
 
@@ -757,8 +757,8 @@ impl<'a> EventRenderer<'a> {
             return line.to_string();
         }
 
-        static REGEX: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"\[\^([^\]\s][^\]]*)\]").expect("valid footnote regex"));
+        static REGEX: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"\[\^([^\]\s][^\]]*)\]").expect("valid footnote regex"));
 
         let clean = strip_ansi(line);
         if !REGEX.is_match(&clean) {

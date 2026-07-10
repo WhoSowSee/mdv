@@ -2,9 +2,9 @@ use crate::error::MdvError;
 use crate::terminal::{AnsiStyle, ansi256_to_rgb, calculate_luminosity};
 use anyhow::{Context, Result, anyhow, bail};
 use crossterm::style::Color as CrosstermColor;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// Serializable color type for themes
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -166,7 +166,7 @@ impl Default for SyntaxTheme {
 }
 
 /// Built-in themes
-static BUILTIN_THEMES: Lazy<HashMap<String, Theme>> = Lazy::new(|| {
+static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
     let mut themes = HashMap::new();
 
     // Terminal theme

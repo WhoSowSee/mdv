@@ -676,7 +676,6 @@ dependencies = [
  "log",
  "minus",
  "notify",
- "once_cell",
  "predicates",
  "pulldown-cmark",
  "regex",
