@@ -46,7 +46,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
 
     if matches!(cli.theme_info, Some(None)) {
         let theme_manager = renderer::terminal::build_theme_manager(&config);
-        print_current_themes(&config);
+        print!("{}", format_current_themes(&config));
         println!();
         theme::list_themes(&theme_manager);
         return Ok(());
@@ -136,20 +136,9 @@ fn format_current_themes(config: &Config) -> String {
     result.push_str(&format!("Current theme: {}\n", config.theme));
     result.push_str(&format!(
         "Current code theme: {}\n",
-        current_code_theme_name(config)
+        config.code_theme.as_deref().unwrap_or(&config.theme)
     ));
     result
-}
-
-fn print_current_themes(config: &Config) {
-    print!("{}", format_current_themes(config));
-}
-
-fn current_code_theme_name(config: &Config) -> String {
-    config
-        .code_theme
-        .clone()
-        .unwrap_or_else(|| config.theme.clone())
 }
 
 fn get_input_content(cli: &Cli) -> Result<String> {

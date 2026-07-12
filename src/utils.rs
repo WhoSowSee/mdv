@@ -1,6 +1,5 @@
 use regex::Regex;
 use std::iter::Peekable;
-use std::path::Path;
 use std::str::Chars;
 use unicode_width::UnicodeWidthStr;
 
@@ -8,232 +7,6 @@ use unicode_width::UnicodeWidthStr;
 /// Calculate the display width of a string, accounting for Unicode characters
 pub fn display_width(s: &str) -> usize {
     UnicodeWidthStr::width(s)
-}
-
-/// Truncate a string to fit within a given width, adding ellipsis if needed
-pub fn truncate_string(s: &str, max_width: usize) -> String {
-    if display_width(s) <= max_width {
-        return s.to_string();
-    }
-
-    if max_width <= 3 {
-        return s.chars().take(max_width).collect();
-    }
-
-    let mut result = String::new();
-    let mut current_width = 0;
-
-    for ch in s.chars() {
-        let char_width = UnicodeWidthStr::width(ch.to_string().as_str());
-        if current_width + char_width + 3 > max_width {
-            result.push_str("...");
-            break;
-        }
-        result.push(ch);
-        current_width += char_width;
-    }
-
-    result
-}
-
-/// Pad a string to a specific width with spaces
-pub fn pad_string(s: &str, width: usize, align: Alignment) -> String {
-    let current_width = display_width(s);
-
-    if current_width >= width {
-        return s.to_string();
-    }
-
-    let padding = width - current_width;
-
-    match align {
-        Alignment::Left => format!("{}{}", s, " ".repeat(padding)),
-        Alignment::Right => format!("{}{}", " ".repeat(padding), s),
-        Alignment::Center => {
-            let left_padding = padding / 2;
-            let right_padding = padding - left_padding;
-            format!(
-                "{}{}{}",
-                " ".repeat(left_padding),
-                s,
-                " ".repeat(right_padding)
-            )
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Alignment {
-    Left,
-    Right,
-    Center,
-}
-
-/// Check if a file is likely to be a text file based on its extension
-pub fn is_text_file(path: &Path) -> bool {
-    if let Some(ext) = path.extension()
-        && let Some(ext_str) = ext.to_str()
-    {
-        return matches!(
-            ext_str.to_lowercase().as_str(),
-            "md" | "markdown"
-                | "mdown"
-                | "txt"
-                | "text"
-                | "rst"
-                | "adoc"
-                | "asciidoc"
-                | "org"
-                | "wiki"
-                | "creole"
-                | "textile"
-                | "rdoc"
-                | "pod"
-                | "man"
-                | "1"
-                | "2"
-                | "3"
-                | "4"
-                | "5"
-                | "6"
-                | "7"
-                | "8"
-                | "9"
-                | "py"
-                | "rs"
-                | "js"
-                | "ts"
-                | "go"
-                | "c"
-                | "cpp"
-                | "h"
-                | "hpp"
-                | "java"
-                | "rb"
-                | "php"
-                | "pl"
-                | "sh"
-                | "bash"
-                | "zsh"
-                | "fish"
-                | "json"
-                | "yaml"
-                | "yml"
-                | "toml"
-                | "xml"
-                | "html"
-                | "css"
-                | "sql"
-                | "r"
-                | "m"
-                | "scala"
-                | "clj"
-                | "hs"
-                | "elm"
-                | "ex"
-                | "swift"
-                | "kt"
-                | "dart"
-                | "lua"
-                | "vim"
-                | "el"
-                | "lisp"
-                | "cfg"
-                | "conf"
-                | "ini"
-                | "properties"
-                | "env"
-                | "log"
-                | "diff"
-                | "patch"
-        );
-    }
-
-    // Also check for files without extension that might be text
-    if path.extension().is_none()
-        && let Some(filename) = path.file_name()
-        && let Some(filename_str) = filename.to_str()
-    {
-        return matches!(
-            filename_str.to_uppercase().as_str(),
-            "README"
-                | "LICENSE"
-                | "CHANGELOG"
-                | "CONTRIBUTING"
-                | "AUTHORS"
-                | "COPYING"
-                | "INSTALL"
-                | "NEWS"
-                | "TODO"
-                | "HISTORY"
-                | "MAKEFILE"
-                | "DOCKERFILE"
-                | "VAGRANTFILE"
-        );
-    }
-
-    false
-}
-
-/// Detect if content is likely markdown based on common patterns
-pub fn is_markdown_content(content: &str) -> bool {
-    let lines: Vec<&str> = content.lines().take(20).collect();
-    let mut markdown_indicators = 0;
-
-    for line in &lines {
-        let trimmed = line.trim();
-
-        // Check for markdown headers
-        if trimmed.starts_with('#') && trimmed.len() > 1 && trimmed.chars().nth(1) == Some(' ') {
-            markdown_indicators += 2;
-        }
-
-        // Check for markdown lists
-        if trimmed.starts_with("- ")
-            || trimmed.starts_with("* ")
-            || (trimmed.len() > 2
-                && trimmed.chars().nth(1) == Some('.')
-                && trimmed.chars().nth(2) == Some(' '))
-        {
-            markdown_indicators += 1;
-        }
-
-        // Check for markdown links
-        if trimmed.contains("](") || trimmed.contains("[^") {
-            markdown_indicators += 1;
-        }
-
-        // Check for markdown emphasis
-        if trimmed.contains("**")
-            || trimmed.contains("__")
-            || (trimmed.contains('*') && !trimmed.starts_with('*'))
-        {
-            markdown_indicators += 1;
-        }
-
-        // Check for code blocks
-        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-            markdown_indicators += 2;
-        }
-
-        // Check for blockquotes
-        if trimmed.starts_with("> ") {
-            markdown_indicators += 1;
-        }
-
-        // Check for horizontal rules
-        if trimmed == "---" || trimmed == "***" || trimmed == "___" {
-            markdown_indicators += 1;
-        }
-
-        // Check for tables
-        if trimmed.contains('|') && trimmed.len() > 3 {
-            markdown_indicators += 1;
-        }
-    }
-
-    // If we found multiple markdown indicators, it's likely markdown
-    markdown_indicators >= 3
 }
 
 /// Clean ANSI escape sequences and OSC 8 hyperlink sequences from a string
@@ -254,104 +27,6 @@ pub fn strip_ansi(s: &str) -> String {
         .to_string()
 }
 
-/// Convert a string to a safe filename by replacing invalid characters
-pub fn sanitize_filename(s: &str) -> String {
-    s.chars()
-        .map(|c| match c {
-            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
-            c if c.is_control() => '_',
-            c => c,
-        })
-        .collect()
-}
-
-/// Get file size in human-readable format
-pub fn format_file_size(size: u64) -> String {
-    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
-    let mut size = size as f64;
-    let mut unit_index = 0;
-
-    while size >= 1024.0 && unit_index < UNITS.len() - 1 {
-        size /= 1024.0;
-        unit_index += 1;
-    }
-
-    if unit_index == 0 {
-        format!("{} {}", size as u64, UNITS[unit_index])
-    } else {
-        format!("{:.1} {}", size, UNITS[unit_index])
-    }
-}
-
-/// Extract the first line of text that looks like a title
-pub fn extract_title(content: &str) -> Option<String> {
-    let lines: Vec<&str> = content.lines().collect();
-
-    for (i, line) in lines.iter().enumerate().take(10) {
-        let trimmed = line.trim();
-
-        // Skip empty lines
-        if trimmed.is_empty() {
-            continue;
-        }
-
-        // Check for markdown header
-        if trimmed.starts_with('#') {
-            let title = trimmed.trim_start_matches('#').trim();
-            if !title.is_empty() {
-                return Some(title.to_string());
-            }
-        }
-
-        // Check for underlined header (setext style)
-        if i + 1 < lines.len() {
-            let next_line = lines[i + 1];
-            let next_trimmed = next_line.trim();
-            if (next_trimmed.chars().all(|c| c == '=') || next_trimmed.chars().all(|c| c == '-'))
-                && next_trimmed.len() >= trimmed.len() / 2
-            {
-                return Some(trimmed.to_string());
-            }
-        }
-
-        // Return the first non-empty line as title
-        return Some(trimmed.to_string());
-    }
-
-    None
-}
-
-/// Split text into words while preserving whitespace information
-pub fn split_preserving_whitespace(text: &str) -> Vec<(String, bool)> {
-    let mut result = Vec::new();
-    let mut current_word = String::new();
-    let mut in_whitespace = false;
-
-    for ch in text.chars() {
-        if ch.is_whitespace() {
-            if !in_whitespace && !current_word.is_empty() {
-                result.push((current_word.clone(), false));
-                current_word.clear();
-            }
-            current_word.push(ch);
-            in_whitespace = true;
-        } else {
-            if in_whitespace && !current_word.is_empty() {
-                result.push((current_word.clone(), true));
-                current_word.clear();
-            }
-            current_word.push(ch);
-            in_whitespace = false;
-        }
-    }
-
-    if !current_word.is_empty() {
-        result.push((current_word, in_whitespace));
-    }
-
-    result
-}
-
 /// Text wrapping mode
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WrapMode {
@@ -361,11 +36,6 @@ pub enum WrapMode {
     Character,
     /// Word-based wrapping
     Word,
-}
-
-/// Wrap text to fit within specified width, preserving ANSI escape sequences
-pub fn wrap_text(text: &str, width: usize) -> String {
-    wrap_text_with_mode(text, width, WrapMode::Character)
 }
 
 /// Wrap text with specified wrapping mode
@@ -644,82 +314,15 @@ fn update_ansi_stack(ansi_stack: &mut String, word: &str) {
     }
 }
 
-/// Wrap text with indentation support
-pub fn wrap_text_with_indent(text: &str, width: usize, indent: usize) -> String {
-    wrap_text_with_indent_and_mode(text, width, indent, WrapMode::Character)
-}
-
-/// Wrap text with indentation support and specified wrapping mode
-pub fn wrap_text_with_indent_and_mode(
-    text: &str,
-    width: usize,
-    indent: usize,
-    mode: WrapMode,
-) -> String {
-    if width <= indent || mode == WrapMode::None {
-        return text.to_string();
-    }
-
-    let effective_width = width - indent;
-    let wrapped = wrap_text_with_mode(text, effective_width, mode);
-
-    // Add indentation to each line
-    let indent_str = " ".repeat(indent);
-    wrapped
-        .lines()
-        .map(|line| {
-            if line.trim().is_empty() {
-                String::new()
-            } else {
-                format!("{}{}", indent_str, line)
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
 
     #[test]
     fn test_display_width() {
         assert_eq!(display_width("hello"), 5);
         assert_eq!(display_width("héllo"), 5);
         assert_eq!(display_width("你好"), 4); // Chinese characters are width 2
-    }
-
-    #[test]
-    fn test_truncate_string() {
-        assert_eq!(truncate_string("hello world", 20), "hello world");
-        assert_eq!(truncate_string("hello world", 8), "hello...");
-        assert_eq!(truncate_string("hello", 3), "hel");
-    }
-
-    #[test]
-    fn test_pad_string() {
-        assert_eq!(pad_string("hello", 10, Alignment::Left), "hello     ");
-        assert_eq!(pad_string("hello", 10, Alignment::Right), "     hello");
-        assert_eq!(pad_string("hello", 10, Alignment::Center), "  hello   ");
-    }
-
-    #[test]
-    fn test_is_text_file() {
-        assert!(is_text_file(&PathBuf::from("test.md")));
-        assert!(is_text_file(&PathBuf::from("test.txt")));
-        assert!(is_text_file(&PathBuf::from("README")));
-        assert!(!is_text_file(&PathBuf::from("test.jpg")));
-        assert!(!is_text_file(&PathBuf::from("test.exe")));
-    }
-
-    #[test]
-    fn test_is_markdown_content() {
-        let markdown = "# Title\n\nThis is **bold** text.\n\n- List item\n- Another item";
-        assert!(is_markdown_content(markdown));
-
-        let plain_text = "This is just plain text without any markdown formatting.";
-        assert!(!is_markdown_content(plain_text));
     }
 
     #[test]
@@ -737,39 +340,9 @@ mod tests {
     }
 
     #[test]
-    fn test_sanitize_filename() {
-        assert_eq!(sanitize_filename("hello/world"), "hello_world");
-        assert_eq!(sanitize_filename("file:name"), "file_name");
-        assert_eq!(sanitize_filename("normal_file.txt"), "normal_file.txt");
-    }
-
-    #[test]
-    fn test_format_file_size() {
-        assert_eq!(format_file_size(512), "512 B");
-        assert_eq!(format_file_size(1024), "1.0 KB");
-        assert_eq!(format_file_size(1536), "1.5 KB");
-        assert_eq!(format_file_size(1048576), "1.0 MB");
-    }
-
-    #[test]
-    fn test_extract_title() {
-        let content1 = "# Main Title\n\nSome content here.";
-        assert_eq!(extract_title(content1), Some("Main Title".to_string()));
-
-        let content2 = "Main Title\n==========\n\nSome content here.";
-        assert_eq!(extract_title(content2), Some("Main Title".to_string()));
-
-        let content3 = "Just some regular text without a clear title.";
-        assert_eq!(
-            extract_title(content3),
-            Some("Just some regular text without a clear title.".to_string())
-        );
-    }
-
-    #[test]
     fn test_wrap_text() {
         let text = "This is a long line that should be wrapped at a specific width to test the wrapping functionality.";
-        let wrapped = wrap_text(text, 20);
+        let wrapped = wrap_text_with_mode(text, 20, WrapMode::Character);
 
         // Check that no line exceeds the width
         for line in wrapped.lines() {
@@ -800,7 +373,7 @@ mod tests {
     fn test_wrap_text_with_ansi() {
         let text =
             "\x1b[31mThis is red text that should be wrapped\x1b[0m while preserving colors.";
-        let wrapped = wrap_text(text, 20);
+        let wrapped = wrap_text_with_mode(text, 20, WrapMode::Character);
 
         // Should contain ANSI codes
         assert!(wrapped.contains("\x1b[31m"));
@@ -810,23 +383,6 @@ mod tests {
         for line in wrapped.lines() {
             let clean_line = strip_ansi(line);
             assert!(display_width(&clean_line) <= 20);
-        }
-    }
-
-    #[test]
-    fn test_wrap_text_with_indent() {
-        let text = "This is a long line that should be wrapped with indentation.";
-        let wrapped = wrap_text_with_indent(text, 30, 4);
-
-        // Each non-empty line should start with 4 spaces
-        for line in wrapped.lines() {
-            if !line.trim().is_empty() {
-                assert!(
-                    line.starts_with("    "),
-                    "Line should be indented: '{}'",
-                    line
-                );
-            }
         }
     }
 

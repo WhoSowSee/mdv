@@ -132,6 +132,7 @@ pub struct Cli {
 
     /// Render list markers as Nerd Font icons (requires a Nerd Font terminal)
     #[arg(
+        short = 'D',
         long = "pretty-list",
         long_help = "Render unordered list markers as Nerd Font icons per nesting level\nRequires a Nerd Font to display correctly"
     )]
@@ -139,6 +140,7 @@ pub struct Cli {
 
     /// Override list marker icon and/or color per nesting level. Requires --pretty-list
     #[arg(
+        short = 'Q',
         long = "custom-list",
         value_name = "PAIRS",
         long_help = "Override list marker icon and/or color per nesting level (only with --pretty-list)\n\nFormat: '<level>:<icon>[:<color>];<level>:<color>'\nLevel is 1-based nesting depth; icon is the marker glyph\n\nIcon + color:  --custom-list '1:*:yellow'   marker '*' in yellow\nIcon only:     --custom-list '1:>'          marker '>' in theme color\nColor only:    --custom-list '1:red'        keep built-in icon, red color\n\nColors accept: named ('red', 'blue'), hex ('#ff0000'), rgb ('255,0,0'), ansi ('ansi(200)')"
@@ -281,16 +283,16 @@ pub struct Cli {
 #[serde(rename_all = "kebab-case")]
 pub enum LinkStyle {
     /// [alias:  c] Link text becomes clickable without showing URL
-    #[value(name = "clickable", alias = "c")]
-    #[serde(alias = "clickable", alias = "c")]
+    #[value(alias = "c")]
+    #[serde(alias = "c")]
     Clickable,
     /// [alias: fc] Clickable links with forced underline
     #[value(name = "fclickable", alias = "fc")]
     #[serde(alias = "fclickable", alias = "fc")]
     ClickableForced,
     /// [alias:  i] Link URL after link name
-    #[value(name = "inline", alias = "i")]
-    #[serde(alias = "inline", alias = "i")]
+    #[value(alias = "i")]
+    #[serde(alias = "i")]
     Inline,
     /// [alias: it] Index after link name and link URL table after text
     #[value(name = "inlinetable", alias = "it")]
@@ -301,8 +303,8 @@ pub enum LinkStyle {
     #[serde(alias = "endtable", alias = "et")]
     EndTable,
     /// [alias:  h] Hide link URLs
-    #[value(name = "hide", alias = "h")]
-    #[serde(alias = "hide", alias = "h")]
+    #[value(alias = "h")]
+    #[serde(alias = "h")]
     Hide,
 }
 
@@ -310,51 +312,32 @@ pub enum LinkStyle {
 #[serde(rename_all = "kebab-case")]
 pub enum LinkTruncationStyle {
     /// Wrap links when they don't fit
-    #[value(name = "wrap")]
-    #[serde(alias = "wrap")]
     Wrap,
     /// Cut links and replace with "..." when they don't fit
-    #[value(name = "cut")]
-    #[serde(alias = "cut")]
     Cut,
     /// Cut links in normal flow and inside table cells
-    #[value(name = "tablecut", alias = "table-cut")]
-    #[serde(alias = "tablecut", alias = "table-cut")]
+    #[value(name = "tablecut")]
+    #[serde(rename = "tablecut")]
     TableCut,
     /// No truncation - links overflow horizontally
-    #[value(name = "none")]
-    #[serde(alias = "none")]
     None,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FootnoteStyle {
-    #[value(
-        name = "endnotes",
-        help = "Collect all footnotes at the end of the document"
-    )]
-    #[serde(alias = "endnotes")]
+    #[value(help = "Collect all footnotes at the end of the document")]
     Endnotes,
-    #[value(
-        name = "attached",
-        help = "Render footnotes immediately after the block that references them"
-    )]
-    #[serde(alias = "attached")]
+    #[value(help = "Render footnotes immediately after the block that references them")]
     Attached,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum MissingFootnoteStyle {
-    #[value(
-        name = "show",
-        help = "Render missing footnotes with a placeholder entry"
-    )]
-    #[serde(alias = "show")]
+    #[value(help = "Render missing footnotes with a placeholder entry")]
     Show,
-    #[value(name = "hide", help = "Omit missing footnotes from the footnote block")]
-    #[serde(alias = "hide")]
+    #[value(help = "Omit missing footnotes from the footnote block")]
     Hide,
 }
 
@@ -734,15 +717,19 @@ mod tests {
     }
 
     #[test]
-    fn link_truncation_tablecut_aliases_parse() {
+    fn link_truncation_accepts_only_canonical_tablecut() {
         assert!(matches!(
             parse_link_truncation("tablecut"),
             LinkTruncationStyle::TableCut
         ));
+        assert!(Cli::try_parse_from(["mdv", "-l", "table-cut"]).is_err());
+
         assert!(matches!(
-            parse_link_truncation("table-cut"),
+            serde_yaml::from_str::<LinkTruncationStyle>("tablecut")
+                .expect("canonical tablecut value"),
             LinkTruncationStyle::TableCut
         ));
+        assert!(serde_yaml::from_str::<LinkTruncationStyle>("table-cut").is_err());
     }
 
     #[test]

@@ -17,9 +17,6 @@ pub enum MdvError {
     #[error("Markdown parsing error: {0}")]
     MarkdownError(String),
 
-    #[error("Terminal error: {0}")]
-    TerminalError(String),
-
     #[error("Monitor error: {0}")]
     MonitorError(String),
 
