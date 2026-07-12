@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -56,7 +56,13 @@ jobs:
         run: mkdir -p artifacts
 
       - name: Package zip
-        run: zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "target/${{ matrix.target }}/release/${PROJECT_NAME}"
+        run: |
+          binary="target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          if [ ! -f "$binary" ]; then
+            echo "::error::Binary artifact not found: $binary" >&2
+            exit 1
+          fi
+          zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "$binary"
 
       - name: Install cargo-deb
         if: contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')
@@ -67,7 +73,7 @@ jobs:
         run: cargo deb --no-build --target ${{ matrix.target }} --output "artifacts/${PROJECT_NAME}-${{ matrix.target }}.deb"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
@@ -84,7 +90,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -101,10 +107,15 @@ jobs:
       - name: Package zip
         run: |
           mkdir -p artifacts
-          zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          binary="target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          if [ ! -f "$binary" ]; then
+            echo "::error::Binary artifact not found: $binary" >&2
+            exit 1
+          fi
+          zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "$binary"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
@@ -121,7 +132,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -139,41 +150,54 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          Compress-Archive -Path "target/${{ matrix.target }}/release/${env:PROJECT_NAME}.exe" -DestinationPath ("artifacts/${env:PROJECT_NAME}-${{ matrix.target }}.zip")
+          $binary = "target/${{ matrix.target }}/release/${env:PROJECT_NAME}.exe"
+          if (-not (Test-Path $binary)) {
+            throw "Binary artifact not found: $binary"
+          }
+          Compress-Archive -Path $binary -DestinationPath ("artifacts/${env:PROJECT_NAME}-${{ matrix.target }}.zip")
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
 
   snap:
     name: Snap package ${{ matrix.arch }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          - amd64
-          - arm64
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Build snaps
-        uses: snapcore/action-build@v1
-        with:
-          snapcraft-channel: 7.x/stable
-          snapcraft-args: --destructive-mode --target-arch=${{ matrix.arch }}
+      - name: Install LXD and Snapcraft
+        run: |
+          sudo groupadd --force --system lxd
+          sudo usermod --append --groups lxd runner
+          sudo snap install lxd
+          sudo lxd init --auto
+          sudo iptables -P FORWARD ACCEPT
+          sudo snap install --channel 8.x/stable --classic snapcraft
+
+      - name: Build snap
+        run: sudo -u runner -E snapcraft --use-lxd --build-for=${{ matrix.arch }}
 
       - name: Collect snaps
         run: |
+          set -euo pipefail
           mkdir -p artifacts
-          SNAP_NAME=$(ls *.snap)
-          mv "$SNAP_NAME" "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+          snap_name=$(ls *_${{ matrix.arch }}.snap)
+          mv "$snap_name" "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
 
       - name: Upload snaps
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mdv-snap-${{ matrix.arch }}
           path: artifacts/*
@@ -189,14 +213,14 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
           fetch-tags: true
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -297,10 +321,11 @@ jobs:
         run: ls -R dist
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
           body_path: release-notes.md
           draft: false
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
