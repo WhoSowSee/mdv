@@ -49,6 +49,15 @@ cargo install mdv
 
 This installs the latest published release from crates.io into your Cargo bin directory.
 
+### Install with Nix (Flake)
+
+```bash
+nix run github:WhoSowSee/mdv
+nix profile install github:WhoSowSee/mdv
+```
+
+The Nix flake builds mdv from `flake.nix` and installs the `mdv` binary into the Nix profile. Use `nix run` to try it without installing, or `nix profile install` for a persistent install.
+
 ### Install from source
 
 ```bash
@@ -123,8 +132,8 @@ cat <FILE> | mdv
 
 ### Lists
 
-- `--pretty-list` — replaces the default `-` unordered list markers with Nerd Font icons per nesting level. Requires a Nerd Font to render correctly.
-- `--custom-list <level>:<icon>[:<color>];...` — overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
+- `-D, --pretty-list` — replaces the default `-` unordered list markers with Nerd Font icons per nesting level. Requires a Nerd Font to render correctly.
+- `-Q, --custom-list <level>:<icon>[:<color>];...` — overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
   - Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
   - Icon only:     `--custom-list '1:>'`          marker `>` in theme color
   - Color only:    `--custom-list '1:red'`        keep built-in icon, red color
