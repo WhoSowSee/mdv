@@ -606,8 +606,10 @@ impl<'a> EventRenderer<'a> {
                     push_wrappable_table_reference(&mut table.current_cell, &reference_text);
                 } else {
                     // 1) Render the link text underlined with proper wrapping
-                    let link_text = self.current_link_text.clone();
-                    self.process_underlined_text_with_wrapping(&link_text)?;
+                    let link_text = self.current_link_text.trim().to_string();
+                    if !link_text.is_empty() {
+                        self.process_underlined_text_with_wrapping(&link_text)?;
+                    }
 
                     // 2) Append the reference number after the text (wrap if needed)
                     let style = create_style(self.theme, ThemeElement::Link);
@@ -652,8 +654,10 @@ impl<'a> EventRenderer<'a> {
                         .push((reference_text.clone(), styled_reference));
                     push_wrappable_table_reference(&mut table.current_cell, &reference_text);
                 } else {
-                    let link_text = self.current_link_text.clone();
-                    self.process_underlined_text_with_wrapping(&link_text)?;
+                    let link_text = self.current_link_text.trim().to_string();
+                    if !link_text.is_empty() {
+                        self.process_underlined_text_with_wrapping(&link_text)?;
+                    }
 
                     let reference_text = format!("[{}]", self.paragraph_link_counter);
                     let style = create_style(self.theme, ThemeElement::Link);
