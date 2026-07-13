@@ -326,6 +326,57 @@ fn test_pretty_checkbox_bullet_removed_not_regular_items() {
 }
 
 #[test]
+fn test_pretty_list_and_pretty_checkbox_coexist() {
+    let md = "- [ ] checkbox item\n- regular item\n";
+    let stdout = run(&["--pretty-list", "--pretty-checkbox", "square"], md);
+    let checkbox_line = stdout
+        .lines()
+        .find(|l| l.contains("checkbox item"))
+        .unwrap();
+    let regular_line = stdout.lines().find(|l| l.contains("regular item")).unwrap();
+    assert!(
+        checkbox_line.contains('\u{F0131}'),
+        "checkbox icon missing: {checkbox_line:?}"
+    );
+    assert!(
+        !checkbox_line.contains('\u{F444}'),
+        "pretty-list bullet icon should be stripped for checkbox item: {checkbox_line:?}"
+    );
+    assert!(
+        regular_line.contains('\u{F444}'),
+        "pretty-list bullet icon should remain for regular item: {regular_line:?}"
+    );
+}
+
+#[test]
+fn test_custom_list_marker_stripped_for_checkbox() {
+    let md = "- [ ] checkbox\n- regular\n";
+    for icon in ["*", ">>>", "* *"] {
+        let marker = format!("1:{icon}");
+        let stdout = run(
+            &[
+                "--pretty-list",
+                "--custom-list",
+                marker.as_str(),
+                "--pretty-checkbox",
+                "square",
+            ],
+            md,
+        );
+        let checkbox_line = stdout.lines().find(|l| l.contains("checkbox")).unwrap();
+        let regular_line = stdout.lines().find(|l| l.contains("regular")).unwrap();
+        assert!(
+            !checkbox_line.contains(icon),
+            "custom marker {icon:?} should be stripped for checkbox: {checkbox_line:?}"
+        );
+        assert!(
+            regular_line.contains(icon),
+            "custom marker {icon:?} should remain for regular: {regular_line:?}"
+        );
+    }
+}
+
+#[test]
 fn test_custom_checkbox_color_only_existing_state() {
     // `?:yellow` — color-only override for existing [?], icon stays default.
     let md = "- [?] question\n";

@@ -14,6 +14,7 @@ pub(crate) struct ListState {
     pub(super) is_ordered: bool,
     pub(super) counter: usize,
     pub(super) current_item_start: Option<usize>,
+    pub(super) current_item_marker_start: Option<usize>,
     pub(super) current_item_marker_end: Option<usize>,
 }
 
@@ -717,6 +718,7 @@ impl<'a> EventRenderer<'a> {
                     is_ordered,
                     counter,
                     current_item_start: None,
+                    current_item_marker_start: None,
                     current_item_marker_end: None,
                 });
                 if !self.output.ends_with('\n') {
@@ -778,6 +780,7 @@ impl<'a> EventRenderer<'a> {
 
                 let indent = "  ".repeat(indent_level);
                 self.output.push_str(&indent);
+                let marker_start = self.output.len();
                 self.output.push_str(&styled_marker);
 
                 let marker_end = self.output.len();
@@ -785,6 +788,7 @@ impl<'a> EventRenderer<'a> {
 
                 if let Some(list_state) = self.list_stack.last_mut() {
                     list_state.current_item_start = Some(start_index);
+                    list_state.current_item_marker_start = Some(marker_start);
                     list_state.current_item_marker_end = Some(marker_end);
 
                     if list_state.is_ordered {
@@ -1124,6 +1128,7 @@ impl<'a> EventRenderer<'a> {
                     }
 
                     list_state.current_item_start = None;
+                    list_state.current_item_marker_start = None;
                     list_state.current_item_marker_end = None;
                 } else if !self.output.ends_with('\n') {
                     self.output.push('\n');

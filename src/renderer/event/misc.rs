@@ -213,22 +213,15 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn strip_bullet_for_checkbox_item(&mut self) {
-        let Some(list_state) = self.list_state_for_strip() else {
+        let Some((marker_start, marker_end)) = self.list_state_for_strip() else {
             return;
         };
-        let (start, marker_end) = list_state;
-        if start >= marker_end || marker_end > self.output.len() {
+        if marker_start >= marker_end || marker_end > self.output.len() {
             return;
         }
-        let segment = &self.output[start..marker_end];
-        let stripped = strip_ansi(segment);
-        if let Some(pos) = stripped.rfind("- ") {
-            let byte_pos = Self::ansi_aware_byte_offset(segment, pos);
-            let keep_until = start + byte_pos;
-            let after = self.output[marker_end..].to_string();
-            self.output.truncate(keep_until);
-            self.output.push_str(&after);
-        }
+        let after = self.output[marker_end..].to_string();
+        self.output.truncate(marker_start);
+        self.output.push_str(&after);
     }
 
     fn list_state_for_strip(&self) -> Option<(usize, usize)> {
@@ -237,34 +230,8 @@ impl<'a> EventRenderer<'a> {
             return None;
         }
         Some((
-            list_state.current_item_start?,
+            list_state.current_item_marker_start?,
             list_state.current_item_marker_end?,
         ))
-    }
-
-    fn ansi_aware_byte_offset(original: &str, char_offset: usize) -> usize {
-        let stripped = strip_ansi(original);
-        let prefix = stripped[..char_offset.min(stripped.len())].to_string();
-        let mut consumed = 0usize;
-        let mut byte_idx = 0usize;
-        let original_bytes = original.as_bytes();
-        while byte_idx < original_bytes.len() && consumed < prefix.len() {
-            if original_bytes[byte_idx] == 0x1b {
-                byte_idx += 1;
-                while byte_idx < original_bytes.len() && original_bytes[byte_idx] != b'm' {
-                    byte_idx += 1;
-                }
-                byte_idx = byte_idx.saturating_add(1);
-                continue;
-            }
-            let ch_len = std::str::from_utf8(&original_bytes[byte_idx..])
-                .ok()
-                .and_then(|s| s.chars().next())
-                .map(|ch| ch.len_utf8())
-                .unwrap_or(1);
-            consumed += ch_len;
-            byte_idx += ch_len;
-        }
-        byte_idx
     }
 }
