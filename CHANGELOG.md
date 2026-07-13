@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.2.0] - 2026-07-13
+
+### Features
+
+- Added: separate `[SVG]` marker for SVG images
+
+### Bug Fixes
+
+- Fixed: duplicate list marker when combining `--pretty-list` and `--pretty-checkbox`
+- Fixed: leading gap in markdown code block starting with a list
+- Fixed: gap before link index in HTML block with nested images
+- Fixed: missing spacing after link references in HTML block
+
+### Documentation
+
+- Added: short aliases and `--render-html` to READMEs
+
 ## [4.1.0] - 2026-07-13
 
 ### Features
