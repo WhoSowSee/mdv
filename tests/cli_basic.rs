@@ -198,7 +198,7 @@ fn test_render_html_buffers_centered_semantic_blocks() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     let image_lines: Vec<_> = stdout
         .lines()
-        .filter(|line| line.contains("[IMAGE]"))
+        .filter(|line| line.contains("[IMAGE]") || line.contains("[SVG]"))
         .collect();
     assert_eq!(image_lines.len(), 2, "stdout:\n{}", stdout);
     assert!(

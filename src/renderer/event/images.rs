@@ -16,6 +16,8 @@ pub(super) fn media_marker(dest_url: &str) -> &'static str {
         "[AUDIO] "
     } else if is_gif_extension(&extension) {
         "[GIF] "
+    } else if is_svg_extension(&extension) {
+        "[SVG] "
     } else if is_image_extension(&extension) {
         "[IMAGE] "
     } else {
@@ -88,6 +90,8 @@ fn media_marker_from_data_uri(dest_url: &str) -> Option<&'static str> {
         Some("[AUDIO] ")
     } else if mime == "image/gif" {
         Some("[GIF] ")
+    } else if mime == "image/svg+xml" {
+        Some("[SVG] ")
     } else if mime.starts_with("image/") {
         Some("[IMAGE] ")
     } else {
@@ -97,6 +101,10 @@ fn media_marker_from_data_uri(dest_url: &str) -> Option<&'static str> {
 
 fn is_gif_extension(extension: &str) -> bool {
     extension == "gif"
+}
+
+fn is_svg_extension(extension: &str) -> bool {
+    extension == "svg" || extension == "svgz"
 }
 
 fn is_image_extension(extension: &str) -> bool {

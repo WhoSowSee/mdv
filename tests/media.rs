@@ -66,7 +66,7 @@ fn test_data_uri_media_markers() {
     assert!(stdout.contains("[VIDEO] vid"), "stdout:\n{}", stdout);
     assert!(stdout.contains("[AUDIO] aud"), "stdout:\n{}", stdout);
     assert!(stdout.contains("[MEDIA] bin"), "stdout:\n{}", stdout);
-    assert!(stdout.contains("[IMAGE] upper"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("[SVG] upper"), "stdout:\n{}", stdout);
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn test_render_html_centers_media_blocks_as_single_span() {
 
     let media_lines: Vec<_> = stdout
         .lines()
-        .filter(|line| line.contains("[IMAGE]"))
+        .filter(|line| line.contains("[IMAGE]") || line.contains("[SVG]"))
         .collect();
     assert_eq!(media_lines.len(), 2, "stdout:\n{}", stdout);
 
@@ -147,9 +147,9 @@ fn test_render_html_centers_media_blocks_as_single_span() {
     let badges_line = media_lines
         .iter()
         .find(|line| {
-            line.contains("[IMAGE] ONE")
-                && line.contains("[IMAGE] TWO")
-                && line.contains("[IMAGE] THREE")
+            line.contains("[SVG] ONE")
+                && line.contains("[SVG] TWO")
+                && line.contains("[SVG] THREE")
         })
         .expect("centered badges line");
 
@@ -190,7 +190,7 @@ fn test_render_html_inline_table_references_for_html_links_and_media() {
     let stdout = String::from_utf8(output.stdout).unwrap();
 
     assert!(stdout.contains("Docs[1]"), "stdout:\n{}", stdout);
-    assert!(stdout.contains("[IMAGE] Badge[2]"), "stdout:\n{}", stdout);
+    assert!(stdout.contains("[SVG] Badge[2]"), "stdout:\n{}", stdout);
     assert!(
         stdout.contains("[1] https://example.com/docs"),
         "stdout:\n{}",
