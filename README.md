@@ -93,6 +93,7 @@ cat <FILE> | mdv
 ### Output and workflow
 
 - `-H, --html` — prints HTML instead of terminal formatting.
+- `-E, --render-html` — renders raw HTML fragments embedded in the document as terminal-formatted content instead of skipping them.
 - `-A, --no-colors` — strips ANSI styling regardless of the selected theme.
 - `-C, --hide-comments` — removes Markdown comments from the rendered output.
 - `-i, --theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
@@ -115,9 +116,9 @@ cat <FILE> | mdv
 
 ### Callouts
 
-- `--callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` — sets the callout layout and label behavior.
+- `-O, --callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` — sets the callout layout and label behavior.
   `label-inside` is only supported with `pretty`, `fold-icons` requires `show-icons`.
-- `--custom-callout <name:icon=...,color=...;...>` — overrides or adds callout labels.
+- `-U, --custom-callout <name:icon=...,color=...;...>` — overrides or adds callout labels.
   `icon` and `color` are optional; color formats match `--custom-theme`.
 - Icons require Nerd Fonts in the terminal to render correctly.
 
@@ -163,8 +164,8 @@ cat <FILE> | mdv
 
 ### Footnotes
 
-- `--footnote-style <endnotes|attached>` — places footnotes at the end of the document or after each paragraph.
-- `--missing-footnote-style <show|hide>` — controls placeholder entries for missing, invalid, or empty footnote definitions.
+- `-o, --footnote-style <endnotes|attached>` — places footnotes at the end of the document or after each paragraph.
+- `-M, --missing-footnote-style <show|hide>` — controls placeholder entries for missing, invalid, or empty footnote definitions.
   `show` renders a placeholder message in the footnote block
   `hide` omits those entries entirely.
 
