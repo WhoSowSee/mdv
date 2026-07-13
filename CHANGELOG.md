@@ -1,5 +1,30 @@
 # Changelog
 
+## [4.1.0] - 2026-07-13
+
+### Features
+
+- Added: HTML rendering via `--render-html`
+- Added: Nerd Font checkbox icons via `--pretty-checkbox` and `--custom-checkbox`
+- Added: user theme loading from `<config_dir>/themes`
+- Added: `--pretty-list` and `--custom-list` for Nerd Font list markers
+- Added: Nix support via `flake.nix`
+
+### Bug Fixes
+
+- Fixed: silent stdin read when no file is provided
+- Fixed: extra space after non-standard checkbox icons
+
+### Documentation
+
+- Updated: `--config-file`, `--reflow` and `--custom-code-block` help text
+
+### Internal
+
+- Simplified: lazy caches and table width calculation
+- Removed: redundant aliases and dead code
+- Updated: CI to Node 24 actions, native snap builds and artifact guards
+
 ## [4.0.0] - 2026-06-26
 
 ### Breaking Changes
