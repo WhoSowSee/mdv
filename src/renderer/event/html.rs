@@ -1096,6 +1096,7 @@ impl<'a> EventRenderer<'a> {
             && !self.paragraph_links.is_empty()
         {
             self.add_paragraph_link_references();
+            self.ensure_contextual_blank_line();
         }
     }
 

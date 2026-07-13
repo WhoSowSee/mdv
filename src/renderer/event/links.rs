@@ -800,7 +800,6 @@ impl<'a> EventRenderer<'a> {
         if add_trailing_newline {
             if reference_prefix.is_empty() {
                 self.output.push('\n');
-                // Add extra newline only when in list for proper spacing
                 if in_list {
                     self.output.push('\n');
                 }

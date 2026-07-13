@@ -147,9 +147,7 @@ fn test_render_html_centers_media_blocks_as_single_span() {
     let badges_line = media_lines
         .iter()
         .find(|line| {
-            line.contains("[SVG] ONE")
-                && line.contains("[SVG] TWO")
-                && line.contains("[SVG] THREE")
+            line.contains("[SVG] ONE") && line.contains("[SVG] TWO") && line.contains("[SVG] THREE")
         })
         .expect("centered badges line");
 
