@@ -884,7 +884,10 @@ impl<'a> EventRenderer<'a> {
         }
 
         let mut rendered = nested_renderer.render_events(events)?;
-        rendered = rendered.trim_end_matches('\n').to_string();
+        rendered = rendered
+            .trim_end_matches('\n')
+            .trim_start_matches('\n')
+            .to_string();
 
         let references = std::mem::take(&mut nested_renderer.captured_reference_blocks);
         let deferred_references = std::mem::take(&mut nested_renderer.deferred_reference_blocks);
