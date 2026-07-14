@@ -87,6 +87,25 @@ pub(crate) fn build_syntect_theme(theme: &Theme) -> CodeHighlightTheme {
         &syntax.keyword,
         Some(FontStyle::BOLD),
     );
+
+    // Outrank the bare storage.type selector (primitive types in type_name) for declaration keywords.
+    for selector in [
+        "storage.type.function",
+        "storage.type.struct",
+        "storage.type.impl",
+        "storage.type.trait",
+        "storage.type.enum",
+        "storage.type.union",
+        "storage.type.mod",
+    ] {
+        push_scope(
+            &mut scopes,
+            &mut palette,
+            selector,
+            &syntax.keyword,
+            Some(FontStyle::BOLD),
+        );
+    }
     push_scope(
         &mut scopes,
         &mut palette,
@@ -345,6 +364,21 @@ fn named_fg_code(color: &Color) -> u8 {
     }
 }
 
+fn write_font_style_diff(out: &mut String, prev: FontStyle, cur: FontStyle) {
+    const FLAGS: [(FontStyle, &str, &str); 3] = [
+        (FontStyle::BOLD, "\x1b[1m", "\x1b[22m"),
+        (FontStyle::ITALIC, "\x1b[3m", "\x1b[23m"),
+        (FontStyle::UNDERLINE, "\x1b[4m", "\x1b[24m"),
+    ];
+    for (flag, on, off) in FLAGS {
+        match (prev.contains(flag), cur.contains(flag)) {
+            (false, true) => out.push_str(on),
+            (true, false) => out.push_str(off),
+            _ => {}
+        }
+    }
+}
+
 /// Render highlighted fragments, restoring palette codes from `palette` instead of
 /// always emitting truecolor. Transparent fragments (`a == 0`) become `\x1b[39m`.
 pub(crate) fn as_terminal_escaped(
@@ -352,7 +386,8 @@ pub(crate) fn as_terminal_escaped(
     palette: &HashMap<(u8, u8, u8), Color>,
 ) -> String {
     let mut out = String::new();
-    let mut prev = None;
+    let mut prev_fg = None;
+    let mut prev_font = FontStyle::default();
     for (style, text) in ranges {
         let spec = if style.foreground.a == 0 {
             FgSpec::Reset
@@ -365,9 +400,13 @@ pub(crate) fn as_terminal_escaped(
                 }
             }
         };
-        if Some(spec) != prev {
+        if Some(spec) != prev_fg {
             spec.write(&mut out);
-            prev = Some(spec);
+            prev_fg = Some(spec);
+        }
+        if style.font_style != prev_font {
+            write_font_style_diff(&mut out, prev_font, style.font_style);
+            prev_font = style.font_style;
         }
         out.push_str(text);
     }
