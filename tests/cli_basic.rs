@@ -537,6 +537,57 @@ fn test_render_html_inline_table_references_inside_html_containers() {
 }
 
 #[test]
+fn test_render_html_inline_table_references_reset_across_blocks() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        r#"Markdown para with [a link](https://example.com/md-link).
+
+<p align="center">
+  © 2026-present <a href="https://example.com/user">User</a>
+</p>
+
+<div align="center">
+  <a href="https://example.com/license"><img src="badge.svg" alt="LICENSE"></a>
+</div>
+"#,
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("-E")
+        .arg("-u")
+        .arg("inlinetable")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    assert!(
+        clean.contains("a link[1]"),
+        "expected markdown paragraph link [1]; stdout:\n{}",
+        clean
+    );
+    assert!(
+        clean.contains("User[1]"),
+        "expected HTML block link [1] after markdown paragraph; stdout:\n{}",
+        clean
+    );
+    assert!(
+        clean.contains("[SVG] LICENSE[1]"),
+        "expected second HTML block link [1], not sequential [2]; stdout:\n{}",
+        clean
+    );
+    assert!(
+        !clean.contains("[2]"),
+        "sequential numbering across blocks is a bug; stdout:\n{}",
+        clean
+    );
+}
+
+#[test]
 fn test_render_html_ordered_list_attributes() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

@@ -821,6 +821,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         let links = std::mem::take(&mut self.paragraph_links);
+        self.paragraph_link_counter = 0;
         self.render_link_reference_blocks(
             &links,
             add_trailing_newline,
