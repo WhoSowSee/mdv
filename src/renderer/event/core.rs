@@ -3,11 +3,11 @@ use super::{
     HeadingLevel, LinkStyle, Result, SoftBreakFollowingText, SyntaxSet, Tag, TagEnd, Theme,
     ThemeElement, create_style, extract_code_language,
 };
+use crate::renderer::syntax_theme::CodeHighlightTheme;
 use crate::theme::Color;
 use crate::utils::strip_ansi;
 use pulldown_cmark::BlockQuoteKind;
 use std::collections::VecDeque;
-use syntect::highlighting::Theme as SyntectTheme;
 
 #[derive(Debug)]
 pub(crate) struct ListState {
@@ -287,7 +287,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) config: &'a Config,
     pub(crate) theme: &'a Theme,
     pub(crate) syntax_set: &'a SyntaxSet,
-    pub(crate) code_theme: &'a SyntectTheme,
+    pub(crate) code_theme: &'a CodeHighlightTheme,
     pub(crate) output: String,
     pub(crate) current_indent: usize,
     pub(crate) blockquote_level: usize,
@@ -348,7 +348,7 @@ impl<'a> EventRenderer<'a> {
         config: &'a Config,
         theme: &'a Theme,
         syntax_set: &'a SyntaxSet,
-        code_theme: &'a SyntectTheme,
+        code_theme: &'a CodeHighlightTheme,
     ) -> Self {
         Self {
             config,

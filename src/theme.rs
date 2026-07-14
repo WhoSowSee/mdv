@@ -122,7 +122,7 @@ impl Default for Theme {
         Self {
             name: "terminal".to_string(),
             description: "Terminal theme with standard colors".to_string(),
-            text: Color::White,
+            text: Color::Reset,
             text_light: Color::Grey,
             h1: Color::Red,
             h2: Color::Green,
@@ -159,7 +159,7 @@ impl Default for SyntaxTheme {
             number: Color::AnsiValue(109),
             operator: Color::AnsiValue(65),
             function: Color::AnsiValue(153),
-            variable: Color::AnsiValue(231),
+            variable: Color::Reset,
             type_name: Color::AnsiValue(117),
         }
     }

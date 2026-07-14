@@ -1,12 +1,12 @@
 use super::event::EventRenderer;
 use super::syntax_set::load_full_syntax_set;
-use super::syntax_theme::{build_syntect_theme, default_theme_set};
+use super::syntax_theme::{CodeHighlightTheme, build_syntect_theme, default_theme_set};
 use crate::config::Config;
 use crate::theme::{Theme, ThemeManager, apply_custom_code_theme, apply_custom_theme};
 use crate::user_themes;
 use anyhow::Result;
 use pulldown_cmark::Event;
-use syntect::highlighting::{Theme as SyntectTheme, ThemeSet};
+use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
 
 /// Terminal renderer for markdown content
@@ -14,7 +14,7 @@ pub struct TerminalRenderer {
     config: Config,
     theme: Theme,
     syntax_set: &'static SyntaxSet,
-    code_theme: SyntectTheme,
+    code_theme: CodeHighlightTheme,
 }
 
 impl TerminalRenderer {
@@ -91,9 +91,9 @@ fn resolve_code_theme(
     main_theme: &Theme,
     theme_manager: &ThemeManager,
     theme_set: &ThemeSet,
-) -> SyntectTheme {
+) -> CodeHighlightTheme {
     if let Some(theme) = theme_set.themes.get(requested_theme) {
-        return theme.clone();
+        return CodeHighlightTheme::syntect_only(theme.clone());
     }
 
     if let Some((actual_name, theme)) = theme_set
@@ -108,7 +108,7 @@ fn resolve_code_theme(
                 requested_theme
             );
         }
-        return theme.clone();
+        return CodeHighlightTheme::syntect_only(theme.clone());
     }
 
     if let Some(builtin_theme) = find_builtin_theme(theme_manager, requested_theme) {

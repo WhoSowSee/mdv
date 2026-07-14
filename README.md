@@ -338,6 +338,8 @@ Built-in themes include:
 
 Switch between them with `--theme` or set a default in your configuration file.
 
+The default `terminal` theme uses the terminal's own foreground (`\x1b[39m`) for ordinary body and code text, so it adapts to light and dark backgrounds. Its syntax accents use terminal palette codes rather than fixed truecolor RGB. Themes with explicit `rgb(...)` values (for example `monokai`) and external Syntect `.tmTheme` names selected via `--code-theme` still use truecolor where needed.
+
 Use `--custom-theme` to override UI colors and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match palette fields (for example `text`, `h1`, `border`, `keyword`, `function`). Color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
 
 Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-info README.md`) to inspect how colors apply to a document. Starting from `examples/config.yaml` you can build your own theme variants and keep them in version control.

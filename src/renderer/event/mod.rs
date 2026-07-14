@@ -26,6 +26,7 @@ pub(super) use crate::cli::{
 pub(super) use crate::config::Config;
 pub(super) use crate::error::MdvError;
 pub(super) use crate::markdown::{MarkdownProcessor, detect_source_code, extract_code_language};
+pub(super) use crate::renderer::syntax_theme::as_palette_terminal_escaped;
 pub(super) use crate::table::TableRenderer;
 pub(super) use crate::theme::{Theme, ThemeElement, create_style};
 pub(super) use crate::utils::{WrapMode, wrap_text_with_mode};
