@@ -26,6 +26,7 @@ pub(super) use crate::cli::{
 pub(super) use crate::config::Config;
 pub(super) use crate::error::MdvError;
 pub(super) use crate::markdown::{MarkdownProcessor, detect_source_code, extract_code_language};
+pub(super) use crate::renderer::syntax_theme::as_terminal_escaped;
 pub(super) use crate::table::TableRenderer;
 pub(super) use crate::theme::{Theme, ThemeElement, create_style};
 pub(super) use crate::utils::{WrapMode, wrap_text_with_mode};
@@ -34,7 +35,6 @@ pub(super) use pulldown_cmark::{Alignment, CowStr, Event, HeadingLevel, Tag, Tag
 pub(super) use std::collections::HashMap;
 pub(super) use syntect::easy::HighlightLines;
 pub(super) use syntect::parsing::SyntaxSet;
-pub(super) use syntect::util::as_24_bit_terminal_escaped;
 
 pub(super) const PRETTY_ACCENT_COLOR: CrosstermColor = CrosstermColor::Rgb {
     r: 0x8f,

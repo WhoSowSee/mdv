@@ -1,10 +1,13 @@
 use crate::terminal::ansi256_to_rgb;
 use crate::theme::{Color, Theme};
+use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use syntect::highlighting::ScopeSelectors;
 use syntect::highlighting::{
-    Color as SyntectColor, FontStyle, StyleModifier, Theme as SyntectTheme, ThemeItem, ThemeSet,
+    Color as SyntectColor, FontStyle, Style, StyleModifier, Theme as SyntectTheme, ThemeItem,
+    ThemeSet,
 };
 
 /// Global cache of themes
@@ -14,17 +17,40 @@ pub(crate) fn default_theme_set() -> &'static ThemeSet {
     &DEFAULT_THEME_SET
 }
 
-pub(crate) fn build_syntect_theme(theme: &Theme) -> SyntectTheme {
+/// Syntect theme plus a reverse RGB→Color map so the escaper restores palette
+/// codes instead of truecolor. External `.tmTheme` themes use an empty map.
+pub(crate) struct CodeHighlightTheme {
+    pub syntect: SyntectTheme,
+    palette: HashMap<(u8, u8, u8), Color>,
+}
+
+impl CodeHighlightTheme {
+    pub(crate) fn syntect_only(theme: SyntectTheme) -> Self {
+        Self {
+            syntect: theme,
+            palette: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn palette(&self) -> &HashMap<(u8, u8, u8), Color> {
+        &self.palette
+    }
+}
+
+/// Build a syntax theme with palette restoration. `Color::Reset` is encoded as a
+/// transparent sentinel (`a == 0`) so default text inherits the terminal foreground.
+pub(crate) fn build_syntect_theme(theme: &Theme) -> CodeHighlightTheme {
+    let mut palette = HashMap::new();
     let mut syntect_theme = SyntectTheme {
         name: Some(format!("mdv:{}", theme.name)),
         ..SyntectTheme::default()
     };
-    syntect_theme.settings.foreground = Some(to_syntect_color(&theme.text));
-    if let Some(background) = theme.background.as_ref().map(to_syntect_color) {
-        syntect_theme.settings.background = Some(background);
+    syntect_theme.settings.foreground = Some(register_color(&mut palette, &theme.text));
+    if let Some(background) = theme.background.as_ref() {
+        syntect_theme.settings.background = Some(register_color(&mut palette, background));
     }
-    syntect_theme.settings.caret = Some(to_syntect_color(&theme.text));
-    syntect_theme.settings.selection = Some(to_syntect_color(&theme.text_light));
+    syntect_theme.settings.caret = Some(register_color(&mut palette, &theme.text));
+    syntect_theme.settings.selection = Some(register_color(&mut palette, &theme.text_light));
     syntect_theme.settings.inactive_selection = syntect_theme.settings.selection;
 
     let syntax = &theme.syntax;
@@ -33,154 +59,191 @@ pub(crate) fn build_syntect_theme(theme: &Theme) -> SyntectTheme {
     // Comments
     push_scope(
         &mut scopes,
+        &mut palette,
         "comment",
-        to_syntect_color(&syntax.comment),
+        &syntax.comment,
         Some(FontStyle::ITALIC),
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "punctuation.definition.comment",
-        to_syntect_color(&syntax.comment),
+        &syntax.comment,
         Some(FontStyle::ITALIC),
     );
 
     // Keywords and directives
     push_scope(
         &mut scopes,
+        &mut palette,
         "keyword",
-        to_syntect_color(&syntax.keyword),
+        &syntax.keyword,
         Some(FontStyle::BOLD),
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "storage",
-        to_syntect_color(&syntax.keyword),
+        &syntax.keyword,
         Some(FontStyle::BOLD),
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "meta.directive",
-        to_syntect_color(&syntax.keyword),
+        &syntax.keyword,
         Some(FontStyle::BOLD),
     );
 
     // Operators and punctuation
     push_scope(
         &mut scopes,
+        &mut palette,
         "keyword.operator",
-        to_syntect_color(&syntax.operator),
+        &syntax.operator,
         None,
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "punctuation",
-        to_syntect_color(&syntax.operator),
+        &syntax.operator,
         None,
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "meta.brace",
-        to_syntect_color(&syntax.operator),
+        &syntax.operator,
         None,
     );
 
     // Strings
+    push_scope(&mut scopes, &mut palette, "string", &syntax.string, None);
     push_scope(
         &mut scopes,
-        "string",
-        to_syntect_color(&syntax.string),
-        None,
-    );
-    push_scope(
-        &mut scopes,
+        &mut palette,
         "constant.character.escape",
-        to_syntect_color(&syntax.string),
+        &syntax.string,
         None,
     );
 
     // Numbers and constants
     push_scope(
         &mut scopes,
+        &mut palette,
         "constant.numeric",
-        to_syntect_color(&syntax.number),
+        &syntax.number,
         None,
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "constant.language",
-        to_syntect_color(&syntax.number),
+        &syntax.number,
         None,
     );
 
     // Functions and methods
     push_scope(
         &mut scopes,
+        &mut palette,
         "entity.name.function",
-        to_syntect_color(&syntax.function),
+        &syntax.function,
         None,
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "support.function",
-        to_syntect_color(&syntax.function),
+        &syntax.function,
         None,
     );
 
     // Types and classes
     push_scope(
         &mut scopes,
+        &mut palette,
         "entity.name.type",
-        to_syntect_color(&syntax.type_name),
+        &syntax.type_name,
         Some(FontStyle::BOLD),
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "support.type",
-        to_syntect_color(&syntax.type_name),
+        &syntax.type_name,
         Some(FontStyle::BOLD),
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "storage.type",
-        to_syntect_color(&syntax.type_name),
+        &syntax.type_name,
         Some(FontStyle::BOLD),
     );
 
     // Variables and parameters
     push_scope(
         &mut scopes,
+        &mut palette,
         "variable",
-        to_syntect_color(&syntax.variable),
+        &syntax.variable,
         None,
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "variable.parameter",
-        to_syntect_color(&syntax.variable),
+        &syntax.variable,
         Some(FontStyle::ITALIC),
     );
     push_scope(
         &mut scopes,
+        &mut palette,
         "entity.other.attribute-name",
-        to_syntect_color(&syntax.variable),
+        &syntax.variable,
         None,
     );
 
     syntect_theme.scopes = scopes;
-    syntect_theme
+    CodeHighlightTheme {
+        syntect: syntect_theme,
+        palette,
+    }
+}
+
+fn register_color(palette: &mut HashMap<(u8, u8, u8), Color>, color: &Color) -> SyntectColor {
+    if let Some(syntect) = transparent_for_reset(color) {
+        return syntect;
+    }
+    let rgb = color_to_rgb(color);
+    // Prefer palette/named over Rgb on RGB collision — it follows the terminal better.
+    palette
+        .entry(rgb)
+        .and_modify(|existing| {
+            if matches!(existing, Color::Rgb { .. }) && !matches!(color, Color::Rgb { .. }) {
+                *existing = color.clone();
+            }
+        })
+        .or_insert_with(|| color.clone());
+    let (r, g, b) = rgb;
+    SyntectColor { r, g, b, a: 0xFF }
 }
 
 fn push_scope(
     scopes: &mut Vec<ThemeItem>,
+    palette: &mut HashMap<(u8, u8, u8), Color>,
     selector: &str,
-    color: SyntectColor,
+    color: &Color,
     font_style: Option<FontStyle>,
 ) {
+    let syntect_color = register_color(palette, color);
     if let Ok(scope) = ScopeSelectors::from_str(selector) {
         scopes.push(ThemeItem {
             scope,
             style: StyleModifier {
-                foreground: Some(color),
+                foreground: Some(syntect_color),
                 background: None,
                 font_style,
             },
@@ -188,9 +251,17 @@ fn push_scope(
     }
 }
 
-fn to_syntect_color(color: &Color) -> SyntectColor {
-    let (r, g, b) = color_to_rgb(color);
-    SyntectColor { r, g, b, a: 0xFF }
+/// `Color::Reset` → transparent sentinel (`a == 0`); the escaper emits `\x1b[39m`.
+fn transparent_for_reset(color: &Color) -> Option<SyntectColor> {
+    match color {
+        Color::Reset => Some(SyntectColor {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 0,
+        }),
+        _ => None,
+    }
 }
 
 fn color_to_rgb(color: &Color) -> (u8, u8, u8) {
@@ -214,5 +285,109 @@ fn color_to_rgb(color: &Color) -> (u8, u8, u8) {
         Color::AnsiValue(index) => ansi256_to_rgb(*index),
         Color::Rgb { r, g, b } => (*r, *g, *b),
         Color::Reset => (255, 255, 255),
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FgSpec {
+    Reset,
+    Named(u8),
+    Palette(u8),
+    Truecolor(u8, u8, u8),
+}
+
+impl FgSpec {
+    fn from_color(color: &Color) -> Self {
+        match color {
+            Color::Reset => FgSpec::Reset,
+            Color::AnsiValue(index) => FgSpec::Palette(*index),
+            Color::Rgb { r, g, b } => FgSpec::Truecolor(*r, *g, *b),
+            other => FgSpec::Named(named_fg_code(other)),
+        }
+    }
+
+    fn write(&self, out: &mut String) {
+        match self {
+            FgSpec::Reset => out.push_str("\x1b[39m"),
+            FgSpec::Named(code) => {
+                let _ = write!(out, "\x1b[{}m", code);
+            }
+            FgSpec::Palette(index) => {
+                let _ = write!(out, "\x1b[38;5;{}m", index);
+            }
+            FgSpec::Truecolor(r, g, b) => {
+                let _ = write!(out, "\x1b[38;2;{};{};{}m", r, g, b);
+            }
+        }
+    }
+}
+
+fn named_fg_code(color: &Color) -> u8 {
+    match color {
+        Color::Black => 30,
+        Color::DarkRed => 31,
+        Color::DarkGreen => 32,
+        Color::DarkYellow => 33,
+        Color::DarkBlue => 34,
+        Color::DarkMagenta => 35,
+        Color::DarkCyan => 36,
+        Color::Grey => 37,
+        Color::DarkGrey => 90,
+        Color::Red => 91,
+        Color::Green => 92,
+        Color::Yellow => 93,
+        Color::Blue => 94,
+        Color::Magenta => 95,
+        Color::Cyan => 96,
+        Color::White => 97,
+        // Unreachable: AnsiValue/Rgb/Reset are handled by FgSpec::from_color.
+        Color::AnsiValue(_) | Color::Rgb { .. } | Color::Reset => 39,
+    }
+}
+
+/// Render highlighted fragments, restoring palette codes from `palette` instead of
+/// always emitting truecolor. Transparent fragments (`a == 0`) become `\x1b[39m`.
+pub(crate) fn as_terminal_escaped(
+    ranges: &[(Style, &str)],
+    palette: &HashMap<(u8, u8, u8), Color>,
+) -> String {
+    let mut out = String::new();
+    let mut prev = None;
+    for (style, text) in ranges {
+        let spec = if style.foreground.a == 0 {
+            FgSpec::Reset
+        } else {
+            let key = (style.foreground.r, style.foreground.g, style.foreground.b);
+            match palette.get(&key) {
+                Some(color) => FgSpec::from_color(color),
+                None => {
+                    FgSpec::Truecolor(style.foreground.r, style.foreground.g, style.foreground.b)
+                }
+            }
+        };
+        if Some(spec) != prev {
+            spec.write(&mut out);
+            prev = Some(spec);
+        }
+        out.push_str(text);
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reset_encodes_as_transparent_sentinel() {
+        assert_eq!(
+            transparent_for_reset(&Color::Reset),
+            Some(SyntectColor {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0
+            })
+        );
     }
 }

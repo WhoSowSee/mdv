@@ -1,7 +1,7 @@
 use super::{
     CapturedReferenceBlock, CodeBlockStyle, CodeWrapIndent, CowStr, DeferredLinkReferenceBlock,
     EventRenderer, HighlightLines, LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR,
-    Result, ThemeElement, WrapMode, as_24_bit_terminal_escaped, create_style, detect_source_code,
+    Result, ThemeElement, WrapMode, as_terminal_escaped, create_style, detect_source_code,
 };
 use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
@@ -732,7 +732,7 @@ impl<'a> EventRenderer<'a> {
 
         let syntax = self.resolve_syntax(language_hint, code);
 
-        let mut highlighter = HighlightLines::new(syntax, self.code_theme);
+        let mut highlighter = HighlightLines::new(syntax, &self.code_theme.syntect);
         let mut result = String::new();
 
         for line in LinesWithEndings::from(code) {
@@ -740,13 +740,18 @@ impl<'a> EventRenderer<'a> {
                 .highlight_line(line, self.syntax_set)
                 .map_err(|e| MdvError::SyntaxError(e.to_string()))?;
 
-            let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
+            let escaped = as_terminal_escaped(&ranges[..], self.code_theme.palette());
             result.push_str(&escaped);
 
             if !line.ends_with('\n') {
                 // Maintain the trailing newline that callers expect so wrapping keeps working.
                 result.push('\n');
             }
+        }
+
+        // Reset so a trailing syntax accent does not bleed past the code block.
+        if !result.is_empty() {
+            result.push_str("\x1b[0m");
         }
 
         Ok(result)
@@ -1699,9 +1704,14 @@ struct PlaintextRenderResult {
 mod tests {
     use super::*;
     use crate::config::Config;
+    use crate::renderer::syntax_theme::CodeHighlightTheme;
     use crate::theme::Theme;
     use syntect::highlighting::Theme as SyntectTheme;
     use syntect::parsing::SyntaxSet;
+
+    fn test_code_theme() -> CodeHighlightTheme {
+        CodeHighlightTheme::syntect_only(SyntectTheme::default())
+    }
 
     #[test]
     fn resolve_syntax_returns_plain_text_when_guessing_disabled() {
@@ -1712,7 +1722,7 @@ mod tests {
 
         let theme = Theme::default();
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let code_theme = SyntectTheme::default();
+        let code_theme = test_code_theme();
 
         let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
 
@@ -1728,7 +1738,7 @@ mod tests {
         let config = Config::default();
         let theme = Theme::default();
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let code_theme = SyntectTheme::default();
+        let code_theme = test_code_theme();
         let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
 
         assert_eq!(
@@ -1758,7 +1768,7 @@ mod tests {
         let config = Config::default();
         let theme = Theme::default();
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let code_theme = SyntectTheme::default();
+        let code_theme = test_code_theme();
         let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
 
         assert_eq!(
@@ -1781,7 +1791,7 @@ mod tests {
         };
         let theme = Theme::default();
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let code_theme = SyntectTheme::default();
+        let code_theme = test_code_theme();
         let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
 
         assert_eq!(
@@ -1802,7 +1812,7 @@ mod tests {
         };
         let theme = Theme::default();
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let code_theme = SyntectTheme::default();
+        let code_theme = test_code_theme();
         let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
 
         assert_eq!(
