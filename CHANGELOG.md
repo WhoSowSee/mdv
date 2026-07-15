@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.2.1] - 2026-07-15
+
+### Bug Fixes
+
+- Fixed: sequential link numbering across blocks in inlinetable mode
+- Fixed: white code blocks on light terminal backgrounds
+- Fixed: keyword color and font style in code highlighting
+- Fixed: phantom empty line at the bottom of code blocks
+
 ## [4.2.0] - 2026-07-13
 
 ### Features
