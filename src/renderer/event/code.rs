@@ -749,9 +749,12 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        // Reset so a trailing syntax accent does not bleed past the code block.
+        // Reset before the trailing newline; appended after it, it becomes a phantom row when callers split on '\n'.
         if !result.is_empty() {
-            result.push_str("\x1b[0m");
+            if result.ends_with('\n') {
+                result.pop();
+            }
+            result.push_str("\x1b[0m\n");
         }
 
         Ok(result)
@@ -1822,6 +1825,28 @@ mod tests {
         assert_eq!(
             renderer.code_block_icon_for_hint("rust", "Rust"),
             "".to_string()
+        );
+    }
+    #[test]
+    fn highlight_code_reset_closes_last_line_without_phantom_row() {
+        let config = Config::default();
+        let theme = Theme::default();
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let code_theme = test_code_theme();
+        let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+        let highlighted = renderer
+            .highlight_code("print(\"hi\")\n", Some("python"))
+            .unwrap();
+
+        // Reset before the trailing newline; after it, the split yields a phantom empty body row.
+        assert!(
+            highlighted.ends_with("\x1b[0m\n"),
+            "reset must close the last visible line, got: {highlighted:?}"
+        );
+        assert_eq!(
+            highlighted.lines().count(),
+            1,
+            "a single source line must render as exactly one row, got: {highlighted:?}"
         );
     }
 }
