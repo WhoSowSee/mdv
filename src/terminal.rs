@@ -53,41 +53,14 @@ impl AnsiStyle {
 
         let mut result = String::new();
 
-        // Apply foreground color
         if let Some(fg) = self.fg_color {
-            match fg {
-                Color::AnsiValue(n) => {
-                    // Use 256-color palette format for foreground
-                    result.push_str(&format!("\x1b[38;5;{}m", n));
-                }
-                Color::Rgb { r, g, b } => {
-                    // Use truecolor escape for foreground
-                    result.push_str(&format!("\x1b[38;2;{};{};{}m", r, g, b));
-                }
-                _ => {
-                    result.push_str(&format!("\x1b[{}m", color_to_ansi_fg(fg)));
-                }
-            }
+            push_color_sequence(&mut result, fg, 0);
         }
 
-        // Apply background color
         if let Some(bg) = self.bg_color {
-            match bg {
-                Color::AnsiValue(n) => {
-                    // Use 256-color palette format for background
-                    result.push_str(&format!("\x1b[48;5;{}m", n));
-                }
-                Color::Rgb { r, g, b } => {
-                    // Use truecolor escape for background
-                    result.push_str(&format!("\x1b[48;2;{};{};{}m", r, g, b));
-                }
-                _ => {
-                    result.push_str(&format!("\x1b[{}m", color_to_ansi_bg(bg)));
-                }
-            }
+            push_color_sequence(&mut result, bg, 10);
         }
 
-        // Apply attributes
         if self.bold {
             result.push_str("\x1b[1m");
         }
@@ -102,15 +75,24 @@ impl AnsiStyle {
         }
 
         result.push_str(text);
-
-        // Reset all styles
         result.push_str("\x1b[0m");
 
         result
     }
 }
 
-fn color_to_ansi_fg(color: Color) -> u8 {
+/// `offset` is 0 for foreground and 10 for background: every ANSI color code pairs that way.
+fn push_color_sequence(out: &mut String, color: Color, offset: u8) {
+    match color {
+        Color::AnsiValue(n) => out.push_str(&format!("\x1b[{};5;{}m", 38 + offset, n)),
+        Color::Rgb { r, g, b } => {
+            out.push_str(&format!("\x1b[{};2;{};{};{}m", 38 + offset, r, g, b))
+        }
+        named => out.push_str(&format!("\x1b[{}m", color_to_ansi_code(named) + offset)),
+    }
+}
+
+fn color_to_ansi_code(color: Color) -> u8 {
     match color {
         Color::Black => 30,
         Color::DarkRed => 31,
@@ -128,33 +110,10 @@ fn color_to_ansi_fg(color: Color) -> u8 {
         Color::Magenta => 95,
         Color::Cyan => 96,
         Color::White => 97,
-        Color::AnsiValue(n) => n,
-        Color::Rgb { .. } => unreachable!("RGB colors are handled as truecolor sequences"),
         Color::Reset => 39,
-    }
-}
-
-fn color_to_ansi_bg(color: Color) -> u8 {
-    match color {
-        Color::Black => 40,
-        Color::DarkRed => 41,
-        Color::DarkGreen => 42,
-        Color::DarkYellow => 43,
-        Color::DarkBlue => 44,
-        Color::DarkMagenta => 45,
-        Color::DarkCyan => 46,
-        Color::Grey => 47,
-        Color::DarkGrey => 100,
-        Color::Red => 101,
-        Color::Green => 102,
-        Color::Yellow => 103,
-        Color::Blue => 104,
-        Color::Magenta => 105,
-        Color::Cyan => 106,
-        Color::White => 107,
-        Color::AnsiValue(n) => n + 10, // Background colors are +10 from foreground
-        Color::Rgb { .. } => unreachable!("RGB colors are handled as truecolor sequences"),
-        Color::Reset => 49,
+        Color::AnsiValue(_) | Color::Rgb { .. } => {
+            unreachable!("indexed and RGB colors emit their own sequences")
+        }
     }
 }
 
@@ -253,5 +212,30 @@ mod tests {
         let applied = style.apply("demo", false);
         assert!(applied.starts_with("\x1b[48;2;1;2;3m"));
         assert!(applied.ends_with("demo\x1b[0m"));
+    }
+
+    #[test]
+    fn apply_emits_named_indexed_and_reset_color_sequences() {
+        assert_eq!(
+            AnsiStyle::new()
+                .fg(Color::DarkRed)
+                .bg(Color::Blue)
+                .apply("demo", false),
+            "\x1b[31m\x1b[104mdemo\x1b[0m"
+        );
+        assert_eq!(
+            AnsiStyle::new()
+                .fg(Color::AnsiValue(42))
+                .bg(Color::AnsiValue(84))
+                .apply("demo", false),
+            "\x1b[38;5;42m\x1b[48;5;84mdemo\x1b[0m"
+        );
+        assert_eq!(
+            AnsiStyle::new()
+                .fg(Color::Reset)
+                .bg(Color::Reset)
+                .apply("demo", false),
+            "\x1b[39m\x1b[49mdemo\x1b[0m"
+        );
     }
 }

@@ -101,24 +101,15 @@ fn resolve_code_theme(
         .iter()
         .find(|(name, _)| name.eq_ignore_ascii_case(requested_theme))
     {
-        if actual_name.as_str() != requested_theme {
-            log::info!(
-                "Using syntax theme '{}' for '--code-theme {}'.",
-                actual_name,
-                requested_theme
-            );
-        }
+        log::info!(
+            "Using syntax theme '{}' for '--code-theme {}'.",
+            actual_name,
+            requested_theme
+        );
         return CodeHighlightTheme::syntect_only(theme.clone());
     }
 
-    if let Some(builtin_theme) = find_builtin_theme(theme_manager, requested_theme) {
-        if !builtin_theme.name.eq_ignore_ascii_case(requested_theme) {
-            log::info!(
-                "Using built-in theme '{}' for '--code-theme {}'.",
-                builtin_theme.name,
-                requested_theme
-            );
-        }
+    if let Ok(builtin_theme) = theme_manager.get_theme(requested_theme) {
         return build_syntect_theme(builtin_theme);
     }
 
@@ -128,22 +119,6 @@ fn resolve_code_theme(
         main_theme.name
     );
     build_syntect_theme(main_theme)
-}
-
-fn find_builtin_theme<'a>(
-    theme_manager: &'a ThemeManager,
-    requested_theme: &str,
-) -> Option<&'a Theme> {
-    if let Ok(theme) = theme_manager.get_theme(requested_theme) {
-        return Some(theme);
-    }
-
-    let requested_lower = requested_theme.to_ascii_lowercase();
-    theme_manager
-        .list_themes()
-        .into_iter()
-        .find(|name| name.to_ascii_lowercase() == requested_lower)
-        .and_then(|matched_name| theme_manager.get_theme(matched_name).ok())
 }
 
 pub(crate) fn build_theme_manager(config: &Config) -> ThemeManager {

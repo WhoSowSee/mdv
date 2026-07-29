@@ -56,42 +56,7 @@ impl<'a> EventRenderer<'a> {
             self.code_block_content.push_str(&text);
             return Ok(());
         } else if self.in_link {
-            match self.config.link_style {
-                LinkStyle::Clickable => {
-                    // For Clickable mode, collect link text but don't add to output yet
-                    // We'll add the complete clickable link in handle_link_end
-                    self.current_link_text.push_str(&text);
-                    return Ok(());
-                }
-                LinkStyle::ClickableForced => {
-                    // For ClickableForced mode, collect link text but don't add to output yet
-                    // We'll add the complete clickable link in handle_link_end
-                    self.current_link_text.push_str(&text);
-                    return Ok(());
-                }
-                LinkStyle::Inline => {
-                    // For Inline mode, collect link text but don't add to output yet
-                    // We'll add the underlined text and URL in handle_link_end with flexible breaking
-                    self.current_link_text.push_str(&text);
-                    return Ok(());
-                }
-                LinkStyle::InlineTable => {
-                    // Collect link text but don't add to output yet, similar to other modes
-                    // We'll add the underlined text and reference number in handle_link_end
-                    self.current_link_text.push_str(&text);
-                    return Ok(());
-                }
-                LinkStyle::EndTable => {
-                    // Collect link text for document-scoped reference handling
-                    self.current_link_text.push_str(&text);
-                    return Ok(());
-                }
-                LinkStyle::Hide => {
-                    // This shouldn't happen since we don't set in_link for Hide mode anymore
-                }
-            }
-            self.pending_task_marker = false;
-            self.pending_task_marker_buffer.clear();
+            self.current_link_text.push_str(&text);
             return Ok(());
         }
 

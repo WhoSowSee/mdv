@@ -88,8 +88,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         match self.config.link_style {
-            LinkStyle::Clickable => {
-                // Store URL for clickable link and start collecting link text
+            LinkStyle::Clickable | LinkStyle::ClickableForced | LinkStyle::Inline => {
                 self.link_counter += 1;
                 self.link_references.insert(
                     format!("current_{}", self.link_counter),
@@ -98,30 +97,8 @@ impl<'a> EventRenderer<'a> {
                 self.current_link_text.clear();
                 self.in_link = true;
             }
-            LinkStyle::ClickableForced => {
-                // Store URL for clickable link with forced underline and start collecting link text
-                self.link_counter += 1;
-                self.link_references.insert(
-                    format!("current_{}", self.link_counter),
-                    dest_url.to_string(),
-                );
-                self.current_link_text.clear();
-                self.in_link = true;
-            }
-            LinkStyle::Hide => {
-                // Hide URLs but show link text as normal text
-                // Don't set in_link = true, so text is processed normally
-            }
-            LinkStyle::Inline => {
-                // Store URL to add inline after link text and start collecting link text
-                self.link_counter += 1;
-                self.link_references.insert(
-                    format!("current_{}", self.link_counter),
-                    dest_url.to_string(),
-                );
-                self.current_link_text.clear();
-                self.in_link = true;
-            }
+            // Hide leaves in_link unset so the link text flows through the normal text path.
+            LinkStyle::Hide => {}
             LinkStyle::InlineTable => {
                 let in_table = self.table_state.is_some();
                 if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {

@@ -27,7 +27,7 @@ impl<'de> Deserialize<'de> for ColorYaml {
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub(crate) struct ThemeFile {
     pub name: String,
     pub description: Option<String>,
@@ -42,7 +42,6 @@ pub(crate) struct ThemeFile {
     pub h5: Option<ColorYaml>,
     pub h6: Option<ColorYaml>,
     pub code: Option<ColorYaml>,
-    pub code_block: Option<ColorYaml>,
     pub quote: Option<ColorYaml>,
     pub link: Option<ColorYaml>,
     pub emphasis: Option<ColorYaml>,
@@ -120,7 +119,6 @@ impl ThemeFile {
             h5: pick(&self.h5, &base.h5),
             h6: pick(&self.h6, &base.h6),
             code: pick(&self.code, &base.code),
-            code_block: pick(&self.code_block, &base.code_block),
             quote: pick(&self.quote, &base.quote),
             link: pick(&self.link, &base.link),
             emphasis: pick(&self.emphasis, &base.emphasis),
@@ -273,7 +271,7 @@ mod tests {
         fs::create_dir(&themes).unwrap();
         fs::write(
             themes.join("warm.yaml"),
-            "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\ncode_block: red\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
+            "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
         )
         .unwrap();
 
@@ -291,6 +289,16 @@ mod tests {
             }
         );
         assert_eq!(theme.syntax.keyword, Color::Red);
+    }
+
+    #[test]
+    fn removed_code_block_field_is_rejected() {
+        let error = serde_yaml::from_str::<ThemeFile>("name: legacy\ncode_block: red\n")
+            .expect_err("removed code_block field must be rejected");
+        assert!(
+            error.to_string().contains("unknown field `code_block`"),
+            "unexpected error: {error}"
+        );
     }
 
     #[test]

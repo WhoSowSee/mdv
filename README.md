@@ -368,11 +368,11 @@ Field reference:
 - `name` (required) — the value accepted by `--theme`.
 - `description` (optional) — shown in `mdv --theme-info`; falls back to the base theme's description.
 - `extends` (optional) — names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
-- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `h1`..`h6`, `code`, `code_block`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
+- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
 - `syntax:` (optional) — overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).
 
-A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying all 33 fields. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.
+A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying every field. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.
 
 ## Star History
 

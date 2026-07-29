@@ -60,7 +60,7 @@ from_text: null            # Render starting from the first line that contains t
 # `table_wrap` accepts the values above; `heading_layout` also understands camel-case variants from earlier releases.
 
 # Available keys for custom_theme:
-# text, text_light, h1..h6, code, code_block, quote, link, emphasis, strong,
+# text, text_light, h1..h6, code, quote, link, emphasis, strong,
 # strikethrough, highlight_background, background, border, list_marker,
 # table_header, table_border, error, warning
 

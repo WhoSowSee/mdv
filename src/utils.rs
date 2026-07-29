@@ -1,9 +1,14 @@
 use regex::Regex;
 use std::iter::Peekable;
 use std::str::Chars;
+use std::sync::LazyLock;
 use unicode_width::UnicodeWidthStr;
 
-/// Utility functions for mdv
+static SGR_SEQUENCE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\x1b\[[0-9;]*m").expect("valid SGR regex"));
+static OSC8_SEQUENCE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\x1b\]8;;[^\x1b]*\x1b\\").expect("valid OSC 8 regex"));
+
 /// Calculate the display width of a string, accounting for Unicode characters
 pub fn display_width(s: &str) -> usize {
     UnicodeWidthStr::width(s)
@@ -11,20 +16,12 @@ pub fn display_width(s: &str) -> usize {
 
 /// Clean ANSI escape sequences and OSC 8 hyperlink sequences from a string
 pub fn strip_ansi(s: &str) -> String {
-    // Remove standard ANSI color codes
-    let ansi_regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
-    let without_ansi = ansi_regex.replace_all(s, "");
+    if !s.contains('\x1b') {
+        return s.to_string();
+    }
 
-    // Remove OSC 8 hyperlink sequences
-    // Start sequence: \x1b]8;;URL\x1b\\
-    let osc8_start_regex = Regex::new(r"\x1b\]8;;[^\x1b]*\x1b\\").unwrap();
-    let without_osc8_start = osc8_start_regex.replace_all(&without_ansi, "");
-
-    // End sequence: \x1b]8;;\x1b\\
-    let osc8_end_regex = Regex::new(r"\x1b\]8;;\x1b\\").unwrap();
-    osc8_end_regex
-        .replace_all(&without_osc8_start, "")
-        .to_string()
+    let without_ansi = SGR_SEQUENCE.replace_all(s, "");
+    OSC8_SEQUENCE.replace_all(&without_ansi, "").to_string()
 }
 
 /// Text wrapping mode
@@ -40,25 +37,24 @@ pub enum WrapMode {
 
 /// Wrap text with specified wrapping mode
 pub fn wrap_text_with_mode(text: &str, width: usize, mode: WrapMode) -> String {
-    if width == 0 || mode == WrapMode::None {
+    let wrap_line = match mode {
+        WrapMode::None => return text.to_string(),
+        WrapMode::Character => wrap_line_character,
+        WrapMode::Word => wrap_line_word,
+    };
+    if width == 0 {
         return text.to_string();
     }
 
-    let lines: Vec<&str> = text.split('\n').collect();
     let mut wrapped_lines = Vec::new();
 
-    for line in lines {
+    for line in text.split('\n') {
         if line.trim().is_empty() {
             wrapped_lines.push(String::new());
             continue;
         }
 
-        let wrapped = match mode {
-            WrapMode::None => vec![line.to_string()],
-            WrapMode::Character => wrap_line_character(line, width),
-            WrapMode::Word => wrap_line_word(line, width),
-        };
-        wrapped_lines.extend(wrapped);
+        wrapped_lines.extend(wrap_line(line, width));
     }
 
     wrapped_lines.join("\n")
@@ -124,11 +120,6 @@ fn is_visually_blank(text: &str) -> bool {
 
 /// Wrap a single line using character-based wrapping, handling ANSI codes
 fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
-    if width == 0 {
-        return vec![line.to_string()];
-    }
-
-    // Check if line fits without wrapping
     let clean_line = strip_ansi(line);
     if display_width(&clean_line) <= width {
         return vec![line.to_string()];
@@ -196,11 +187,6 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
 
 /// Wrap a single line using word-based wrapping, handling ANSI codes
 fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
-    if width == 0 {
-        return vec![line.to_string()];
-    }
-
-    // Check if line fits without wrapping
     let clean_line = strip_ansi(line);
     if display_width(&clean_line) <= width {
         return vec![line.to_string()];

@@ -80,7 +80,6 @@ pub struct Theme {
 
     // Special elements
     pub code: Color,
-    pub code_block: Color,
     pub quote: Color,
     pub link: Color,
     pub emphasis: Color,
@@ -131,7 +130,6 @@ impl Default for Theme {
             h5: Color::Magenta,
             h6: Color::Cyan,
             code: Color::AnsiValue(102),
-            code_block: Color::AnsiValue(102),
             quote: Color::AnsiValue(109),
             link: Color::Blue,
             emphasis: Color::Yellow,
@@ -187,7 +185,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(253, 151, 31),
             h6: rgb(174, 129, 255),
             code: rgb(230, 219, 116),
-            code_block: rgb(248, 248, 242),
             quote: rgb(117, 113, 94),
             link: rgb(102, 217, 239),
             emphasis: rgb(253, 151, 31),
@@ -229,7 +226,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(108, 113, 196),
             h6: rgb(42, 161, 152),
             code: rgb(42, 161, 152),
-            code_block: rgb(131, 148, 150),
             quote: rgb(88, 110, 117),
             link: rgb(38, 139, 210),
             emphasis: rgb(203, 75, 22),
@@ -271,7 +267,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(191, 97, 106),
             h6: rgb(208, 135, 112),
             code: rgb(235, 203, 139),
-            code_block: rgb(236, 239, 244),
             quote: rgb(76, 86, 106),
             link: rgb(136, 192, 208),
             emphasis: rgb(163, 190, 140),
@@ -313,7 +308,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(247, 118, 142),
             h6: rgb(224, 175, 104),
             code: rgb(255, 158, 100),
-            code_block: rgb(192, 202, 245),
             quote: rgb(59, 66, 97),
             link: rgb(125, 207, 255),
             emphasis: rgb(169, 177, 214),
@@ -355,7 +349,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(255, 160, 102),
             h6: rgb(228, 104, 118),
             code: rgb(192, 163, 110),
-            code_block: rgb(220, 215, 186),
             quote: rgb(84, 84, 109),
             link: rgb(126, 156, 216),
             emphasis: rgb(200, 192, 147),
@@ -397,7 +390,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(211, 134, 155),
             h6: rgb(254, 128, 25),
             code: rgb(142, 192, 124),
-            code_block: rgb(60, 56, 54),
             quote: rgb(146, 131, 116),
             link: rgb(131, 165, 152),
             emphasis: rgb(211, 134, 155),
@@ -439,7 +431,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(247, 140, 108),
             h6: rgb(199, 146, 234),
             code: rgb(255, 203, 107),
-            code_block: rgb(238, 255, 255),
             quote: rgb(84, 110, 122),
             link: rgb(130, 170, 255),
             emphasis: rgb(247, 140, 108),
@@ -481,7 +472,6 @@ static BUILTIN_THEMES: LazyLock<HashMap<String, Theme>> = LazyLock::new(|| {
             h5: rgb(249, 226, 175),
             h6: rgb(242, 205, 205),
             code: rgb(245, 194, 231),
-            code_block: rgb(205, 214, 244),
             quote: rgb(108, 112, 134),
             link: rgb(137, 220, 235),
             emphasis: rgb(245, 194, 231),
@@ -651,7 +641,6 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         "h5" => theme.h5 = parse_color_spec(value)?,
         "h6" => theme.h6 = parse_color_spec(value)?,
         "code" => theme.code = parse_color_spec(value)?,
-        "code_block" | "codeblock" => theme.code_block = parse_color_spec(value)?,
         "quote" => theme.quote = parse_color_spec(value)?,
         "link" => theme.link = parse_color_spec(value)?,
         "emphasis" => theme.emphasis = parse_color_spec(value)?,
@@ -910,7 +899,6 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
         ThemeElement::H5 => &theme.h5,
         ThemeElement::H6 => &theme.h6,
         ThemeElement::Code => &theme.code,
-        ThemeElement::CodeBlock => &theme.text, // Use normal text color for code blocks
         ThemeElement::Quote => &theme.quote,
         ThemeElement::Link => &theme.link,
         ThemeElement::Emphasis => &theme.emphasis,
@@ -925,26 +913,8 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
         ThemeElement::Warning => &theme.warning,
     };
 
-    let mut style = AnsiStyle::new();
+    let mut style = AnsiStyle::new().fg(color.clone().into());
 
-    // For inline code, use foreground color only (no background)
-    // For code blocks, use normal text color (no special styling)
-    match element {
-        ThemeElement::Code => {
-            // Inline code: foreground color only, no background
-            style = style.fg(color.clone().into());
-        }
-        ThemeElement::CodeBlock => {
-            // Code block: use normal text color, no background, no special styling
-            style = style.fg(color.clone().into());
-        }
-        _ => {
-            // All other elements: use foreground color
-            style = style.fg(color.clone().into());
-        }
-    }
-
-    // Add attributes for specific elements
     match element {
         ThemeElement::Strong | ThemeElement::H1 => style = style.bold(),
         ThemeElement::Emphasis => style = style.italic(),
@@ -967,7 +937,6 @@ pub enum ThemeElement {
     H5,
     H6,
     Code,
-    CodeBlock,
     Quote,
     Link,
     Emphasis,
@@ -1082,10 +1051,15 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_custom_theme_invalid_key() {
+    fn removed_code_block_override_is_rejected() {
         let mut theme = Theme::default();
-        let result = apply_custom_theme(&mut theme, "unknown=#ffffff");
-        assert!(result.is_err());
+        let error = apply_custom_theme(&mut theme, "code_block=#ffffff")
+            .expect_err("removed code_block override must be rejected");
+        let error_chain = format!("{error:#}");
+        assert!(
+            error_chain.contains("Unknown key for custom theme: 'code_block'."),
+            "unexpected error: {error_chain}"
+        );
     }
 
     #[test]

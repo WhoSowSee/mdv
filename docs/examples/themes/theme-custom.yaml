@@ -34,7 +34,6 @@ h6: cyan
 
 # Special elements
 code: red
-code_block: white
 quote: darkgrey
 link: blue
 emphasis: yellow

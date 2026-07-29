@@ -455,13 +455,8 @@ impl<'a> EventRenderer<'a> {
             return base;
         }
 
-        let icon = match self.callout_icon_for_label(label) {
-            Some(icon) => icon,
-            None => return base,
-        };
-
         let mut text = String::new();
-        text.push_str(icon);
+        text.push_str(self.callout_icon_for_label(label));
         if icon_spacing > 0 {
             text.push_str(&" ".repeat(icon_spacing));
         }
@@ -471,16 +466,6 @@ impl<'a> EventRenderer<'a> {
             text.push_str(icon);
         }
         text
-    }
-
-    fn build_callout_label_text(
-        &self,
-        label: &str,
-        label_override: Option<&str>,
-        fold: Option<CalloutFold>,
-        icon_spacing: usize,
-    ) -> String {
-        self.callout_label_text(label, label_override, fold, icon_spacing)
     }
 
     fn callout_display_label(&self, label: &str, label_override: Option<&str>) -> String {
@@ -546,18 +531,17 @@ impl<'a> EventRenderer<'a> {
         if label_inside { 2 } else { 1 }
     }
 
-    fn callout_icon_for_label(&self, label: &str) -> Option<&str> {
-        if let Some(custom) = self.config.custom_callouts.get(label) {
-            if let Some(icon) = custom.icon.as_deref() {
-                return Some(icon);
-            }
-            if let Some(default_icon) = Self::default_callout_icon_for_label(label) {
-                return Some(default_icon);
-            }
-            return Some(DEFAULT_UNKNOWN_CALLOUT_ICON);
+    fn callout_icon_for_label(&self, label: &str) -> &str {
+        if let Some(icon) = self
+            .config
+            .custom_callouts
+            .get(label)
+            .and_then(|custom| custom.icon.as_deref())
+        {
+            return icon;
         }
 
-        Self::default_callout_icon_for_label(label).or(Some(DEFAULT_UNKNOWN_CALLOUT_ICON))
+        Self::default_callout_icon_for_label(label).unwrap_or(DEFAULT_UNKNOWN_CALLOUT_ICON)
     }
 
     fn default_callout_icon_for_label(label: &str) -> Option<&'static str> {
@@ -753,8 +737,7 @@ impl<'a> EventRenderer<'a> {
 
         if label_inside {
             let icon_spacing = self.callout_icon_spacing(true);
-            let label_text =
-                self.build_callout_label_text(label, label_override, fold, icon_spacing);
+            let label_text = self.callout_label_text(label, label_override, fold, icon_spacing);
             let styled_label = if label_text.is_empty() {
                 String::new()
             } else {
@@ -829,7 +812,7 @@ impl<'a> EventRenderer<'a> {
             String::new()
         } else {
             let icon_spacing = self.callout_icon_spacing(false);
-            self.build_callout_label_text(label, label_override, fold, icon_spacing)
+            self.callout_label_text(label, label_override, fold, icon_spacing)
         };
         let label_width = display_width(label_text.trim());
 
