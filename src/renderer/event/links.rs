@@ -7,11 +7,11 @@ use super::{
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
 
-fn build_underlined_table_link_replacement(link_text: &str, no_colors: bool) -> Option<String> {
-    if no_colors || link_text.is_empty() {
-        None
+fn style_underlined_table_link(link_text: &str, no_colors: bool) -> String {
+    if no_colors {
+        link_text.to_string()
     } else {
-        Some(format!("\x1b[4m{}\x1b[24m", link_text))
+        format!("\x1b[4m{}\x1b[24m", link_text)
     }
 }
 
@@ -30,31 +30,36 @@ fn build_clickable_underlined_table_link_replacement(
     }
 }
 
-fn push_table_link_with_replacement(
+fn push_clickable_table_link(
     table: &mut TableState,
     link_text: &str,
-    replacement: Option<String>,
+    url: Option<&str>,
+    no_colors: bool,
 ) {
     if link_text.is_empty() {
         return;
     }
 
-    if let Some(styled) = replacement {
+    if let Some(styled) = url.and_then(|url| {
+        build_clickable_underlined_table_link_replacement(link_text, url, no_colors)
+    }) {
         table
-            .inline_references
+            .clickable_link_replacements
             .push((link_text.to_string(), styled));
+        table.current_cell.push_str(link_text);
+    } else {
+        push_underlined_table_link(table, link_text, no_colors);
     }
-
-    table.current_cell.push_str(link_text);
 }
 
 fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors: bool) {
-    let replacement = build_underlined_table_link_replacement(link_text, no_colors);
-    push_table_link_with_replacement(table, link_text, replacement);
+    table
+        .current_cell
+        .push_str(&style_underlined_table_link(link_text, no_colors));
 }
 
-fn push_wrappable_table_reference(cell: &mut String, reference_text: &str) {
-    if reference_text.is_empty() {
+fn push_wrappable_table_reference(cell: &mut String, rendered_reference: &str) {
+    if rendered_reference.is_empty() {
         return;
     }
 
@@ -70,7 +75,7 @@ fn push_wrappable_table_reference(cell: &mut String, reference_text: &str) {
         cell.push(TABLE_REFERENCE_WRAP_DELIMITER);
     }
 
-    cell.push_str(reference_text);
+    cell.push_str(rendered_reference);
 }
 
 impl<'a> EventRenderer<'a> {
@@ -150,24 +155,12 @@ impl<'a> EventRenderer<'a> {
                 let link_url = self.link_references.get(&current_link_key).cloned();
 
                 if let Some(ref mut table) = self.table_state {
-                    // Keep table width calculation ANSI-free, then inject clickable styling
-                    // into the rendered fragments after table layout.
-                    let replacement = link_url
-                        .as_deref()
-                        .and_then(|url| {
-                            build_clickable_underlined_table_link_replacement(
-                                &link_text,
-                                url,
-                                self.config.no_colors,
-                            )
-                        })
-                        .or_else(|| {
-                            build_underlined_table_link_replacement(
-                                &link_text,
-                                self.config.no_colors,
-                            )
-                        });
-                    push_table_link_with_replacement(table, &link_text, replacement);
+                    push_clickable_table_link(
+                        table,
+                        &link_text,
+                        link_url.as_deref(),
+                        self.config.no_colors,
+                    );
                 } else {
                     // For non-table content, use clickable links as before
                     if let Some(url) = link_url.as_deref() {
@@ -223,24 +216,12 @@ impl<'a> EventRenderer<'a> {
                 let link_url = self.link_references.get(&current_link_key).cloned();
 
                 if let Some(ref mut table) = self.table_state {
-                    // Keep table width calculation ANSI-free, then inject clickable styling
-                    // into the rendered fragments after table layout.
-                    let replacement = link_url
-                        .as_deref()
-                        .and_then(|url| {
-                            build_clickable_underlined_table_link_replacement(
-                                &link_text,
-                                url,
-                                self.config.no_colors,
-                            )
-                        })
-                        .or_else(|| {
-                            build_underlined_table_link_replacement(
-                                &link_text,
-                                self.config.no_colors,
-                            )
-                        });
-                    push_table_link_with_replacement(table, &link_text, replacement);
+                    push_clickable_table_link(
+                        table,
+                        &link_text,
+                        link_url.as_deref(),
+                        self.config.no_colors,
+                    );
                 } else {
                     // For non-table content, use clickable forced links as before
                     if let Some(url) = link_url.as_deref() {
@@ -304,7 +285,7 @@ impl<'a> EventRenderer<'a> {
                 if let Some(url) = url {
                     // Check if we're in a table cell
                     if let Some(ref mut table) = self.table_state {
-                        // For tables, apply underline to the exact link fragment after layout.
+                        // custom_styling keeps the underline scoped through table wrapping.
                         push_underlined_table_link(
                             table,
                             &current_link_text,
@@ -333,8 +314,7 @@ impl<'a> EventRenderer<'a> {
                             });
                         }
 
-                        table.inline_references.push((url_part.clone(), styled_url));
-                        table.current_cell.push_str(&url_part);
+                        table.current_cell.push_str(&styled_url);
                     } else {
                         // Process link text with underline formatting and normal wrapping logic
                         self.process_underlined_text_with_wrapping(&current_link_text)?;
@@ -577,10 +557,7 @@ impl<'a> EventRenderer<'a> {
                         self.config.no_colors,
                     );
 
-                    table
-                        .inline_references
-                        .push((reference_text.clone(), styled_reference));
-                    push_wrappable_table_reference(&mut table.current_cell, &reference_text);
+                    push_wrappable_table_reference(&mut table.current_cell, &styled_reference);
                 } else {
                     // 1) Render the link text underlined with proper wrapping
                     let link_text = self.current_link_text.trim().to_string();
@@ -626,10 +603,7 @@ impl<'a> EventRenderer<'a> {
                         self.config.no_colors,
                     );
 
-                    table
-                        .inline_references
-                        .push((reference_text.clone(), styled_reference));
-                    push_wrappable_table_reference(&mut table.current_cell, &reference_text);
+                    push_wrappable_table_reference(&mut table.current_cell, &styled_reference);
                 } else {
                     let link_text = self.current_link_text.trim().to_string();
                     if !link_text.is_empty() {

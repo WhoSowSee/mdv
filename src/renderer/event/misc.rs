@@ -131,22 +131,16 @@ impl<'a> EventRenderer<'a> {
 
         let marker = format!("[^{}]", name);
         let should_highlight = self.should_highlight_footnote_reference(name.as_ref());
-        if let Some(ref mut table) = self.table_state {
-            if should_highlight {
-                let style = create_style(self.theme, ThemeElement::Link);
-                let styled_marker = style.apply(&marker, self.config.no_colors);
-                table
-                    .inline_references
-                    .push((marker.clone(), styled_marker));
-            }
-            table.current_cell.push_str(&marker);
+        let rendered_marker = if should_highlight {
+            let style = create_style(self.theme, ThemeElement::Link);
+            style.apply(&marker, self.config.no_colors)
         } else {
-            let rendered_marker = if should_highlight {
-                let style = create_style(self.theme, ThemeElement::Link);
-                style.apply(&marker, self.config.no_colors)
-            } else {
-                marker
-            };
+            marker
+        };
+
+        if let Some(ref mut table) = self.table_state {
+            table.current_cell.push_str(&rendered_marker);
+        } else {
             self.output.push_str(&rendered_marker);
         }
 

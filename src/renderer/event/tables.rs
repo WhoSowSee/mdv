@@ -1,6 +1,6 @@
 use super::{
     EventRenderer, LinkStyle, LinkTruncationStyle, Result, TableInlineUrlTarget, TableRenderer,
-    TableState, ThemeElement, create_style,
+    TableState,
 };
 use crate::utils::{display_width, strip_ansi};
 use pulldown_cmark::Alignment;
@@ -121,11 +121,10 @@ impl<'a> EventRenderer<'a> {
             table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;
         rendered_table = rendered_table.replace(TABLE_REFERENCE_WRAP_DELIMITER, "");
 
-        if !table.inline_references.is_empty() {
-            rendered_table = crate::table::apply_inline_reference_styles(
+        if !table.clickable_link_replacements.is_empty() {
+            rendered_table = crate::table::apply_clickable_link_replacements(
                 rendered_table,
-                &table.inline_references,
-                self.config.no_colors,
+                &table.clickable_link_replacements,
             );
         }
         rendered_table = Self::indent_table_block(rendered_table, table_indent);
@@ -151,8 +150,6 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        let link_style = create_style(self.theme, ThemeElement::Link);
-        let mut reference_cursor = 0usize;
         let segments = table.inline_url_segments.clone();
 
         for segment in segments {
@@ -205,18 +202,6 @@ impl<'a> EventRenderer<'a> {
                 cell.replace_range(start_idx..end_idx, &truncated_url_part);
             } else {
                 continue;
-            }
-
-            if let Some((idx, _)) = table
-                .inline_references
-                .iter()
-                .enumerate()
-                .skip(reference_cursor)
-                .find(|(_, (plain, _))| plain == &segment.url_part)
-            {
-                let styled = link_style.apply(&truncated_url_part, self.config.no_colors);
-                table.inline_references[idx] = (truncated_url_part.clone(), styled);
-                reference_cursor = idx.saturating_add(1);
             }
         }
     }

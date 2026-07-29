@@ -26,7 +26,7 @@ pub(crate) struct TableState {
     pub(super) in_header: bool,
     pub(super) current_row: Vec<String>,
     pub(super) current_cell: String,
-    pub(super) inline_references: Vec<(String, String)>,
+    pub(super) clickable_link_replacements: Vec<(String, String)>,
     pub(super) inline_url_segments: Vec<TableInlineUrlSegment>,
 }
 
@@ -811,7 +811,7 @@ impl<'a> EventRenderer<'a> {
                     in_header: true,
                     current_row: Vec::new(),
                     current_cell: String::new(),
-                    inline_references: Vec::new(),
+                    clickable_link_replacements: Vec::new(),
                     inline_url_segments: Vec::new(),
                 });
             }

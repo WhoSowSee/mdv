@@ -775,7 +775,7 @@ impl<'a> EventRenderer<'a> {
             in_header: true,
             current_row: Vec::new(),
             current_cell: String::new(),
-            inline_references: Vec::new(),
+            clickable_link_replacements: Vec::new(),
             inline_url_segments: Vec::new(),
         });
 

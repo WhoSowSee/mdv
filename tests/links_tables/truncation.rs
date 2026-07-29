@@ -54,4 +54,31 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
         "tablecut should produce ellipsis for table inline URLs, stdout:\n{}",
         tablecut_stdout
     );
+
+    let colored_output = mdv_cmd()
+        .arg("--no-config")
+        .arg("--cols")
+        .arg("46")
+        .arg("--link-style")
+        .arg("inline")
+        .arg("--link-truncation")
+        .arg("tablecut")
+        .arg(temp_file.path())
+        .output()
+        .expect("run mdv with colored tablecut truncation");
+    assert!(colored_output.status.success());
+    let colored_stdout = String::from_utf8(colored_output.stdout).expect("colored stdout utf8");
+    let colored_line = colored_stdout
+        .lines()
+        .find(|line| line.contains("spec") && line.contains("..."))
+        .expect("colored truncated table row");
+
+    assert!(
+        colored_line.contains("\u{1b}[4mspec\u{1b}[24m\u{1b}["),
+        "link text and truncated URL should keep independent styles: {colored_line:?}"
+    );
+    assert!(
+        !colored_line.contains("zzfinalzz"),
+        "colored tablecut should remove the URL tail: {colored_line:?}"
+    );
 }

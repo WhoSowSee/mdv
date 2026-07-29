@@ -39,33 +39,13 @@ impl TableRenderer {
     fn create_cell(&self, content: &str) -> Cell {
         let clean_content = strip_ansi(content);
 
-        let mut cell = Cell::new(&clean_content);
+        let mut cell = if self.no_colors {
+            Cell::new(&clean_content)
+        } else {
+            Cell::new(content)
+        };
         if clean_content.contains(TABLE_REFERENCE_WRAP_DELIMITER) {
             cell = cell.set_delimiter(TABLE_REFERENCE_WRAP_DELIMITER);
-        }
-
-        if clean_content.starts_with('`')
-            && clean_content.ends_with('`')
-            && !self.no_colors
-            && let Some(theme_color) = theme_color_to_comfy(&self.theme.code)
-        {
-            // Use only foreground color, no background
-            cell = cell.fg(theme_color);
-        }
-
-        if clean_content.len() != content.len() {
-            if content.contains("\x1b[1m") || content.contains("\x1b[01m") {
-                cell = cell.add_attribute(Attribute::Bold);
-            }
-            if content.contains("\x1b[3m") || content.contains("\x1b[03m") {
-                cell = cell.add_attribute(Attribute::Italic);
-            }
-
-            if !self.no_colors
-                && let Some(ansi_color) = extract_ansi_foreground_color(content)
-            {
-                cell = cell.fg(ansi_color);
-            }
         }
 
         cell
@@ -468,18 +448,13 @@ fn theme_color_to_comfy(color: &ThemeColor) -> Option<Color> {
     }
 }
 
-pub fn apply_inline_reference_styles(
+pub fn apply_clickable_link_replacements(
     mut table_output: String,
-    references: &[(String, String)],
-    no_colors: bool,
+    replacements: &[(String, String)],
 ) -> String {
-    if no_colors {
-        return table_output;
-    }
-
     let mut search_start = 0usize;
 
-    for (plain, styled) in references {
+    for (plain, styled) in replacements {
         if plain.is_empty() {
             continue;
         }
@@ -633,98 +608,6 @@ fn line_separator_count_before(output: &str, position: usize) -> usize {
         .chars()
         .filter(|ch| matches!(ch, '│' | '┆' | '┃'))
         .count()
-}
-
-fn extract_ansi_foreground_color(content: &str) -> Option<Color> {
-    let mut remaining = content;
-
-    while let Some(start) = remaining.find("\x1b[") {
-        remaining = &remaining[start + 2..];
-        let Some(end) = remaining.find('m') else {
-            break;
-        };
-        let sequence = &remaining[..end];
-        if let Some(color) = parse_sgr_sequence(sequence) {
-            return Some(color);
-        }
-        remaining = &remaining[end + 1..];
-    }
-
-    None
-}
-
-fn parse_sgr_sequence(sequence: &str) -> Option<Color> {
-    let values: Vec<i32> = sequence
-        .split(';')
-        .filter_map(|part| part.parse::<i32>().ok())
-        .collect();
-
-    let mut index = 0;
-    while index < values.len() {
-        let code = values[index];
-        match code {
-            30..=37 | 90..=97 => {
-                return map_basic_ansi_to_color(code);
-            }
-            38 => {
-                if let Some(mode) = values.get(index + 1) {
-                    match *mode {
-                        5 => {
-                            if let Some(value) = values.get(index + 2) {
-                                return Some(Color::AnsiValue(clamp_to_u8(*value)));
-                            }
-                        }
-                        2 => {
-                            if let (Some(r), Some(g), Some(b)) = (
-                                values.get(index + 2),
-                                values.get(index + 3),
-                                values.get(index + 4),
-                            ) {
-                                return Some(Color::Rgb {
-                                    r: clamp_to_u8(*r),
-                                    g: clamp_to_u8(*g),
-                                    b: clamp_to_u8(*b),
-                                });
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            39 => return None,
-            _ => {}
-        }
-
-        index += 1;
-    }
-
-    None
-}
-
-fn map_basic_ansi_to_color(code: i32) -> Option<Color> {
-    match code {
-        30 => Some(Color::Black),
-        31 => Some(Color::DarkRed),
-        32 => Some(Color::DarkGreen),
-        33 => Some(Color::DarkYellow),
-        34 => Some(Color::DarkBlue),
-        35 => Some(Color::DarkMagenta),
-        36 => Some(Color::DarkCyan),
-        37 => Some(Color::Grey),
-        90 => Some(Color::DarkGrey),
-        91 => Some(Color::Red),
-        92 => Some(Color::Green),
-        93 => Some(Color::Yellow),
-        94 => Some(Color::Blue),
-        95 => Some(Color::Magenta),
-        96 => Some(Color::Cyan),
-        97 => Some(Color::White),
-        _ => None,
-    }
-}
-
-fn clamp_to_u8(value: i32) -> u8 {
-    value.clamp(0, 255) as u8
 }
 
 #[cfg(test)]
@@ -906,20 +789,16 @@ mod tests {
         let renderer = TableRenderer::new(theme, false, 80, TableWrapMode::Fit);
 
         let link_text = "Link text";
-        let formatted_link_text = format!("\x1b[4m{}\x1b[0m", link_text);
+        let formatted_link_text = format!("\x1b[4m{}\x1b[24m", link_text);
         let styled_reference = create_style(theme, ThemeElement::Link).apply("[1]", false);
 
         let headers = vec!["Col".to_string()];
-        let reference_text = "[1]".to_string();
-        let rows = vec![vec![format!("{}{}", formatted_link_text, reference_text)]];
+        let rows = vec![vec![format!("{}{}", formatted_link_text, styled_reference)]];
         let alignments = vec![Alignment::Left];
-
-        let references = vec![(reference_text.clone(), styled_reference.clone())];
 
         let table_output = renderer
             .render_table(&headers, &rows, &alignments)
             .expect("table rendered");
-        let table_output = apply_inline_reference_styles(table_output, &references, false);
 
         let data_line = table_output
             .lines()
@@ -948,26 +827,81 @@ mod tests {
     }
 
     #[test]
+    fn test_table_mixed_inline_code_keeps_plain_text_unstyled() {
+        let theme_manager = ThemeManager::new();
+        let theme = theme_manager.get_theme("terminal").unwrap();
+        let renderer = TableRenderer::new(theme, false, 100, TableWrapMode::Fit);
+
+        let plain_text = "Versioned little-endian emulator snapshot with magic ";
+        let styled_code = create_style(theme, ThemeElement::Code).apply("`K580`", false);
+        let rows = vec![vec![format!("{plain_text}{styled_code}.")]];
+        let output = renderer
+            .render_table(&["Purpose".to_string()], &rows, &[Alignment::Left])
+            .expect("table rendered");
+        let data_line = output
+            .lines()
+            .find(|line| strip_ansi(line).contains(plain_text))
+            .expect("data row present");
+        let code_color_prefix = styled_code
+            .split('`')
+            .next()
+            .expect("styled code has a visible delimiter");
+        let plain_text_end = data_line.find(plain_text).expect("plain text is present");
+        assert!(
+            !data_line[..plain_text_end].contains(code_color_prefix),
+            "inline code color must not start before plain text; line={data_line:?}"
+        );
+        assert!(
+            data_line[plain_text_end..].contains(code_color_prefix),
+            "inline code color must be preserved for the code span; line={data_line:?}"
+        );
+    }
+
+    #[test]
+    fn test_table_mixed_attributes_remain_scoped() {
+        let theme_manager = ThemeManager::new();
+        let theme = theme_manager.get_theme("terminal").unwrap();
+        let renderer = TableRenderer::new(theme, false, 100, TableWrapMode::Fit);
+
+        let strong = create_style(theme, ThemeElement::Strong).apply("strong", false);
+        let emphasis = create_style(theme, ThemeElement::Emphasis).apply("emphasis", false);
+        let content = format!("plain {strong} middle {emphasis} tail");
+        let output = renderer
+            .render_table(
+                &["Content".to_string()],
+                &[vec![content.clone()]],
+                &[Alignment::Left],
+            )
+            .expect("table rendered");
+        let data_line = output
+            .lines()
+            .find(|line| strip_ansi(line).contains("plain strong middle emphasis tail"))
+            .expect("mixed-format data row present");
+
+        assert!(
+            data_line.contains(&content),
+            "cell should preserve each ANSI span without widening its scope: {data_line:?}"
+        );
+    }
+
+    #[test]
     fn test_table_inline_link_preserves_text_color() {
         let theme_manager = ThemeManager::new();
         let theme = theme_manager.get_theme("terminal").unwrap();
         let renderer = TableRenderer::new(theme, false, 80, TableWrapMode::Fit);
 
         let link_text = "Link text";
-        let formatted_link_text = format!("\x1b[4m{}\x1b[0m", link_text);
+        let formatted_link_text = format!("\x1b[4m{}\x1b[24m", link_text);
         let url_part = "(https://example.com)".to_string();
         let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, false);
 
         let headers = vec!["Col".to_string()];
-        let rows = vec![vec![format!("{}{}", formatted_link_text, url_part.clone())]];
+        let rows = vec![vec![format!("{}{}", formatted_link_text, styled_url)]];
         let alignments = vec![Alignment::Left];
-
-        let replacements = vec![(url_part.clone(), styled_url.clone())];
 
         let table_output = renderer
             .render_table(&headers, &rows, &alignments)
             .expect("table rendered");
-        let table_output = apply_inline_reference_styles(table_output, &replacements, false);
 
         let data_line = table_output
             .lines()
@@ -1002,19 +936,17 @@ mod tests {
         let renderer = TableRenderer::new(theme, false, 36, TableWrapMode::Fit);
 
         let link_text = "dash";
-        let formatted_link_text = format!("\x1b[4m{}\x1b[0m", link_text);
+        let formatted_link_text = format!("\x1b[4m{}\x1b[24m", link_text);
         let url_part = "(https://example.com/dashboard/alpha)".to_string();
         let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, false);
 
         let headers = vec!["Link".to_string()];
-        let rows = vec![vec![format!("{}{}", formatted_link_text, url_part.clone())]];
+        let rows = vec![vec![format!("{}{}", formatted_link_text, styled_url)]];
         let alignments = vec![Alignment::Left];
-        let replacements = vec![(url_part.clone(), styled_url.clone())];
 
         let table_output = renderer
             .render_table(&headers, &rows, &alignments)
             .expect("table rendered");
-        let table_output = apply_inline_reference_styles(table_output, &replacements, false);
         let stripped = crate::utils::strip_ansi(&table_output);
 
         assert!(
@@ -1036,54 +968,44 @@ mod tests {
     }
 
     #[test]
-    fn test_fragmented_inline_style_prefers_nearest_cell_match() {
-        let theme_manager = ThemeManager::new();
-        let theme = theme_manager.get_theme("terminal").unwrap();
-        let link_style = create_style(theme, ThemeElement::Link);
-
-        let guide_text = "Guide".to_string();
-        let api_text = "API".to_string();
-        let guide_url = "(https://example.com/docs/guide)".to_string();
-        let api_url = "(https://example.com/docs/api)".to_string();
-
+    fn test_fragmented_clickable_link_prefers_nearest_cell_match() {
+        let guide_text = "Guide documentation".to_string();
+        let api_text = "API documentation".to_string();
+        let guide_url = "https://example.com/docs/guide";
+        let api_url = "https://example.com/docs/api";
         let raw_table = concat!(
-            "│ Docs ┆ Guide(https://exampl ┆ API(https://example. ┆ short urls │\n",
-            "│      ┆ e.com/docs/guide)    ┆ com/docs/api)        ┆            │"
+            "│ Guide docum ┆ API documen │\n",
+            "│ entation    ┆ tation      │"
         )
         .to_string();
-
-        let styled_guide_url = link_style.apply(&guide_url, false);
-        let styled_api_url = link_style.apply(&api_url, false);
         let replacements = vec![
-            (guide_text.clone(), format!("\x1b[4m{}\x1b[24m", guide_text)),
-            (guide_url.clone(), styled_guide_url.clone()),
-            (api_text.clone(), format!("\x1b[4m{}\x1b[24m", api_text)),
-            (api_url.clone(), styled_api_url),
+            (
+                guide_text.clone(),
+                format!("\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\", guide_url, guide_text),
+            ),
+            (
+                api_text.clone(),
+                format!("\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\", api_url, api_text),
+            ),
         ];
 
-        let styled_table = apply_inline_reference_styles(raw_table, &replacements, false);
+        let styled_table = apply_clickable_link_replacements(raw_table, &replacements);
         let lines: Vec<&str> = styled_table.lines().collect();
         assert_eq!(lines.len(), 2, "expected two-line wrapped row");
 
-        let guide_color_prefix_end = styled_guide_url
-            .find(&guide_url)
-            .expect("styled guide url contains plain url");
-        let guide_color_prefix = &styled_guide_url[..guide_color_prefix_end];
-
+        let guide_open = format!("\x1b]8;;{}\x1b\\", guide_url);
+        let api_open = format!("\x1b]8;;{}\x1b\\", api_url);
         assert!(
-            lines[0].contains(&format!("\x1b[24m{}", guide_color_prefix)),
-            "guide url should start colored immediately after underlined link text, line={:?}",
-            lines[0]
+            lines
+                .iter()
+                .all(|line| line.matches(&guide_open).count() == 1),
+            "each guide fragment should keep its own OSC 8 target: {styled_table:?}"
         );
-
-        let continuation_primary_cell = lines[1]
-            .split('┆')
-            .nth(1)
-            .expect("primary continuation cell present");
         assert!(
-            continuation_primary_cell.contains(guide_color_prefix),
-            "guide url continuation should keep link color, cell={:?}",
-            continuation_primary_cell
+            lines
+                .iter()
+                .all(|line| line.matches(&api_open).count() == 1),
+            "each API fragment should keep its own OSC 8 target: {styled_table:?}"
         );
     }
 
@@ -1102,19 +1024,5 @@ mod tests {
             prefix
         );
         assert_eq!(format!("{}{}{}", prefix, plain, suffix), styled);
-    }
-
-    #[test]
-    fn test_extract_ansi_foreground_color_rgb() {
-        let input = "\x1b[1;38;2;12;34;56mcolored\x1b[0m";
-        let color = extract_ansi_foreground_color(input);
-        assert_eq!(
-            color,
-            Some(Color::Rgb {
-                r: 12,
-                g: 34,
-                b: 56
-            })
-        );
     }
 }
