@@ -1,0 +1,77 @@
+# Default MDV configuration file
+# Create it with: mdv --init-config
+# Place this file as ~/.config/mdv/config.yaml (or ~/.config/mdv/config.yml)
+# and use --config-file ~/.config/mdv or MDV_CONFIG_PATH=~/.config/mdv to load it.
+
+# Theme settings
+theme: "terminal"          # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "material-ocean" | "catppuccin"
+code_theme: null           # Use null to follow theme; accepts the same values as theme
+theme_info: false          # Print palette information alongside rendered output
+custom_theme: null         # Override individual UI colors (see formats below)
+custom_code_theme: null    # Override syntax colors (same format as custom_theme)
+custom_callout: null       # Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
+                           # icon/color are optional
+                           # Color values use the same formats as custom_theme/custom_code_theme.
+custom_code_block: null      # Override code block icon/label/aliases (e.g. rust:icon=*,label=russst,aliases=rs|rst)
+                              # Languages are separated by ';', options by ',', aliases by '|'.
+                              # Works for any language hint, even if it is not in the built-in icon mapping.
+                              # Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic.
+                              # Use 'default:icon=...' to set the fallback icon for unknown languages.
+
+# Display behaviour
+# Keys must use snake_case (e.g. no_colors, tab_length).
+cols: null                 # Use detected terminal width; fallback is 80 when detection fails
+tab_length: 4              # Replace tab characters with this many spaces
+no_colors: false           # Strip all ANSI colors from output
+wrap: "char"               # Options: "char" | "word" | "none"
+reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
+table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
+heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
+smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
+table_smart_indent: false  # Automatically adjusts table indentation based on available width
+hide_comments: false       # Hide Markdown comments from the rendered output
+render_html: false         # Render raw HTML fragments as terminal-formatted content
+show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
+no_code_language: false    # Disable the language label above code blocks
+code_guessing: true        # Disable to keep unknown code blocks as plain text
+code_block_style: "pretty" # Options: "simple" | "pretty" | "*:show-icons" | "*:icon-only"
+                           # show-icons adds a Nerd Font icon before the language label.
+                           # icon-only shows only the icon and hides the label (implies show-icons).
+callout_style: "pretty"    # Options: "simple:show-icons;fold-icons;uppercase" | "pretty:show-icons;fold-icons;label-inside;uppercase"
+                           # label-inside is supported only with "pretty", fold-icons requires show-icons. Icons require Nerd Fonts.
+code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hanging indent inside code blocks
+reverse: false             # Render document starting from the end while preserving layout
+pretty_checkbox: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
+custom_checkbox: null      # Override icons or add states with optional color, only with pretty_checkbox (e.g. " :icon:yellow;*:icon:#ff0000")
+pretty_list: null          # null | "type:nerd-font;size:small" | "type:unicode;size:large"; booleans are not accepted
+                           # size only changes Nerd Font icons; Unicode accepts both sizes and uses the same glyphs.
+                           # Unicode spacing depends on the font; verified especially with JetBrainsMono Nerd Font.
+uniform_list_marker: null  # Use one icon at every level: "level:1".."level:4" or a custom "icon:*"
+custom_list: null          # Override list marker icon and/or color per level, only with pretty_list (e.g. "1:*:yellow;2:>:red;3:blue")
+                           # Icon is optional: "1:red" keeps the built-in icon and switches to red.
+# Link handling
+link_style: "clickable"    # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
+link_truncation: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"
+
+# Footnotes
+footnote_style: "endnotes" # Options: "endnotes" | "attached"
+missing_footnote_style: "show" # Options: "show" | "hide"
+
+# Content filtering
+from_text: null            # Render starting from the first line that contains this text
+
+# `table_wrap` accepts the values above; `heading_layout` also understands camel-case variants from earlier releases.
+
+# Available keys for custom_theme:
+# text, text_light, h1..h6, code, quote, link, emphasis, strong,
+# strikethrough, highlight_background, background, border, list_marker,
+# table_header, table_border, error, warning
+
+# Available keys for custom_code_theme:
+# keyword, string, comment, number, operator, function, variable, type_name
+
+# Color value formats accepted in custom_theme/custom_code_theme/custom_callout:
+# Hex strings: "#rrggbb" or "#rgb"
+# RGB tuples:  "r,g,b" or "rgb(r,g,b)" (values 0..255)
+# ANSI 256:    "ansi(N)" or just "N" (0..255)
+# Named:       "red", "darkgrey", etc.

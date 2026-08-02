@@ -8,9 +8,18 @@ use std::path::Path;
 
 const PRESETS_DIR: &str = "presets";
 const BUILTIN_PRESETS: [(&str, &str); 3] = [
-    ("compact", include_str!("../assets/presets/compact.yaml")),
-    ("reader", include_str!("../assets/presets/reader.yaml")),
-    ("showcase", include_str!("../assets/presets/showcase.yaml")),
+    (
+        "compact",
+        include_str!("../assets/config/presets/compact.yaml"),
+    ),
+    (
+        "reader",
+        include_str!("../assets/config/presets/reader.yaml"),
+    ),
+    (
+        "showcase",
+        include_str!("../assets/config/presets/showcase.yaml"),
+    ),
 ];
 
 enum PresetSource {

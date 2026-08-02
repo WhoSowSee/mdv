@@ -135,6 +135,88 @@ impl ThemeFile {
             syntax,
         }
     }
+
+    fn into_complete(mut self) -> Result<Theme> {
+        if self.name.trim().is_empty() {
+            bail!("Theme file is missing 'name' field");
+        }
+        if self.extends.is_some() {
+            bail!("Embedded themes cannot use 'extends'");
+        }
+
+        let name = self.name.trim().to_string();
+        let description = self
+            .description
+            .take()
+            .filter(|value| !value.trim().is_empty())
+            .with_context(|| format!("Embedded theme '{name}' is missing 'description'"))?;
+        let mut syntax = self
+            .syntax
+            .take()
+            .with_context(|| format!("Embedded theme '{name}' is missing 'syntax'"))?;
+
+        macro_rules! color {
+            ($owner:expr, $field:ident) => {
+                $owner.$field.take().map(|value| value.0).with_context(|| {
+                    format!(
+                        "Embedded theme '{}' is missing '{}'",
+                        name,
+                        stringify!($field)
+                    )
+                })?
+            };
+        }
+
+        Ok(Theme {
+            description,
+            text: color!(self, text),
+            text_light: color!(self, text_light),
+            h1: color!(self, h1),
+            h2: color!(self, h2),
+            h3: color!(self, h3),
+            h4: color!(self, h4),
+            h5: color!(self, h5),
+            h6: color!(self, h6),
+            code: color!(self, code),
+            quote: color!(self, quote),
+            link: color!(self, link),
+            emphasis: color!(self, emphasis),
+            strong: color!(self, strong),
+            strikethrough: color!(self, strikethrough),
+            highlight_background: color!(self, highlight_background),
+            background: self.background.take().map(|value| value.0),
+            border: color!(self, border),
+            list_marker: color!(self, list_marker),
+            table_header: color!(self, table_header),
+            table_border: color!(self, table_border),
+            error: color!(self, error),
+            warning: color!(self, warning),
+            syntax: SyntaxTheme {
+                keyword: color!(syntax, keyword),
+                string: color!(syntax, string),
+                comment: color!(syntax, comment),
+                number: color!(syntax, number),
+                operator: color!(syntax, operator),
+                function: color!(syntax, function),
+                variable: color!(syntax, variable),
+                type_name: color!(syntax, type_name),
+            },
+            name,
+        })
+    }
+}
+
+pub(crate) fn parse_embedded_theme(expected_name: &str, source: &str) -> Result<Theme> {
+    let file: ThemeFile = serde_yaml::from_str(source)
+        .with_context(|| format!("Failed to parse embedded theme '{expected_name}'"))?;
+    if file.name != expected_name {
+        bail!(
+            "Embedded theme name '{}' does not match expected name '{}'",
+            file.name,
+            expected_name
+        );
+    }
+    file.into_complete()
 }
 
 /// Load every `*.yaml`/`*.yml` file from `<config_dir>/themes/`. Files are

@@ -19,7 +19,7 @@ use std::path::{Component, Path, PathBuf};
 
 const CONFIG_FILE_ENV: &str = "MDV_CONFIG_PATH";
 const NO_COLOR_ENV: &str = "MDV_NO_COLOR";
-const DEFAULT_CONFIG_TEMPLATE: &str = include_str!("../docs/examples/config.yaml");
+const DEFAULT_CONFIG_TEMPLATE: &str = include_str!("../assets/config/config.yaml");
 const DEFAULT_CONFIG_FILE_NAME: &str = "config.yaml";
 
 fn arg_has_user_value(matches: &ArgMatches, id: &str) -> bool {
@@ -1185,6 +1185,10 @@ link_truncation: tablecut
 
     #[test]
     fn default_config_template_matches_default_settings() {
+        assert_eq!(
+            DEFAULT_CONFIG_TEMPLATE,
+            include_str!("../docs/examples/config.yaml")
+        );
         let config: Config =
             serde_yaml::from_str(DEFAULT_CONFIG_TEMPLATE).expect("default config template parses");
 

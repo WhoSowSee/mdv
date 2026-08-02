@@ -1,0 +1,22 @@
+# Copy this file to:
+#   <config_dir>/presets/preset-reading.yaml
+#
+# Select it with:
+#   mdv --preset focused-reading FILE.md
+#
+# `name` is required.
+# All other keys are optional and follow config.yaml.
+# Omitted values remain unchanged.
+
+name: focused-reading
+theme: nord
+wrap: word
+reflow: true
+table_wrap: wrap
+heading_layout: level
+smart_indent: true
+hide_comments: true
+render_html: true
+code_wrap_indent: base
+link_style: inlinetable
+footnote_style: attached
