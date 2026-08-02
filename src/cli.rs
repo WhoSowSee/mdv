@@ -1,3 +1,4 @@
+use crate::list_marker::{PrettyListStyle, UniformListMarker};
 use clap::{Parser, ValueEnum};
 use std::fmt;
 use std::path::PathBuf;
@@ -130,13 +131,25 @@ pub struct Cli {
     )]
     pub custom_checkbox: Option<String>,
 
-    /// Render list markers as Nerd Font icons (requires a Nerd Font terminal)
+    /// Render unordered list markers with Nerd Font or Unicode icons
     #[arg(
         short = 'D',
         long = "pretty-list",
-        long_help = "Render unordered list markers as Nerd Font icons per nesting level\nRequires a Nerd Font to display correctly"
+        value_name = "LIST_STYLE",
+        value_parser = PrettyListStyle::parse,
+        long_help = "Render unordered list markers with a built-in icon set per nesting level\n\nFormat: 'type:<nerd-font|unicode>;size:<large|small>'\n\nThe size option only changes Nerd Font icons.\nIt is accepted for Unicode, but both sizes use the same glyphs.\nUnicode glyph spacing may vary by font.\nRendering was verified with Nerd Font families, especially JetBrainsMono Nerd Font.\n\nExamples:\n  --pretty-list 'type:nerd-font;size:large'\n  --pretty-list 'type:nerd-font;size:small'\n  --pretty-list 'type:unicode;size:large'\n  --pretty-list 'size:large'\n  --pretty-list 'type:unicode'"
     )]
-    pub pretty_list: bool,
+    pub pretty_list: Option<PrettyListStyle>,
+
+    /// Use one list marker for every nesting level. Requires --pretty-list
+    #[arg(
+        short = 'N',
+        long = "uniform-list-marker",
+        value_name = "MARKER",
+        value_parser = UniformListMarker::parse,
+        long_help = "Use one marker for every unordered-list nesting level (only with --pretty-list)\n\nChoose exactly one form:\n  level:<1-4>  reuse that level's icon from the selected --pretty-list set\n  icon:<glyph> use a custom glyph or string\n\nExamples:\n  --uniform-list-marker 'level:2'\n  --uniform-list-marker 'icon:*'"
+    )]
+    pub uniform_list_marker: Option<UniformListMarker>,
 
     /// Override list marker icon and/or color per nesting level. Requires --pretty-list
     #[arg(
@@ -819,5 +832,26 @@ mod tests {
             cli.custom_code_block.expect("custom code block parsed"),
             "rust:icon=;python:icon="
         );
+    }
+
+    #[test]
+    fn pretty_list_rejects_legacy_bare_flag() {
+        assert!(Cli::try_parse_from(["mdv", "--pretty-list"]).is_err());
+        assert!(Cli::try_parse_from(["mdv", "-D"]).is_err());
+        assert!(Cli::try_parse_from(["mdv", "--pretty-list", "README.md"]).is_err());
+    }
+
+    #[test]
+    fn pretty_list_accepts_spaced_style_value() {
+        let cli = Cli::parse_from([
+            "mdv",
+            "--pretty-list",
+            "type:nerd-font;size:small",
+            "README.md",
+        ]);
+        let style = cli.pretty_list.expect("pretty list style parsed");
+
+        assert_eq!(style.to_string(), "type:nerd-font;size:small");
+        assert_eq!(cli.filename.as_deref(), Some("README.md"));
     }
 }

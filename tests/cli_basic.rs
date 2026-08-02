@@ -18,6 +18,32 @@ fn test_help_command() {
 }
 
 #[test]
+fn test_pretty_list_help_documents_font_behavior() {
+    let mut cmd = mdv_cmd();
+    cmd.arg("--help");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("type:<nerd-font|unicode>"))
+        .stdout(predicate::str::contains(
+            "size option only changes Nerd Font icons",
+        ))
+        .stdout(predicate::str::contains(
+            "--pretty-list 'type:nerd-font;size:large'",
+        ))
+        .stdout(predicate::str::contains(
+            "--pretty-list 'type:nerd-font;size:small'",
+        ))
+        .stdout(predicate::str::contains(
+            "--pretty-list 'type:unicode;size:large'",
+        ))
+        .stdout(predicate::str::contains("--pretty-list 'size:large'"))
+        .stdout(predicate::str::contains("--pretty-list 'type:unicode'"))
+        .stdout(predicate::str::contains("JetBrainsMono Nerd Font"))
+        .stdout(predicate::str::contains("-N, --uniform-list-marker"))
+        .stdout(predicate::str::contains("U+F444").not());
+}
+
+#[test]
 fn test_version_command() {
     let mut cmd = mdv_cmd();
     cmd.arg("--version");

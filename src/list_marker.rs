@@ -7,16 +7,211 @@
 use crate::theme::{Color, parse_color_value};
 use anyhow::{Context, Result, bail};
 use std::collections::HashMap;
+use std::fmt;
 
-/// Built-in Nerd Font icons used by `--pretty-list`. Index `level - 1` is
-/// used for the marker at that nesting depth; entries past the end fall back
-/// to the last glyph.
-const PRETTY_LIST_ICONS: &[&str] = &[
-    "\u{f444}", // level 1
-    "\u{f445}", // level 2
-    "\u{f4c3}", // level 3
-    "\u{f51d}", // level 4+ (and any deeper nesting)
-];
+const NERD_FONT_LARGE_ICONS: [&str; 4] = ["\u{f444}", "\u{f445}", "\u{f4c3}", "\u{f51d}"];
+const NERD_FONT_SMALL_ICONS: [&str; 4] = ["\u{f09de}", "\u{f0a13}", "\u{f14dc}", "\u{f0a14}"];
+const UNICODE_ICONS: [&str; 4] = ["⦁", "▪", "⚬", "▫"];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PrettyListType {
+    NerdFont,
+    Unicode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PrettyListSize {
+    Large,
+    Small,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct PrettyListStyle {
+    marker_type: PrettyListType,
+    size: PrettyListSize,
+}
+
+impl Default for PrettyListStyle {
+    fn default() -> Self {
+        Self {
+            marker_type: PrettyListType::NerdFont,
+            size: PrettyListSize::Large,
+        }
+    }
+}
+
+impl PrettyListStyle {
+    pub fn parse(input: &str) -> std::result::Result<Self, String> {
+        let input = input.trim();
+        if input.is_empty() {
+            return Err("Pretty list style cannot be empty.".to_string());
+        }
+
+        let mut style = Self::default();
+        let mut type_seen = false;
+        let mut size_seen = false;
+
+        for raw_option in input.split(';') {
+            let option = raw_option.trim();
+            if option.is_empty() {
+                return Err("Pretty list style option cannot be empty.".to_string());
+            }
+            let (key, value) = option
+                .split_once(':')
+                .ok_or_else(|| format!("Pretty list option '{option}' must contain ':'."))?;
+            let key = key.trim().to_ascii_lowercase();
+            let value = value.trim().to_ascii_lowercase();
+
+            match key.as_str() {
+                "type" => {
+                    if type_seen {
+                        return Err("Pretty list type is defined more than once.".to_string());
+                    }
+                    style.marker_type = match value.as_str() {
+                        "nerd-font" => PrettyListType::NerdFont,
+                        "unicode" => PrettyListType::Unicode,
+                        _ => {
+                            return Err(format!(
+                                "Unknown pretty list type '{value}'. Expected 'nerd-font' or 'unicode'."
+                            ));
+                        }
+                    };
+                    type_seen = true;
+                }
+                "size" => {
+                    if size_seen {
+                        return Err("Pretty list size is defined more than once.".to_string());
+                    }
+                    style.size = match value.as_str() {
+                        "large" => PrettyListSize::Large,
+                        "small" => PrettyListSize::Small,
+                        _ => {
+                            return Err(format!(
+                                "Unknown pretty list size '{value}'. Expected 'large' or 'small'."
+                            ));
+                        }
+                    };
+                    size_seen = true;
+                }
+                _ => return Err(format!("Unknown pretty list option '{key}'.")),
+            }
+        }
+
+        Ok(style)
+    }
+
+    fn icon(self, level: usize) -> &'static str {
+        let icons = match (self.marker_type, self.size) {
+            (PrettyListType::NerdFont, PrettyListSize::Large) => &NERD_FONT_LARGE_ICONS,
+            (PrettyListType::NerdFont, PrettyListSize::Small) => &NERD_FONT_SMALL_ICONS,
+            (PrettyListType::Unicode, _) => &UNICODE_ICONS,
+        };
+        icons[level.saturating_sub(1).min(icons.len() - 1)]
+    }
+}
+
+impl fmt::Display for PrettyListStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let marker_type = match self.marker_type {
+            PrettyListType::NerdFont => "nerd-font",
+            PrettyListType::Unicode => "unicode",
+        };
+        let size = match self.size {
+            PrettyListSize::Large => "large",
+            PrettyListSize::Small => "small",
+        };
+        write!(f, "type:{marker_type};size:{size}")
+    }
+}
+
+impl TryFrom<String> for PrettyListStyle {
+    type Error = String;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        Self::parse(&value)
+    }
+}
+
+impl From<PrettyListStyle> for String {
+    fn from(value: PrettyListStyle) -> Self {
+        value.to_string()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub enum UniformListMarker {
+    Level(usize),
+    Icon(String),
+}
+
+impl UniformListMarker {
+    pub fn parse(input: &str) -> std::result::Result<Self, String> {
+        let input = input.trim();
+        if input.is_empty() {
+            return Err("Uniform list marker cannot be empty.".to_string());
+        }
+        if input.contains(';') {
+            return Err(
+                "Uniform list marker accepts exactly one of 'level:<1-4>' or 'icon:<glyph>'."
+                    .to_string(),
+            );
+        }
+
+        let (key, value) = input
+            .split_once(':')
+            .ok_or_else(|| "Uniform list marker must contain ':'.".to_string())?;
+        let key = key.trim().to_ascii_lowercase();
+        let value = value.trim();
+
+        match key.as_str() {
+            "level" => {
+                let level = value.parse::<usize>().map_err(|_| {
+                    format!("Uniform list marker level '{value}' must be an integer from 1 to 4.")
+                })?;
+                if !(1..=4).contains(&level) {
+                    return Err(format!(
+                        "Uniform list marker level must be from 1 to 4 (got {level})."
+                    ));
+                }
+                Ok(Self::Level(level))
+            }
+            "icon" => {
+                if value.is_empty() {
+                    return Err("Uniform list marker icon cannot be empty.".to_string());
+                }
+                Ok(Self::Icon(value.to_string()))
+            }
+            _ => Err(format!(
+                "Unknown uniform list marker option '{key}'. Expected 'level' or 'icon'."
+            )),
+        }
+    }
+}
+
+impl fmt::Display for UniformListMarker {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Level(level) => write!(f, "level:{level}"),
+            Self::Icon(icon) => write!(f, "icon:{icon}"),
+        }
+    }
+}
+
+impl TryFrom<String> for UniformListMarker {
+    type Error = String;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        Self::parse(&value)
+    }
+}
+
+impl From<UniformListMarker> for String {
+    fn from(value: UniformListMarker) -> Self {
+        value.to_string()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ListMarkerOverride {
@@ -26,9 +221,8 @@ pub struct ListMarkerOverride {
 
 #[derive(Debug, Default, Clone)]
 pub struct ListMarkerConfig {
-    /// Built-in pretty list set enabled via `--pretty-list`.
-    pub pretty: bool,
-    /// User-defined overrides keyed by 1-based nesting level.
+    pub style: Option<PrettyListStyle>,
+    pub uniform: Option<UniformListMarker>,
     pub overrides: HashMap<usize, ListMarkerOverride>,
 }
 
@@ -39,17 +233,16 @@ impl ListMarkerConfig {
     /// be used. The returned tuple is `(icon, color)` where `icon` falls back
     /// to the built-in pretty-list glyph when only a color override is set.
     pub fn resolve(&self, level: usize) -> Option<(String, Option<Color>)> {
+        let style = self.style?;
         let override_entry = self.overrides.get(&level);
         let override_icon = override_entry.and_then(|e| e.icon.clone());
         let override_color = override_entry.and_then(|e| e.color.clone());
-        if self.pretty {
-            let icon = override_icon.unwrap_or_else(|| {
-                let idx = level.saturating_sub(1).min(PRETTY_LIST_ICONS.len() - 1);
-                PRETTY_LIST_ICONS[idx].to_string()
-            });
-            return Some((icon, override_color));
-        }
-        override_icon.map(|icon| (icon, override_color))
+        let icon = override_icon.unwrap_or_else(|| match &self.uniform {
+            Some(UniformListMarker::Level(uniform_level)) => style.icon(*uniform_level).to_string(),
+            Some(UniformListMarker::Icon(icon)) => icon.clone(),
+            None => style.icon(level).to_string(),
+        });
+        Some((icon, override_color))
     }
 
     /// Parse the `--custom-list` string into a list of `(level, override)` pairs.
@@ -131,9 +324,9 @@ mod tests {
     use crate::theme::Color;
 
     #[test]
-    fn pretty_list_uses_builtin_icons() {
+    fn pretty_list_uses_large_nerd_font_icons_by_default() {
         let cfg = ListMarkerConfig {
-            pretty: true,
+            style: Some(PrettyListStyle::default()),
             ..Default::default()
         };
 
@@ -151,10 +344,83 @@ mod tests {
     }
 
     #[test]
+    fn pretty_list_uses_small_nerd_font_icons() {
+        let cfg = ListMarkerConfig {
+            style: Some(PrettyListStyle::parse("type:nerd-font;size:small").unwrap()),
+            ..Default::default()
+        };
+
+        let icons = (1..=5)
+            .map(|level| cfg.resolve(level).unwrap().0)
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            icons,
+            [
+                "\u{f09de}",
+                "\u{f0a13}",
+                "\u{f14dc}",
+                "\u{f0a14}",
+                "\u{f0a14}"
+            ]
+        );
+    }
+
+    #[test]
+    fn pretty_list_style_defaults_omitted_fields() {
+        assert_eq!(
+            PrettyListStyle::parse("size:small").unwrap(),
+            PrettyListStyle {
+                marker_type: PrettyListType::NerdFont,
+                size: PrettyListSize::Small,
+            }
+        );
+        assert_eq!(
+            PrettyListStyle::parse("type:unicode").unwrap(),
+            PrettyListStyle {
+                marker_type: PrettyListType::Unicode,
+                size: PrettyListSize::Large,
+            }
+        );
+        assert!(PrettyListStyle::parse("type:ascii").is_err());
+    }
+
+    #[test]
+    fn unicode_icons_ignore_size() {
+        let large = ListMarkerConfig {
+            style: Some(PrettyListStyle::parse("type:unicode;size:large").unwrap()),
+            ..Default::default()
+        };
+        let small = ListMarkerConfig {
+            style: Some(PrettyListStyle::parse("type:unicode;size:small").unwrap()),
+            ..Default::default()
+        };
+
+        for (level, expected) in [(1, "⦁"), (2, "▪"), (3, "⚬"), (4, "▫"), (8, "▫")] {
+            assert_eq!(large.resolve(level).unwrap().0, expected);
+            assert_eq!(small.resolve(level).unwrap().0, expected);
+        }
+    }
+
+    #[test]
+    fn uniform_custom_icon_is_used_for_every_level() {
+        let cfg = ListMarkerConfig {
+            style: Some(PrettyListStyle::default()),
+            uniform: Some(UniformListMarker::Icon("*".to_string())),
+            ..Default::default()
+        };
+
+        for level in 1..=6 {
+            assert_eq!(cfg.resolve(level).unwrap().0, "*");
+        }
+    }
+
+    #[test]
     fn custom_list_overrides_per_level() {
         let cfg = ListMarkerConfig {
-            pretty: true,
+            style: Some(PrettyListStyle::default()),
             overrides: ListMarkerConfig::parse_custom_list("5:&").unwrap(),
+            ..Default::default()
         };
 
         let (icon, color) = cfg.resolve(5).unwrap();
@@ -217,8 +483,9 @@ mod tests {
     #[test]
     fn color_only_falls_back_to_pretty_icon() {
         let cfg = ListMarkerConfig {
-            pretty: true,
+            style: Some(PrettyListStyle::default()),
             overrides: ListMarkerConfig::parse_custom_list("1:red").unwrap(),
+            ..Default::default()
         };
         let (icon, color) = cfg.resolve(1).unwrap();
         assert_eq!(icon, "\u{f444}");
@@ -228,5 +495,32 @@ mod tests {
     #[test]
     fn color_only_rejects_extra_tokens() {
         assert!(ListMarkerConfig::parse_custom_list("1:red:extra").is_err());
+    }
+
+    #[test]
+    fn custom_icon_overrides_uniform_marker() {
+        let cfg = ListMarkerConfig {
+            style: Some(PrettyListStyle::default()),
+            uniform: Some(UniformListMarker::Level(2)),
+            overrides: ListMarkerConfig::parse_custom_list("3:>").unwrap(),
+        };
+
+        assert_eq!(cfg.resolve(2).unwrap().0, "\u{f445}");
+        assert_eq!(cfg.resolve(3).unwrap().0, ">");
+    }
+
+    #[test]
+    fn uniform_marker_parser_enforces_exclusive_valid_value() {
+        assert_eq!(
+            UniformListMarker::parse("level:4").unwrap(),
+            UniformListMarker::Level(4)
+        );
+        assert_eq!(
+            UniformListMarker::parse("icon:◆").unwrap(),
+            UniformListMarker::Icon("◆".to_string())
+        );
+        assert!(UniformListMarker::parse("level:0").is_err());
+        assert!(UniformListMarker::parse("level:5").is_err());
+        assert!(UniformListMarker::parse("level:1;icon:◆").is_err());
     }
 }

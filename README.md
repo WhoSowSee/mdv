@@ -133,7 +133,9 @@ cat <FILE> | mdv
 
 ### Lists
 
-- `-D, --pretty-list` — replaces the default `-` unordered list markers with Nerd Font icons per nesting level. Requires a Nerd Font to render correctly.
+- `-D, --pretty-list <style>` — replaces the default `-` unordered-list markers with a level-aware icon set. The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--pretty-list 'type:unicode;size:small'`.
+  - `size` changes only Nerd Font markers. Unicode accepts either value but renders the same markers; their spacing may vary by font. Verified with Nerd Font families, especially JetBrainsMono Nerd Font.
+- `-N, --uniform-list-marker <level:1-4|icon:glyph>` — uses one marker at every nesting level (only with `--pretty-list`). `level:2` reuses level 2 from the selected set; `icon:*` uses a custom glyph.
 - `-Q, --custom-list <level>:<icon>[:<color>];...` — overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
   - Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
   - Icon only:     `--custom-list '1:>'`          marker `>` in theme color

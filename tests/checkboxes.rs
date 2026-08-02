@@ -22,6 +22,10 @@ fn checkbox_markdown() -> String {
         + "\n"
 }
 
+fn nested_list_markdown() -> &'static str {
+    "- level one\n  - level two\n    - level three\n      - level four\n        - level five\n"
+}
+
 fn run(args: &[&str], markdown: &str) -> String {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, markdown).unwrap();
@@ -328,7 +332,15 @@ fn test_pretty_checkbox_bullet_removed_not_regular_items() {
 #[test]
 fn test_pretty_list_and_pretty_checkbox_coexist() {
     let md = "- [ ] checkbox item\n- regular item\n";
-    let stdout = run(&["--pretty-list", "--pretty-checkbox", "square"], md);
+    let stdout = run(
+        &[
+            "--pretty-list",
+            "type:nerd-font;size:large",
+            "--pretty-checkbox",
+            "square",
+        ],
+        md,
+    );
     let checkbox_line = stdout
         .lines()
         .find(|l| l.contains("checkbox item"))
@@ -349,6 +361,31 @@ fn test_pretty_list_and_pretty_checkbox_coexist() {
 }
 
 #[test]
+fn test_pretty_list_unicode_icons() {
+    let stdout = run(
+        &["--pretty-list", "type:unicode;size:small"],
+        nested_list_markdown(),
+    );
+
+    for icon in ['⦁', '▪', '⚬', '▫'] {
+        assert!(
+            stdout.contains(icon),
+            "missing Unicode icon {icon:?}: {stdout:?}"
+        );
+    }
+    assert_eq!(stdout.matches('▫').count(), 2);
+}
+
+#[test]
+fn test_uniform_list_marker_accepts_level_or_icon() {
+    let from_level = run(
+        &["--pretty-list", "type:unicode;size:large", "-N", "level:2"],
+        nested_list_markdown(),
+    );
+    assert_eq!(from_level.matches('▪').count(), 5);
+}
+
+#[test]
 fn test_custom_list_marker_stripped_for_checkbox() {
     let md = "- [ ] checkbox\n- regular\n";
     for icon in ["*", ">>>", "* *"] {
@@ -356,6 +393,7 @@ fn test_custom_list_marker_stripped_for_checkbox() {
         let stdout = run(
             &[
                 "--pretty-list",
+                "type:nerd-font;size:large",
                 "--custom-list",
                 marker.as_str(),
                 "--pretty-checkbox",

@@ -6,7 +6,7 @@ use crate::cli::{
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
-use crate::list_marker::ListMarkerConfig;
+use crate::list_marker::{ListMarkerConfig, PrettyListStyle, UniformListMarker};
 use anyhow::Result;
 use clap::{ArgMatches, parser::ValueSource};
 use serde::{Deserialize, Serialize};
@@ -98,7 +98,8 @@ pub struct Config {
     pub custom_checkbox: Option<String>,
     #[serde(skip)]
     pub(crate) checkbox_overrides: HashMap<char, crate::checkbox_override::CheckboxOverride>,
-    pub pretty_list: bool,
+    pub pretty_list: Option<PrettyListStyle>,
+    pub uniform_list_marker: Option<UniformListMarker>,
     pub custom_list: Option<String>,
     #[serde(skip)]
     pub(crate) list_marker: ListMarkerConfig,
@@ -158,7 +159,8 @@ impl Default for Config {
             code_guessing: true,
             code_block_style: CodeBlockStyleConfig::default(),
             callout_style: CalloutStyleConfig::default(),
-            pretty_list: false,
+            pretty_list: None,
+            uniform_list_marker: None,
             custom_list: None,
             list_marker: ListMarkerConfig::default(),
             pretty_checkbox: None,
@@ -337,8 +339,16 @@ impl Config {
         {
             config.pretty_checkbox = Some(shape);
         }
-        if cli.pretty_list {
-            config.pretty_list = true;
+        if let Some(style) = cli.pretty_list
+            && arg_has_user_value(matches, "pretty_list")
+        {
+            config.pretty_list = Some(style);
+        }
+
+        if let Some(marker) = &cli.uniform_list_marker
+            && arg_has_user_value(matches, "uniform_list_marker")
+        {
+            config.uniform_list_marker = Some(marker.clone());
         }
 
         if let Some(raw) = &cli.custom_list
@@ -557,8 +567,11 @@ impl Config {
         if other.custom_checkbox.is_some() {
             self.custom_checkbox = other.custom_checkbox.clone();
         }
-        if other.pretty_list {
-            self.pretty_list = true;
+        if other.pretty_list.is_some() {
+            self.pretty_list = other.pretty_list;
+        }
+        if other.uniform_list_marker.is_some() {
+            self.uniform_list_marker = other.uniform_list_marker.clone();
         }
         if other.custom_list.is_some() {
             self.custom_list = other.custom_list.clone();
@@ -707,12 +720,13 @@ impl Config {
 
     fn apply_list_markers(&mut self) -> Result<()> {
         // `--custom-list` is a no-op without `--pretty-list`, mirroring `--custom-checkbox`.
-        if !self.pretty_list {
+        let Some(style) = self.pretty_list else {
             self.list_marker = ListMarkerConfig::default();
             return Ok(());
-        }
+        };
         self.list_marker = ListMarkerConfig {
-            pretty: true,
+            style: Some(style),
+            uniform: self.uniform_list_marker.clone(),
             overrides: if let Some(raw) = &self.custom_list {
                 ListMarkerConfig::parse_custom_list(raw)?
             } else {
@@ -906,6 +920,25 @@ link_truncation: tablecut
             config.link_truncation,
             LinkTruncationStyle::TableCut
         ));
+    }
+
+    #[test]
+    fn config_rejects_legacy_pretty_list_boolean() {
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let config_path = temp_dir.path().join("config.yaml");
+        std::fs::write(&config_path, "pretty_list: true\n").expect("write config file");
+
+        assert!(Config::load_from_file(&config_path).is_err());
+    }
+
+    #[test]
+    fn config_accepts_pretty_list_style_and_uniform_marker() {
+        let _env_lock = env_lock();
+        let config = parse_with_config(
+            "pretty_list: \"type:unicode;size:small\"\nuniform_list_marker: \"level:3\"\n",
+        );
+
+        assert_eq!(config.list_marker.resolve(1).unwrap().0, "⚬");
     }
 
     #[test]

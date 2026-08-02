@@ -18,6 +18,8 @@ pub mod theme;
 mod user_themes;
 pub mod utils;
 
+pub use list_marker::{PrettyListStyle, UniformListMarker};
+
 use anyhow::Result;
 use clap::ArgMatches;
 use cli::Cli;
