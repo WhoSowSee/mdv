@@ -8,6 +8,12 @@ fn mdv_cmd() -> Command {
     Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
 }
 
+fn mdv_cmd_with_config(config_dir: &TempDir) -> Command {
+    let mut cmd = mdv_cmd();
+    cmd.arg("--config-file").arg(config_dir.path());
+    cmd
+}
+
 #[test]
 fn test_help_command() {
     let mut cmd = mdv_cmd();
@@ -957,6 +963,58 @@ fn test_theme_info_from_config_prints_current_theme() {
         .stdout(predicate::str::contains("\nCurrent theme: terminal"))
         .stdout(predicate::str::contains("\nCurrent code theme: terminal"))
         .stdout(predicate::str::contains("Available themes").not());
+}
+
+#[test]
+fn test_preset_info_lists_builtin_and_user_presets() {
+    let config_dir = TempDir::new().unwrap();
+    let presets_dir = config_dir.path().join("presets");
+    fs::create_dir(&presets_dir).unwrap();
+    fs::write(
+        presets_dir.join("custom.yaml"),
+        "name: custom\ntheme: monokai\n",
+    )
+    .unwrap();
+
+    let mut cmd = mdv_cmd_with_config(&config_dir);
+    cmd.arg("--preset-info");
+    cmd.assert().success().stdout(concat!(
+        "Available presets:\n\n",
+        "  compact              - built-in\n",
+        "  custom               - custom\n",
+        "  reader               - built-in\n",
+        "  showcase             - built-in\n",
+    ));
+}
+
+#[test]
+fn test_preset_info_with_file_shows_active_preset() {
+    let config_dir = TempDir::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "preset info content").unwrap();
+
+    let mut cmd = mdv_cmd_with_config(&config_dir);
+    cmd.arg("-X").arg(temp_file.path()).arg("-x").arg("reader");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Current preset: reader"))
+        .stdout(predicate::str::contains("preset info content"))
+        .stdout(predicate::str::contains("Available presets:").not());
+}
+
+#[test]
+fn test_preset_info_with_file_without_preset_is_ignored() {
+    let config_dir = TempDir::new().unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "plain preset info content").unwrap();
+
+    let mut cmd = mdv_cmd_with_config(&config_dir);
+    cmd.arg("--preset-info").arg(temp_file.path());
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("plain preset info content"))
+        .stdout(predicate::str::contains("Current preset:").not())
+        .stdout(predicate::str::contains("Available presets:").not());
 }
 
 #[test]

@@ -38,6 +38,14 @@ pub struct Cli {
     #[arg(short = 'n', long = "no-config")]
     pub no_config: bool,
 
+    /// Apply a named built-in or user preset
+    #[arg(short = 'x', long = "preset", value_name = "NAME")]
+    pub preset: Option<String>,
+
+    /// List presets, or show the active preset while rendering a file
+    #[arg(short = 'X', long = "preset-info")]
+    pub preset_info: bool,
+
     /// Create the default configuration file
     #[arg(short = 'G', long = "init-config", num_args = 0..=1, value_name = "CONFIG_DIR")]
     pub init_config: Option<Option<PathBuf>>,

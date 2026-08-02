@@ -11,6 +11,7 @@ pub mod markdown;
 pub mod math;
 pub mod monitor;
 mod pager;
+mod preset;
 pub mod renderer;
 pub mod table;
 pub mod terminal;
@@ -46,6 +47,14 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         cli.filename = Some(path.to_string_lossy().into_owned());
     }
 
+    if cli.preset_info && cli.filename.is_none() {
+        print!(
+            "{}",
+            preset::format_available_presets(&config, cli.preset.as_deref())?
+        );
+        return Ok(());
+    }
+
     if matches!(cli.theme_info, Some(None)) {
         let theme_manager = renderer::terminal::build_theme_manager(&config);
         print!("{}", format_current_themes(&config));
@@ -55,6 +64,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     let show_current_theme = config.theme_info || cli.theme_info.is_some();
+    let current_preset = cli.preset.as_deref().filter(|_| cli.preset_info);
 
     let content = get_input_content(&cli)?;
     let stdout_is_terminal = std::io::stdout().is_terminal();
@@ -63,6 +73,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         &config,
         cli.do_html,
         show_current_theme,
+        current_preset,
         stdout_is_terminal,
     )?;
 
@@ -77,8 +88,16 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             let path = path.clone();
             let config = config.clone();
             let do_html = cli.do_html;
-            Arc::new(move || render_document_file(&path, &config, do_html, show_current_theme))
-                as pager::RefreshCallback
+            let current_preset = current_preset.map(str::to_owned);
+            Arc::new(move || {
+                render_document_file(
+                    &path,
+                    &config,
+                    do_html,
+                    show_current_theme,
+                    current_preset.as_deref(),
+                )
+            }) as pager::RefreshCallback
         });
         pager::page(output, pager_file, refresh)?;
     } else {
@@ -100,6 +119,7 @@ fn render_document(
     config: &Config,
     do_html: bool,
     show_current_theme: bool,
+    current_preset: Option<&str>,
     add_leading_blank: bool,
 ) -> Result<String> {
     let processor = MarkdownProcessor::new(config);
@@ -111,6 +131,12 @@ fn render_document(
     }
 
     let mut output = String::new();
+    if let Some(name) = current_preset {
+        output.push('\n');
+        output.push_str("Current preset: ");
+        output.push_str(name);
+        output.push('\n');
+    }
     if show_current_theme {
         output.push_str(&format_current_themes(config));
     }
@@ -126,10 +152,18 @@ fn render_document_file(
     config: &Config,
     do_html: bool,
     show_current_theme: bool,
+    current_preset: Option<&str>,
 ) -> Result<String> {
     let mut content = std::fs::read_to_string(path)?;
     strip_leading_bom(&mut content);
-    render_document(&content, config, do_html, show_current_theme, true)
+    render_document(
+        &content,
+        config,
+        do_html,
+        show_current_theme,
+        current_preset,
+        true,
+    )
 }
 
 fn format_current_themes(config: &Config) -> String {

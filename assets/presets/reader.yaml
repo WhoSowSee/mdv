@@ -1,0 +1,13 @@
+name: reader
+theme: nord
+wrap: word
+reflow: true
+table_wrap: wrap
+heading_layout: level
+smart_indent: true
+table_smart_indent: true
+hide_comments: true
+render_html: true
+code_wrap_indent: base
+link_style: inlinetable
+footnote_style: attached

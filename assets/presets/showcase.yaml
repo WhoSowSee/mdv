@@ -1,0 +1,16 @@
+name: showcase
+theme: tokyonight
+wrap: word
+reflow: true
+table_wrap: wrap
+heading_layout: center
+table_smart_indent: true
+hide_comments: true
+render_html: true
+code_block_style: "pretty:show-icons"
+callout_style: "pretty:show-icons;fold-icons;label-inside;uppercase"
+code_wrap_indent: double
+pretty_checkbox: circle
+pretty_list: "type:nerd-font;size:large"
+link_style: clickable
+footnote_style: attached

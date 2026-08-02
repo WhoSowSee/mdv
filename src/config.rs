@@ -7,6 +7,7 @@ use crate::cli::{
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
 use crate::list_marker::{ListMarkerConfig, PrettyListStyle, UniformListMarker};
+use crate::preset;
 use anyhow::Result;
 use clap::{ArgMatches, parser::ValueSource};
 use serde::{Deserialize, Serialize};
@@ -132,7 +133,7 @@ pub struct Config {
     // File paths
     #[serde(skip)]
     pub config_file: Option<PathBuf>,
-    /// Directory used to look up `themes/*.yaml`. Mirrors the directory
+    /// Directory used to look up `themes/*.yaml` and `presets/*.yaml`. Mirrors the directory
     /// that produced `config_file` (or the default config dir).
     #[serde(skip)]
     pub config_dir: Option<PathBuf>,
@@ -191,6 +192,9 @@ impl Default for Config {
 impl Config {
     pub fn from_cli(cli: &Cli, matches: &ArgMatches) -> Result<Self> {
         let mut config = Self::load_config_files(cli, matches)?;
+        if let Some(name) = cli.preset.as_deref() {
+            preset::apply_named_preset(&mut config, name)?;
+        }
 
         if let Some(no_colors) = mdv_no_color_override() {
             config.no_colors = no_colors;
@@ -425,16 +429,16 @@ impl Config {
         Ok(path)
     }
     fn load_config_files(cli: &Cli, matches: &ArgMatches) -> Result<Self> {
-        if cli.no_config {
-            return Ok(Self::default());
-        }
-
         let mut config = Self::default();
         let config_paths = Self::get_config_paths(cli, matches)?;
         if let Some(first_path) = config_paths.first()
             && let Some(parent) = first_path.parent()
         {
             config.config_dir = Some(parent.to_path_buf());
+        }
+
+        if cli.no_config {
+            return Ok(config);
         }
 
         for path in config_paths {
@@ -858,6 +862,12 @@ mod tests {
         Config::from_cli(&cli, &matches).expect("load config")
     }
 
+    fn write_preset(config_dir: &std::path::Path, filename: &str, contents: &str) {
+        let presets_dir = config_dir.join("presets");
+        std::fs::create_dir_all(&presets_dir).expect("create presets dir");
+        std::fs::write(presets_dir.join(filename), contents).expect("write preset file");
+    }
+
     #[test]
     fn no_config_flag_skips_loading_files() {
         let _env_lock = env_lock();
@@ -980,6 +990,61 @@ link_truncation: tablecut
         let config = Config::from_cli(&cli, &matches).expect("load config with overrides");
         assert!(matches!(config.wrap, TextWrapMode::None));
         assert!(matches!(config.link_style, LinkStyle::Hide));
+    }
+
+    #[test]
+    fn preset_overrides_config_and_cli_overrides_preset() {
+        let _env_lock = env_lock();
+        let temp_dir = TempDir::new().expect("create temp dir");
+        std::fs::write(
+            temp_dir.path().join("config.yaml"),
+            "cols: 100\ntheme: monokai\nsmart_indent: true\ncode_theme: monokai\n",
+        )
+        .expect("write config file");
+        write_preset(
+            temp_dir.path(),
+            "reader.yaml",
+            "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\ncode_theme: null\n",
+        );
+
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--config-file"),
+            temp_dir.path().as_os_str().to_owned(),
+            OsString::from("--preset"),
+            OsString::from("reader"),
+            OsString::from("--cols"),
+            OsString::from("60"),
+        ]);
+
+        let config = Config::from_cli(&cli, &matches).expect("load layered config");
+        assert_eq!(config.cols, Some(60));
+        assert_eq!(config.theme, "terminal");
+        assert!(!config.smart_indent);
+        assert!(config.code_theme.is_none());
+    }
+
+    #[test]
+    fn no_config_does_not_disable_user_presets() {
+        let _env_lock = env_lock();
+        let temp_dir = TempDir::new().expect("create temp dir");
+        write_preset(
+            temp_dir.path(),
+            "custom.yml",
+            "name: custom\ncols: 45\ntheme: nord\n",
+        );
+
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--config-file"),
+            temp_dir.path().as_os_str().to_owned(),
+            OsString::from("--no-config"),
+            OsString::from("--preset"),
+            OsString::from("custom"),
+        ]);
+
+        let config = Config::from_cli(&cli, &matches).expect("load preset without config");
+        assert_eq!(config.theme, "nord");
     }
 
     #[test]

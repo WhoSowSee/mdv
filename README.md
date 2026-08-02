@@ -102,7 +102,9 @@ cat <FILE> | mdv
 - `-p, --pager` — opens the rendered output in the built-in `minus` pager. Press `E`|`e` or `У`|`у` to open the current file in the configured editor; saved changes are rendered automatically.
 - `-m, --monitor` — watches the source file and re-renders when it changes.
 - `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
-- `-n, --no-config` — skips loading configuration files (uses CLI options and defaults only).
+- `-x, --preset <NAME>` — applies a built-in or user preset above the configuration file and below explicit CLI options.
+- `-X, --preset-info [FILE]` — lists available presets when no file is given. With `FILE`, it renders the document and prints `Current preset: <NAME>` only when `--preset` is also set.
+- `-n, --no-config` — skips `config.yaml`/`config.yml`; presets remain available.
 - `-G, --init-config [CONFIG_DIR]` — creates the default config file. Uses the provided directory, `--config-file`, `MDV_CONFIG_PATH`, or the default config directory.
 
 ### Theming
@@ -181,8 +183,9 @@ cat <FILE> | mdv
 mdv merges settings from several sources in the following order of precedence:
 
 1. CLI options (highest priority).
-2. Environment variable `MDV_CONFIG_PATH` or the `--config-file` flag.
-3. User-level configuration under `~/.config/mdv/` (`~\.config\mdv\` on Windows).
+2. The preset selected with `--preset`.
+3. The configuration loaded from `--config-file`, `MDV_CONFIG_PATH`, or the user-level directory.
+4. Built-in defaults.
 
 Create the default user config with `mdv --init-config` or `mdv -G`. Add a directory path (`mdv -G custom/dir`), use `--config-file <CONFIG_DIR>`, or set `MDV_CONFIG_PATH` to write it somewhere else.
 
@@ -200,6 +203,30 @@ code_wrap_indent: "double"
 link_style: "clickable"
 link_truncation: "wrap"
 ```
+
+## Presets
+
+mdv ships with three presets:
+
+- `reader` — word wrapping, paragraph reflow, attached footnotes, an inline link table, and the `nord` theme for long-form reading.
+- `compact` — flat headings, simple code/callout blocks, hidden code labels, and end-of-document links for dense terminal output.
+- `showcase` — centered headings, `tokyonight`, rich code/callout frames, checkboxes, and list icons. This preset requires a Nerd Font for its icons.
+
+Select one with `mdv --preset reader README.md`. Explicit CLI options override the selected preset, so `mdv --preset compact --cols 100 README.md` uses the compact preset at 100 columns.
+
+User presets are `*.yaml` or `*.yml` files under `<config_dir>/presets/`. The directory follows the same resolution order as `config.yaml`: `--config-file`, `MDV_CONFIG_PATH`, then `~/.config/mdv/`. It is optional, and `--no-config` does not disable it.
+
+```yaml
+# <config_dir>/presets/project-docs.yaml
+name: project-docs
+theme: monokai
+wrap: word
+reflow: true
+table_wrap: wrap
+link_style: inlinetable
+```
+
+Every preset accepts the same keys and values as [`docs/examples/config.yaml`](docs/examples/config.yaml), plus the required non-empty `name` field. Presets are partial layers: omitted settings remain unchanged, while explicit values—including `false`, default-valued options, and `null`—override the configuration beneath them. A user preset with the same name as a built-in replaces the built-in. Run `mdv --preset-info` to list the active catalog. When a file and preset are both provided, `mdv --preset-info FILE --preset NAME` renders the file with `Current preset: NAME`; without `--preset`, the flag does not alter file rendering.
 
 ## Environment variables
 
