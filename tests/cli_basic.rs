@@ -1,5 +1,5 @@
 use assert_cmd::Command;
-use mdv::utils::strip_ansi;
+use mdv::utils::{display_width, strip_ansi};
 use predicates::prelude::*;
 use std::fs;
 use tempfile::{NamedTempFile, TempDir};
@@ -821,6 +821,31 @@ fn test_column_width_option() {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Width Test"));
+}
+
+#[test]
+fn test_word_wrap_splits_unbroken_text_to_column_width() {
+    let token = format!("{}.{}", "a".repeat(40), "b".repeat(40));
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, &token).unwrap();
+
+    let output = mdv_cmd()
+        .arg("-A")
+        .arg("--wrap")
+        .arg("word")
+        .arg("--cols")
+        .arg("40")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let clean = strip_ansi(&String::from_utf8(output.stdout).unwrap());
+    assert!(
+        clean.lines().all(|line| display_width(line) <= 40),
+        "word-wrapped line exceeds width: {clean:?}"
+    );
+    assert_eq!(clean.lines().collect::<String>(), token);
 }
 
 #[test]

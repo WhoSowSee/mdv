@@ -244,6 +244,15 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
     }
 
     result
+        .into_iter()
+        .flat_map(|line| {
+            if display_width(&strip_ansi(&line)) > width {
+                wrap_line_character(&line, width)
+            } else {
+                vec![line]
+            }
+        })
+        .collect()
 }
 
 /// Split line into words while preserving ANSI codes
@@ -402,6 +411,21 @@ mod tests {
                 assert!(text.contains(word), "Word '{}' should be preserved", word);
             }
         }
+    }
+
+    #[test]
+    fn test_word_wrap_splits_oversized_ansi_token() {
+        let token = "http://bpuser-bP8zwDSb:CO5cB2oXMyupkschZbsT_country-FR_session-V";
+        let text = format!("\x1b[31m{token}\x1b[0m");
+        let wrapped = wrap_text_with_mode(&text, 20, WrapMode::Word);
+
+        assert!(
+            wrapped
+                .lines()
+                .all(|line| display_width(&strip_ansi(line)) <= 20),
+            "wrapped token exceeds width: {wrapped:?}"
+        );
+        assert_eq!(strip_ansi(&wrapped).replace('\n', ""), token);
     }
 
     #[test]

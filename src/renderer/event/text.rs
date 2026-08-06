@@ -587,7 +587,8 @@ impl<'a> EventRenderer<'a> {
 
         // Split text into wrappable units (words or characters) while preserving formatting
         let units = match wrap_mode {
-            crate::utils::WrapMode::Word => self.split_text_into_words_styled(text),
+            crate::utils::WrapMode::Word => self
+                .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
             crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
             crate::utils::WrapMode::None => vec![text.to_string()],
         };
@@ -653,29 +654,9 @@ impl<'a> EventRenderer<'a> {
             if would_exceed
                 && current_line_width > 0
                 && Self::line_has_visible_text(&current_line_clean)
+                && wrap_mode != crate::utils::WrapMode::None
             {
-                // Check if we should break before this unit
-                let should_break = match wrap_mode {
-                    crate::utils::WrapMode::Word => {
-                        // For word wrapping, break before words (but not before punctuation)
-                        !unit.trim_start().starts_with(',')
-                            && !unit.trim_start().starts_with('.')
-                            && !unit.trim_start().starts_with(';')
-                            && !unit.trim_start().starts_with(':')
-                            && !unit.trim_start().starts_with('!')
-                            && !unit.trim_start().starts_with('?')
-                            && !unit.trim_start().starts_with(')')
-                            && !unit.trim_start().starts_with(']')
-                            && !unit.trim_start().starts_with('}')
-                    }
-                    crate::utils::WrapMode::Character => true, // Always break for character mode
-                    crate::utils::WrapMode::None => false,
-                };
-
-                if should_break {
-                    // Centralized handler adds correct indent for lists, blockquotes, headings
-                    self.push_newline_with_context();
-                }
+                self.push_newline_with_context();
             }
 
             // Apply formatting and add to output
@@ -709,7 +690,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     /// Split text into words for word-based wrapping (for styled text)
-    fn split_text_into_words_styled(&self, text: &str) -> Vec<String> {
+    fn split_text_into_words_styled(&self, text: &str, max_width: usize) -> Vec<String> {
         let mut words = Vec::new();
         let mut current_word = String::new();
         let mut in_whitespace = false;
@@ -737,6 +718,26 @@ impl<'a> EventRenderer<'a> {
         }
 
         words
+            .into_iter()
+            .flat_map(|word| self.split_oversized_word_unit(word, max_width))
+            .collect()
+    }
+
+    fn split_oversized_word_unit(&self, unit: String, max_width: usize) -> Vec<String> {
+        if unit.trim().is_empty() || crate::utils::display_width(&unit) <= max_width {
+            return vec![unit];
+        }
+
+        crate::utils::wrap_text_with_mode(&unit, max_width, crate::utils::WrapMode::Character)
+            .split('\n')
+            .map(str::to_string)
+            .collect()
+    }
+
+    fn word_wrap_content_width(&self, effective_width: usize) -> usize {
+        effective_width
+            .saturating_sub(self.compute_line_start_context_width())
+            .max(1)
     }
 
     /// Split text into characters for character-based wrapping (for styled text)
@@ -793,7 +794,8 @@ impl<'a> EventRenderer<'a> {
 
         // Split text into wrappable units (words or characters)
         let units = match wrap_mode {
-            crate::utils::WrapMode::Word => self.split_text_into_words_styled(text),
+            crate::utils::WrapMode::Word => self
+                .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
             crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
             crate::utils::WrapMode::None => vec![text.to_string()],
         };
@@ -869,28 +871,8 @@ impl<'a> EventRenderer<'a> {
                 };
                 self.output.push_str(&formatted_fragment);
 
-                // Check if we should break before this unit
-                let should_break = match wrap_mode {
-                    crate::utils::WrapMode::Word => {
-                        // For word wrapping, break before words (but not before punctuation)
-                        !unit.trim_start().starts_with(',')
-                            && !unit.trim_start().starts_with('.')
-                            && !unit.trim_start().starts_with(';')
-                            && !unit.trim_start().starts_with(':')
-                            && !unit.trim_start().starts_with('!')
-                            && !unit.trim_start().starts_with('?')
-                            && !unit.trim_start().starts_with(')')
-                            && !unit.trim_start().starts_with(']')
-                            && !unit.trim_start().starts_with('}')
-                    }
-                    crate::utils::WrapMode::Character => true, // Always break for character mode
-                    crate::utils::WrapMode::None => false,
-                };
-
-                if should_break {
+                if wrap_mode != crate::utils::WrapMode::None {
                     self.push_newline_with_context();
-
-                    // Reset fragment tracking for new visual line
                     fragment_start_line_width = self.compute_line_start_context_width();
                 }
 
@@ -950,7 +932,8 @@ impl<'a> EventRenderer<'a> {
 
         // Split text into wrappable units (words or characters)
         let units = match wrap_mode {
-            crate::utils::WrapMode::Word => self.split_text_into_words_styled(text),
+            crate::utils::WrapMode::Word => self
+                .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
             crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
             crate::utils::WrapMode::None => vec![text.to_string()],
         };
@@ -1026,24 +1009,7 @@ impl<'a> EventRenderer<'a> {
                 };
                 self.output.push_str(&formatted_fragment);
 
-                // Decide if we break before this unit (word wrap rules)
-                let should_break = match wrap_mode {
-                    crate::utils::WrapMode::Word => {
-                        !unit.trim_start().starts_with(',')
-                            && !unit.trim_start().starts_with('.')
-                            && !unit.trim_start().starts_with(';')
-                            && !unit.trim_start().starts_with(':')
-                            && !unit.trim_start().starts_with('!')
-                            && !unit.trim_start().starts_with('?')
-                            && !unit.trim_start().starts_with(')')
-                            && !unit.trim_start().starts_with(']')
-                            && !unit.trim_start().starts_with('}')
-                    }
-                    crate::utils::WrapMode::Character => true,
-                    crate::utils::WrapMode::None => false,
-                };
-
-                if should_break {
+                if wrap_mode != crate::utils::WrapMode::None {
                     self.push_newline_with_context();
                     fragment_start_line_width = self.compute_line_start_context_width();
                 }
@@ -1096,7 +1062,10 @@ impl<'a> EventRenderer<'a> {
 
             // Split text into wrappable units (words or characters)
             let units = match wrap_mode {
-                crate::utils::WrapMode::Word => self.split_text_into_words_styled(text),
+                crate::utils::WrapMode::Word => self.split_text_into_words_styled(
+                    text,
+                    self.word_wrap_content_width(effective_width),
+                ),
                 crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
                 crate::utils::WrapMode::None => vec![text.to_string()],
             };
@@ -1165,28 +1134,9 @@ impl<'a> EventRenderer<'a> {
                 if would_exceed
                     && current_line_width > 0
                     && Self::line_has_visible_text(&current_line_clean)
+                    && wrap_mode != crate::utils::WrapMode::None
                 {
-                    // Check if we should break before this unit
-                    let should_break = match wrap_mode {
-                        crate::utils::WrapMode::Word => {
-                            // For word wrapping, break before words (but not before punctuation)
-                            !unit.trim_start().starts_with(',')
-                                && !unit.trim_start().starts_with('.')
-                                && !unit.trim_start().starts_with(';')
-                                && !unit.trim_start().starts_with(':')
-                                && !unit.trim_start().starts_with('!')
-                                && !unit.trim_start().starts_with('?')
-                                && !unit.trim_start().starts_with(')')
-                                && !unit.trim_start().starts_with(']')
-                                && !unit.trim_start().starts_with('}')
-                        }
-                        crate::utils::WrapMode::Character => true, // Always break for character mode
-                        crate::utils::WrapMode::None => false,
-                    };
-
-                    if should_break {
-                        self.push_newline_with_context();
-                    }
+                    self.push_newline_with_context();
                 }
 
                 // Apply formatting (no-op for regular text) and add to output
