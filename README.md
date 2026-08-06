@@ -111,6 +111,7 @@ cat <FILE> | mdv
 
 - `-t, --theme <NAME>` — chooses a built-in theme (default `terminal`).
 - `-T, --code-theme <NAME>` — sets the syntax highlight palette (default `terminal`).
+- `-z, --syntaxes-dir <DIR>` — recursively loads custom `.sublime-syntax` files on top of the embedded syntax set. Custom entries take precedence over matching built-in syntaxes.
 - `-s, --code-block-style <simple|pretty>[:show-icons;icon-only]` — switches between a single gutter and a boxed frame for code blocks. `show-icons` adds a language icon to the label, and `icon-only` shows only the icon while hiding the language text (default `pretty`).
 - `-y, --custom-theme <key=value;...>` — overrides UI colors on top of the selected theme.
 - `-Y, --custom-code-theme <key=value;...>` — overrides syntax colors using the same format as `--custom-theme`.

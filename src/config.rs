@@ -63,6 +63,17 @@ fn resolve_config_dir(path: &Path) -> Result<PathBuf> {
     Ok(path)
 }
 
+fn resolve_config_relative_path(path: &Path, config_dir: Option<&Path>) -> PathBuf {
+    let path = expand_tilde(path);
+    if path.is_absolute() {
+        path
+    } else if let Some(config_dir) = config_dir {
+        config_dir.join(path)
+    } else {
+        path
+    }
+}
+
 fn default_config_dir() -> Option<PathBuf> {
     if cfg!(target_os = "windows") {
         dirs::home_dir().map(|home_dir| home_dir.join(".config").join("mdv"))
@@ -93,6 +104,7 @@ pub struct Config {
     pub show_empty_elements: bool,
     pub no_code_language: bool,
     pub code_guessing: bool,
+    pub syntaxes_dir: Option<PathBuf>,
     pub code_block_style: CodeBlockStyleConfig,
     pub callout_style: CalloutStyleConfig,
     pub pretty_checkbox: Option<CheckboxShape>,
@@ -158,6 +170,7 @@ impl Default for Config {
             show_empty_elements: false,
             no_code_language: false,
             code_guessing: true,
+            syntaxes_dir: None,
             code_block_style: CodeBlockStyleConfig::default(),
             callout_style: CalloutStyleConfig::default(),
             pretty_list: None,
@@ -194,6 +207,13 @@ impl Config {
         let mut config = Self::load_config_files(cli, matches)?;
         if let Some(name) = cli.preset.as_deref() {
             preset::apply_named_preset(&mut config, name)?;
+        }
+
+        if let Some(syntaxes_dir) = config.syntaxes_dir.take() {
+            config.syntaxes_dir = Some(resolve_config_relative_path(
+                &syntaxes_dir,
+                config.config_dir.as_deref(),
+            ));
         }
 
         if let Some(no_colors) = mdv_no_color_override() {
@@ -238,6 +258,12 @@ impl Config {
 
         if cli.no_code_guessing {
             config.code_guessing = false;
+        }
+
+        if let Some(syntaxes_dir) = &cli.syntaxes_dir
+            && arg_has_user_value(matches, "syntaxes_dir")
+        {
+            config.syntaxes_dir = Some(expand_tilde(syntaxes_dir));
         }
 
         if let Some(theme) = &cli.theme
@@ -558,6 +584,9 @@ impl Config {
         }
         if !other.code_guessing {
             self.code_guessing = false;
+        }
+        if other.syntaxes_dir.is_some() {
+            self.syntaxes_dir = other.syntaxes_dir;
         }
         if other.code_block_style != CodeBlockStyleConfig::default() {
             self.code_block_style = other.code_block_style;

@@ -6,6 +6,7 @@ use crate::theme::{Theme, ThemeManager, apply_custom_code_theme, apply_custom_th
 use crate::user_themes;
 use anyhow::Result;
 use pulldown_cmark::Event;
+use std::sync::Arc;
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
 
@@ -13,7 +14,7 @@ use syntect::parsing::SyntaxSet;
 pub struct TerminalRenderer {
     config: Config,
     theme: Theme,
-    syntax_set: &'static SyntaxSet,
+    syntax_set: Arc<SyntaxSet>,
     code_theme: CodeHighlightTheme,
 }
 
@@ -35,7 +36,7 @@ impl TerminalRenderer {
             theme.name = format!("{}+custom", theme.name);
         }
 
-        let syntax_set = load_full_syntax_set();
+        let syntax_set = load_full_syntax_set(config.syntaxes_dir.as_deref())?;
         let theme_set = default_theme_set();
 
         let code_theme = if config.custom_code_theme.is_some() {
@@ -63,8 +64,12 @@ impl TerminalRenderer {
     }
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
-        let mut renderer =
-            EventRenderer::new(&self.config, &self.theme, self.syntax_set, &self.code_theme);
+        let mut renderer = EventRenderer::new(
+            &self.config,
+            &self.theme,
+            &self.syntax_set,
+            &self.code_theme,
+        );
         renderer.render_events(events)
     }
 

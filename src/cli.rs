@@ -90,6 +90,15 @@ pub struct Cli {
     #[arg(short = 'g', long = "no-code-guessing")]
     pub no_code_guessing: bool,
 
+    /// Directory containing custom .sublime-syntax files
+    #[arg(
+        short = 'z',
+        long = "syntaxes-dir",
+        value_name = "DIR",
+        long_help = "Directory containing custom .sublime-syntax files\nFiles are loaded recursively on top of the embedded syntax set\nCustom entries take precedence"
+    )]
+    pub syntaxes_dir: Option<PathBuf>,
+
     /// Configure visual style for code blocks
     #[arg(
         short = 's',
@@ -699,6 +708,12 @@ mod tests {
             cli.code_wrap_indent.expect("code wrap indent value"),
             CodeWrapIndent::Base
         ));
+    }
+
+    #[test]
+    fn short_flag_parses_syntaxes_dir() {
+        let cli = Cli::parse_from(["mdv", "-z", "syntaxes"]);
+        assert_eq!(cli.syntaxes_dir, Some(PathBuf::from("syntaxes")));
     }
 
     #[test]

@@ -5,7 +5,19 @@ fn mdv_cmd() -> Command {
 }
 use predicates::prelude::*;
 use std::fs;
-use tempfile::NamedTempFile;
+use tempfile::{NamedTempFile, TempDir};
+
+const RUST_OVERRIDE_SYNTAX: &str = r#"%YAML 1.2
+---
+name: Rust Override
+scope: source.rust
+file_extensions:
+  - rs
+contexts:
+  main:
+    - match: '\bfn\b'
+      scope: keyword.control.rust
+"#;
 
 #[test]
 fn test_code_highlighting() {
@@ -38,6 +50,39 @@ fn test_no_code_guessing_disables_detection_for_unknown_language() {
         .success()
         .stdout(predicate::str::contains("Unknownlang"))
         .stdout(predicate::str::contains("Rust").not());
+}
+
+#[test]
+fn test_configured_custom_syntax_overrides_embedded_set() {
+    let temp_dir = TempDir::new().unwrap();
+    let syntaxes_dir = temp_dir.path().join("syntaxes");
+    fs::create_dir(&syntaxes_dir).unwrap();
+    fs::write(
+        syntaxes_dir.join("RustOverride.sublime-syntax"),
+        RUST_OVERRIDE_SYNTAX,
+    )
+    .unwrap();
+    fs::write(
+        temp_dir.path().join("config.yaml"),
+        "syntaxes_dir: syntaxes\ncode_block_style: simple\nno_colors: true\ncode_guessing: false\n",
+    )
+    .unwrap();
+    let markdown_path = temp_dir.path().join("custom-syntax.md");
+    fs::write(
+        &markdown_path,
+        "```rs\nfn main() {}\n```\n\n```json\n{}\n```\n",
+    )
+    .unwrap();
+
+    let mut cmd = mdv_cmd();
+    cmd.arg("--config-file")
+        .arg(temp_dir.path())
+        .arg(&markdown_path);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("│ Rust Override"))
+        .stdout(predicate::str::contains("│ JSON"));
 }
 
 #[test]

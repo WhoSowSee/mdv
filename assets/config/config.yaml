@@ -6,6 +6,7 @@
 # Theme settings
 theme: "terminal"          # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "material-ocean" | "catppuccin"
 code_theme: null           # Use null to follow theme; accepts the same values as theme
+syntaxes_dir: null         # Directory with custom .sublime-syntax files; relative paths start from the config directory
 theme_info: false          # Print palette information alongside rendered output
 custom_theme: null         # Override individual UI colors (see formats below)
 custom_code_theme: null    # Override syntax colors (same format as custom_theme)
