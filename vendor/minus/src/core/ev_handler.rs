@@ -1,5 +1,7 @@
 use std::io::Write;
 use std::sync::{Arc, atomic::AtomicBool};
+#[cfg(feature = "search")]
+use std::time::Duration;
 
 #[cfg(feature = "search")]
 use parking_lot::{Condvar, Mutex};
@@ -9,8 +11,13 @@ use super::commands::{Command, IoCommand};
 use super::utils::display::{self, AppendStyle};
 use crate::ExitStrategy;
 #[cfg(feature = "search")]
-use crate::search;
+use crate::{Pager, search};
 use crate::{PagerState, PromptError, error::MinusError, hooks::Hook, input::InputEvent};
+
+#[cfg(feature = "search")]
+const NO_SEARCH_MATCH_MESSAGE: &str = "No matches found";
+#[cfg(feature = "search")]
+const NO_SEARCH_MATCH_DURATION: Duration = Duration::from_secs(2);
 
 #[cfg_attr(not(feature = "search"), allow(unused_mut))]
 #[allow(clippy::too_many_lines)]
@@ -158,6 +165,10 @@ pub fn handle_event(
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::Search(m)) => {
+            if p.message_id.take().is_some() {
+                p.message = None;
+                queue_prompt_redraw(p, command_queue)?;
+            }
             p.search_mode = m;
             p.search_state.search_mode = m;
             p.search_state.search_mark = 0;
@@ -401,6 +412,22 @@ fn copy_selection(p: &PagerState) {
     }
 }
 
+#[cfg(feature = "search")]
+fn set_search_position(p: &mut PagerState, pager: &Pager) -> Result<(), MinusError> {
+    let Some(upper_mark) = p
+        .search_state
+        .search_idx
+        .iter()
+        .nth(p.search_state.search_mark)
+        .copied()
+    else {
+        pager.send_message_for(NO_SEARCH_MATCH_MESSAGE, NO_SEARCH_MATCH_DURATION)?;
+        return Ok(());
+    };
+    p.upper_mark = upper_mark;
+    Ok(())
+}
+
 #[cfg_attr(
     not(feature = "search"),
     allow(unused_variables),
@@ -411,6 +438,7 @@ pub fn handle_io_command(
     mut out: &mut impl Write,
     p: &mut PagerState,
     command_queue: &mut CommandQueue,
+    #[cfg(feature = "search")] pager: &Pager,
     #[cfg(feature = "search")] user_input_active: &Arc<(Mutex<bool>, Condvar)>,
 ) -> Result<(), MinusError> {
     if p.running.lock().is_uninitialized() {
@@ -481,12 +509,7 @@ pub fn handle_io_command(
             };
 
             p.reformat_display()?;
-            p.upper_mark = *p
-                .search_state
-                .search_idx
-                .iter()
-                .nth(p.search_state.search_mark)
-                .unwrap();
+            set_search_position(p, pager)?;
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
             command_queue.push_back(Command::Io(IoCommand::RedrawPrompt));
         }
@@ -499,13 +522,69 @@ mod tests {
     use super::super::commands::{Command, IoCommand};
     use super::handle_event;
     use crate::{
-        PagerState, PromptLine, PromptSpan, PromptStyle, input::InputEvent,
+        Pager, PagerState, PromptLine, PromptSpan, PromptStyle, input::InputEvent,
         minus_core::CommandQueue, state::Selection,
     };
     use std::fmt::Write;
     use std::sync::{Arc, atomic::AtomicBool};
 
     const TEST_STR: &str = "This is some sample text";
+
+    #[cfg(feature = "search")]
+    #[test]
+    fn empty_search_notification_is_dismissed_by_next_search() {
+        let mut ps = PagerState::new().unwrap();
+        let pager = Pager::new();
+        let mut command_queue = CommandQueue::new_zero();
+        let is_exited = Arc::new(AtomicBool::new(false));
+        ps.screen.orig_text = TEST_STR.to_string();
+        ps.search_state.search_term = Some(regex::Regex::new(r"dasdas\s+das").unwrap());
+        ps.reformat_display().unwrap();
+        ps.upper_mark = 3;
+
+        assert!(ps.search_state.search_idx.is_empty());
+        super::set_search_position(&mut ps, &pager).unwrap();
+        assert_eq!(ps.upper_mark, 3);
+        assert_eq!(
+            super::NO_SEARCH_MATCH_DURATION,
+            std::time::Duration::from_secs(2)
+        );
+        let notification = pager.rx.try_recv().unwrap();
+        assert_eq!(
+            notification,
+            Command::SetTimedMessage {
+                text: "No matches found".to_string(),
+                id: 1,
+            }
+        );
+
+        handle_event(notification, &mut ps, &mut command_queue, &is_exited).unwrap();
+        assert_eq!(ps.message.as_deref(), Some("No matches found"));
+        assert_eq!(ps.message_id, Some(1));
+        assert_eq!(
+            command_queue.pop_front(),
+            Some(Command::Io(IoCommand::RedrawPrompt))
+        );
+
+        handle_event(
+            Command::UserInput(InputEvent::Search(crate::search::SearchMode::Forward)),
+            &mut ps,
+            &mut command_queue,
+            &is_exited,
+        )
+        .unwrap();
+
+        assert_eq!(ps.message, None);
+        assert_eq!(ps.message_id, None);
+        assert_eq!(
+            command_queue.pop_front(),
+            Some(Command::Io(IoCommand::RedrawPrompt))
+        );
+        assert_eq!(
+            command_queue.pop_front(),
+            Some(Command::Io(IoCommand::FetchSearchQuery))
+        );
+    }
 
     #[test]
     fn prompt_renderer_tracks_prompt_updates_and_horizontal_scroll() {

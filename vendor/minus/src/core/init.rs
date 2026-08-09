@@ -130,6 +130,8 @@ pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusErr
                 &ps_mutex,
                 &mut out2,
                 #[cfg(feature = "search")]
+                pager,
+                #[cfg(feature = "search")]
                 &input_thread_running,
                 &is_exited4,
             );
@@ -159,6 +161,7 @@ fn start_reactor(
     rx: &Receiver<Command>,
     ps: &Arc<Mutex<PagerState>>,
     mut out_lock: impl Write,
+    #[cfg(feature = "search")] pager: &Pager,
     #[cfg(feature = "search")] input_thread_running: &Arc<(Mutex<bool>, Condvar)>,
     is_exited: &Arc<AtomicBool>,
 ) -> Result<(), MinusError> {
@@ -204,6 +207,8 @@ fn start_reactor(
                     &mut p,
                     &mut command_queue,
                     #[cfg(feature = "search")]
+                    pager,
+                    #[cfg(feature = "search")]
                     input_thread_running,
                 )?;
             } else if let Ok(command) = next_command {
@@ -238,6 +243,8 @@ fn start_reactor(
                     &mut out_lock,
                     &mut p,
                     &mut command_queue,
+                    #[cfg(feature = "search")]
+                    pager,
                     #[cfg(feature = "search")]
                     input_thread_running,
                 )?;
