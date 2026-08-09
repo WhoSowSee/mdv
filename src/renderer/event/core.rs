@@ -13,6 +13,8 @@ use std::collections::VecDeque;
 pub(crate) struct ListState {
     pub(super) is_ordered: bool,
     pub(super) counter: usize,
+    pub(super) block_start: usize,
+    pub(super) has_visible_items: bool,
     pub(super) current_item_start: Option<usize>,
     pub(super) current_item_marker_start: Option<usize>,
     pub(super) current_item_marker_end: Option<usize>,
@@ -661,9 +663,14 @@ impl<'a> EventRenderer<'a> {
                 self.current_soft_break_segment_start = self.output.len();
             }
             Tag::BlockQuote(kind) => {
+                let entering_outer_blockquote = self.blockquote_level == 0;
+                let blockquote_start = self.output.len();
+                if entering_outer_blockquote {
+                    self.ensure_contextual_blank_line();
+                }
                 self.blockquote_indent_stack
                     .push((self.content_indent, self.heading_indent));
-                self.blockquote_starts.push(self.output.len());
+                self.blockquote_starts.push(blockquote_start);
                 let smart_map = self
                     .prepared_blockquote_smart_indents
                     .pop_front()
@@ -705,11 +712,13 @@ impl<'a> EventRenderer<'a> {
             }
             Tag::List(start_number) => {
                 let entering_top_level_list = self.list_stack.is_empty();
-                if entering_top_level_list
-                    && matches!(self.config.link_style, LinkStyle::InlineTable)
-                {
-                    self.paragraph_link_counter = 0;
-                    self.paragraph_links.clear();
+                let block_start = self.output.len();
+                if entering_top_level_list {
+                    self.ensure_contextual_blank_line();
+                    if matches!(self.config.link_style, LinkStyle::InlineTable) {
+                        self.paragraph_link_counter = 0;
+                        self.paragraph_links.clear();
+                    }
                 }
 
                 let is_ordered = start_number.is_some();
@@ -717,11 +726,13 @@ impl<'a> EventRenderer<'a> {
                 self.list_stack.push(ListState {
                     is_ordered,
                     counter,
+                    block_start,
+                    has_visible_items: false,
                     current_item_start: None,
                     current_item_marker_start: None,
                     current_item_marker_end: None,
                 });
-                if !self.output.ends_with('\n') {
+                if !self.output.is_empty() && !self.output.ends_with('\n') {
                     self.output.push('\n');
                 }
             }
@@ -927,6 +938,7 @@ impl<'a> EventRenderer<'a> {
                     .map(|info| info.inline_links.clone())
                     .unwrap_or_default();
                 let callout_level = self.blockquote_level;
+                let closing_outer_blockquote = callout_level == 1;
                 let start_index = self.blockquote_starts.pop().unwrap_or(self.output.len());
                 let slice = if start_index <= self.output.len() {
                     self.output[start_index..].to_string()
@@ -1000,6 +1012,12 @@ impl<'a> EventRenderer<'a> {
                         self.ensure_contextual_blank_line();
                     }
 
+                    if closing_outer_blockquote
+                        && (has_visible_content || self.config.show_empty_elements)
+                    {
+                        self.ensure_contextual_blank_line();
+                    }
+
                     return Ok(());
                 }
 
@@ -1054,6 +1072,12 @@ impl<'a> EventRenderer<'a> {
                     );
                     self.ensure_contextual_blank_line();
                 }
+
+                if closing_outer_blockquote
+                    && (has_visible_content || self.config.show_empty_elements)
+                {
+                    self.ensure_contextual_blank_line();
+                }
             }
             TagEnd::CodeBlock => {
                 self.handle_code_block_end()?;
@@ -1064,17 +1088,30 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             TagEnd::List(_) => {
-                self.list_stack.pop();
+                let closed_list = self.list_stack.pop();
                 let closed_top_level_list = self.list_stack.is_empty();
+                let list_has_visible_items = closed_list
+                    .as_ref()
+                    .is_some_and(|list_state| list_state.has_visible_items);
+
+                if !list_has_visible_items {
+                    if let Some(list_state) = closed_list {
+                        self.output
+                            .truncate(list_state.block_start.min(self.output.len()));
+                    }
+                    return Ok(());
+                }
 
                 if matches!(self.config.link_style, LinkStyle::InlineTable)
                     && closed_top_level_list
                     && !self.paragraph_links.is_empty()
                 {
                     self.add_paragraph_link_references();
-                    self.ensure_contextual_blank_line();
                 } else if !self.output.ends_with('\n') {
                     self.output.push('\n');
+                }
+                if closed_top_level_list {
+                    self.ensure_contextual_blank_line();
                 }
             }
             TagEnd::Item => {
@@ -1124,6 +1161,7 @@ impl<'a> EventRenderer<'a> {
                 }
                 if let Some(list_state) = self.list_stack.last_mut() {
                     if has_content || self.config.show_empty_elements {
+                        list_state.has_visible_items = true;
                         if !self.output.ends_with('\n') {
                             self.output.push('\n');
                         }

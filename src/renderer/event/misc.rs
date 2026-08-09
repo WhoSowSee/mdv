@@ -121,6 +121,7 @@ impl<'a> EventRenderer<'a> {
         }
         self.output.push_str(&styled_rule);
         self.output.push('\n');
+        self.ensure_contextual_blank_line();
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }

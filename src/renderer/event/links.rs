@@ -720,17 +720,7 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        // Add empty line before link references for consistent formatting.
-        if reference_prefix.is_empty() {
-            if self.output.ends_with('\n') {
-                self.output.push('\n');
-            } else {
-                self.output.push('\n');
-                self.output.push('\n');
-            }
-        } else {
-            self.ensure_contextual_blank_line_with_prefix(&reference_prefix);
-        }
+        self.ensure_contextual_blank_line_with_prefix(&reference_prefix);
         for (i, styled_lines) in styled_blocks.iter().enumerate() {
             for (line_idx, styled_line) in styled_lines.iter().enumerate() {
                 if !reference_prefix.is_empty() {

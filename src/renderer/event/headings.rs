@@ -242,13 +242,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.output.push('\n');
-        if matches!(
-            self.config.heading_layout,
-            crate::cli::HeadingLayout::Center
-        ) {
-            // Centered headings look better with an empty line before content.
-            self.output.push('\n');
-        }
+        self.ensure_contextual_blank_line();
 
         // Keep the current heading level for subsequent content indentation
         // Don't reset it here as content under this heading should have the same indent
