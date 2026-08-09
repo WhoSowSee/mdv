@@ -161,7 +161,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn effective_text_width(&self) -> usize {
-        let mut width = self.config.get_terminal_width();
+        let mut width = self.config.get_content_width();
         if self.should_reserve_callout_padding() {
             width = width.saturating_sub(2);
         }
@@ -756,7 +756,7 @@ impl<'a> EventRenderer<'a> {
             content_lines.push(String::new());
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.config.get_content_width();
         let context_width = self.compute_line_start_context_width();
         let available_frame_width = terminal_width.saturating_sub(context_width);
         if available_frame_width <= 4 {

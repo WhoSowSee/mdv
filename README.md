@@ -147,6 +147,7 @@ cat <FILE> | mdv
 ### Layout and wrapping
 
 - `-c, --cols <N>` — enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
+- `-a, --margin <right:N;left:N>` — reserves separate left and right terminal margins. An omitted side defaults to `0`.
 - `-b, --tab-length <N>` — replaces tab characters with `N` spaces (default `4`).
 - `-W, --wrap <char|word|none>` — selects the text wrapping mode (default `char`).
 - `-R, --reflow` — collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.

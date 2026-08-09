@@ -90,7 +90,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.config.get_content_width();
         let wrap_mode = self.config.text_wrap_mode();
 
         // Remaining visible text to place (without ANSI)
@@ -291,7 +291,7 @@ impl<'a> EventRenderer<'a> {
             code_starts_with_blank,
             should_wrap,
             wrap_mode,
-            self.config.get_terminal_width(),
+            self.config.get_content_width(),
             &raw_code,
         );
 
@@ -875,6 +875,7 @@ impl<'a> EventRenderer<'a> {
     fn render_plaintext_code_block(&self, code: &str) -> Result<PlaintextRenderResult> {
         let mut nested_config = self.config.clone();
         nested_config.from_text = None;
+        nested_config.margin = crate::cli::HorizontalMargins::default();
 
         if let Some(width) = self.estimate_plaintext_block_width() {
             nested_config.cols = Some(width);
@@ -913,7 +914,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn estimate_plaintext_block_width(&self) -> Option<usize> {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.config.get_content_width();
         if terminal_width == 0 {
             return None;
         }
@@ -1067,7 +1068,7 @@ impl<'a> EventRenderer<'a> {
     /// Keeps leading and trailing spaces in icons, but clamps trailing spaces
     /// so the label still fits in the terminal.
     fn clamp_code_block_icon(&self, icon: &str, base_label: &str, icon_only: bool) -> String {
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.config.get_content_width();
         let context_width = self.compute_code_block_context_width();
         // Reserve the larger pretty-mode border overhead (label + 6) so the
         // label fits in both simple and pretty frames.

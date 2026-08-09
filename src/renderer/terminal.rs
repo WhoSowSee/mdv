@@ -64,13 +64,15 @@ impl TerminalRenderer {
     }
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
+        self.config.validate_horizontal_margins()?;
         let mut renderer = EventRenderer::new(
             &self.config,
             &self.theme,
             &self.syntax_set,
             &self.code_theme,
         );
-        renderer.render_events(events)
+        let output = renderer.render_events(events)?;
+        Ok(apply_left_margin(&output, self.config.margin.left))
     }
 
     pub fn to_html(&self, events: Vec<Event<'static>>) -> Result<String> {
@@ -89,6 +91,23 @@ impl TerminalRenderer {
         pulldown_cmark::html::push_html(&mut html_output, events);
         Ok(html_output)
     }
+}
+
+fn apply_left_margin(output: &str, margin: usize) -> String {
+    if margin == 0 || output.is_empty() {
+        return output.to_string();
+    }
+
+    let prefix = " ".repeat(margin);
+    let mut indented = String::with_capacity(output.len() + prefix.len());
+    for line in output.split_inclusive('\n') {
+        let content = line.strip_suffix('\n').unwrap_or(line);
+        if !content.is_empty() {
+            indented.push_str(&prefix);
+        }
+        indented.push_str(line);
+    }
+    indented
 }
 
 fn resolve_code_theme(

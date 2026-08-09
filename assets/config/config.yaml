@@ -22,6 +22,7 @@ custom_code_block: null      # Override code block icon/label/aliases (e.g. rust
 # Display behaviour
 # Keys must use snake_case (e.g. no_colors, tab_length).
 cols: null                 # Use detected terminal width; fallback is 80 when detection fails
+margin: null              # null disables margins; otherwise use "left:N", "right:N", or both
 tab_length: 4              # Replace tab characters with this many spaces
 no_colors: false           # Strip all ANSI colors from output
 wrap: "char"               # Options: "char" | "word" | "none"

@@ -87,7 +87,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(0);
         }
 
-        let terminal_width = self.config.get_terminal_width();
+        let terminal_width = self.config.get_content_width();
         let line_prefix = if self.blockquote_level > 0 {
             self.current_line_prefix()
         } else {

@@ -1,8 +1,8 @@
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
-    HeadingLayout, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, TableWrapMode,
-    TextWrapMode,
+    HeadingLayout, HorizontalMargins, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle,
+    TableWrapMode, TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -90,6 +90,7 @@ pub struct Config {
     pub cols: Option<usize>,
     #[serde(skip)]
     pub cols_from_cli: bool,
+    pub margin: HorizontalMargins,
     pub tab_length: usize,
     pub theme_info: bool,
     pub wrap: TextWrapMode,
@@ -158,6 +159,7 @@ impl Default for Config {
             no_colors: false,
             cols: None,
             cols_from_cli: false,
+            margin: HorizontalMargins::default(),
             tab_length: 4,
             theme_info: false,
             wrap: TextWrapMode::Char,
@@ -231,6 +233,12 @@ impl Config {
         {
             config.cols = Some(cols);
             config.cols_from_cli = true;
+        }
+
+        if let Some(margin) = cli.margin
+            && arg_has_user_value(matches, "margin")
+        {
+            config.margin = margin;
         }
 
         if let Some(tab_length) = cli.tab_length
@@ -546,6 +554,10 @@ impl Config {
             self.cols_from_cli = true;
         }
 
+        if other.margin != HorizontalMargins::default() {
+            self.margin = other.margin;
+        }
+
         if other.tab_length != 4 {
             self.tab_length = other.tab_length;
         }
@@ -704,6 +716,24 @@ impl Config {
         }
 
         80 // Default fallback
+    }
+
+    pub fn get_content_width(&self) -> usize {
+        self.get_terminal_width()
+            .saturating_sub(self.margin.total())
+    }
+
+    pub fn validate_horizontal_margins(&self) -> Result<()> {
+        let terminal_width = self.get_terminal_width();
+        if self.margin.total() >= terminal_width {
+            anyhow::bail!(
+                "Horizontal margins ({} + {}) must be smaller than the output width ({})",
+                self.margin.left,
+                self.margin.right,
+                terminal_width
+            );
+        }
+        Ok(())
     }
 
     fn normalize_theme_settings(&mut self) {
@@ -1232,6 +1262,11 @@ link_truncation: tablecut
         assert_eq!(config.theme, "terminal");
         assert!(config.code_theme.is_none());
         assert!(config.cols.is_none());
+        assert_eq!(config.margin, HorizontalMargins::default());
+        assert_eq!(
+            serde_yaml::to_value(config.margin).expect("serialize default margin"),
+            serde_yaml::Value::Null
+        );
         assert!(!config.smart_indent);
         assert!(!config.render_html);
         assert!(matches!(config.link_style, LinkStyle::Clickable));

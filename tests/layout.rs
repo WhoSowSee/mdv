@@ -7,6 +7,8 @@ use tempfile::NamedTempFile;
 mod blockquotes;
 #[path = "layout/headings.rs"]
 mod headings;
+#[path = "layout/margins.rs"]
+mod margins;
 #[path = "layout/spacing.rs"]
 mod spacing;
 
