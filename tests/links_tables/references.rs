@@ -248,6 +248,73 @@ fn test_inline_table_references_stay_inside_blockquote_table() {
 }
 
 #[test]
+fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_content() {
+    let cases = [
+        (
+            "markdown table",
+            "| Link |\n| --- |\n| [table](https://example.com/table) |\n\nafter markdown table\n",
+            "https://example.com/table",
+            "after markdown table",
+            false,
+        ),
+        (
+            "html table",
+            "<table><tr><th>Link</th></tr><tr><td><a href=\"https://example.com/html\">table</a></td></tr></table>\n\nafter html table\n",
+            "https://example.com/html",
+            "after html table",
+            true,
+        ),
+        (
+            "top-level list",
+            "- [list](https://example.com/list)\n\nafter list\n",
+            "https://example.com/list",
+            "after list",
+            false,
+        ),
+    ];
+
+    for (name, markdown, url, following_text, render_html) in cases {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, markdown).unwrap();
+
+        let mut cmd = mdv_cmd();
+        cmd.arg("--no-config")
+            .arg("--no-colors")
+            .arg("--link-style")
+            .arg("inlinetable");
+        if render_html {
+            cmd.arg("--render-html");
+        }
+        cmd.arg(temp_file.path());
+
+        let output = cmd.output().expect("run mdv with inline table links");
+        assert!(output.status.success(), "{name}: mdv execution failed");
+
+        let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+        let lines: Vec<&str> = stdout.lines().collect();
+        let expected_reference = format!("[1] {url}");
+        let reference_idx = lines
+            .iter()
+            .position(|line| line.trim() == expected_reference)
+            .unwrap_or_else(|| panic!("{name}: reference line missing, stdout:\n{stdout}"));
+        let following_idx = lines
+            .iter()
+            .position(|line| line.contains(following_text))
+            .unwrap_or_else(|| panic!("{name}: following content missing, stdout:\n{stdout}"));
+
+        assert_eq!(
+            following_idx,
+            reference_idx + 2,
+            "{name}: expected one blank line after references, stdout:\n{stdout}"
+        );
+        assert!(
+            lines[reference_idx + 1].trim().is_empty(),
+            "{name}: separator line should be empty, stdout:\n{stdout}"
+        );
+    }
+}
+
+#[test]
 fn test_inline_table_reference_marker_keeps_brackets_together_when_wrapped() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

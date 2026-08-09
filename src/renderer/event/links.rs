@@ -654,6 +654,7 @@ impl<'a> EventRenderer<'a> {
             in_table,
             table_indent,
         );
+        self.ensure_contextual_blank_line();
     }
 
     pub(super) fn render_link_reference_blocks(

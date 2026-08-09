@@ -1070,6 +1070,7 @@ impl<'a> EventRenderer<'a> {
                     && !self.paragraph_links.is_empty()
                 {
                     self.add_paragraph_link_references();
+                    self.ensure_contextual_blank_line();
                 } else if !self.output.ends_with('\n') {
                     self.output.push('\n');
                 }
