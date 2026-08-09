@@ -1,17 +1,36 @@
 use crate::editor::EditorCommand;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use minus::hooks::Hook;
 use minus::input::{HashedEventRegister, InputClassifier, InputEvent};
-use minus::{Pager, PagerState};
+use minus::{Pager, PagerState, PromptLine};
 use notify::{EventKind, RecursiveMode, Watcher};
 use std::collections::hash_map::RandomState;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, mpsc};
+use std::sync::{Arc, RwLock, mpsc};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-pub(crate) type RefreshCallback = Arc<dyn Fn() -> Result<String> + Send + Sync>;
+mod footer;
+mod help;
+
+use footer::PagerFooter;
+use help::build_help_panel;
+
+const STATUS_MESSAGE_TIMEOUT: Duration = Duration::from_secs(3);
+
+pub(super) struct PagerDocument {
+    output: String,
+    source: String,
+}
+
+impl PagerDocument {
+    pub(super) fn new(output: String, source: String) -> Self {
+        Self { output, source }
+    }
+}
+
+pub(super) type RefreshCallback = Arc<dyn Fn() -> Result<PagerDocument> + Send + Sync>;
 
 struct ActiveWatcher {
     stop: Arc<AtomicBool>,
@@ -19,7 +38,12 @@ struct ActiveWatcher {
 }
 
 impl ActiveWatcher {
-    fn start(path: &Path, pager: Pager, refresh: RefreshCallback) -> Result<Self> {
+    fn start(
+        path: &Path,
+        pager: Pager,
+        refresh: RefreshCallback,
+        document: Arc<RwLock<PagerDocument>>,
+    ) -> Result<Self> {
         let target = comparable_path(path)?;
         let directory = target
             .parent()
@@ -60,12 +84,10 @@ impl ActiveWatcher {
                 }
 
                 if refresh_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
-                    match refresh() {
-                        Ok(output) => {
-                            if pager.set_text(output).is_err() {
-                                break;
-                            }
-                        }
+                    match refresh().and_then(|refreshed| {
+                        apply_refreshed_document(&pager, &document, refreshed)
+                    }) {
+                        Ok(()) => {}
                         Err(error) => {
                             if pager
                                 .send_message(single_line_message(&format!(
@@ -101,6 +123,67 @@ impl Drop for ActiveWatcher {
 struct PagerInputClassifier {
     default: HashedEventRegister<RandomState>,
     editor_requested: Arc<AtomicBool>,
+    editor_enabled: bool,
+    help_panel: Vec<PromptLine>,
+    pager: Pager,
+    document: Arc<RwLock<PagerDocument>>,
+    refresh: Option<RefreshCallback>,
+    reload_in_progress: Arc<AtomicBool>,
+}
+
+impl PagerInputClassifier {
+    fn set_help_visible(&self, visible: bool) {
+        let result = if visible {
+            self.pager.set_prompt_panel(self.help_panel.clone())
+        } else {
+            self.pager.clear_prompt_panel()
+        };
+        if let Err(error) = result {
+            let _ = self.pager.send_message(single_line_message(&format!(
+                "Failed to update help: {error}"
+            )));
+        }
+    }
+
+    fn toggle_help(&self, visible: bool) {
+        self.set_help_visible(!visible);
+    }
+
+    fn copy_contents(&self, selected_text: Option<String>) {
+        let pager = self.pager.clone();
+        let document = self.document.clone();
+        thread::spawn(move || {
+            report_operation_result(
+                &pager,
+                copy_document_contents(&document, selected_text),
+                "Copied contents",
+                "Failed to copy contents",
+            );
+        });
+    }
+
+    fn reload_document(&self) {
+        let Some(refresh) = self.refresh.clone() else {
+            return;
+        };
+        if self
+            .reload_in_progress
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return;
+        }
+
+        let pager = self.pager.clone();
+        let document = self.document.clone();
+        let reload_in_progress = self.reload_in_progress.clone();
+        thread::spawn(move || {
+            let result = refresh()
+                .and_then(|refreshed| apply_refreshed_document(&pager, &document, refreshed));
+            reload_in_progress.store(false, Ordering::SeqCst);
+            report_operation_result(&pager, result, "Reloaded document", "Failed to reload file");
+        });
+    }
 }
 
 impl InputClassifier for PagerInputClassifier {
@@ -109,7 +192,27 @@ impl InputClassifier for PagerInputClassifier {
         event: minus::input::crossterm_event::Event,
         state: &PagerState,
     ) -> Option<InputEvent> {
-        if is_editor_key(&event) {
+        let help_visible = state.prompt_panel_rows() > 0;
+        match help_input_action(&event, help_visible) {
+            HelpInputAction::Toggle => {
+                self.toggle_help(help_visible);
+                return None;
+            }
+            HelpInputAction::Dismiss => {
+                self.set_help_visible(false);
+                return None;
+            }
+            HelpInputAction::DismissAndForward => self.set_help_visible(false),
+            HelpInputAction::Forward => {}
+        }
+
+        if is_copy_key(&event) {
+            self.copy_contents(state.selected_text());
+            None
+        } else if self.refresh.is_some() && is_reload_key(&event) {
+            self.reload_document();
+            None
+        } else if self.editor_enabled && is_editor_key(&event) {
             self.editor_requested.store(true, Ordering::SeqCst);
             Some(InputEvent::Exit)
         } else {
@@ -118,37 +221,51 @@ impl InputClassifier for PagerInputClassifier {
     }
 }
 
-pub fn page(
-    mut output: String,
+pub(super) fn page(
+    document: PagerDocument,
     file: Option<PathBuf>,
     refresh: Option<RefreshCallback>,
 ) -> Result<()> {
     let editor = EditorCommand::from_env();
     let editor_enabled = !matches!(editor, Ok(None)) && file.is_some();
+    let help_panel = build_help_panel(editor_enabled, refresh.is_some())?;
+    let document = Arc::new(RwLock::new(document));
     let mut pending_message = None;
 
     loop {
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
-        pager.set_text(output.clone())?;
-        if let Some(prompt) = pager_prompt(file.as_deref()) {
-            pager.set_prompt(prompt)?;
-        }
+        let footer = PagerFooter::new(file.as_deref());
+        let output = document
+            .read()
+            .map_err(|_| anyhow!("Pager document lock poisoned"))?
+            .output
+            .clone();
+        pager.set_text(output)?;
+        pager.set_prompt_renderer(move |context| footer.render(context))?;
+        pager.set_search_prompt("Find: ")?;
         pager.remove_hook(Hook::PostPagerExit, 1)?;
-        if editor_enabled {
-            pager.set_input_classifier(Box::new(PagerInputClassifier {
-                default: HashedEventRegister::default(),
-                editor_requested: editor_requested.clone(),
-            }))?;
-        }
+        pager.set_input_classifier(Box::new(PagerInputClassifier {
+            default: HashedEventRegister::default(),
+            editor_requested: editor_requested.clone(),
+            editor_enabled,
+            help_panel: help_panel.clone(),
+            pager: pager.clone(),
+            document: document.clone(),
+            refresh: refresh.clone(),
+            reload_in_progress: Arc::new(AtomicBool::new(false)),
+        }))?;
         if let Some(message) = pending_message.take() {
             pager.send_message(message)?;
         }
 
         let watcher = match (&file, &refresh) {
-            (Some(path), Some(refresh)) => {
-                Some(ActiveWatcher::start(path, pager.clone(), refresh.clone())?)
-            }
+            (Some(path), Some(refresh)) => Some(ActiveWatcher::start(
+                path,
+                pager.clone(),
+                refresh.clone(),
+                document.clone(),
+            )?),
             _ => None,
         };
 
@@ -183,7 +300,7 @@ pub fn page(
 
         if editor_opened && let Some(refresh) = &refresh {
             match refresh() {
-                Ok(refreshed_output) => output = refreshed_output,
+                Ok(refreshed) => replace_document(&document, refreshed)?,
                 Err(error) => {
                     pending_message = Some(single_line_message(&format!(
                         "Failed to refresh file: {error:#}"
@@ -192,6 +309,64 @@ pub fn page(
             }
         }
     }
+}
+
+fn apply_refreshed_document(
+    pager: &Pager,
+    document: &RwLock<PagerDocument>,
+    refreshed: PagerDocument,
+) -> Result<()> {
+    let output = refreshed.output.clone();
+    replace_document(document, refreshed)?;
+    pager.set_text(output)?;
+    Ok(())
+}
+
+fn replace_document(document: &RwLock<PagerDocument>, refreshed: PagerDocument) -> Result<()> {
+    *document
+        .write()
+        .map_err(|_| anyhow!("Pager document lock poisoned"))? = refreshed;
+    Ok(())
+}
+
+fn copy_document_contents(
+    document: &RwLock<PagerDocument>,
+    selected_text: Option<String>,
+) -> Result<()> {
+    let text = clipboard_text(document, selected_text)?;
+    let mut clipboard = arboard::Clipboard::new().context("Failed to access system clipboard")?;
+    clipboard
+        .set_text(text)
+        .context("Failed to write system clipboard")
+}
+
+fn clipboard_text(
+    document: &RwLock<PagerDocument>,
+    selected_text: Option<String>,
+) -> Result<String> {
+    match selected_text {
+        Some(text) => Ok(text),
+        None => Ok(document
+            .read()
+            .map_err(|_| anyhow!("Pager document lock poisoned"))?
+            .source
+            .clone()),
+    }
+}
+
+fn report_operation_result(
+    pager: &Pager,
+    result: Result<()>,
+    success_message: &str,
+    failure_message: &str,
+) {
+    let send_result = match result {
+        Ok(()) => pager.send_message_for(success_message, STATUS_MESSAGE_TIMEOUT),
+        Err(error) => pager.send_message(single_line_message(&format!(
+            "{failure_message}: {error:#}"
+        ))),
+    };
+    let _ = send_result;
 }
 
 fn is_editor_key(event: &minus::input::crossterm_event::Event) -> bool {
@@ -203,6 +378,77 @@ fn is_editor_key(event: &minus::input::crossterm_event::Event) -> bool {
             if key.kind == KeyEventKind::Press
                 && !key.modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
                 && matches!(key.code, KeyCode::Char('E' | 'e' | 'У' | 'у'))
+    )
+}
+
+fn is_help_key(event: &minus::input::crossterm_event::Event) -> bool {
+    use minus::input::crossterm_event::{Event, KeyCode, KeyEventKind, KeyModifiers};
+
+    matches!(
+        event,
+        Event::Key(key)
+            if key.kind == KeyEventKind::Press
+                && !key.modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
+                && key.code == KeyCode::Char('?')
+    )
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum HelpInputAction {
+    Toggle,
+    Dismiss,
+    DismissAndForward,
+    Forward,
+}
+
+fn help_input_action(
+    event: &minus::input::crossterm_event::Event,
+    help_visible: bool,
+) -> HelpInputAction {
+    if is_help_key(event) {
+        HelpInputAction::Toggle
+    } else if help_visible && is_escape_key(event) {
+        HelpInputAction::Dismiss
+    } else if help_visible && is_search_key(event) {
+        HelpInputAction::DismissAndForward
+    } else {
+        HelpInputAction::Forward
+    }
+}
+
+fn is_escape_key(event: &minus::input::crossterm_event::Event) -> bool {
+    use minus::input::crossterm_event::{Event, KeyCode, KeyEventKind, KeyModifiers};
+
+    matches!(
+        event,
+        Event::Key(key)
+            if key.kind == KeyEventKind::Press
+                && key.modifiers == KeyModifiers::NONE
+                && key.code == KeyCode::Esc
+    )
+}
+
+fn is_search_key(event: &minus::input::crossterm_event::Event) -> bool {
+    is_plain_character_key(event, '/')
+}
+
+fn is_copy_key(event: &minus::input::crossterm_event::Event) -> bool {
+    is_plain_character_key(event, 'c')
+}
+
+fn is_reload_key(event: &minus::input::crossterm_event::Event) -> bool {
+    is_plain_character_key(event, 'r')
+}
+
+fn is_plain_character_key(event: &minus::input::crossterm_event::Event, character: char) -> bool {
+    use minus::input::crossterm_event::{Event, KeyCode, KeyEventKind, KeyModifiers};
+
+    matches!(
+        event,
+        Event::Key(key)
+            if key.kind == KeyEventKind::Press
+                && key.modifiers == KeyModifiers::NONE
+                && key.code == KeyCode::Char(character)
     )
 }
 
@@ -240,12 +486,6 @@ fn single_line_message(message: &str) -> String {
     message.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-fn pager_prompt(file: Option<&Path>) -> Option<String> {
-    let file_name = file?.file_name()?.to_string_lossy();
-    let prompt = single_line_message(&file_name);
-    (!prompt.is_empty()).then_some(prompt)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -255,33 +495,77 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn editor_key_supports_english_and_russian_layouts() {
+    fn editor_key_accepts_supported_layouts_without_control_modifiers() {
         for character in ['E', 'e', 'У', 'у'] {
             let event = Event::Key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
 
             assert!(is_editor_key(&event), "character: {character}");
         }
+
+        assert!(is_editor_key(&Event::Key(KeyEvent::new(
+            KeyCode::Char('E'),
+            KeyModifiers::SHIFT,
+        ))));
+        assert!(!is_editor_key(&Event::Key(KeyEvent::new(
+            KeyCode::Char('r'),
+            KeyModifiers::NONE,
+        ))));
+        assert!(!is_editor_key(&Event::Key(KeyEvent::new(
+            KeyCode::Char('e'),
+            KeyModifiers::CONTROL,
+        ))));
     }
 
     #[test]
-    fn shifted_uppercase_editor_key_is_supported() {
-        let event = Event::Key(KeyEvent::new(KeyCode::Char('E'), KeyModifiers::SHIFT));
+    fn modified_question_mark_does_not_open_help() {
+        let event = Event::Key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::CONTROL));
 
-        assert!(is_editor_key(&event));
+        assert!(!is_help_key(&event));
     }
 
     #[test]
-    fn other_keys_do_not_open_editor() {
+    fn escape_closes_visible_help_without_reaching_minus() {
+        let event = Event::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+
+        assert_eq!(help_input_action(&event, true), HelpInputAction::Dismiss);
+        assert_eq!(help_input_action(&event, false), HelpInputAction::Forward);
+    }
+
+    #[test]
+    fn search_closes_visible_help_before_reaching_minus() {
+        let event = Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
+
+        assert_eq!(
+            help_input_action(&event, true),
+            HelpInputAction::DismissAndForward
+        );
+        assert_eq!(help_input_action(&event, false), HelpInputAction::Forward);
+    }
+
+    #[test]
+    fn question_mark_always_toggles_help() {
+        let event = Event::Key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::SHIFT));
+
+        assert_eq!(help_input_action(&event, false), HelpInputAction::Toggle);
+        assert_eq!(help_input_action(&event, true), HelpInputAction::Toggle);
+    }
+
+    #[test]
+    fn copy_key_matches_glow_without_modifiers() {
+        let event = Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE));
+        let modified = Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
+
+        assert!(is_copy_key(&event));
+        assert!(!is_copy_key(&modified));
+    }
+
+    #[test]
+    fn reload_key_matches_glow_without_modifiers() {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE));
+        let modified = Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::ALT));
 
-        assert!(!is_editor_key(&event));
-    }
-
-    #[test]
-    fn modified_editor_keys_do_not_open_editor() {
-        let event = Event::Key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::CONTROL));
-
-        assert!(!is_editor_key(&event));
+        assert!(is_reload_key(&event));
+        assert!(!is_reload_key(&modified));
     }
 
     #[test]
@@ -311,11 +595,26 @@ mod tests {
     }
 
     #[test]
-    fn pager_prompt_uses_file_name() {
-        let path = Path::new("documents").join("table-wrap.md");
+    fn clipboard_text_prefers_the_selection() {
+        let document = RwLock::new(PagerDocument::new(
+            "rendered output".to_string(),
+            "whole source".to_string(),
+        ));
 
-        assert_eq!(pager_prompt(Some(&path)), Some("table-wrap.md".to_string()));
-        assert_eq!(pager_prompt(None), None);
+        assert_eq!(
+            clipboard_text(&document, Some("selected text".to_string())).unwrap(),
+            "selected text"
+        );
+    }
+
+    #[test]
+    fn clipboard_text_uses_the_source_without_a_selection() {
+        let document = RwLock::new(PagerDocument::new(
+            "rendered output".to_string(),
+            "whole source".to_string(),
+        ));
+
+        assert_eq!(clipboard_text(&document, None).unwrap(), "whole source");
     }
 
     #[test]
@@ -325,11 +624,18 @@ mod tests {
         std::fs::write(&file, "# Before").unwrap();
         let refresh_count = Arc::new(AtomicUsize::new(0));
         let callback_count = refresh_count.clone();
+        let document = Arc::new(std::sync::RwLock::new(PagerDocument {
+            output: "rendered before".to_string(),
+            source: "# Before".to_string(),
+        }));
         let refresh = Arc::new(move || {
             callback_count.fetch_add(1, Ordering::SeqCst);
-            Ok("# After".to_string())
+            Ok(PagerDocument {
+                output: "rendered after".to_string(),
+                source: "# After".to_string(),
+            })
         });
-        let watcher = ActiveWatcher::start(&file, Pager::new(), refresh).unwrap();
+        let watcher = ActiveWatcher::start(&file, Pager::new(), refresh, document.clone()).unwrap();
 
         std::fs::write(&file, "# After").unwrap();
         let deadline = Instant::now() + Duration::from_secs(3);
@@ -339,5 +645,6 @@ mod tests {
 
         drop(watcher);
         assert!(refresh_count.load(Ordering::SeqCst) >= 1);
+        assert_eq!(document.read().unwrap().source, "# After");
     }
 }

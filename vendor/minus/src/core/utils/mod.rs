@@ -1,0 +1,45 @@
+pub mod display;
+pub mod term;
+
+pub const fn digits(num: usize) -> usize {
+    (if num == 0 { 0 } else { num.ilog10() as usize }) + 1
+}
+
+#[derive(Debug)]
+pub struct LinesRowMap(Vec<usize>);
+
+impl LinesRowMap {
+    pub const fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn append(&mut self, idx: &mut Self, clean_append: bool) {
+        if !clean_append {
+            self.0.pop();
+        }
+        self.0.append(&mut idx.0);
+    }
+
+    pub fn insert(&mut self, ln: usize, clean_append: bool) {
+        if !clean_append {
+            self.0.pop();
+        }
+        self.0.push(ln);
+    }
+
+    pub fn get(&self, ln: usize) -> Option<&usize> {
+        self.0.get(ln)
+    }
+
+    pub(crate) fn row_to_line(&self, row: usize) -> Option<usize> {
+        if self.0.is_empty() {
+            return None;
+        }
+
+        Some(match self.0.binary_search(&row) {
+            Ok(idx) => idx,
+            Err(0) => 0,
+            Err(idx) => idx.saturating_sub(1),
+        })
+    }
+}

@@ -1,0 +1,75 @@
+[package]
+name = "minus"
+version = "5.7.2"
+authors = ["Arijit Dey <arijid79@gmail.com>"]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/minus"
+repository = "https://github.com/AMythicDev/minus"
+description = "An asynchronous data feedable terminal paging library for Rust"
+keywords = ["pager", "asynchronous", "dynamic", "less", "more"]
+categories = ["asynchronous", "command-line-interface"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lib]
+name = "minus"
+path = "src/lib.rs"
+crate-type = ["lib"]
+
+[dependencies]
+crossterm = "^0.29"
+textwrap = { version = "~0.16", default-features = false, features = ["unicode-width"] }
+thiserror = "^2"
+unicode-segmentation = "^1.12"
+unicode-width = "^0.2"
+regex = { version = "^1", optional = true }
+crossbeam-channel = "^0.5"
+parking_lot = "0.12.1"
+arboard = { version = "3", optional = true, default-features = false, features = ["wayland-data-control"] }
+
+[features]
+search = [ "regex" ]
+static_output = []
+dynamic_output = []
+clipboard = ["arboard"]
+
+[dev-dependencies]
+tokio = { version = "^1.0", features = ["rt", "macros", "rt-multi-thread", "time"] }
+
+[[example]]
+name = "dyn_tokio"
+path = "examples/dyn_tokio.rs"
+required-features = ["dynamic_output"]
+
+[[example]]
+name = "less-rs"
+path = "examples/less-rs.rs"
+required-features = ["dynamic_output"]
+
+[[example]]
+name = "static"
+path = "examples/static.rs"
+required-features = ["static_output"]
+
+[[example]]
+name = "large_lines"
+path = "examples/large_lines.rs"
+required-features = ["static_output"]
+
+[[example]]
+name = "color-output"
+path = "examples/color-output.rs"
+required-features = ["static_output"]
+
+[[example]]
+name = "static-no-overflow"
+path = "examples/static-no-overflow.rs"
+required-features = ["static_output"]
+
+[[example]]
+name = "msg-tokio"
+path = "examples/msg-tokio.rs"
+required-features = ["dynamic_output"]

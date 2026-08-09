@@ -1,0 +1,347 @@
+use crate::{
+    Pager, PagerState,
+    error::MinusError,
+    hooks::Hook,
+    input::InputEvent,
+    minus_core::{
+        RunMode,
+        commands::Command,
+        ev_handler::handle_event,
+        utils::{display::draw_full, term},
+    },
+};
+
+use crossbeam_channel::{Receiver, Sender, TrySendError};
+use crossterm::event;
+use std::{
+    io::Write,
+    panic,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
+
+#[cfg(not(test))]
+use std::io::stdout;
+
+#[cfg(feature = "search")]
+use parking_lot::Condvar;
+use parking_lot::Mutex;
+
+use super::{CommandQueue, RUNMODE, utils::display::draw_for_change};
+
+#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::too_many_lines)]
+pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusError> {
+    #[cfg(not(test))]
+    let mut out = stdout();
+    #[cfg(test)]
+    let mut out = Vec::new();
+
+    #[cfg(feature = "search")]
+    let input_thread_running = Arc::new((Mutex::new(true), Condvar::new()));
+
+    assert_eq!(
+        *super::RUNMODE.lock(),
+        RunMode::Uninitialized,
+        "Failed to set the RUNMODE. This is caused probably because another instance of minus is already running"
+    );
+
+    #[allow(unused_mut)]
+    let mut ps = crate::state::PagerState::generate_initial_state(&pager.rx)?;
+    *super::RUNMODE.lock() = rm;
+    ps.run_hooks(Hook::PrePagerStart);
+
+    #[cfg(all(feature = "static_output", not(test)))]
+    if *RUNMODE.lock() == RunMode::Static {
+        use {super::utils::display::write_raw_lines, crossterm::tty::IsTty};
+        if !out.is_tty() {
+            write_raw_lines(&mut out, &[ps.screen.orig_text], None)?;
+            *RUNMODE.lock() = RunMode::Uninitialized;
+            return Ok(());
+        }
+        if ps.screen.formatted_lines_count() <= ps.rows && !ps.run_no_overflow {
+            write_raw_lines(&mut out, &ps.screen.formatted_lines, Some("\r"))?;
+            ps.exit();
+            *RUNMODE.lock() = RunMode::Uninitialized;
+            return Ok(());
+        }
+    }
+
+    #[cfg(not(test))]
+    term::setup(&mut out)?;
+
+    let is_exited = Arc::new(AtomicBool::new(false));
+    let is_exited2 = is_exited.clone();
+
+    {
+        let panic_hook = panic::take_hook();
+        panic::set_hook(Box::new(move |pinfo| {
+            is_exited2.store(true, std::sync::atomic::Ordering::SeqCst);
+            // Panic hooks use an isolated test buffer instead of terminal output.
+            #[cfg(test)]
+            let mut out2 = Vec::new();
+            #[cfg(not(test))]
+            let mut out2 = stdout();
+
+            // Cleanup failures cannot supersede the active panic.
+            drop(term::cleanup(&mut out2, true));
+            panic_hook(pinfo);
+        }));
+    }
+
+    let ps_mutex = Arc::new(Mutex::new(ps));
+
+    let evtx = pager.tx.clone();
+    let rx = pager.rx.clone();
+
+    let p1 = ps_mutex.clone();
+
+    #[cfg(feature = "search")]
+    let input_thread_running2 = input_thread_running.clone();
+
+    std::thread::scope(|s| -> crate::Result {
+        let is_exited3 = is_exited.clone();
+        let is_exited4 = is_exited.clone();
+
+        #[cfg(test)]
+        let mut out2 = Vec::new();
+        #[cfg(not(test))]
+        let mut out2 = stdout();
+
+        let t1 = s.spawn(move || {
+            let res = event_reader(
+                &evtx,
+                &p1,
+                #[cfg(feature = "search")]
+                &input_thread_running2,
+                &is_exited3,
+            );
+
+            if res.is_err() {
+                is_exited3.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+            res
+        });
+        let t2 = s.spawn(move || {
+            let res = start_reactor(
+                &rx,
+                &ps_mutex,
+                &mut out2,
+                #[cfg(feature = "search")]
+                &input_thread_running,
+                &is_exited4,
+            );
+
+            if res.is_err() {
+                is_exited4.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+            res
+        });
+
+        let r1 = t1.join().unwrap();
+        let r2 = t2.join().unwrap();
+
+        if r1.is_err() || r2.is_err() {
+            *RUNMODE.lock() = RunMode::Uninitialized;
+            term::cleanup(&mut out, true)?;
+        }
+
+        r1?;
+        r2?;
+        Ok(())
+    })
+}
+
+#[allow(clippy::too_many_lines)]
+fn start_reactor(
+    rx: &Receiver<Command>,
+    ps: &Arc<Mutex<PagerState>>,
+    mut out_lock: impl Write,
+    #[cfg(feature = "search")] input_thread_running: &Arc<(Mutex<bool>, Condvar)>,
+    is_exited: &Arc<AtomicBool>,
+) -> Result<(), MinusError> {
+    let mut command_queue = CommandQueue::new();
+
+    {
+        let mut p = ps.lock();
+
+        draw_full(&mut out_lock, &mut p)?;
+        p.run_hooks(Hook::PostPagerStart);
+
+        if p.follow_output {
+            draw_for_change(&mut out_lock, &mut p, &mut (usize::MAX - 1))?;
+        }
+    }
+
+    let run_mode = *RUNMODE.lock();
+    match run_mode {
+        #[cfg(feature = "dynamic_output")]
+        RunMode::Dynamic => loop {
+            if is_exited.load(Ordering::SeqCst) {
+                term::cleanup(&mut out_lock, true)?;
+                ps.lock().run_hooks(Hook::PostPagerExit);
+                let mut rm = RUNMODE.lock();
+                *rm = RunMode::Uninitialized;
+                drop(rm);
+                break;
+            }
+
+            let next_command = if command_queue.is_empty() {
+                rx.recv()
+            } else {
+                Ok(command_queue.pop_front().unwrap())
+            };
+
+            let mut p = ps.lock();
+            if let Ok(Command::Io(ic)) = next_command {
+                use crate::minus_core::ev_handler::handle_io_command;
+
+                handle_io_command(
+                    ic,
+                    &mut out_lock,
+                    &mut p,
+                    &mut command_queue,
+                    #[cfg(feature = "search")]
+                    input_thread_running,
+                )?;
+            } else if let Ok(command) = next_command {
+                handle_event(command, &mut p, &mut command_queue, is_exited)?;
+            }
+        },
+        #[cfg(feature = "static_output")]
+        RunMode::Static => loop {
+            if is_exited.load(Ordering::SeqCst) {
+                term::cleanup(&mut out_lock, true)?;
+                ps.lock().run_hooks(Hook::PostPagerExit);
+
+                let mut rm = RUNMODE.lock();
+                *rm = RunMode::Uninitialized;
+                drop(rm);
+
+                break;
+            }
+            let next_command = if command_queue.is_empty() {
+                rx.recv()
+            } else {
+                Ok(command_queue.pop_front().unwrap())
+            };
+
+            let mut p = ps.lock();
+
+            if let Ok(Command::Io(ic)) = next_command {
+                use crate::minus_core::ev_handler::handle_io_command;
+
+                handle_io_command(
+                    ic,
+                    &mut out_lock,
+                    &mut p,
+                    &mut command_queue,
+                    #[cfg(feature = "search")]
+                    input_thread_running,
+                )?;
+            } else if let Ok(command) = next_command {
+                handle_event(command, &mut p, &mut command_queue, is_exited)?;
+            }
+        },
+        RunMode::Uninitialized => panic!(
+            "Static variable RUNMODE set to uninitialized.\
+This is most likely a bug. Please open an issue to the developers"
+        ),
+    }
+    Ok(())
+}
+
+fn event_reader(
+    evtx: &Sender<Command>,
+    ps: &Arc<Mutex<PagerState>>,
+    #[cfg(feature = "search")] user_input_active: &Arc<(Mutex<bool>, Condvar)>,
+    is_exited: &Arc<AtomicBool>,
+) -> Result<(), MinusError> {
+    loop {
+        if is_exited.load(Ordering::SeqCst) {
+            break;
+        }
+
+        #[cfg(feature = "search")]
+        {
+            let (lock, cvar) = (&user_input_active.0, &user_input_active.1);
+            cvar.wait_while(&mut lock.lock(), |pending| !*pending);
+        }
+
+        if event::poll(std::time::Duration::from_millis(100))
+            .map_err(|e| MinusError::HandleEvent(e.into()))?
+        {
+            let ev = event::read().map_err(|e| MinusError::HandleEvent(e.into()))?;
+            if !dispatch_input_event(
+                ev,
+                evtx,
+                ps,
+                #[cfg(feature = "search")]
+                user_input_active,
+            )? {
+                break;
+            }
+        }
+    }
+    Result::<(), MinusError>::Ok(())
+}
+
+fn dispatch_input_event(
+    ev: event::Event,
+    evtx: &Sender<Command>,
+    ps: &Arc<Mutex<PagerState>>,
+    #[cfg(feature = "search")] user_input_active: &Arc<(Mutex<bool>, Condvar)>,
+) -> Result<bool, MinusError> {
+    let mut guard = ps.lock();
+    let input = guard.input_classifier.classify_input(ev, &guard);
+    if !matches!(&input, Some(InputEvent::Number(_))) {
+        guard.prefix_num.clear();
+        guard.format_prompt()?;
+    }
+    drop(guard);
+
+    if let Some(input) = input {
+        #[cfg(feature = "search")]
+        if matches!(&input, InputEvent::Search(_)) {
+            *user_input_active.0.lock() = false;
+        }
+        if let Err(TrySendError::Disconnected(_)) = evtx.try_send(Command::UserInput(input)) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+#[cfg(all(test, feature = "search"))]
+mod tests {
+    use super::dispatch_input_event;
+    use crate::{PagerState, SearchMode, input::InputEvent, minus_core::commands::Command};
+    use crossbeam_channel::unbounded;
+    use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+    use parking_lot::{Condvar, Mutex};
+    use std::sync::Arc;
+
+    #[test]
+    fn search_pauses_the_general_event_reader_before_queueing() {
+        let (tx, rx) = unbounded();
+        let state = Arc::new(Mutex::new(PagerState::new().unwrap()));
+        let input_active = Arc::new((Mutex::new(true), Condvar::new()));
+
+        let connected = dispatch_input_event(
+            Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE)),
+            &tx,
+            &state,
+            &input_active,
+        )
+        .unwrap();
+
+        assert!(connected);
+        assert!(!*input_active.0.lock());
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(Command::UserInput(InputEvent::Search(SearchMode::Forward)))
+        ));
+    }
+}

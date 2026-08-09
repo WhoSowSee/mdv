@@ -99,7 +99,11 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
                 )
             }) as pager::RefreshCallback
         });
-        pager::page(output, pager_file, refresh)?;
+        pager::page(
+            pager::PagerDocument::new(output, content),
+            pager_file,
+            refresh,
+        )?;
     } else {
         print!("{}", output);
     }
@@ -153,17 +157,18 @@ fn render_document_file(
     do_html: bool,
     show_current_theme: bool,
     current_preset: Option<&str>,
-) -> Result<String> {
+) -> Result<pager::PagerDocument> {
     let mut content = std::fs::read_to_string(path)?;
     strip_leading_bom(&mut content);
-    render_document(
+    let output = render_document(
         &content,
         config,
         do_html,
         show_current_theme,
         current_preset,
         true,
-    )
+    )?;
+    Ok(pager::PagerDocument::new(output, content))
 }
 
 fn format_current_themes(config: &Config) -> String {

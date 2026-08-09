@@ -1,5 +1,6 @@
 # Rust
 /target/
+vendor/minus/target/
 **/*.rs.bk
 
 # IDE
