@@ -1,7 +1,7 @@
 use super::{
     Alignment, CalloutStyle, Config, Event, FootnoteDefinition, FootnoteStyle, HashMap,
-    HeadingLevel, LinkStyle, Result, SoftBreakFollowingText, SyntaxSet, Tag, TagEnd, Theme,
-    ThemeElement, create_style, extract_code_language,
+    HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement, create_style,
+    extract_code_language,
 };
 use crate::renderer::syntax_theme::CodeHighlightTheme;
 use crate::theme::Color;
@@ -342,7 +342,6 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) pending_callout_label_buffer: String,
     pub(crate) suppress_next_soft_break: bool,
     pub(crate) suppress_next_paragraph_break: bool,
-    pub(crate) current_soft_break_segment_start: usize,
 }
 
 impl<'a> EventRenderer<'a> {
@@ -409,7 +408,6 @@ impl<'a> EventRenderer<'a> {
             pending_callout_label_buffer: String::new(),
             suppress_next_soft_break: false,
             suppress_next_paragraph_break: false,
-            current_soft_break_segment_start: 0,
         }
     }
 
@@ -433,14 +431,8 @@ impl<'a> EventRenderer<'a> {
             self.smart_level_indents.clear();
         }
 
-        for idx in 0..events.len() {
-            let next_soft_break_text = if matches!(&events[idx], Event::SoftBreak) {
-                Self::collect_soft_break_following_text(&events[idx + 1..])
-            } else {
-                None
-            };
-
-            self.process_event(events[idx].clone(), next_soft_break_text.as_ref())?;
+        for event in events {
+            self.process_event(event)?;
         }
 
         self.flush_pending_html_block_buffer()?;
@@ -559,11 +551,7 @@ impl<'a> EventRenderer<'a> {
         }
     }
 
-    fn process_event(
-        &mut self,
-        event: Event,
-        next_soft_break_text: Option<&SoftBreakFollowingText>,
-    ) -> Result<()> {
+    fn process_event(&mut self, event: Event) -> Result<()> {
         if !matches!(event, Event::Text(_)) {
             self.reset_footnote_text_scan();
         }
@@ -599,7 +587,7 @@ impl<'a> EventRenderer<'a> {
                 if self.append_pending_html_buffer_soft_break() {
                     return Ok(());
                 }
-                self.handle_soft_break(next_soft_break_text)?;
+                self.handle_soft_break()?;
             }
             Event::HardBreak => {
                 if self.append_pending_html_buffer_hard_break() {
@@ -656,11 +644,9 @@ impl<'a> EventRenderer<'a> {
                 {
                     self.output.push_str(&" ".repeat(self.content_indent));
                 }
-                self.current_soft_break_segment_start = self.output.len();
             }
             Tag::Heading { level, .. } => {
                 self.handle_header_start(level)?;
-                self.current_soft_break_segment_start = self.output.len();
             }
             Tag::BlockQuote(kind) => {
                 let entering_outer_blockquote = self.blockquote_level == 0;
@@ -916,7 +902,11 @@ impl<'a> EventRenderer<'a> {
 
                 if self.list_stack.is_empty() {
                     if !inline_footnotes_rendered && !suppress_break && !skip_blank_line {
-                        self.output.push('\n');
+                        if has_visible_content && self.blockquote_level == 0 {
+                            self.ensure_contextual_blank_line();
+                        } else {
+                            self.output.push('\n');
+                        }
                     }
                 } else if has_visible_content && !suppress_break && !self.output.ends_with('\n') {
                     // Paragraph boundaries inside list items must end with a line break

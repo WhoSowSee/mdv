@@ -17,7 +17,6 @@ use crossterm::style::Color as CrosstermColor;
 pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock, EventRenderer};
 pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
 pub(super) use footnotes::FootnoteDefinition;
-pub(super) use soft_breaks::SoftBreakFollowingText;
 
 pub(super) use crate::cli::{
     CalloutStyle, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, LinkStyle, LinkTruncationStyle,
