@@ -28,6 +28,7 @@ wrap: "char"               # Options: "char" | "word" | "none"
 reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
 table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
 heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
+show_heading_markers: false # Prefix headings with markdown-style markers matching their level
 smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
 table_smart_indent: false  # Automatically adjusts table indentation based on available width
 hide_comments: false       # Hide Markdown comments from the rendered output

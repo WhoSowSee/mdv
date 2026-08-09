@@ -96,6 +96,7 @@ pub struct Config {
     pub table_wrap: TableWrapMode,
     pub reflow: bool,
     pub heading_layout: HeadingLayout,
+    pub show_heading_markers: bool,
     // Smart heading indentation (applies only to HeadingLayout::Level)
     pub smart_indent: bool,
     pub table_smart_indent: bool,
@@ -163,6 +164,7 @@ impl Default for Config {
             table_wrap: TableWrapMode::Fit,
             reflow: false,
             heading_layout: HeadingLayout::Level,
+            show_heading_markers: false,
             smart_indent: false,
             table_smart_indent: false,
             hide_comments: false,
@@ -330,6 +332,9 @@ impl Config {
             && arg_has_user_value(matches, "heading_layout")
         {
             config.heading_layout = heading_layout;
+        }
+        if cli.show_heading_markers {
+            config.show_heading_markers = true;
         }
         if cli.smart_indent {
             config.smart_indent = true;
@@ -562,6 +567,9 @@ impl Config {
         // heading_layout defaults to Level; merge when non-default
         if !matches!(other.heading_layout, HeadingLayout::Level) {
             self.heading_layout = other.heading_layout;
+        }
+        if other.show_heading_markers {
+            self.show_heading_markers = true;
         }
         if other.smart_indent {
             self.smart_indent = true;

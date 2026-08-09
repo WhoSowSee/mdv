@@ -1,4 +1,5 @@
 use super::*;
+use tempfile::tempdir;
 
 #[test]
 fn test_smart_indent_promotes_first_heading() {
@@ -162,4 +163,90 @@ fn test_single_blank_line_before_heading_with_surrounding_elements() {
         "expected exactly one blank line before heading, stdout: {}",
         stdout
     );
+}
+
+#[test]
+fn test_heading_markers_support_levels_short_alias_and_center_layout() {
+    let markdown = "# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n";
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, markdown).unwrap();
+
+    let output = mdv_cmd()
+        .arg("--no-config")
+        .arg("--no-colors")
+        .arg("--heading-layout")
+        .arg("none")
+        .arg("--show-heading-markers")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs with heading markers");
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert_eq!(stdout, markdown);
+
+    let alias_file = NamedTempFile::new().unwrap();
+    fs::write(&alias_file, "## Alias\n").unwrap();
+    let alias_output = mdv_cmd()
+        .arg("--no-config")
+        .arg("--no-colors")
+        .arg("--cols")
+        .arg("40")
+        .arg("--heading-layout")
+        .arg("center")
+        .arg("-k")
+        .arg(alias_file.path())
+        .output()
+        .expect("mdv runs with the heading marker alias");
+    assert!(alias_output.status.success());
+    let alias_stdout = String::from_utf8(alias_output.stdout).expect("stdout utf8");
+    assert_eq!(alias_stdout.trim(), "## Alias");
+}
+
+#[test]
+fn test_heading_markers_load_from_config() {
+    let config_dir = tempdir().unwrap();
+    fs::write(
+        config_dir.path().join("config.yaml"),
+        "no_colors: true\nheading_layout: none\nshow_heading_markers: true\n",
+    )
+    .unwrap();
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "### Configured\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("--config-file")
+        .arg(config_dir.path())
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs with configured heading markers");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert_eq!(stdout, "### Configured\n");
+}
+
+#[test]
+fn test_heading_markers_do_not_duplicate_empty_placeholders() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, "#\n\n##\n").unwrap();
+
+    let output = mdv_cmd()
+        .arg("--no-config")
+        .arg("--no-colors")
+        .arg("--heading-layout")
+        .arg("none")
+        .arg("--show-empty-elements")
+        .arg("--show-heading-markers")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs with empty heading markers");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let visible_lines: Vec<&str> = stdout
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+    assert_eq!(visible_lines, ["#", "##"]);
 }

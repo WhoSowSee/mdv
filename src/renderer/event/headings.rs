@@ -153,6 +153,14 @@ impl<'a> EventRenderer<'a> {
             HeadingLevel::H5 => ThemeElement::H5,
             HeadingLevel::H6 => ThemeElement::H6,
         };
+        let marker_count = match level {
+            HeadingLevel::H1 => 1,
+            HeadingLevel::H2 => 2,
+            HeadingLevel::H3 => 3,
+            HeadingLevel::H4 => 4,
+            HeadingLevel::H5 => 5,
+            HeadingLevel::H6 => 6,
+        };
 
         if let Some(start) = self.current_heading_start.take() {
             let is_empty_heading = {
@@ -165,14 +173,6 @@ impl<'a> EventRenderer<'a> {
             };
 
             if is_empty_heading {
-                let marker_count = match level {
-                    HeadingLevel::H1 => 1,
-                    HeadingLevel::H2 => 2,
-                    HeadingLevel::H3 => 3,
-                    HeadingLevel::H4 => 4,
-                    HeadingLevel::H5 => 5,
-                    HeadingLevel::H6 => 6,
-                };
                 let placeholder = "#".repeat(marker_count);
 
                 if self.output.len() == start {
@@ -201,10 +201,15 @@ impl<'a> EventRenderer<'a> {
 
             let clean_header_text = header_text.trim();
             if !clean_header_text.is_empty() {
-                let wrapped_header = if !self.config.is_text_wrapping_enabled() {
-                    clean_header_text.to_string()
+                let display_header_text = if self.config.show_heading_markers && !is_empty_heading {
+                    format!("{} {}", "#".repeat(marker_count), clean_header_text)
                 } else {
-                    self.wrap_text_for_output(clean_header_text)
+                    clean_header_text.to_string()
+                };
+                let wrapped_header = if !self.config.is_text_wrapping_enabled() {
+                    display_header_text
+                } else {
+                    self.wrap_text_for_output(&display_header_text)
                 };
 
                 let style = create_style(self.theme, element);

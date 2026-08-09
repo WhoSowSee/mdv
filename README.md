@@ -153,6 +153,7 @@ cat <FILE> | mdv
 - `-w, --table-wrap <fit|wrap|none>` — chooses how wide tables are handled (default `fit`).
 - `-S, --table-smart-indent` — automatic table indent adjustment based on available width.
 - `-d, --heading-layout <level|center|flat|none>` — controls heading indentation (default `level`).
+- `-k, --show-heading-markers` — prefixes headings with markdown-style markers matching their level.
 - `-I, --smart-indent` — smooths indentation jumps between heading levels in `level` mode.
 - `-K, --code-wrap-indent <none|base|double>` — sets the hanging indent applied to wrapped code block lines (default `double`).
 

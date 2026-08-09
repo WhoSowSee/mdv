@@ -293,6 +293,10 @@ pub struct Cli {
     )]
     pub heading_layout: Option<HeadingLayout>,
 
+    /// Show Markdown-style markers before headings
+    #[arg(short = 'k', long = "show-heading-markers")]
+    pub show_heading_markers: bool,
+
     #[arg(
         short = 'I',
         long = "smart-indent",
