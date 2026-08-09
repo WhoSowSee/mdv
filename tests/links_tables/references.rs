@@ -256,6 +256,7 @@ fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_cont
             "https://example.com/table",
             "after markdown table",
             false,
+            &[] as &[&str],
         ),
         (
             "html table",
@@ -263,6 +264,7 @@ fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_cont
             "https://example.com/html",
             "after html table",
             true,
+            &[],
         ),
         (
             "top-level list",
@@ -270,10 +272,35 @@ fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_cont
             "https://example.com/list",
             "after list",
             false,
+            &[],
+        ),
+        (
+            "callout",
+            "> [!note] Callout\n> [link](https://example.com/callout)\n\nafter callout\n",
+            "https://example.com/callout",
+            "after callout",
+            false,
+            &["--callout-style", "pretty"],
+        ),
+        (
+            "plaintext code block",
+            "```text\n[link](https://example.com/plaintext)\n```\n\nafter plaintext code block\n",
+            "https://example.com/plaintext",
+            "after plaintext code block",
+            false,
+            &["--code-block-style", "pretty"],
+        ),
+        (
+            "mixed markdown code block",
+            "```markdown\n[block](https://example.com/block)\n\n| Link |\n| --- |\n| [nested](https://example.com/nested) |\n```\n\nafter mixed markdown code block\n",
+            "https://example.com/block",
+            "after mixed markdown code block",
+            false,
+            &["--code-block-style", "pretty"],
         ),
     ];
 
-    for (name, markdown, url, following_text, render_html) in cases {
+    for (name, markdown, url, following_text, render_html, extra_args) in cases {
         let temp_file = NamedTempFile::new().unwrap();
         fs::write(&temp_file, markdown).unwrap();
 
@@ -285,6 +312,7 @@ fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_cont
         if render_html {
             cmd.arg("--render-html");
         }
+        cmd.args(extra_args);
         cmd.arg(temp_file.path());
 
         let output = cmd.output().expect("run mdv with inline table links");

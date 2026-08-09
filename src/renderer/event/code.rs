@@ -318,6 +318,7 @@ impl<'a> EventRenderer<'a> {
                     0,
                 );
             }
+            self.ensure_contextual_blank_line();
         }
 
         self.commit_pending_heading_placeholder_if_content();

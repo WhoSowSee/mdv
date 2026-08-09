@@ -997,6 +997,7 @@ impl<'a> EventRenderer<'a> {
                             false,
                             0,
                         );
+                        self.ensure_contextual_blank_line();
                     }
 
                     return Ok(());
@@ -1051,6 +1052,7 @@ impl<'a> EventRenderer<'a> {
                         false,
                         0,
                     );
+                    self.ensure_contextual_blank_line();
                 }
             }
             TagEnd::CodeBlock => {
