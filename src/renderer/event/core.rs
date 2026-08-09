@@ -1099,10 +1099,8 @@ impl<'a> EventRenderer<'a> {
                     self.finalize_inline_footnotes(true, true)?;
                 }
 
-                // Must run before the empty-item truncation below so the
-                // freshly rendered icon counts as content.
                 if self.pending_task_marker
-                    && self.config.pretty_checkbox.is_some()
+                    && self.config.show_empty_elements
                     && self.is_custom_task_marker(&self.pending_task_marker_buffer)
                 {
                     self.strip_bullet_for_checkbox_item();
@@ -1111,7 +1109,13 @@ impl<'a> EventRenderer<'a> {
                         .chars()
                         .nth(1)
                         .unwrap_or(' ');
-                    self.output.push_str(&self.styled_checkbox_marker(state));
+                    let marker = if self.config.pretty_checkbox.is_some() {
+                        self.styled_checkbox_marker(state)
+                    } else {
+                        let style = create_style(self.theme, ThemeElement::ListMarker);
+                        style.apply(&format!("[{state}]"), self.config.no_colors)
+                    };
+                    self.output.push_str(&marker);
                     self.output.push(' ');
                     has_content = true;
                 }

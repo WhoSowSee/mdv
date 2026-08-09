@@ -152,12 +152,7 @@ impl<'a> EventRenderer<'a> {
         self.note_paragraph_content();
         self.pending_task_marker = false;
         self.pending_task_marker_buffer.clear();
-        if self.config.pretty_checkbox.is_some() {
-            self.strip_bullet_for_checkbox_item();
-            if let Some(list_state) = self.list_stack.last_mut() {
-                list_state.current_item_marker_end = Some(self.output.len());
-            }
-        }
+        self.strip_bullet_for_checkbox_item();
         let marker = if self.config.pretty_checkbox.is_some() {
             self.styled_checkbox_marker(if checked { 'x' } else { ' ' })
         } else if checked {
@@ -169,6 +164,9 @@ impl<'a> EventRenderer<'a> {
         };
         self.output.push_str(&marker);
         self.output.push(' ');
+        if let Some(list_state) = self.list_stack.last_mut() {
+            list_state.current_item_marker_end = Some(self.output.len());
+        }
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }

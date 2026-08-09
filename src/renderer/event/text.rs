@@ -210,23 +210,20 @@ impl<'a> EventRenderer<'a> {
                 let buffer = std::mem::take(&mut self.pending_task_marker_buffer);
                 if let Some((marker, remainder)) = self.split_custom_task_marker_prefix(&buffer) {
                     self.note_paragraph_content();
-                    if self.config.pretty_checkbox.is_some() {
-                        self.strip_bullet_for_checkbox_item();
-                        if let Some(list_state) = self.list_stack.last_mut() {
-                            list_state.current_item_marker_end = Some(self.output.len());
-                        }
+                    self.strip_bullet_for_checkbox_item();
+                    let rendered_marker = if self.config.pretty_checkbox.is_some() {
                         let state = marker.chars().nth(1).unwrap_or(' ');
-                        self.output.push_str(&self.styled_checkbox_marker(state));
-                        if !remainder.is_empty() {
-                            self.process_text_with_wrapping_and_formatting(remainder)?;
-                        }
+                        self.styled_checkbox_marker(state)
                     } else {
                         let style = create_style(self.theme, ThemeElement::ListMarker);
-                        let styled_marker = style.apply(marker, self.config.no_colors);
-                        self.output.push_str(&styled_marker);
-                        if !remainder.is_empty() {
-                            self.process_text_with_wrapping_and_formatting(remainder)?;
-                        }
+                        style.apply(marker, self.config.no_colors)
+                    };
+                    self.output.push_str(&rendered_marker);
+                    if let Some(list_state) = self.list_stack.last_mut() {
+                        list_state.current_item_marker_end = Some(self.output.len());
+                    }
+                    if !remainder.is_empty() {
+                        self.process_text_with_wrapping_and_formatting(remainder)?;
                     }
                 } else {
                     // Process text with wrapping and formatting
@@ -250,24 +247,16 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn split_custom_task_marker_prefix<'b>(&self, text: &'b str) -> Option<(&'b str, &'b str)> {
-        let bytes = text.as_bytes();
-        if bytes.len() < 3 || bytes[0] != b'[' || bytes[2] != b']' {
-            return None;
-        }
-
-        if !self.is_supported_task_marker(bytes[1]) {
-            return None;
-        }
-
-        Some((&text[..3], &text[3..]))
+        let after_open = text.strip_prefix('[')?;
+        let state = after_open.chars().next()?;
+        let after_state = &after_open[state.len_utf8()..];
+        let remainder = after_state.strip_prefix(']')?;
+        let marker_end = text.len() - remainder.len();
+        Some((&text[..marker_end], remainder))
     }
 
     pub(super) fn is_custom_task_marker(&self, text: &str) -> bool {
-        let bytes = text.as_bytes();
-        bytes.len() == 3
-            && bytes[0] == b'['
-            && bytes[2] == b']'
-            && self.is_supported_task_marker(bytes[1])
+        matches!(self.split_custom_task_marker_prefix(text), Some((_, "")))
     }
 
     fn parse_callout_marker(text: &str) -> Option<CalloutMarker> {
@@ -447,18 +436,6 @@ impl<'a> EventRenderer<'a> {
         };
 
         (kind, lower)
-    }
-
-    fn is_supported_task_marker(&self, marker: u8) -> bool {
-        let base = matches!(
-            marker,
-            b' ' | b'x' | b'X' | b'/' | b'-' | b'?' | b'!' | b'\\' | b'|'
-        );
-        base || (self.config.pretty_checkbox.is_some()
-            && self
-                .config
-                .checkbox_overrides
-                .contains_key(&(marker as char)))
     }
 
     /// Process text with wrapping and formatting, handling styled text properly

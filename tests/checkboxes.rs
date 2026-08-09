@@ -189,6 +189,100 @@ fn test_default_checkbox_unchanged_without_pretty() {
 }
 
 #[test]
+fn test_default_checkbox_bullet_removed_not_regular_or_ordered_items() {
+    let md = "- [ ] unchecked\n- [x] done\n- [?] question\n- regular\n1. [ ] ordered\n";
+    let stdout = run(&[], md);
+
+    for label in ["unchecked", "done", "question"] {
+        let line = stdout.lines().find(|line| line.contains(label)).unwrap();
+        assert!(
+            !line.trim_start().starts_with("- "),
+            "bullet should be removed for checkbox item: {line:?}"
+        );
+    }
+
+    let regular = stdout
+        .lines()
+        .find(|line| line.contains("regular"))
+        .unwrap();
+    assert!(regular.trim_start().starts_with("- "));
+
+    let ordered = stdout
+        .lines()
+        .find(|line| line.contains("ordered"))
+        .unwrap();
+    assert!(ordered.trim_start().starts_with("1. "));
+}
+
+#[test]
+fn test_unknown_checkbox_states_render_literal_without_list_marker() {
+    let md = "- [*] starred\n- [z] custom\n";
+    let modes: &[&[&str]] = &[
+        &[],
+        &["--pretty-checkbox", "square"],
+        &[
+            "--pretty-checkbox",
+            "square",
+            "--pretty-list",
+            "type:unicode;size:small",
+        ],
+    ];
+
+    for args in modes {
+        let stdout = run(args, md);
+        let lines: Vec<_> = stdout
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .collect();
+        assert_eq!(
+            lines,
+            ["[*] starred", "[z] custom"],
+            "unexpected checkbox rendering for {args:?}"
+        );
+    }
+}
+
+#[test]
+fn test_empty_checkbox_visibility_follows_show_empty_elements() {
+    let md = "- [ ]\n- [x]\n- [-]\n- [*]\n- [z]\n";
+    let modes: &[(&[&str], &[&str])] = &[
+        (&[], &["[ ]", "[✓]", "[-]", "[*]", "[z]"]),
+        (
+            &["--pretty-checkbox", "square"],
+            &["\u{F0131}", "\u{F0132}", "\u{F0375}", "[*]", "[z]"],
+        ),
+        (
+            &[
+                "--pretty-checkbox",
+                "square",
+                "--pretty-list",
+                "type:unicode;size:small",
+            ],
+            &["\u{F0131}", "\u{F0132}", "\u{F0375}", "[*]", "[z]"],
+        ),
+    ];
+
+    for (args, expected) in modes {
+        let hidden = run(args, md);
+        assert!(
+            hidden.trim().is_empty(),
+            "empty checkboxes should be hidden for {args:?}: {hidden:?}"
+        );
+
+        let mut shown_args = args.to_vec();
+        shown_args.push("--show-empty-elements");
+        let shown = run(&shown_args, md);
+        let lines: Vec<_> = shown
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .collect();
+        assert_eq!(lines, *expected, "unexpected empty checkboxes for {args:?}");
+    }
+}
+
+#[test]
 fn test_custom_checkbox_color_override() {
     // Color override: yellow for [*], custom RGB for [!]
     let md = "- [*] starred\n- [!] important\n";
