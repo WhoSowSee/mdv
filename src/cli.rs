@@ -158,6 +158,16 @@ pub struct Cli {
     )]
     pub pretty_list: Option<PrettyListStyle>,
 
+    /// Render definition descriptions with a Unicode or Nerd Font marker
+    #[arg(
+        short = 'v',
+        long = "pretty-definition",
+        value_enum,
+        value_name = "STYLE",
+        long_help = "Render definition descriptions with a built-in marker\n\nUnicode definition marker spacing may vary by font.\nNerd Font definition marker requires a Nerd Font terminal.\nRendering was verified with Nerd Font families, especially JetBrainsMono Nerd Font."
+    )]
+    pub pretty_definition: Option<PrettyDefinitionStyle>,
+
     /// Use one list marker for every nesting level. Requires --pretty-list
     #[arg(
         short = 'N',
@@ -672,6 +682,24 @@ pub enum CheckboxShape {
     Square,
     #[value(help = "Circular Nerd Font icons for task-list checkboxes")]
     Circle,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PrettyDefinitionStyle {
+    #[value(help = "Unicode heavy arrow")]
+    Unicode,
+    #[value(help = "Nerd Font icon U+F0315")]
+    NerdFont,
+}
+
+impl PrettyDefinitionStyle {
+    pub(crate) fn marker(self) -> &'static str {
+        match self {
+            Self::Unicode => "🠶 ",
+            Self::NerdFont => "\u{f0315} ",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

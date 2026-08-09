@@ -24,7 +24,7 @@ fn test_help_command() {
 }
 
 #[test]
-fn test_pretty_list_help_documents_font_behavior() {
+fn test_pretty_marker_help_documents_font_behavior() {
     let mut cmd = mdv_cmd();
     cmd.arg("--help");
     cmd.assert()
@@ -46,6 +46,13 @@ fn test_pretty_list_help_documents_font_behavior() {
         .stdout(predicate::str::contains("--pretty-list 'type:unicode'"))
         .stdout(predicate::str::contains("JetBrainsMono Nerd Font"))
         .stdout(predicate::str::contains("-N, --uniform-list-marker"))
+        .stdout(predicate::str::contains("-v, --pretty-definition <STYLE>"))
+        .stdout(predicate::str::contains(
+            "Unicode definition marker spacing may vary by font",
+        ))
+        .stdout(predicate::str::contains(
+            "Nerd Font definition marker requires a Nerd Font terminal",
+        ))
         .stdout(predicate::str::contains("U+F444").not());
 }
 

@@ -22,6 +22,7 @@ impl MarkdownProcessor {
         options.insert(Options::ENABLE_SMART_PUNCTUATION);
         options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
         options.insert(Options::ENABLE_MATH);
+        options.insert(Options::ENABLE_DEFINITION_LIST);
 
         Self {
             config: config.clone(),

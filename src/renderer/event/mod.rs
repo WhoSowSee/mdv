@@ -1,5 +1,6 @@
 mod code;
 mod core;
+mod definition_lists;
 mod footnotes;
 mod formatting;
 mod headings;
@@ -16,6 +17,7 @@ use crossterm::style::Color as CrosstermColor;
 
 pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock, EventRenderer};
 pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
+use definition_lists::DefinitionListState;
 pub(super) use footnotes::FootnoteDefinition;
 
 pub(super) use crate::cli::{

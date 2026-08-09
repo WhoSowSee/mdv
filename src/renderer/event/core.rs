@@ -1,7 +1,7 @@
 use super::{
-    Alignment, CalloutStyle, Config, Event, FootnoteDefinition, FootnoteStyle, HashMap,
-    HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement, create_style,
-    extract_code_language,
+    Alignment, CalloutStyle, Config, DefinitionListState, Event, FootnoteDefinition, FootnoteStyle,
+    HashMap, HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement,
+    create_style, extract_code_language,
 };
 use crate::renderer::syntax_theme::CodeHighlightTheme;
 use crate::theme::Color;
@@ -297,6 +297,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) callout_stack: Vec<CalloutState>,
     pub(crate) callout_palette: HashMap<CalloutKind, Color>,
     pub(crate) list_stack: Vec<ListState>,
+    pub(super) definition_list_stack: Vec<DefinitionListState>,
     pub(crate) table_state: Option<TableState>,
     pub(crate) pending_html_block_buffer: Option<HtmlBlockBuffer>,
     pub(crate) link_references: HashMap<String, String>,
@@ -363,6 +364,7 @@ impl<'a> EventRenderer<'a> {
             callout_stack: Vec::new(),
             callout_palette: build_callout_palette(theme),
             list_stack: Vec::new(),
+            definition_list_stack: Vec::new(),
             table_state: None,
             pending_html_block_buffer: None,
             link_references: HashMap::new(),
@@ -629,11 +631,14 @@ impl<'a> EventRenderer<'a> {
                     self.paragraph_links.clear();
                 }
 
-                if self.list_stack.is_empty()
-                    && !self.output.is_empty()
-                    && !self.output.ends_with('\n')
-                {
-                    self.output.push('\n');
+                if self.list_stack.is_empty() {
+                    if self.in_definition_description() {
+                        if self.output.ends_with('\n') {
+                            self.ensure_contextual_blank_line();
+                        }
+                    } else if !self.output.is_empty() && !self.output.ends_with('\n') {
+                        self.output.push('\n');
+                    }
                 }
 
                 if self.content_indent > 0
@@ -795,6 +800,9 @@ impl<'a> EventRenderer<'a> {
                 self.pending_task_marker = true;
                 self.pending_task_marker_buffer.clear();
             }
+            Tag::DefinitionList => self.handle_definition_list_start(),
+            Tag::DefinitionListTitle => self.handle_definition_title_start(),
+            Tag::DefinitionListDefinition => self.handle_definition_description_start(),
             Tag::Table(alignments) => {
                 if matches!(self.config.link_style, LinkStyle::InlineTable) {
                     self.paragraph_link_counter = 0;
@@ -900,7 +908,7 @@ impl<'a> EventRenderer<'a> {
                 let skip_blank_line = self.blockquote_level > 0
                     && self.trailing_blank_line_matches(&self.current_line_prefix());
 
-                if self.list_stack.is_empty() {
+                if self.list_stack.is_empty() && !self.in_definition_description() {
                     if !inline_footnotes_rendered && !suppress_break && !skip_blank_line {
                         if has_visible_content && self.blockquote_level == 0 {
                             self.ensure_contextual_blank_line();
@@ -1171,6 +1179,8 @@ impl<'a> EventRenderer<'a> {
                 self.pending_task_marker = false;
                 self.pending_task_marker_buffer.clear();
             }
+            TagEnd::DefinitionList => self.handle_definition_list_end(),
+            TagEnd::DefinitionListDefinition => self.handle_definition_description_end(),
             TagEnd::Table => {
                 self.handle_table_end()?;
                 if matches!(self.config.footnote_style, FootnoteStyle::Attached)

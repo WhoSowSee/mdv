@@ -49,6 +49,7 @@ custom_checkbox: null      # Override icons or add states with optional color, o
 pretty_list: null          # null | "type:nerd-font;size:small" | "type:unicode;size:large"; booleans are not accepted
                            # size only changes Nerd Font icons; Unicode accepts both sizes and uses the same glyphs.
                            # Unicode spacing depends on the font; verified especially with JetBrainsMono Nerd Font.
+pretty_definition: null    # null | "unicode" | "nerd-font"; null renders definitions with a two-space indent
 uniform_list_marker: null  # Use one icon at every level: "level:1".."level:4" or a custom "icon:*"
 custom_list: null          # Override list marker icon and/or color per level, only with pretty_list (e.g. "1:*:yellow;2:>:red;3:blue")
                            # Icon is optional: "1:red" keeps the built-in icon and switches to red.

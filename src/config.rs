@@ -2,7 +2,7 @@ use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
     HeadingLayout, HorizontalMargins, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle,
-    TableWrapMode, TextWrapMode,
+    PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -114,6 +114,7 @@ pub struct Config {
     #[serde(skip)]
     pub(crate) checkbox_overrides: HashMap<char, crate::checkbox_override::CheckboxOverride>,
     pub pretty_list: Option<PrettyListStyle>,
+    pub pretty_definition: Option<PrettyDefinitionStyle>,
     pub uniform_list_marker: Option<UniformListMarker>,
     pub custom_list: Option<String>,
     #[serde(skip)]
@@ -178,6 +179,7 @@ impl Default for Config {
             code_block_style: CodeBlockStyleConfig::default(),
             callout_style: CalloutStyleConfig::default(),
             pretty_list: None,
+            pretty_definition: None,
             uniform_list_marker: None,
             custom_list: None,
             list_marker: ListMarkerConfig::default(),
@@ -386,6 +388,11 @@ impl Config {
             && arg_has_user_value(matches, "pretty_list")
         {
             config.pretty_list = Some(style);
+        }
+        if let Some(style) = cli.pretty_definition
+            && arg_has_user_value(matches, "pretty_definition")
+        {
+            config.pretty_definition = Some(style);
         }
 
         if let Some(marker) = &cli.uniform_list_marker
@@ -622,6 +629,9 @@ impl Config {
         }
         if other.pretty_list.is_some() {
             self.pretty_list = other.pretty_list;
+        }
+        if other.pretty_definition.is_some() {
+            self.pretty_definition = other.pretty_definition;
         }
         if other.uniform_list_marker.is_some() {
             self.uniform_list_marker = other.uniform_list_marker.clone();
