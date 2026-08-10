@@ -245,7 +245,7 @@ Block-level HTML:
   <p>Custom HTML containers can highlight important information.</p>
 </div>
 
-Inline `<abbr title="Application Programming Interface">API</abbr>` tags provide abbreviations.
+Inline <abbr title="Application Programming Interface">API</abbr> tags provide abbreviations.
 
 ## Definition List
 

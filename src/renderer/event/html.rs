@@ -1480,8 +1480,9 @@ fn buffering_html_container_tag(html: &str) -> Option<&'static str> {
 }
 
 fn buffering_inline_html_container_tag(html: &str) -> Option<&'static str> {
-    ["a"]
-        .into_iter()
+    BUFFERED_INLINE_HTML_CONTAINER_TAGS
+        .iter()
+        .copied()
         .find(|tag| contains_html_tag(html, tag, false))
 }
 
@@ -1564,6 +1565,11 @@ const BUFFERED_HTML_CONTAINER_TAGS: &[&str] = &[
     "pre",
     "textarea",
     "ul",
+];
+
+const BUFFERED_INLINE_HTML_CONTAINER_TAGS: &[&str] = &[
+    "a", "abbr", "b", "cite", "code", "del", "em", "i", "kbd", "mark", "s", "samp", "small",
+    "span", "strike", "strong", "sub", "sup",
 ];
 
 fn normalize_preformatted_html_text(text: &str) -> String {
