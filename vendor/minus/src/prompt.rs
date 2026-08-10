@@ -123,16 +123,10 @@ impl<'a> PromptContext<'a> {
     }
 
     #[must_use]
+    #[cfg(feature = "search")]
     pub fn search_position(&self) -> Option<(usize, usize)> {
-        #[cfg(feature = "search")]
-        {
-            let total = self.state.search_state.search_idx.len();
-            (total > 0).then_some((self.state.search_state.search_mark + 1, total))
-        }
-        #[cfg(not(feature = "search"))]
-        {
-            None
-        }
+        let total = self.state.search_state.search_idx.len();
+        (total > 0).then_some((self.state.search_state.search_mark + 1, total))
     }
 }
 

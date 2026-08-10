@@ -19,7 +19,7 @@ mdv adds a typed prompt-rendering API:
 - Entering search pauses the general event reader before the search command is queued, keeping search cancellation keys inside the search input loop.
 - Mouse selection maps terminal display cells to ANSI-free Unicode text coordinates, converts horizontal byte offsets back to character offsets, keeps complete grapheme clusters intact, redraws only changed rows inside a synchronized terminal update, and remains highlighted after mouse release.
 - The fixed Glow selection palette (`#8F93A2` on `#1F2233`) overrides embedded SGR colors and attributes while selected, then restores the original style at the selection boundary.
-- Default navigation adds `b`/`f` for full-page movement and `Esc` for exit, uses the panel-aware content height for full- and half-page movement, and removes the former Space page-down binding.
+- Default navigation adds `b`/`f` for full-page movement and `Esc` for exit, uses the panel-aware content height for full- and half-page movement, maps Space to single-line down, and maps `Ctrl+F` to forward search. The Space and `Ctrl+F` aliases stay out of mdv's help panel.
 
 The renderer runs synchronously while the pager state is locked. Implementations must remain fast, non-blocking, and free of terminal I/O.
 

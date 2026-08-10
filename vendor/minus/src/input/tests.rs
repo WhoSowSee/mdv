@@ -191,8 +191,10 @@ fn test_kb_nav() {
 }
 
 #[test]
-fn space_has_no_default_binding() {
-    let pager = PagerState::new().unwrap();
+fn space_has_default_line_down_binding() {
+    let mut pager = PagerState::new().unwrap();
+    pager.upper_mark = 12;
+    pager.rows = 5;
     let event = Event::Key(KeyEvent {
         code: KeyCode::Char(' '),
         modifiers: KeyModifiers::NONE,
@@ -201,10 +203,13 @@ fn space_has_no_default_binding() {
     });
 
     assert_eq!(
-        Some(InputEvent::Ignore),
+        Some(InputEvent::UpdateUpperMark(13)),
         handle_input(event.clone(), &pager)
     );
-    assert_eq!(None, DefaultInputClassifier.classify_input(event, &pager));
+    assert_eq!(
+        Some(InputEvent::UpdateUpperMark(13)),
+        DefaultInputClassifier.classify_input(event, &pager)
+    );
 }
 
 #[test]
@@ -450,6 +455,23 @@ fn test_search_bindings() {
         assert_eq!(
             Some(InputEvent::Search(SearchMode::Forward)),
             handle_input(ev, &pager)
+        );
+    }
+
+    {
+        let event = Event::Key(KeyEvent {
+            code: KeyCode::Char('f'),
+            modifiers: KeyModifiers::CONTROL,
+            kind: crossterm::event::KeyEventKind::Press,
+            state: KeyEventState::NONE,
+        });
+        assert_eq!(
+            Some(InputEvent::Search(SearchMode::Forward)),
+            handle_input(event.clone(), &pager)
+        );
+        assert_eq!(
+            Some(InputEvent::Search(SearchMode::Forward)),
+            DefaultInputClassifier.classify_input(event, &pager)
         );
     }
 

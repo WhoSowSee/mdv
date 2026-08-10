@@ -429,7 +429,16 @@ fn is_escape_key(event: &minus::input::crossterm_event::Event) -> bool {
 }
 
 fn is_search_key(event: &minus::input::crossterm_event::Event) -> bool {
+    use minus::input::crossterm_event::{Event, KeyCode, KeyEventKind, KeyModifiers};
+
     is_plain_character_key(event, '/')
+        || matches!(
+            event,
+            Event::Key(key)
+                if key.kind == KeyEventKind::Press
+                    && key.modifiers == KeyModifiers::CONTROL
+                    && key.code == KeyCode::Char('f')
+        )
 }
 
 fn is_copy_key(event: &minus::input::crossterm_event::Event) -> bool {
@@ -534,6 +543,17 @@ mod tests {
     #[test]
     fn search_closes_visible_help_before_reaching_minus() {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
+
+        assert_eq!(
+            help_input_action(&event, true),
+            HelpInputAction::DismissAndForward
+        );
+        assert_eq!(help_input_action(&event, false), HelpInputAction::Forward);
+    }
+
+    #[test]
+    fn control_f_closes_visible_help_before_reaching_minus() {
+        let event = Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL));
 
         assert_eq!(
             help_input_action(&event, true),

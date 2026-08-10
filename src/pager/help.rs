@@ -88,6 +88,9 @@ mod tests {
         }
         assert!(!text.contains("q/esc"));
         assert!(!text.contains("space"));
+        let lowercase = text.to_ascii_lowercase();
+        assert!(!lowercase.contains("ctrl+f"));
+        assert!(!lowercase.contains("c-f"));
     }
 
     #[test]

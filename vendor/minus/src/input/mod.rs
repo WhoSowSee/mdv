@@ -104,12 +104,9 @@ where
         let position = ps.prefix_num.parse::<usize>().unwrap_or(1);
         InputEvent::UpdateUpperMark(ps.upper_mark.saturating_sub(position))
     });
-    map.add_key_events(&["down", "j"], |_, ps| {
+    map.add_key_events(&["down", "j", "space"], |_, ps| {
         let position = ps.prefix_num.parse::<usize>().unwrap_or(1);
         InputEvent::UpdateUpperMark(ps.upper_mark.saturating_add(position))
-    });
-    map.add_key_events(&["c-f"], |_, ps| {
-        InputEvent::FollowOutput(!ps.follow_output)
     });
     map.add_key_events(&["enter"], |_, ps| {
         if ps.message.is_some() {
@@ -158,7 +155,9 @@ where
     map.add_key_events(&["end"], |_, _| InputEvent::UpdateUpperMark(usize::MAX - 1));
     #[cfg(feature = "search")]
     {
-        map.add_key_events(&["/"], |_, _| InputEvent::Search(SearchMode::Forward));
+        map.add_key_events(&["/", "c-f"], |_, _| {
+            InputEvent::Search(SearchMode::Forward)
+        });
         map.add_key_events(&["?"], |_, _| InputEvent::Search(SearchMode::Reverse));
         map.add_key_events(&["n"], |_, ps| {
             let position = ps.prefix_num.parse::<usize>().unwrap_or(1);
@@ -274,18 +273,12 @@ impl InputClassifier for DefaultInputClassifier {
                 code,
                 modifiers: KeyModifiers::NONE,
                 ..
-            }) if code == KeyCode::Down || code == KeyCode::Char('j') => {
+            }) if matches!(code, KeyCode::Down | KeyCode::Char('j' | ' ')) => {
                 let position = ps.prefix_num.parse::<usize>().unwrap_or(1);
                 Some(InputEvent::UpdateUpperMark(
                     ps.upper_mark.saturating_add(position),
                 ))
             }
-
-            Event::Key(KeyEvent {
-                code,
-                modifiers: KeyModifiers::CONTROL,
-                ..
-            }) if code == KeyCode::Char('f') => Some(InputEvent::FollowOutput(!ps.follow_output)),
 
             Event::Key(KeyEvent {
                 code: KeyCode::Char(c),
@@ -380,7 +373,7 @@ impl InputClassifier for DefaultInputClassifier {
                 code: c,
                 modifiers: KeyModifiers::NONE,
                 ..
-            }) if c == KeyCode::PageDown || c == KeyCode::Char('f') => Some(
+            }) if matches!(c, KeyCode::PageDown | KeyCode::Char('f')) => Some(
                 InputEvent::UpdateUpperMark(ps.upper_mark.saturating_add(ps.content_rows())),
             ),
 
@@ -442,6 +435,12 @@ impl InputClassifier for DefaultInputClassifier {
             Event::Key(KeyEvent {
                 code: KeyCode::Char('/'),
                 modifiers: KeyModifiers::NONE,
+                ..
+            }) => Some(InputEvent::Search(SearchMode::Forward)),
+            #[cfg(feature = "search")]
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('f'),
+                modifiers: KeyModifiers::CONTROL,
                 ..
             }) => Some(InputEvent::Search(SearchMode::Forward)),
             #[cfg(feature = "search")]
