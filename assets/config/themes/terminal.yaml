@@ -2,6 +2,8 @@ name: terminal
 description: Terminal theme with standard colors
 text: reset
 text_light: grey
+line_number: grey
+line_number_separator: grey
 h1: red
 h2: green
 h3: yellow

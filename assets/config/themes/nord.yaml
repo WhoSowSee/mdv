@@ -2,6 +2,8 @@ name: nord
 description: Nord color scheme
 text: "236,239,244"
 text_light: "216,222,233"
+line_number: "216,222,233"
+line_number_separator: "216,222,233"
 h1: "136,192,208"
 h2: "143,188,187"
 h3: "129,161,193"

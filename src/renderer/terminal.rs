@@ -1,8 +1,11 @@
 use super::event::EventRenderer;
 use super::syntax_set::load_full_syntax_set;
 use super::syntax_theme::{CodeHighlightTheme, build_syntect_theme, default_theme_set};
+use crate::cli::{LineNumberOptions, LineNumberTarget};
 use crate::config::Config;
-use crate::theme::{Theme, ThemeManager, apply_custom_code_theme, apply_custom_theme};
+use crate::theme::{
+    Theme, ThemeElement, ThemeManager, apply_custom_code_theme, apply_custom_theme, create_style,
+};
 use crate::user_themes;
 use anyhow::Result;
 use pulldown_cmark::Event;
@@ -64,28 +67,106 @@ impl TerminalRenderer {
     }
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
-        self.config.validate_horizontal_margins()?;
-        let mut renderer = EventRenderer::new(
-            &self.config,
-            &self.theme,
-            &self.syntax_set,
-            &self.code_theme,
-        );
-        let output = renderer.render_events(events)?;
+        let output = match self.config.line_numbers {
+            None => self.render_events(&self.config, events)?,
+            Some(options) => match options.target {
+                LineNumberTarget::Rendered => {
+                    self.render_with_rendered_line_numbers(events, options)?
+                }
+                LineNumberTarget::Source => {
+                    self.render_with_source_line_numbers(events, options)?
+                }
+            },
+        };
+
         Ok(apply_left_margin(&output, self.config.margin.left))
     }
 
+    fn render_events(&self, config: &Config, events: Vec<Event<'static>>) -> Result<String> {
+        config.validate_horizontal_margins()?;
+        let mut renderer =
+            EventRenderer::new(config, &self.theme, &self.syntax_set, &self.code_theme);
+        renderer.render_events(events)
+    }
+
+    fn render_with_source_line_numbers(
+        &self,
+        events: Vec<Event<'static>>,
+        options: LineNumberOptions,
+    ) -> Result<String> {
+        let Some(max_line) = super::line_numbers::max_source_line(&events) else {
+            return self.render_events(&self.config, events);
+        };
+
+        let mut render_config = self.config.clone();
+        render_config.line_number_gutter_width =
+            super::line_numbers::gutter_width(max_line, options);
+        let output = self.render_events(&render_config, events)?;
+        Ok(self.apply_line_numbers(&output, max_line, options))
+    }
+
+    fn render_with_rendered_line_numbers(
+        &self,
+        events: Vec<Event<'static>>,
+        options: LineNumberOptions,
+    ) -> Result<String> {
+        let mut number_width = 1;
+
+        loop {
+            let mut render_config = self.config.clone();
+            render_config.line_number_gutter_width =
+                super::line_numbers::gutter_width_for_number_width(number_width, options);
+            let output = self.render_events(&render_config, events.clone())?;
+            let rendered_lines = super::line_numbers::rendered_line_count(&output);
+
+            if rendered_lines == 0 {
+                return Ok(output);
+            }
+
+            let required_width = rendered_lines.to_string().len();
+            if required_width <= number_width {
+                return Ok(self.apply_line_numbers(&output, rendered_lines, options));
+            }
+
+            number_width = required_width;
+        }
+    }
+
+    fn apply_line_numbers(
+        &self,
+        output: &str,
+        max_line: usize,
+        options: LineNumberOptions,
+    ) -> String {
+        let number_style = create_style(&self.theme, ThemeElement::LineNumber);
+        let separator_style = create_style(&self.theme, ThemeElement::LineNumberSeparator);
+        super::line_numbers::apply_line_numbers(
+            output,
+            max_line,
+            &number_style,
+            &separator_style,
+            options,
+            self.config.no_colors,
+        )
+    }
+
     pub fn to_html(&self, events: Vec<Event<'static>>) -> Result<String> {
-        let events = events.into_iter().map(|event| match event {
-            Event::Html(html) if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER => {
-                Event::HardBreak
+        let events = events.into_iter().filter_map(|event| {
+            if crate::markdown::source_line_from_event(&event).is_some() {
+                return None;
             }
-            Event::InlineHtml(html)
-                if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER =>
-            {
-                Event::HardBreak
-            }
-            other => other,
+
+            Some(match event {
+                Event::Html(html) if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER => {
+                    Event::HardBreak
+                }
+                Event::InlineHtml(html)
+                    if html.as_ref().trim() == crate::markdown::BLANK_LINE_MARKER =>
+                {
+                    Event::HardBreak
+                }
+                other => other,
+            })
         });
         let mut html_output = String::new();
         pulldown_cmark::html::push_html(&mut html_output, events);

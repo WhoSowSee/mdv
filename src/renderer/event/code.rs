@@ -876,6 +876,8 @@ impl<'a> EventRenderer<'a> {
         let mut nested_config = self.config.clone();
         nested_config.from_text = None;
         nested_config.margin = crate::cli::HorizontalMargins::default();
+        nested_config.line_numbers = None;
+        nested_config.line_number_gutter_width = 0;
 
         if let Some(width) = self.estimate_plaintext_block_width() {
             nested_config.cols = Some(width);

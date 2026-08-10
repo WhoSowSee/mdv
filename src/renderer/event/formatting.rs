@@ -8,6 +8,11 @@ fn is_quote_prefix_char(ch: char) -> bool {
     matches!(ch, '│' | '┃')
 }
 
+fn strip_layout_metadata(line: &str) -> String {
+    let clean = strip_ansi(line);
+    crate::renderer::line_numbers::strip_internal_markers(&clean).0
+}
+
 const DEFAULT_UNKNOWN_CALLOUT_ICON: &str = "";
 
 impl<'a> EventRenderer<'a> {
@@ -182,6 +187,9 @@ impl<'a> EventRenderer<'a> {
             if self.trailing_blank_line_matches(prefix) {
                 return;
             }
+            if self.retarget_source_blank_line(prefix) {
+                return;
+            }
             self.trim_trailing_blank_lines();
             if !self.output.ends_with('\n') {
                 self.output.push('\n');
@@ -213,7 +221,7 @@ impl<'a> EventRenderer<'a> {
             return true;
         }
 
-        let clean = strip_ansi(last_line);
+        let clean = strip_layout_metadata(last_line);
         clean
             .chars()
             .all(|ch| ch.is_whitespace() || is_quote_prefix_char(ch))
@@ -235,13 +243,51 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        let clean = strip_ansi(last_line);
+        let (clean, source_line) = crate::renderer::line_numbers::strip_internal_markers(last_line);
+        let clean = strip_ansi(&clean);
         if clean
             .chars()
             .all(|ch| ch.is_whitespace() || is_quote_prefix_char(ch))
         {
-            self.output.drain(start..len.saturating_sub(1));
+            if let Some(source_line) = source_line {
+                let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
+                self.output
+                    .replace_range(start..len.saturating_sub(1), &marker);
+            } else {
+                self.output.drain(start..len.saturating_sub(1));
+            }
         }
+    }
+
+    fn retarget_source_blank_line(&mut self, prefix: &str) -> bool {
+        if self.output.is_empty() || !self.output.ends_with('\n') {
+            return false;
+        }
+
+        let len = self.output.len();
+        let without_last = &self.output[..len.saturating_sub(1)];
+        let start = without_last
+            .rfind('\n')
+            .map_or(0, |idx| idx.saturating_add(1));
+        let last_line = &without_last[start..];
+        let (clean, source_line) = crate::renderer::line_numbers::strip_internal_markers(last_line);
+        let Some(source_line) = source_line else {
+            return false;
+        };
+
+        let clean = strip_ansi(&clean);
+        if !clean
+            .chars()
+            .all(|ch| ch.is_whitespace() || is_quote_prefix_char(ch))
+        {
+            return false;
+        }
+
+        let mut replacement = crate::renderer::line_numbers::encode_internal_marker(source_line);
+        replacement.push_str(prefix);
+        self.output
+            .replace_range(start..len.saturating_sub(1), &replacement);
+        true
     }
 
     pub(super) fn trim_trailing_blank_lines(&mut self) {
@@ -277,12 +323,12 @@ impl<'a> EventRenderer<'a> {
             .rfind('\n')
             .map_or(0, |idx| idx.saturating_add(1));
         let last_line = &without_last[start..];
-        if last_line == prefix {
+        let clean = strip_layout_metadata(last_line);
+        if clean == strip_layout_metadata(prefix) {
             return true;
         }
 
         if prefix.is_empty() {
-            let clean = strip_ansi(last_line);
             return clean.trim().is_empty();
         }
 

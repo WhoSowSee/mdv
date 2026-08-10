@@ -2,6 +2,8 @@ name: monokai
 description: Monokai color scheme
 text: "248,248,242"
 text_light: "117,113,94"
+line_number: "117,113,94"
+line_number_separator: "117,113,94"
 h1: "249,38,114"
 h2: "166,226,46"
 h3: "230,219,116"

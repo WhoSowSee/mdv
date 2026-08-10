@@ -1,4 +1,5 @@
 use crate::list_marker::{PrettyListStyle, UniformListMarker};
+use clap::builder::PossibleValue;
 use clap::{Parser, ValueEnum};
 use std::fmt;
 use std::path::PathBuf;
@@ -61,6 +62,18 @@ pub struct Cli {
     /// Render raw HTML fragments as terminal-formatted content
     #[arg(short = 'E', long = "render-html")]
     pub render_html: bool,
+
+    /// Show rendered row numbers with optional source and separator modes
+    #[arg(
+        short = 'j',
+        long = "line-numbers",
+        num_args = 0..=1,
+        value_name = "MODE",
+        value_enum,
+        hide_possible_values = true,
+        long_help = "Show row numbers in terminal and pager output\nWithout a value, number every rendered row without a separator\n\nPossible values:\n- source:    Number physical Markdown source lines instead of rendered rows\n- separator: Display a separator after each rendered row number\n\nExamples:\n  --line-numbers separator\n  --line-numbers source\n  --line-numbers \"source;separator\""
+    )]
+    pub line_numbers: Option<Option<LineNumberOptions>>,
 
     /// Print HTML version instead of terminal formatting
     #[arg(short = 'H', long = "html")]
@@ -510,6 +523,75 @@ pub enum MissingFootnoteStyle {
     Hide,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum LineNumberTarget {
+    #[default]
+    Rendered,
+    Source,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct LineNumberOptions {
+    pub target: LineNumberTarget,
+    pub separator: bool,
+}
+
+impl LineNumberOptions {
+    pub(crate) fn parse(value: &str) -> Result<Self, String> {
+        Self::from_str(value, false)
+    }
+}
+
+impl ValueEnum for LineNumberOptions {
+    fn value_variants<'a>() -> &'a [Self] {
+        const VARIANTS: &[LineNumberOptions] = &[
+            LineNumberOptions {
+                target: LineNumberTarget::Source,
+                separator: false,
+            },
+            LineNumberOptions {
+                target: LineNumberTarget::Rendered,
+                separator: true,
+            },
+            LineNumberOptions {
+                target: LineNumberTarget::Source,
+                separator: true,
+            },
+        ];
+        VARIANTS
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        match (self.target, self.separator) {
+            (LineNumberTarget::Rendered, false) => None,
+            (LineNumberTarget::Source, false) => Some(
+                PossibleValue::new("source")
+                    .help("Number physical Markdown source lines instead of rendered rows"),
+            ),
+            (LineNumberTarget::Rendered, true) => Some(
+                PossibleValue::new("separator")
+                    .help("Display a separator after each rendered row number"),
+            ),
+            (LineNumberTarget::Source, true) => Some(
+                PossibleValue::new("source;separator")
+                    .alias("separator;source")
+                    .help("Number physical Markdown source lines and add the ` │ ` separator"),
+            ),
+        }
+    }
+}
+
+impl fmt::Display for LineNumberOptions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match (self.target, self.separator) {
+            (LineNumberTarget::Rendered, false) => Ok(()),
+            (LineNumberTarget::Rendered, true) => f.write_str("separator"),
+            (LineNumberTarget::Source, false) => f.write_str("source"),
+            (LineNumberTarget::Source, true) => f.write_str("source;separator"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TextWrapMode {
@@ -907,6 +989,20 @@ mod tests {
     fn render_html_short_flag_parses() {
         let cli = Cli::parse_from(["mdv", "-E"]);
         assert!(cli.render_html);
+    }
+
+    #[test]
+    fn line_numbers_flags_parse() {
+        let options = Cli::parse_from(["mdv", "--line-numbers", "separator;source", "README.md"])
+            .line_numbers
+            .flatten()
+            .expect("line-number options");
+        assert_eq!(options.target, LineNumberTarget::Source);
+        assert!(options.separator);
+
+        for invalid in ["unknown", "show-separator", "source;source", "source;"] {
+            assert!(Cli::try_parse_from(["mdv", "--line-numbers", invalid]).is_err());
+        }
     }
 
     #[test]

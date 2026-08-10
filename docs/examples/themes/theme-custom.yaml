@@ -24,6 +24,10 @@ description: Fully standalone palette with every field set explicitly.
 text: white
 text_light: grey
 
+# Line numbers
+line_number: yellow
+line_number_separator: darkgrey
+
 # Heading colors (H1..H6)
 h1: red
 h2: green

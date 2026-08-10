@@ -94,6 +94,7 @@ cat <FILE> | mdv
 
 - `-H, --html` — печать HTML вместо терминального форматирования.
 - `-E, --render-html` — рендер встроенных HTML-фрагментов в документе как форматированного терминального вывода вместо их пропуска.
+- `-j, --line-numbers [OPTIONS]` — добавление номеров строк в терминальный вывод и pager.
 - `-A, --no-colors` — удаление ANSI-стилей независимо от выбранной темы.
 - `-C, --hide-comments` — скрытие Markdown-комментариев в итоговом выводе.
 - `-i, --theme-info [FILE]` — показ активной палитры; при указании `FILE` рендерит документ вместе со сведениями о теме.
@@ -372,7 +373,7 @@ syntax:
 - `name` (обязательно) — значение, принимаемое параметром `--theme`.
 - `description` (необязательно) — отображается в `mdv --theme-info`; если не задано, берётся описание базовой темы.
 - `extends` (необязательно) — имя встроенной темы или другой темы, загруженной раньше в этом же каталоге (в алфавитном порядке). Если не указано, недостающие поля подставляются из встроенной темы `terminal`.
-- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
+- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
 - `syntax:` (необязательно) — переопределение палитры подсветки синтаксиса; каждое поле необязательно и мерджится поверх базовой. Поля: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Значения цвета используют тот же синтаксис, что и `--custom-theme`: именованные (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`) или 256-цветные (`ansi(42)` или просто `42`).
 

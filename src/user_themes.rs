@@ -35,6 +35,8 @@ pub(crate) struct ThemeFile {
 
     pub text: Option<ColorYaml>,
     pub text_light: Option<ColorYaml>,
+    pub line_number: Option<ColorYaml>,
+    pub line_number_separator: Option<ColorYaml>,
     pub h1: Option<ColorYaml>,
     pub h2: Option<ColorYaml>,
     pub h3: Option<ColorYaml>,
@@ -112,6 +114,8 @@ impl ThemeFile {
                 .unwrap_or_else(|| base.description.clone()),
             text: pick(&self.text, &base.text),
             text_light: pick(&self.text_light, &base.text_light),
+            line_number: pick(&self.line_number, &base.line_number),
+            line_number_separator: pick(&self.line_number_separator, &base.line_number_separator),
             h1: pick(&self.h1, &base.h1),
             h2: pick(&self.h2, &base.h2),
             h3: pick(&self.h3, &base.h3),
@@ -171,6 +175,8 @@ impl ThemeFile {
             description,
             text: color!(self, text),
             text_light: color!(self, text_light),
+            line_number: color!(self, line_number),
+            line_number_separator: color!(self, line_number_separator),
             h1: color!(self, h1),
             h2: color!(self, h2),
             h3: color!(self, h3),
@@ -353,7 +359,7 @@ mod tests {
         fs::create_dir(&themes).unwrap();
         fs::write(
             themes.join("warm.yaml"),
-            "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
+            "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nline_number: yellow\nline_number_separator: blue\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
         )
         .unwrap();
 
@@ -370,6 +376,8 @@ mod tests {
                 b: 0x77
             }
         );
+        assert_eq!(theme.line_number, Color::Yellow);
+        assert_eq!(theme.line_number_separator, Color::Blue);
         assert_eq!(theme.syntax.keyword, Color::Red);
     }
 
@@ -388,12 +396,18 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let themes = tmp.path().join(THEMES_DIR);
         fs::create_dir(&themes).unwrap();
-        fs::write(themes.join("partial.yaml"), "name: partial\nh1: red\n").unwrap();
+        fs::write(
+            themes.join("partial.yaml"),
+            "name: partial\nh1: red\nline_number: yellow\nline_number_separator: blue\n",
+        )
+        .unwrap();
 
         let loaded = load_user_themes(tmp.path(), &ThemeManager::new()).unwrap();
         let theme = &loaded[0];
         assert_eq!(theme.h1, Color::Red);
         assert_eq!(theme.h2, Theme::default().h2);
+        assert_eq!(theme.line_number, Color::Yellow);
+        assert_eq!(theme.line_number_separator, Color::Blue);
     }
 
     #[test]

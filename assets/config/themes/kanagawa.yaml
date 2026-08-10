@@ -2,6 +2,8 @@ name: kanagawa
 description: Kanagawa color scheme
 text: "220,215,186"
 text_light: "200,192,147"
+line_number: "200,192,147"
+line_number_separator: "200,192,147"
 h1: "126,156,216"
 h2: "122,168,159"
 h3: "147,138,169"

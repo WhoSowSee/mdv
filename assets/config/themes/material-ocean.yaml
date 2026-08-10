@@ -2,6 +2,8 @@ name: material-ocean
 description: Material Theme Ocean color scheme
 text: "238,255,255"
 text_light: "176,190,197"
+line_number: "176,190,197"
+line_number_separator: "176,190,197"
 h1: "130,170,255"
 h2: "128,203,196"
 h3: "195,232,141"

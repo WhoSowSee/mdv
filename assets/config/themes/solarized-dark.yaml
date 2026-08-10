@@ -2,6 +2,8 @@ name: solarized-dark
 description: Solarized Dark color scheme
 text: "131,148,150"
 text_light: "88,110,117"
+line_number: "88,110,117"
+line_number_separator: "88,110,117"
 h1: "220,50,47"
 h2: "203,75,22"
 h3: "181,137,0"

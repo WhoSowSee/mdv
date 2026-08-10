@@ -2,6 +2,8 @@ name: tokyonight
 description: Tokyonight color scheme
 text: "192,202,245"
 text_light: "169,177,214"
+line_number: "169,177,214"
+line_number_separator: "169,177,214"
 h1: "122,162,247"
 h2: "158,206,106"
 h3: "187,154,247"

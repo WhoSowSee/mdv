@@ -2,6 +2,8 @@ name: catppuccin
 description: Catppuccin color scheme
 text: "205,214,244"
 text_light: "186,194,222"
+line_number: "186,194,222"
+line_number_separator: "186,194,222"
 h1: "180,190,254"
 h2: "137,180,250"
 h3: "148,226,213"

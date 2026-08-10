@@ -1,8 +1,8 @@
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
-    HeadingLayout, HorizontalMargins, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle,
-    PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
+    HeadingLayout, HorizontalMargins, LineNumberOptions, LineNumberTarget, LinkStyle,
+    LinkTruncationStyle, MissingFootnoteStyle, PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -82,6 +82,44 @@ fn default_config_dir() -> Option<PathBuf> {
     }
 }
 
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum LineNumberSetting {
+    Enabled(bool),
+    Options(String),
+}
+
+fn deserialize_line_numbers<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<LineNumberOptions>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    match Option::<LineNumberSetting>::deserialize(deserializer)? {
+        None | Some(LineNumberSetting::Enabled(false)) => Ok(None),
+        Some(LineNumberSetting::Enabled(true)) => Ok(Some(LineNumberOptions::default())),
+        Some(LineNumberSetting::Options(options)) => LineNumberOptions::parse(&options)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+    }
+}
+
+fn serialize_line_numbers<S>(
+    options: &Option<LineNumberOptions>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    match options {
+        None => serializer.serialize_bool(false),
+        Some(options) if *options == LineNumberOptions::default() => {
+            serializer.serialize_bool(true)
+        }
+        Some(options) => serializer.serialize_str(&options.to_string()),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -103,6 +141,14 @@ pub struct Config {
     pub table_smart_indent: bool,
     pub hide_comments: bool,
     pub render_html: bool,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_line_numbers",
+        serialize_with = "serialize_line_numbers"
+    )]
+    pub line_numbers: Option<LineNumberOptions>,
+    #[serde(skip)]
+    pub(crate) line_number_gutter_width: usize,
     pub show_empty_elements: bool,
     pub no_code_language: bool,
     pub code_guessing: bool,
@@ -172,6 +218,8 @@ impl Default for Config {
             table_smart_indent: false,
             hide_comments: false,
             render_html: false,
+            line_numbers: None,
+            line_number_gutter_width: 0,
             show_empty_elements: false,
             no_code_language: false,
             code_guessing: true,
@@ -359,6 +407,10 @@ impl Config {
 
         if cli.render_html {
             config.render_html = true;
+        }
+
+        if let Some(options) = cli.line_numbers {
+            config.line_numbers = Some(options.unwrap_or_default());
         }
 
         if cli.show_empty_elements {
@@ -603,6 +655,9 @@ impl Config {
         if other.render_html {
             self.render_html = true;
         }
+        if other.line_numbers.is_some() {
+            self.line_numbers = other.line_numbers;
+        }
         if other.show_empty_elements {
             self.show_empty_elements = true;
         }
@@ -731,15 +786,36 @@ impl Config {
     pub fn get_content_width(&self) -> usize {
         self.get_terminal_width()
             .saturating_sub(self.margin.total())
+            .saturating_sub(self.line_number_gutter_width)
+    }
+
+    pub(crate) fn source_line_numbers_enabled(&self) -> bool {
+        matches!(
+            self.line_numbers,
+            Some(options) if options.target == LineNumberTarget::Source
+        )
     }
 
     pub fn validate_horizontal_margins(&self) -> Result<()> {
         let terminal_width = self.get_terminal_width();
-        if self.margin.total() >= terminal_width {
+        let reserved_width = self
+            .margin
+            .total()
+            .saturating_add(self.line_number_gutter_width);
+        if reserved_width >= terminal_width {
+            if self.line_number_gutter_width == 0 {
+                anyhow::bail!(
+                    "Horizontal margins ({} + {}) must be smaller than the output width ({})",
+                    self.margin.left,
+                    self.margin.right,
+                    terminal_width
+                );
+            }
             anyhow::bail!(
-                "Horizontal margins ({} + {}) must be smaller than the output width ({})",
+                "Horizontal margins and line-number gutter ({} + {} + {}) must be smaller than the output width ({})",
                 self.margin.left,
                 self.margin.right,
+                self.line_number_gutter_width,
                 terminal_width
             );
         }
@@ -1279,6 +1355,7 @@ link_truncation: tablecut
         );
         assert!(!config.smart_indent);
         assert!(!config.render_html);
+        assert!(config.line_numbers.is_none());
         assert!(matches!(config.link_style, LinkStyle::Clickable));
     }
 

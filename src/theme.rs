@@ -66,6 +66,10 @@ pub struct Theme {
     // Text colors
     pub text: Color,
     pub text_light: Color,
+    #[serde(default = "default_line_number_color")]
+    pub line_number: Color,
+    #[serde(default = "default_line_number_color")]
+    pub line_number_separator: Color,
 
     // Header colors (H1-H6)
     pub h1: Color,
@@ -308,6 +312,10 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
     match normalized_key.as_str() {
         "text" => theme.text = parse_color_spec(value)?,
         "text_light" | "textlight" => theme.text_light = parse_color_spec(value)?,
+        "line_number" | "linenumber" => theme.line_number = parse_color_spec(value)?,
+        "line_number_separator" | "linenumberseparator" => {
+            theme.line_number_separator = parse_color_spec(value)?
+        }
         "h1" => theme.h1 = parse_color_spec(value)?,
         "h2" => theme.h2 = parse_color_spec(value)?,
         "h3" => theme.h3 = parse_color_spec(value)?,
@@ -365,6 +373,10 @@ fn normalize_key(key: &str) -> String {
         .replace(['-', ' '], "_")
         .replace("__", "_")
         .to_ascii_lowercase()
+}
+
+fn default_line_number_color() -> Color {
+    Color::Grey
 }
 
 pub(crate) fn parse_color_value(value: &str) -> Result<Color> {
@@ -566,6 +578,8 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
     let color = match element {
         ThemeElement::Text => &theme.text,
         ThemeElement::TextLight => &theme.text_light,
+        ThemeElement::LineNumber => &theme.line_number,
+        ThemeElement::LineNumberSeparator => &theme.line_number_separator,
         ThemeElement::H1 => &theme.h1,
         ThemeElement::H2 => &theme.h2,
         ThemeElement::H3 => &theme.h3,
@@ -604,6 +618,8 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
 pub enum ThemeElement {
     Text,
     TextLight,
+    LineNumber,
+    LineNumberSeparator,
     H1,
     H2,
     H3,
@@ -661,7 +677,7 @@ mod tests {
         let mut theme = Theme::default();
         apply_custom_theme(
             &mut theme,
-            "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30); highlight_bg=#112233",
+            "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30); highlight_bg=#112233; line_number=#010203; line_number_separator=#040506",
         )
         .expect("custom theme overrides should be applied");
 
@@ -698,6 +714,8 @@ mod tests {
                 b: 0x33
             }
         ));
+        assert_eq!(theme.line_number, Color::Rgb { r: 1, g: 2, b: 3 });
+        assert_eq!(theme.line_number_separator, Color::Rgb { r: 4, g: 5, b: 6 });
     }
 
     #[test]

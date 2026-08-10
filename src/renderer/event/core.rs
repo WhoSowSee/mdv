@@ -554,6 +554,19 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn process_event(&mut self, event: Event) -> Result<()> {
+        if let Some(marker) = crate::markdown::source_line_from_event(&event) {
+            match marker {
+                crate::markdown::SourceLineMarker::Content(source_line) => {
+                    self.push_source_line_marker(source_line);
+                }
+                crate::markdown::SourceLineMarker::Blank(source_line) => {
+                    self.flush_pending_html_block_buffer()?;
+                    self.push_source_blank_line_marker(source_line);
+                }
+            }
+            return Ok(());
+        }
+
         if !matches!(event, Event::Text(_)) {
             self.reset_footnote_text_scan();
         }
@@ -616,6 +629,42 @@ impl<'a> EventRenderer<'a> {
             Event::DisplayMath(math) => self.handle_display_math(math)?,
         }
         Ok(())
+    }
+
+    fn push_source_line_marker(&mut self, source_line: usize) {
+        let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
+        if self.in_code_block {
+            self.code_block_content.push_str(&marker);
+        } else if self.in_link {
+            self.current_link_text.push_str(&marker);
+        } else if let Some(table) = self.table_state.as_mut() {
+            table.current_cell.push_str(&marker);
+        } else if let Some(buffer) = self.pending_html_block_buffer.as_mut() {
+            buffer.content.push_str(&marker);
+        } else {
+            self.output.push_str(&marker);
+        }
+    }
+
+    fn push_source_blank_line_marker(&mut self, source_line: usize) {
+        if !self.output.ends_with('\n') {
+            return;
+        }
+
+        let line_end = self.output.len().saturating_sub(1);
+        let line_start = self.output[..line_end]
+            .rfind('\n')
+            .map_or(0, |idx| idx.saturating_add(1));
+        let visible_line = strip_ansi(&self.output[line_start..line_end]);
+        let has_content = visible_line
+            .chars()
+            .any(|ch| !ch.is_whitespace() && ch != '│' && ch != '┃');
+        if has_content {
+            return;
+        }
+
+        let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
+        self.output.insert_str(line_start, &marker);
     }
 
     fn handle_start_tag(&mut self, tag: Tag) -> Result<()> {
