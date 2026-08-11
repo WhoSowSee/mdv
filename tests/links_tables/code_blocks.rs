@@ -11,7 +11,7 @@ fn test_inline_table_link_style_inside_text_code_block_pretty() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
-        .arg("pretty")
+        .arg("pretty:show-name")
         .arg("-u")
         .arg("it")
         .arg("--link-truncation")
@@ -43,7 +43,7 @@ fn test_inline_table_link_style_inside_text_code_block_simple() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
-        .arg("simple")
+        .arg("simple:show-name")
         .arg("-u")
         .arg("it")
         .arg("--link-truncation")

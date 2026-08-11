@@ -128,16 +128,14 @@ impl<'a> EventRenderer<'a> {
         }
 
         let rendered = render_math(raw_math, MathMode::Display);
-        let label = if self.config.no_code_language {
-            None
-        } else {
-            match language_hint {
-                Some(hint) if hint.eq_ignore_ascii_case("latex") => Some("LaTeX"),
-                Some(hint) if hint.eq_ignore_ascii_case("tex") => Some("TeX"),
-                _ => Some("Math"),
-            }
+        let (hint, base_label) = match language_hint {
+            Some(hint) if hint.eq_ignore_ascii_case("latex") => (hint, "LaTeX"),
+            Some(hint) if hint.eq_ignore_ascii_case("tex") => (hint, "TeX"),
+            Some(hint) => (hint, "Math"),
+            None => ("math", "Math"),
         };
-        self.render_math_block(&rendered, label)
+        let label = self.format_code_block_label(hint, base_label);
+        self.render_math_block(&rendered, label.as_deref())
     }
 
     fn render_math_block(&mut self, rendered: &str, label: Option<&str>) -> Result<()> {
@@ -177,6 +175,9 @@ impl<'a> EventRenderer<'a> {
         self.ensure_contextual_blank_line();
 
         match self.config.code_block_style.style {
+            CodeBlockStyle::Basic => {
+                self.render_code_block_basic(render_input)?;
+            }
             CodeBlockStyle::Simple => {
                 self.render_code_block_simple(render_input)?;
             }

@@ -18,7 +18,7 @@ fn test_blockquote_code_block_preserves_prefix() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple")
+        .arg("simple:show-name")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -87,7 +87,7 @@ fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple")
+        .arg("simple:show-name")
         .arg("-A")
         .arg(temp_file.path())
         .output()

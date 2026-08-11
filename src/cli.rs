@@ -117,9 +117,9 @@ pub struct Cli {
         short = 's',
         long = "code-block-style",
         value_name = "CODE_STYLE",
-        default_value = "pretty",
+        default_value = "basic",
         value_parser = parse_code_block_style_config,
-        long_help = "Configure visual style for code blocks\n(simple:show-icons | pretty:show-icons | simple:icon-only | pretty:icon-only)\nicon-only implies show-icons and hides the language label\nIcons require a Nerd Font in the terminal to display correctly"
+        long_help = "Configure visual style for code blocks\nStyles: basic, simple, pretty\nOptions: show-name, show-icon\nCombine options with ';', for example pretty:show-name;show-icon\nIcons require a Nerd Font in the terminal to display correctly"
     )]
     pub code_block_style: Option<CodeBlockStyleConfig>,
 
@@ -634,6 +634,8 @@ pub enum HeadingLayout {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum CodeBlockStyle {
+    #[value(help = "Indented code block without a border")]
+    Basic,
     #[value(help = "Classic terminal gutter with single left border")]
     Simple,
     #[value(help = "Box-drawn frame around code blocks")]
@@ -644,16 +646,16 @@ pub enum CodeBlockStyle {
 #[serde(try_from = "String", into = "String")]
 pub struct CodeBlockStyleConfig {
     pub style: CodeBlockStyle,
-    pub show_icons: bool,
-    pub icon_only: bool,
+    pub show_name: bool,
+    pub show_icon: bool,
 }
 
 impl Default for CodeBlockStyleConfig {
     fn default() -> Self {
         Self {
-            style: CodeBlockStyle::Pretty,
-            show_icons: false,
-            icon_only: false,
+            style: CodeBlockStyle::Basic,
+            show_name: false,
+            show_icon: false,
         }
     }
 }
@@ -671,11 +673,12 @@ impl CodeBlockStyleConfig {
         };
 
         let style = match style_raw.to_ascii_lowercase().as_str() {
+            "basic" => CodeBlockStyle::Basic,
             "simple" => CodeBlockStyle::Simple,
             "pretty" => CodeBlockStyle::Pretty,
             _ => {
                 return Err(format!(
-                    "Unknown code block style '{}'. Expected 'simple' or 'pretty'.",
+                    "Unknown code block style '{}'. Expected 'basic', 'simple', or 'pretty'.",
                     style_raw
                 ));
             }
@@ -698,11 +701,8 @@ impl CodeBlockStyleConfig {
                 }
 
                 match option.to_ascii_lowercase().as_str() {
-                    "show-icons" => config.show_icons = true,
-                    "icon-only" => {
-                        config.show_icons = true;
-                        config.icon_only = true;
-                    }
+                    "show-name" => config.show_name = true,
+                    "show-icon" => config.show_icon = true,
                     _ => return Err(format!("Unknown code block style option '{}'.", option)),
                 }
             }
@@ -715,15 +715,17 @@ impl CodeBlockStyleConfig {
 impl fmt::Display for CodeBlockStyleConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let style = match self.style {
+            CodeBlockStyle::Basic => "basic",
             CodeBlockStyle::Simple => "simple",
             CodeBlockStyle::Pretty => "pretty",
         };
 
         let mut options = Vec::new();
-        if self.icon_only {
-            options.push("icon-only");
-        } else if self.show_icons {
-            options.push("show-icons");
+        if self.show_name {
+            options.push("show-name");
+        }
+        if self.show_icon {
+            options.push("show-icon");
         }
 
         if options.is_empty() {
@@ -1055,27 +1057,30 @@ mod tests {
     }
 
     #[test]
-    fn code_block_style_parses_show_icons() {
-        let cli = Cli::parse_from(["mdv", "--code-block-style", "pretty:show-icons"]);
+    fn code_block_style_parses_name_and_icon_options() {
+        let cli = Cli::parse_from(["mdv", "--code-block-style", "pretty:show-name;show-icon"]);
         let style = cli.code_block_style.expect("code block style parsed");
         assert!(matches!(style.style, CodeBlockStyle::Pretty));
-        assert!(style.show_icons);
+        assert!(style.show_name);
+        assert!(style.show_icon);
     }
 
     #[test]
-    fn code_block_style_defaults_to_pretty_without_icons() {
+    fn code_block_style_defaults_to_basic_without_label() {
         let cli = Cli::parse_from(["mdv"]);
         let style = cli.code_block_style.expect("code block style parsed");
-        assert!(matches!(style.style, CodeBlockStyle::Pretty));
-        assert!(!style.show_icons);
+        assert!(matches!(style.style, CodeBlockStyle::Basic));
+        assert!(!style.show_name);
+        assert!(!style.show_icon);
     }
 
     #[test]
-    fn code_block_style_simple_without_icons_is_backward_compatible() {
+    fn code_block_style_simple_without_label_parses() {
         let cli = Cli::parse_from(["mdv", "--code-block-style", "simple"]);
         let style = cli.code_block_style.expect("code block style parsed");
         assert!(matches!(style.style, CodeBlockStyle::Simple));
-        assert!(!style.show_icons);
+        assert!(!style.show_name);
+        assert!(!style.show_icon);
     }
 
     #[test]
@@ -1085,21 +1090,26 @@ mod tests {
     }
 
     #[test]
-    fn code_block_style_parses_icon_only() {
-        let cli = Cli::parse_from(["mdv", "--code-block-style", "pretty:icon-only"]);
+    fn code_block_style_options_are_independent() {
+        let cli = Cli::parse_from(["mdv", "--code-block-style", "basic:show-icon"]);
         let style = cli.code_block_style.expect("code block style parsed");
-        assert!(matches!(style.style, CodeBlockStyle::Pretty));
-        assert!(style.show_icons);
-        assert!(style.icon_only);
+        assert!(matches!(style.style, CodeBlockStyle::Basic));
+        assert!(!style.show_name);
+        assert!(style.show_icon);
+
+        let cli = Cli::parse_from(["mdv", "--code-block-style", "basic:show-name"]);
+        let style = cli.code_block_style.expect("code block style parsed");
+        assert!(style.show_name);
+        assert!(!style.show_icon);
     }
 
     #[test]
-    fn code_block_style_icon_only_implies_show_icons() {
-        let cli = Cli::parse_from(["mdv", "--code-block-style", "simple:icon-only"]);
-        let style = cli.code_block_style.expect("code block style parsed");
-        assert!(matches!(style.style, CodeBlockStyle::Simple));
-        assert!(style.show_icons);
-        assert!(style.icon_only);
+    fn code_block_style_rejects_removed_options() {
+        for option in ["show-icons", "icon-only"] {
+            let value = format!("simple:{}", option);
+            let result = Cli::try_parse_from(["mdv", "--code-block-style", &value]);
+            assert!(result.is_err(), "option should be rejected: {}", option);
+        }
     }
 
     #[test]

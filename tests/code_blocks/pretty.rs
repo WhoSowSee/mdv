@@ -15,7 +15,7 @@ fn test_code_language_pretty_style_named_block() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
-        .arg("pretty")
+        .arg("pretty:show-name")
         .arg("-A")
         .arg(temp_file.path());
 
@@ -84,16 +84,20 @@ fn test_code_language_pretty_style_named_block() {
 }
 
 #[test]
-fn test_default_code_block_style_is_pretty() {
+fn test_pretty_style_without_options_hides_label() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```rust\nfn demo() {}\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A").arg(temp_file.path());
+    cmd.arg("--code-block-style")
+        .arg("pretty")
+        .arg("-A")
+        .arg(temp_file.path());
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("╭─ Rust"))
+        .stdout(predicate::str::contains("Rust").not())
+        .stdout(predicate::str::contains("╭"))
         .stdout(predicate::str::contains("╰"));
 }
 
@@ -105,7 +109,7 @@ fn test_pretty_style_empty_code_block_has_right_padding() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
-        .arg("pretty")
+        .arg("pretty:show-name")
         .arg("--show-empty-elements")
         .arg("-A")
         .arg(temp_file.path());
@@ -133,7 +137,7 @@ fn test_pretty_style_empty_block_falls_back_when_too_narrow() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
-        .arg("pretty")
+        .arg("pretty:show-name")
         .arg("--show-empty-elements")
         .arg("--wrap")
         .arg("word")
@@ -157,7 +161,7 @@ fn test_simple_language_label_wraps_under_char_width() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
-        .arg("pretty")
+        .arg("pretty:show-name")
         .arg("--wrap")
         .arg("char")
         .arg("-c")

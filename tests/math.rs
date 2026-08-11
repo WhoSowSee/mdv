@@ -95,7 +95,7 @@ fn test_fenced_math_block_renders() {
     let output = mdv_cmd()
         .arg("-A")
         .arg("--code-block-style")
-        .arg("simple")
+        .arg("simple:show-name")
         .arg(temp_file.path())
         .output()
         .unwrap();

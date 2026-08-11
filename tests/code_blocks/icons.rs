@@ -14,7 +14,7 @@ fn test_pretty_code_block_with_icon() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("pretty:show-icons")
+        .arg("pretty:show-name;show-icon")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -55,7 +55,7 @@ fn test_simple_code_block_with_icon() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:show-icons")
+        .arg("simple:show-name;show-icon")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -78,7 +78,7 @@ fn test_code_block_icons_hidden_when_language_label_hidden() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("pretty:show-icons")
+        .arg("pretty:show-name;show-icon")
         .arg("--no-code-language")
         .arg("-A")
         .arg(temp_file.path())
@@ -107,7 +107,7 @@ fn test_unknown_language_uses_default_icon() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:show-icons")
+        .arg("simple:show-name;show-icon")
         .arg("--no-code-guessing")
         .arg("-A")
         .arg(temp_file.path())
@@ -136,7 +136,7 @@ fn test_custom_default_icon_overrides_builtin_default() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:show-icons")
+        .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("default:icon=🚀")
         .arg("--no-code-guessing")
@@ -156,13 +156,13 @@ fn test_custom_default_icon_overrides_builtin_default() {
 }
 
 #[test]
-fn test_pretty_code_block_icon_only() {
+fn test_pretty_code_block_with_icon_only() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```python\nprint(\"hello\")\n```\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("pretty:icon-only")
+        .arg("pretty:show-icon")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -179,7 +179,7 @@ fn test_pretty_code_block_icon_only() {
 
     assert!(
         !stdout.contains("Python"),
-        "language label should be hidden in icon-only mode, got:\n{}",
+        "language label should be hidden in show-icon mode, got:\n{}",
         stdout
     );
     assert!(
@@ -191,13 +191,13 @@ fn test_pretty_code_block_icon_only() {
 }
 
 #[test]
-fn test_simple_code_block_icon_only() {
+fn test_simple_code_block_with_icon_only() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```rust\nfn main() {}\n```\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:icon-only")
+        .arg("simple:show-icon")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -220,7 +220,7 @@ fn test_custom_code_block_icon_overrides_default() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:show-icons")
+        .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("rust:icon=🦀")
         .arg("-A")
@@ -245,7 +245,7 @@ fn test_custom_code_block_label_override() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:show-icons")
+        .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("rust:icon=🦀,label=russst")
         .arg("-A")
@@ -270,7 +270,7 @@ fn test_custom_code_block_aliases_match_alternative_hints() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple:show-icons")
+        .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("python:icon=*,label=kd,aliases=py|py3")
         .arg("-A")

@@ -43,7 +43,7 @@ fn tab_indented_fence_after_list_is_not_nested_by_indent() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple")
+        .arg("simple:show-name")
         .arg("-A")
         .arg(temp_file.path())
         .output()
@@ -78,7 +78,7 @@ fn space_indented_fence_inside_list_renders_without_list_offset() {
 
     let output = mdv_cmd()
         .arg("--code-block-style")
-        .arg("simple")
+        .arg("simple:show-name")
         .arg("-A")
         .arg(temp_file.path())
         .output()

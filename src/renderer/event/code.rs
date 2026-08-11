@@ -12,6 +12,7 @@ use syntect::parsing::SyntaxReference;
 use syntect::util::LinesWithEndings;
 
 const LANGUAGE_SEPARATORS: &[char] = &[' ', '\t', ',', ';', '|'];
+const BASIC_CODE_BLOCK_INDENT: usize = 2;
 
 const CUSTOM_LANGUAGE_LABELS: &[(&str, &str)] = &[
     ("bash", "Bash"),
@@ -244,7 +245,9 @@ impl<'a> EventRenderer<'a> {
 
         let code_starts_with_blank = raw_code.starts_with('\n');
 
-        let language_label = if !self.config.no_code_language {
+        let language_label = if !self.config.no_code_language
+            && (self.config.code_block_style.show_name || self.config.code_block_style.show_icon)
+        {
             let (base_label, hint_key) = match language_hint.as_deref() {
                 Some(raw) => {
                     let syntax = self.resolve_syntax(Some(raw), &raw_code);
@@ -261,17 +264,7 @@ impl<'a> EventRenderer<'a> {
                     (custom_label.unwrap_or_else(|| "Text".to_string()), "text")
                 }
             };
-            if self.config.code_block_style.show_icons {
-                let icon = self.code_block_icon_for_hint(hint_key, &base_label);
-                if self.config.code_block_style.icon_only {
-                    Some(self.clamp_code_block_icon(&icon, &base_label, true))
-                } else {
-                    let clamped = self.clamp_code_block_icon(&icon, &base_label, false);
-                    Some(format!("{} {}", clamped, base_label))
-                }
-            } else {
-                Some(base_label)
-            }
+            self.format_code_block_label(hint_key, &base_label)
         } else {
             None
         };
@@ -296,6 +289,9 @@ impl<'a> EventRenderer<'a> {
         );
 
         match self.config.code_block_style.style {
+            CodeBlockStyle::Basic => {
+                self.render_code_block_basic(render_input)?;
+            }
             CodeBlockStyle::Simple => {
                 self.render_code_block_simple(render_input)?;
             }
@@ -322,6 +318,65 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.commit_pending_heading_placeholder_if_content();
+        Ok(())
+    }
+
+    pub(super) fn render_code_block_basic(
+        &mut self,
+        input: CodeBlockRenderInput<'_>,
+    ) -> Result<()> {
+        let indent = " ".repeat(BASIC_CODE_BLOCK_INDENT);
+        let context_width = self.compute_code_block_context_width();
+        let available = input
+            .terminal_width
+            .saturating_sub(context_width + BASIC_CODE_BLOCK_INDENT);
+        let raw_lines: Vec<&str> = input.raw_code.lines().collect();
+
+        if let Some(label) = input.language_label {
+            let base_label = if label.trim().is_empty() {
+                "Text"
+            } else {
+                label
+            };
+            let wrapped_label = if input.should_wrap && available > 0 {
+                crate::utils::wrap_text_with_mode(base_label, available, input.wrap_mode)
+            } else {
+                base_label.to_string()
+            };
+
+            for part in wrapped_label.split('\n') {
+                self.push_code_block_indent_for_line_start();
+                self.output.push_str(&indent);
+                self.output.push_str(&self.style_pretty_accent(part));
+                self.output.push('\n');
+            }
+
+            if !input.code_starts_with_blank {
+                self.push_code_block_indent_for_line_start();
+                self.output.push_str(&indent);
+                self.output.push('\n');
+            }
+        }
+
+        for (idx, line) in input.highlighted.lines().enumerate() {
+            let raw_line = raw_lines.get(idx).copied();
+            let segments = self.wrap_code_line_segments(
+                line,
+                raw_line,
+                available,
+                input.should_wrap,
+                input.wrap_mode,
+            );
+
+            for segment in segments {
+                self.push_code_block_indent_for_line_start();
+                self.output.push_str(&indent);
+                let decorated = self.highlight_footnote_markers_in_ansi(&segment.text);
+                self.output.push_str(&decorated);
+                self.output.push('\n');
+            }
+        }
+
         Ok(())
     }
 
@@ -928,6 +983,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         let width = match self.config.code_block_style.style {
+            CodeBlockStyle::Basic => available.saturating_sub(BASIC_CODE_BLOCK_INDENT),
             CodeBlockStyle::Simple => available.saturating_sub(2),
             CodeBlockStyle::Pretty => {
                 let left_padding = 1usize;
@@ -1067,21 +1123,45 @@ impl<'a> EventRenderer<'a> {
             .unwrap_or(built_in)
     }
 
-    /// Keeps leading and trailing spaces in icons, but clamps trailing spaces
-    /// so the label still fits in the terminal.
-    fn clamp_code_block_icon(&self, icon: &str, base_label: &str, icon_only: bool) -> String {
+    pub(super) fn format_code_block_label(&self, hint: &str, base_label: &str) -> Option<String> {
+        if self.config.no_code_language {
+            return None;
+        }
+
+        match (
+            self.config.code_block_style.show_name,
+            self.config.code_block_style.show_icon,
+        ) {
+            (false, false) => None,
+            (true, false) => Some(base_label.to_string()),
+            (false, true) => {
+                let icon = self.code_block_icon_for_hint(hint, base_label);
+                Some(self.clamp_code_block_icon(&icon, base_label, false))
+            }
+            (true, true) => {
+                let icon = self.code_block_icon_for_hint(hint, base_label);
+                let clamped = self.clamp_code_block_icon(&icon, base_label, true);
+                Some(format!("{} {}", clamped, base_label))
+            }
+        }
+    }
+
+    fn clamp_code_block_icon(&self, icon: &str, base_label: &str, include_name: bool) -> String {
         let terminal_width = self.config.get_content_width();
         let context_width = self.compute_code_block_context_width();
-        // Reserve the larger pretty-mode border overhead (label + 6) so the
-        // label fits in both simple and pretty frames.
-        let max_label_width = terminal_width.saturating_sub(context_width + 6);
+        let layout_overhead = match self.config.code_block_style.style {
+            CodeBlockStyle::Basic => BASIC_CODE_BLOCK_INDENT,
+            CodeBlockStyle::Simple => 2,
+            CodeBlockStyle::Pretty => 6,
+        };
+        let max_label_width = terminal_width.saturating_sub(context_width + layout_overhead);
         let min_icon_width = display_width(icon.trim_end());
 
-        let separator_width = if icon_only { 0 } else { 1 };
-        let label_width = if icon_only {
-            0
-        } else {
+        let separator_width = usize::from(include_name);
+        let label_width = if include_name {
             display_width(base_label)
+        } else {
+            0
         };
         let max_icon_width = max_label_width
             .saturating_sub(separator_width + label_width)
