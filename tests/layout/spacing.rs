@@ -109,7 +109,6 @@ fn test_backslash_after_code_block_does_not_stack_blank_lines() {
         .arg("none")
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-code-language")
         .arg(temp_file.path())
         .output()
         .expect("mdv runs for code block with backslash");
@@ -317,7 +316,6 @@ fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
         .arg("none")
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-code-language")
         .arg(temp_file.path())
         .output()
         .expect("mdv runs for trailing backslash before code block");

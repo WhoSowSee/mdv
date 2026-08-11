@@ -14,7 +14,6 @@ table_wrap: fit
 heading_layout: flat
 table_smart_indent: true
 hide_comments: true
-no_code_language: true
 code_guessing: false
 code_block_style: simple
 callout_style: simple

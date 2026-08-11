@@ -91,10 +91,6 @@ pub struct Cli {
     #[arg(short = 'T', long = "code-theme", default_value = "terminal")]
     pub code_theme: Option<String>,
 
-    /// Hide language label above code blocks
-    #[arg(short = 'L', long = "no-code-language")]
-    pub no_code_language: bool,
-
     /// Display empty Markdown elements such as blank code blocks and list items
     #[arg(short = 'e', long = "show-empty-elements")]
     pub show_empty_elements: bool,

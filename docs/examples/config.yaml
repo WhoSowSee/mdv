@@ -37,7 +37,6 @@ hide_comments: false       # Hide Markdown comments from the rendered output
 render_html: false         # Render raw HTML fragments as terminal-formatted content
 line_numbers: false        # false | true | "source" | "separator" | "source;separator"
 show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
-no_code_language: false    # Suppress code block names and icons requested by code_block_style
 code_guessing: true        # Disable to keep unknown code blocks as plain text
 code_block_style: "basic"  # Styles: "basic" | "simple" | "pretty"; options: "show-name" | "show-icon"
                            # Labels are hidden by default; combine options with ";" to show both parts.

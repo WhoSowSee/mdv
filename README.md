@@ -162,7 +162,6 @@ cat <FILE> | mdv
 
 ### Content visibility
 
-- `-L, --no-code-language` — suppresses both parts of the code-block label even when `show-name` or `show-icon` is enabled.
 - `-e, --show-empty-elements` — keeps normally hidden empty lists, block quotes, and code blocks in the output.
 - `-g, --no-code-guessing` — disables heuristic detection of code block languages (unknown blocks remain plain text).
 

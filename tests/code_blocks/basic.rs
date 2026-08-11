@@ -193,28 +193,6 @@ fn test_code_language_simple_style_named_block() {
 }
 
 #[test]
-fn test_no_code_language_flag_hides_label() {
-    let temp_file = NamedTempFile::new().unwrap();
-    fs::write(
-        &temp_file,
-        "```rust\nfn badge() {\n    println!(\"label\");\n}\n```",
-    )
-    .unwrap();
-
-    let mut cmd = mdv_cmd();
-    cmd.arg("--no-code-language")
-        .arg("--code-block-style")
-        .arg("simple:show-name")
-        .arg("-A")
-        .arg(temp_file.path());
-
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("│ Rust").not())
-        .stdout(predicate::str::contains("│ fn badge()"));
-}
-
-#[test]
 fn test_code_language_simple_style_plain_block() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```\nplain text output\n```\n").unwrap();

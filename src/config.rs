@@ -151,7 +151,6 @@ pub struct Config {
     #[serde(skip)]
     pub(crate) line_number_gutter_width: usize,
     pub show_empty_elements: bool,
-    pub no_code_language: bool,
     pub code_guessing: bool,
     pub syntaxes_dir: Option<PathBuf>,
     pub code_block_style: CodeBlockStyleConfig,
@@ -223,7 +222,6 @@ impl Default for Config {
             line_numbers: None,
             line_number_gutter_width: 0,
             show_empty_elements: false,
-            no_code_language: false,
             code_guessing: true,
             syntaxes_dir: None,
             code_block_style: CodeBlockStyleConfig::default(),
@@ -420,10 +418,6 @@ impl Config {
 
         if cli.show_empty_elements {
             config.show_empty_elements = true;
-        }
-
-        if cli.no_code_language {
-            config.no_code_language = true;
         }
 
         if let Some(style) = cli.code_block_style
@@ -668,9 +662,6 @@ impl Config {
         }
         if other.show_empty_elements {
             self.show_empty_elements = true;
-        }
-        if other.no_code_language {
-            self.no_code_language = true;
         }
         if !other.code_guessing {
             self.code_guessing = false;

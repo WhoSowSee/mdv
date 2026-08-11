@@ -72,35 +72,6 @@ fn test_simple_code_block_with_icon() {
 }
 
 #[test]
-fn test_code_block_icons_hidden_when_language_label_hidden() {
-    let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "```python\nprint(\"hello\")\n```\n").unwrap();
-
-    let output = mdv_cmd()
-        .arg("--code-block-style")
-        .arg("pretty:show-name;show-icon")
-        .arg("--no-code-language")
-        .arg("-A")
-        .arg(temp_file.path())
-        .output()
-        .expect("mdv executed");
-
-    assert!(output.status.success());
-    let stdout = String::from_utf8(output.stdout).expect("stdout is utf8");
-
-    assert!(
-        !stdout.contains("Python"),
-        "language label should be hidden, got:\n{}",
-        stdout
-    );
-    assert!(
-        !stdout.contains(""),
-        "icon should be hidden with label, got:\n{}",
-        stdout
-    );
-}
-
-#[test]
 fn test_unknown_language_uses_default_icon() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```unknownlang\nx\n```\n").unwrap();

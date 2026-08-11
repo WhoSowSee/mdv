@@ -245,29 +245,28 @@ impl<'a> EventRenderer<'a> {
 
         let code_starts_with_blank = raw_code.starts_with('\n');
 
-        let language_label = if !self.config.no_code_language
-            && (self.config.code_block_style.show_name || self.config.code_block_style.show_icon)
-        {
-            let (base_label, hint_key) = match language_hint.as_deref() {
-                Some(raw) => {
-                    let syntax = self.resolve_syntax(Some(raw), &raw_code);
-                    let resolved = Self::resolve_language_label(raw, syntax);
-                    let custom_label = self
-                        .find_custom_code_block(raw)
-                        .and_then(|b| b.label.clone());
-                    (custom_label.unwrap_or(resolved), raw)
-                }
-                None => {
-                    let custom_label = self
-                        .find_custom_code_block("text")
-                        .and_then(|b| b.label.clone());
-                    (custom_label.unwrap_or_else(|| "Text".to_string()), "text")
-                }
+        let language_label =
+            if self.config.code_block_style.show_name || self.config.code_block_style.show_icon {
+                let (base_label, hint_key) = match language_hint.as_deref() {
+                    Some(raw) => {
+                        let syntax = self.resolve_syntax(Some(raw), &raw_code);
+                        let resolved = Self::resolve_language_label(raw, syntax);
+                        let custom_label = self
+                            .find_custom_code_block(raw)
+                            .and_then(|b| b.label.clone());
+                        (custom_label.unwrap_or(resolved), raw)
+                    }
+                    None => {
+                        let custom_label = self
+                            .find_custom_code_block("text")
+                            .and_then(|b| b.label.clone());
+                        (custom_label.unwrap_or_else(|| "Text".to_string()), "text")
+                    }
+                };
+                self.format_code_block_label(hint_key, &base_label)
+            } else {
+                None
             };
-            self.format_code_block_label(hint_key, &base_label)
-        } else {
-            None
-        };
 
         self.code_block_language = None;
 
@@ -1124,10 +1123,6 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn format_code_block_label(&self, hint: &str, base_label: &str) -> Option<String> {
-        if self.config.no_code_language {
-            return None;
-        }
-
         match (
             self.config.code_block_style.show_name,
             self.config.code_block_style.show_icon,
