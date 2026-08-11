@@ -76,8 +76,7 @@ fn test_empty_table_respects_show_empty_elements_flag() {
     cmd.arg("--no-colors").arg(temp_file.path());
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("╭").not())
-        .stdout(predicate::str::contains("╞").not());
+        .stdout(predicate::str::contains("───").not());
 
     let mut cmd = mdv_cmd();
     cmd.arg("--no-colors")
@@ -85,8 +84,7 @@ fn test_empty_table_respects_show_empty_elements_flag() {
         .arg(temp_file.path());
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("╭"))
-        .stdout(predicate::str::contains("╞"));
+        .stdout(predicate::str::contains("───"));
 }
 
 #[test]

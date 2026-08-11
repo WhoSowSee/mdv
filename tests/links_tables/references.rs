@@ -381,7 +381,7 @@ fn test_inline_table_reference_marker_keeps_brackets_together_when_wrapped() {
         stdout
     );
     assert!(
-        stdout.contains("┆ [3]") || stdout.contains("dashboard[3]"),
+        stdout.contains("┆ [3]") || stdout.contains("│ [3]") || stdout.contains("dashboard[3]"),
         "expected wrapped or inline marker for dashboard link, stdout:\n{}",
         stdout
     );
@@ -389,13 +389,7 @@ fn test_inline_table_reference_marker_keeps_brackets_together_when_wrapped() {
     let table_lines: Vec<&str> = lines
         .iter()
         .copied()
-        .filter(|line| {
-            line.starts_with('╭')
-                || line.starts_with('╰')
-                || line.starts_with('│')
-                || line.starts_with('├')
-                || line.starts_with('╞')
-        })
+        .filter(|line| line.contains('│') || line.contains('┼'))
         .collect();
 
     assert!(!table_lines.is_empty(), "expected rendered table lines");

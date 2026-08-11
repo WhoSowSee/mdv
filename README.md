@@ -153,6 +153,7 @@ cat <FILE> | mdv
 - `-W, --wrap <char|word|none>` — selects the text wrapping mode (default `char`).
 - `-R, --reflow` — collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.
 - `-w, --table-wrap <fit|wrap|none>` — chooses how wide tables are handled (default `fit`).
+- `-q, --pretty-table` — restores full rounded table borders.
 - `-S, --table-smart-indent` — automatic table indent adjustment based on available width.
 - `-d, --heading-layout <level|center|flat|none>` — controls heading indentation (default `level`).
 - `-k, --show-heading-markers` — prefixes headings with markdown-style markers matching their level.
@@ -201,6 +202,7 @@ theme: "terminal"
 code_theme: null
 wrap: "char"
 table_wrap: "fit"
+pretty_table: false
 heading_layout: "level"
 smart_indent: false
 code_wrap_indent: "double"

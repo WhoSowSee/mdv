@@ -115,7 +115,8 @@ impl<'a> EventRenderer<'a> {
             self.config.no_colors,
             available_width,
             self.config.table_wrap,
-        );
+        )
+        .with_pretty_table(self.config.pretty_table);
 
         let mut rendered_table =
             table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;

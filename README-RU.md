@@ -150,6 +150,7 @@ cat <FILE> | mdv
 - `-W, --wrap <char|word|none>` — режим переноса текста (по умолчанию `char`).
 - `-R, --reflow` — склеивает внутриабзацные мягкие переносы строк (soft breaks) и заново заполняет каждую строку до ширины переноса, так что жёстко разбитый исходник перетекает под узкие экраны. Требует включённого переноса; жёсткие переносы сохраняются.
 - `-w, --table-wrap <fit|wrap|none>` — логика отображения широких таблиц (по умолчанию `fit`).
+- `-q, --pretty-table` — возвращает полные скруглённые рамки у таблиц.
 - `-S, --table-smart-indent` — автоматический подбор отступа таблицы в зависимости от доступной ширины.
 - `-d, --heading-layout <level|center|flat|none>` — схема выравнивания заголовков (по умолчанию `level`).
 - `-k, --show-heading-markers` — добавляет перед заголовками markdown-маркеры, соответствующие их уровню.
@@ -197,6 +198,7 @@ theme: "terminal"
 code_theme: null
 wrap: "char"
 table_wrap: "fit"
+pretty_table: false
 heading_layout: "level"
 smart_indent: false
 code_wrap_indent: "double"

@@ -133,6 +133,7 @@ pub struct Config {
     pub theme_info: bool,
     pub wrap: TextWrapMode,
     pub table_wrap: TableWrapMode,
+    pub pretty_table: bool,
     pub reflow: bool,
     pub heading_layout: HeadingLayout,
     pub show_heading_markers: bool,
@@ -211,6 +212,7 @@ impl Default for Config {
             theme_info: false,
             wrap: TextWrapMode::Char,
             table_wrap: TableWrapMode::Fit,
+            pretty_table: false,
             reflow: false,
             heading_layout: HeadingLayout::Level,
             show_heading_markers: false,
@@ -307,6 +309,9 @@ impl Config {
             && arg_has_user_value(matches, "table_wrap_mode")
         {
             config.table_wrap = table_wrap;
+        }
+        if cli.pretty_table {
+            config.pretty_table = true;
         }
         if cli.reflow {
             config.reflow = true;
@@ -631,6 +636,9 @@ impl Config {
 
         if !matches!(other.table_wrap, TableWrapMode::Fit) {
             self.table_wrap = other.table_wrap;
+        }
+        if other.pretty_table {
+            self.pretty_table = true;
         }
         if other.reflow {
             self.reflow = true;
@@ -1151,13 +1159,13 @@ link_truncation: tablecut
         let temp_dir = TempDir::new().expect("create temp dir");
         std::fs::write(
             temp_dir.path().join("config.yaml"),
-            "cols: 100\ntheme: monokai\nsmart_indent: true\ncode_theme: monokai\n",
+            "cols: 100\ntheme: monokai\nsmart_indent: true\npretty_table: false\ncode_theme: monokai\n",
         )
         .expect("write config file");
         write_preset(
             temp_dir.path(),
             "reader.yaml",
-            "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\ncode_theme: null\n",
+            "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\npretty_table: true\ncode_theme: null\n",
         );
 
         let (cli, matches) = parse_cli_from(vec![
@@ -1174,6 +1182,7 @@ link_truncation: tablecut
         assert_eq!(config.cols, Some(60));
         assert_eq!(config.theme, "terminal");
         assert!(!config.smart_indent);
+        assert!(config.pretty_table);
         assert!(config.code_theme.is_none());
     }
 

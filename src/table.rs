@@ -3,7 +3,9 @@ use crate::utils::{display_width, strip_ansi};
 use anyhow::Result;
 use comfy_table::{
     Attribute, Cell, CellAlignment, Color, ContentArrangement, Table,
-    modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL,
+    TableComponent::{HeaderLines, MiddleHeaderIntersections, VerticalLines},
+    modifiers::UTF8_ROUND_CORNERS,
+    presets::{NOTHING, UTF8_FULL},
 };
 use pulldown_cmark::Alignment;
 
@@ -18,6 +20,7 @@ pub struct TableRenderer {
     no_colors: bool,
     terminal_width: usize,
     table_wrap: TableWrapMode,
+    pretty_table: bool,
 }
 
 impl TableRenderer {
@@ -32,7 +35,28 @@ impl TableRenderer {
             no_colors,
             terminal_width,
             table_wrap,
+            pretty_table: false,
         }
+    }
+
+    pub fn with_pretty_table(mut self, pretty_table: bool) -> Self {
+        self.pretty_table = pretty_table;
+        self
+    }
+
+    fn configure_table(&self, table: &mut Table) {
+        if self.pretty_table {
+            table
+                .load_preset(UTF8_FULL)
+                .apply_modifier(UTF8_ROUND_CORNERS);
+        } else {
+            table
+                .load_preset(NOTHING)
+                .set_style(HeaderLines, '─')
+                .set_style(MiddleHeaderIntersections, '┼')
+                .set_style(VerticalLines, '│');
+        }
+        table.set_content_arrangement(ContentArrangement::Dynamic);
     }
 
     /// Create a cell with proper ANSI handling for width calculation
@@ -210,11 +234,7 @@ impl TableRenderer {
     ) -> Result<String> {
         let mut table = Table::new();
 
-        // Configure table appearance
-        table
-            .load_preset(UTF8_FULL)
-            .apply_modifier(UTF8_ROUND_CORNERS)
-            .set_content_arrangement(ContentArrangement::Dynamic);
+        self.configure_table(&mut table);
 
         if !self.no_colors {
             table.enforce_styling();
@@ -293,11 +313,7 @@ impl TableRenderer {
     ) -> Result<String> {
         let mut table = Table::new();
 
-        // Configure table appearance
-        table
-            .load_preset(UTF8_FULL)
-            .apply_modifier(UTF8_ROUND_CORNERS)
-            .set_content_arrangement(ContentArrangement::Dynamic);
+        self.configure_table(&mut table);
 
         if !self.no_colors {
             table.enforce_styling();

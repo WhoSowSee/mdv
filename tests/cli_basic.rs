@@ -797,8 +797,16 @@ fn test_render_html_option_formats_html_tables() {
     assert!(stdout.contains("Ready"), "stdout:\n{}", stdout);
     assert!(stdout.contains("[GIF] Logo"), "stdout:\n{}", stdout);
     assert!(stdout.contains("[VIDEO] Demo"), "stdout:\n{}", stdout);
-    assert!(stdout.contains("│ Project"), "stdout:\n{}", stdout);
-    assert!(stdout.contains("│ Alpha"), "stdout:\n{}", stdout);
+    let header_line = stdout
+        .lines()
+        .find(|line| line.contains("Project") && line.contains("Status") && line.contains("Asset"))
+        .expect("rendered HTML table header");
+    let alpha_line = stdout
+        .lines()
+        .find(|line| line.contains("Alpha") && line.contains("Ready"))
+        .expect("rendered HTML table row");
+    assert_eq!(header_line.matches('│').count(), 2, "stdout:\n{}", stdout);
+    assert_eq!(alpha_line.matches('│').count(), 2, "stdout:\n{}", stdout);
     assert!(!stdout.contains("<table"), "stdout:\n{}", stdout);
     assert!(!stdout.contains("<td"), "stdout:\n{}", stdout);
 }

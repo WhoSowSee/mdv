@@ -20,12 +20,12 @@ fn test_table_smart_indent_uses_heading_content_indent() {
     let stdout_without_indent =
         String::from_utf8(output_without_indent.stdout).expect("stdout without indent");
 
-    let top_border_without_indent = stdout_without_indent
+    let header_separator_without_indent = stdout_without_indent
         .lines()
-        .find(|line| line.contains('╭'))
-        .expect("table top border without indent");
+        .find(|line| line.contains('┼'))
+        .expect("table header separator without indent");
     assert!(
-        top_border_without_indent.starts_with('╭'),
+        header_separator_without_indent.starts_with('─'),
         "expected flush-left table without flag, stdout:\n{}",
         stdout_without_indent
     );
@@ -41,12 +41,12 @@ fn test_table_smart_indent_uses_heading_content_indent() {
     assert!(output_with_indent.status.success());
     let stdout_with_indent = String::from_utf8(output_with_indent.stdout).expect("stdout utf8");
 
-    let top_border_with_indent = stdout_with_indent
+    let header_separator_with_indent = stdout_with_indent
         .lines()
-        .find(|line| line.contains('╭'))
-        .expect("table top border with indent");
+        .find(|line| line.contains('┼'))
+        .expect("table header separator with indent");
     assert!(
-        top_border_with_indent.starts_with("   ╭"),
+        header_separator_with_indent.starts_with("   ─"),
         "expected table to use content indent from H3 (3 spaces), stdout:\n{}",
         stdout_with_indent
     );
@@ -72,18 +72,18 @@ fn test_table_smart_indent_reduces_indent_on_narrow_width() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
-    let top_border = stdout
+    let header_separator = stdout
         .lines()
-        .find(|line| line.contains('╭'))
-        .expect("table top border present");
+        .find(|line| line.contains('┼'))
+        .expect("table header separator present");
 
     assert!(
-        top_border.starts_with("  ╭"),
+        header_separator.starts_with("  ─"),
         "expected adaptive indent to shrink to 2 spaces at 18 cols, stdout:\n{}",
         stdout
     );
     assert!(
-        !top_border.starts_with("    ╭"),
+        !header_separator.starts_with("    ─"),
         "expected indent to be reduced from base 4 spaces, stdout:\n{}",
         stdout
     );
@@ -111,16 +111,16 @@ fn test_inline_table_references_follow_table_smart_indent() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
-    let top_border = stdout
+    let header_separator = stdout
         .lines()
-        .find(|line| line.contains('╭'))
-        .expect("table top border present");
+        .find(|line| line.contains('┼'))
+        .expect("table header separator present");
     let reference_line = stdout
         .lines()
         .find(|line| line.trim_start().starts_with("[1] https://example.com/one"))
         .expect("first reference line present");
 
-    let table_indent = top_border.chars().take_while(|ch| *ch == ' ').count();
+    let table_indent = header_separator.chars().take_while(|ch| *ch == ' ').count();
     let reference_indent = reference_line.chars().take_while(|ch| *ch == ' ').count();
 
     assert_eq!(

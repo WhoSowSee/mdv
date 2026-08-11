@@ -255,6 +255,10 @@ pub struct Cli {
     )]
     pub table_wrap_mode: Option<TableWrapMode>,
 
+    /// Render tables with full rounded borders
+    #[arg(short = 'q', long = "pretty-table")]
+    pub pretty_table: bool,
+
     /// Display from given substring of the file
     #[arg(short = 'f', long = "from", value_name = "TEXT")]
     pub from_txt: Option<String>,
@@ -983,6 +987,12 @@ mod tests {
 
         let cli = Cli::parse_from(["mdv", "-S"]);
         assert!(cli.table_smart_indent);
+    }
+
+    #[test]
+    fn pretty_table_short_alias_parses() {
+        let cli = Cli::parse_from(["mdv", "-q"]);
+        assert!(cli.pretty_table);
     }
 
     #[test]
