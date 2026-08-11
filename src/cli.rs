@@ -1,3 +1,4 @@
+use crate::block_spacing::BlockSpacingOverrides;
 use crate::list_marker::{PrettyListStyle, UniformListMarker};
 use clap::builder::PossibleValue;
 use clap::{Parser, ValueEnum};
@@ -124,7 +125,7 @@ pub struct Cli {
         short = 'J',
         long = "custom-code-block",
         value_name = "BLOCKS",
-        long_help = "Override code block icon/label/aliases.\nEntries are separated by ';', options by ',', aliases by '|'.\nAt least one of 'icon' or 'label' is required; 'aliases' is optional.\nExample: rust:icon=*,label=russst;py:icon=?,aliases=py|py3"
+        long_help = "Override code block icon/label/aliases.\nEntries are separated by ';', options by ',', aliases by '|'.\nAt least one of 'icon' or 'label' is required; 'aliases' is optional.\n\nExample: rust:icon=*,label=russst;py:icon=?,aliases=py|py3"
     )]
     pub custom_code_block: Option<String>,
 
@@ -223,7 +224,7 @@ pub struct Cli {
         long = "margin",
         value_name = "MARGINS",
         value_parser = parse_horizontal_margins,
-        long_help = "Set horizontal margins around terminal output\nFormat: 'left:<columns>;right:<columns>'\nSpecify either side or both; an omitted side defaults to 0\nExamples: --margin 'left:4' | --margin 'right:5' | --margin 'left:4;right:5'"
+        long_help = "Set horizontal margins around terminal output\nFormat: 'left:<columns>;right:<columns>'\nSpecify either side or both; an omitted side defaults to 0\n\nExamples:\n  --margin 'left:4'\n  --margin 'right:5'\n  --margin 'left:4;right:5'"
     )]
     pub margin: Option<HorizontalMargins>,
 
@@ -344,6 +345,14 @@ pub struct Cli {
         long_help = "Automatically adjusts table indentation based on available width\nUses heading content indentation when space allows and reduces it when width is tight"
     )]
     pub table_smart_indent: bool,
+
+    /// Configure blank lines around block elements
+    #[arg(
+        long = "block-spacing",
+        value_name = "SPACING",
+        long_help = "Configure blank lines above and below individual block elements\nEntries are separated by ';', sides by ','\nOmitted elements and sides keep their default spacing\nElements: paragraph, h1..h6, code-block, display-math, table, horizontal-rule\nunordered-list, ordered-list, task-list, blockquote, callout, definition-list\ninline-references, end-references, attached-footnotes, endnotes\n\nExample: --block-spacing 'paragraph:top=0,bottom=1;callout:top=1'"
+    )]
+    pub block_spacing: Option<BlockSpacingOverrides>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -1145,5 +1154,22 @@ mod tests {
 
         assert_eq!(style.to_string(), "type:nerd-font;size:small");
         assert_eq!(cli.filename.as_deref(), Some("README.md"));
+    }
+
+    #[test]
+    fn block_spacing_rejects_invalid_entries() {
+        for value in [
+            "unknown:top=1",
+            "paragraph:left=1",
+            "paragraph:top=-1",
+            "paragraph:",
+            "paragraph:top=1;paragraph:bottom=2",
+            "paragraph:top=1,top=2",
+        ] {
+            assert!(
+                Cli::try_parse_from(["mdv", "--block-spacing", value]).is_err(),
+                "accepted invalid block spacing: {value}"
+            );
+        }
     }
 }

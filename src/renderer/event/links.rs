@@ -4,6 +4,7 @@ use super::{
     LinkTruncationStyle, Result, TableInlineUrlSegment, TableInlineUrlTarget, TableState,
     ThemeElement, create_style, wrap_text_with_mode,
 };
+use crate::block_spacing::BlockElement;
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
 
@@ -640,28 +641,17 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn add_paragraph_link_references(&mut self) {
-        let in_list = !self.list_stack.is_empty();
-        let in_table = false; // Regular call, not from table context
-        self.add_paragraph_link_references_with_trailing_newline(true, in_list, in_table, 0);
+        self.add_paragraph_link_references_with_trailing_newline(true, false, 0);
     }
 
     pub(super) fn add_paragraph_link_references_for_table(&mut self, table_indent: usize) {
-        let in_list = !self.list_stack.is_empty();
-        let in_table = true; // Called from table context
-        self.add_paragraph_link_references_with_trailing_newline(
-            true,
-            in_list,
-            in_table,
-            table_indent,
-        );
-        self.ensure_contextual_blank_line();
+        self.add_paragraph_link_references_with_trailing_newline(true, true, table_indent);
     }
 
     pub(super) fn render_link_reference_blocks(
         &mut self,
         links: &[(String, String)],
         add_trailing_newline: bool,
-        in_list: bool,
         in_table: bool,
         table_indent: usize,
     ) {
@@ -720,7 +710,11 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        self.ensure_contextual_blank_line_with_prefix(&reference_prefix);
+        let spacing = self
+            .config
+            .block_spacing
+            .spacing(BlockElement::InlineReferences);
+        self.ensure_contextual_blank_lines_with_prefix(spacing.top, &reference_prefix);
         for (i, styled_lines) in styled_blocks.iter().enumerate() {
             for (line_idx, styled_line) in styled_lines.iter().enumerate() {
                 if !reference_prefix.is_empty() {
@@ -740,21 +734,13 @@ impl<'a> EventRenderer<'a> {
 
         // Add trailing spacing after the link block if requested.
         if add_trailing_newline {
-            if reference_prefix.is_empty() {
-                self.output.push('\n');
-                if in_list {
-                    self.output.push('\n');
-                }
-            } else {
-                self.ensure_contextual_blank_line_with_prefix(&reference_prefix);
-            }
+            self.ensure_contextual_blank_lines_with_prefix(spacing.bottom, &reference_prefix);
         }
     }
 
     pub(super) fn add_paragraph_link_references_with_trailing_newline(
         &mut self,
         add_trailing_newline: bool,
-        in_list: bool,
         in_table: bool,
         table_indent: usize,
     ) {
@@ -764,13 +750,7 @@ impl<'a> EventRenderer<'a> {
 
         let links = std::mem::take(&mut self.paragraph_links);
         self.paragraph_link_counter = 0;
-        self.render_link_reference_blocks(
-            &links,
-            add_trailing_newline,
-            in_list,
-            in_table,
-            table_indent,
-        );
+        self.render_link_reference_blocks(&links, add_trailing_newline, in_table, table_indent);
     }
 
     fn build_styled_reference_blocks(
@@ -894,12 +874,11 @@ impl<'a> EventRenderer<'a> {
         let styled_blocks =
             self.build_styled_reference_blocks(&self.document_links, self.content_indent);
 
-        if self.output.ends_with('\n') {
-            self.output.push('\n');
-        } else if !self.output.is_empty() {
-            self.output.push('\n');
-            self.output.push('\n');
-        }
+        let spacing = self
+            .config
+            .block_spacing
+            .spacing(BlockElement::EndReferences);
+        self.ensure_contextual_blank_lines(spacing.top);
 
         for (block_idx, styled_lines) in styled_blocks.iter().enumerate() {
             for (line_idx, styled_line) in styled_lines.iter().enumerate() {
@@ -919,7 +898,10 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        self.output.push('\n');
+        if !self.output.ends_with('\n') {
+            self.output.push('\n');
+        }
+        self.ensure_contextual_blank_lines(spacing.bottom);
         self.document_links.clear();
         self.commit_pending_heading_placeholder_if_content();
     }

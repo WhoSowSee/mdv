@@ -1,5 +1,17 @@
 use super::core::CalloutState;
 use super::{EventRenderer, HeadingLevel, Result, ThemeElement, create_style};
+use crate::block_spacing::BlockElement;
+
+fn heading_block_element(level: HeadingLevel) -> BlockElement {
+    match level {
+        HeadingLevel::H1 => BlockElement::H1,
+        HeadingLevel::H2 => BlockElement::H2,
+        HeadingLevel::H3 => BlockElement::H3,
+        HeadingLevel::H4 => BlockElement::H4,
+        HeadingLevel::H5 => BlockElement::H5,
+        HeadingLevel::H6 => BlockElement::H6,
+    }
+}
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_header_start(&mut self, level: HeadingLevel) -> Result<()> {
@@ -54,7 +66,10 @@ impl<'a> EventRenderer<'a> {
         self.current_heading_level = Some(level);
         self.last_header_level = level;
 
-        self.trim_trailing_blank_lines();
+        let spacing = self
+            .config
+            .block_spacing
+            .spacing(heading_block_element(level));
         let use_heading_prefix = self.blockquote_level > 0
             && matches!(
                 self.config.callout_style.style,
@@ -75,9 +90,9 @@ impl<'a> EventRenderer<'a> {
                     prefix.push_str(&" ".repeat(list_indent));
                 }
             }
-            self.ensure_contextual_blank_line_with_prefix(&prefix);
+            self.ensure_contextual_blank_lines_with_prefix(spacing.top, &prefix);
         } else {
-            self.ensure_contextual_blank_line();
+            self.ensure_contextual_blank_lines(spacing.top);
         }
 
         if self.has_trailing_blank_line() && !use_heading_prefix {
@@ -247,7 +262,11 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.output.push('\n');
-        self.ensure_contextual_blank_line();
+        let spacing = self
+            .config
+            .block_spacing
+            .spacing(heading_block_element(level));
+        self.ensure_contextual_blank_lines(spacing.bottom);
 
         // Keep the current heading level for subsequent content indentation
         // Don't reset it here as content under this heading should have the same indent

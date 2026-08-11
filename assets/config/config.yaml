@@ -33,6 +33,7 @@ heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 show_heading_markers: false # Prefix headings with markdown-style markers matching their level
 smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
 table_smart_indent: false  # Automatically adjusts table indentation based on available width
+block_spacing: null        # Per-block blank lines, e.g. "paragraph:top=0,bottom=1;callout:top=1"
 hide_comments: false       # Hide Markdown comments from the rendered output
 render_html: false         # Render raw HTML fragments as terminal-formatted content
 line_numbers: false        # false | true | "source" | "separator" | "source;separator"

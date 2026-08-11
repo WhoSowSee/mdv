@@ -3,6 +3,7 @@ use super::{
     EventRenderer, HighlightLines, LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR,
     Result, ThemeElement, WrapMode, as_terminal_escaped, create_style, detect_source_code,
 };
+use crate::block_spacing::BlockElement;
 use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
@@ -275,7 +276,8 @@ impl<'a> EventRenderer<'a> {
 
         // Ensure exactly one contextual blank line before the block.
         let code_block_prefix = self.current_code_block_prefix();
-        self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
+        let spacing = self.config.block_spacing.spacing(BlockElement::CodeBlock);
+        self.ensure_contextual_blank_lines_with_prefix(spacing.top, &code_block_prefix);
 
         let render_input = CodeBlockRenderInput::new(
             &highlighted,
@@ -299,21 +301,18 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        self.ensure_contextual_blank_line_with_prefix(&code_block_prefix);
+        self.ensure_contextual_blank_lines_with_prefix(spacing.bottom, &code_block_prefix);
 
         if !deferred_reference_blocks.is_empty() {
-            let in_list = !self.list_stack.is_empty();
             for block in deferred_reference_blocks {
                 self.trim_trailing_blank_lines();
                 self.render_link_reference_blocks(
                     &block.links,
                     block.add_trailing_newline,
-                    in_list,
                     false,
                     0,
                 );
             }
-            self.ensure_contextual_blank_line();
         }
 
         self.commit_pending_heading_placeholder_if_content();

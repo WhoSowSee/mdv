@@ -3,6 +3,7 @@ use super::{
     HashMap, HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement,
     create_style, extract_code_language,
 };
+use crate::block_spacing::BlockElement;
 use crate::renderer::syntax_theme::CodeHighlightTheme;
 use crate::theme::Color;
 use crate::utils::strip_ansi;
@@ -18,6 +19,7 @@ pub(crate) struct ListState {
     pub(super) current_item_start: Option<usize>,
     pub(super) current_item_marker_start: Option<usize>,
     pub(super) current_item_marker_end: Option<usize>,
+    pub(super) spacing_element: BlockElement,
 }
 
 #[derive(Debug)]
@@ -297,6 +299,8 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) callout_stack: Vec<CalloutState>,
     pub(crate) callout_palette: HashMap<CalloutKind, Color>,
     pub(crate) list_stack: Vec<ListState>,
+    pub(crate) prepared_list_spacing_elements: VecDeque<BlockElement>,
+    pub(crate) prepared_blockquote_spacing_elements: VecDeque<BlockElement>,
     pub(super) definition_list_stack: Vec<DefinitionListState>,
     pub(crate) table_state: Option<TableState>,
     pub(crate) pending_html_block_buffer: Option<HtmlBlockBuffer>,
@@ -364,6 +368,8 @@ impl<'a> EventRenderer<'a> {
             callout_stack: Vec::new(),
             callout_palette: build_callout_palette(theme),
             list_stack: Vec::new(),
+            prepared_list_spacing_elements: VecDeque::new(),
+            prepared_blockquote_spacing_elements: VecDeque::new(),
             definition_list_stack: Vec::new(),
             table_state: None,
             pending_html_block_buffer: None,
@@ -424,6 +430,7 @@ impl<'a> EventRenderer<'a> {
             }
         }
         self.footnote_definitions = definitions;
+        self.prepare_block_spacing_elements(&events);
 
         if matches!(self.config.heading_layout, crate::cli::HeadingLayout::Level)
             && self.config.smart_indent
@@ -685,8 +692,15 @@ impl<'a> EventRenderer<'a> {
                         if self.output.ends_with('\n') {
                             self.ensure_contextual_blank_line();
                         }
-                    } else if !self.output.is_empty() && !self.output.ends_with('\n') {
-                        self.output.push('\n');
+                    } else {
+                        if self.blockquote_level == 0 {
+                            let spacing =
+                                self.config.block_spacing.spacing(BlockElement::Paragraph);
+                            self.ensure_contextual_blank_lines(spacing.top);
+                        }
+                        if !self.output.is_empty() && !self.output.ends_with('\n') {
+                            self.output.push('\n');
+                        }
                     }
                 }
 
@@ -705,8 +719,13 @@ impl<'a> EventRenderer<'a> {
             Tag::BlockQuote(kind) => {
                 let entering_outer_blockquote = self.blockquote_level == 0;
                 let blockquote_start = self.output.len();
+                let spacing_element = self
+                    .prepared_blockquote_spacing_elements
+                    .pop_front()
+                    .expect("blockquote spacing classification must match the event stream");
                 if entering_outer_blockquote {
-                    self.ensure_contextual_blank_line();
+                    let spacing = self.config.block_spacing.spacing(spacing_element);
+                    self.ensure_contextual_blank_lines(spacing.top);
                 }
                 self.blockquote_indent_stack
                     .push((self.content_indent, self.heading_indent));
@@ -753,8 +772,13 @@ impl<'a> EventRenderer<'a> {
             Tag::List(start_number) => {
                 let entering_top_level_list = self.list_stack.is_empty();
                 let block_start = self.output.len();
+                let spacing_element = self
+                    .prepared_list_spacing_elements
+                    .pop_front()
+                    .expect("list spacing classification must match the event stream");
                 if entering_top_level_list {
-                    self.ensure_contextual_blank_line();
+                    let spacing = self.config.block_spacing.spacing(spacing_element);
+                    self.ensure_contextual_blank_lines(spacing.top);
                     if matches!(self.config.link_style, LinkStyle::InlineTable) {
                         self.paragraph_link_counter = 0;
                         self.paragraph_links.clear();
@@ -771,6 +795,7 @@ impl<'a> EventRenderer<'a> {
                     current_item_start: None,
                     current_item_marker_start: None,
                     current_item_marker_end: None,
+                    spacing_element,
                 });
                 if !self.output.is_empty() && !self.output.ends_with('\n') {
                     self.output.push('\n');
@@ -960,7 +985,9 @@ impl<'a> EventRenderer<'a> {
                 if self.list_stack.is_empty() && !self.in_definition_description() {
                     if !inline_footnotes_rendered && !suppress_break && !skip_blank_line {
                         if has_visible_content && self.blockquote_level == 0 {
-                            self.ensure_contextual_blank_line();
+                            let spacing =
+                                self.config.block_spacing.spacing(BlockElement::Paragraph);
+                            self.ensure_contextual_blank_lines(spacing.bottom);
                         } else {
                             self.output.push('\n');
                         }
@@ -980,6 +1007,12 @@ impl<'a> EventRenderer<'a> {
                     _ => None,
                 };
                 let was_callout = callout_info.is_some();
+                let spacing_element = if was_callout {
+                    BlockElement::Callout
+                } else {
+                    BlockElement::Blockquote
+                };
+                let block_spacing = self.config.block_spacing.spacing(spacing_element);
                 let callout_inline_links = callout_info
                     .as_ref()
                     .map(|info| info.inline_links.clone())
@@ -1040,7 +1073,6 @@ impl<'a> EventRenderer<'a> {
                             if !self.output.ends_with('\n') {
                                 self.output.push('\n');
                             }
-                            self.ensure_contextual_blank_line();
                         }
                     }
 
@@ -1048,21 +1080,13 @@ impl<'a> EventRenderer<'a> {
                         && !callout_inline_links.is_empty()
                     {
                         self.trim_trailing_blank_lines();
-                        let in_list = !self.list_stack.is_empty();
-                        self.render_link_reference_blocks(
-                            &callout_inline_links,
-                            true,
-                            in_list,
-                            false,
-                            0,
-                        );
-                        self.ensure_contextual_blank_line();
+                        self.render_link_reference_blocks(&callout_inline_links, true, false, 0);
                     }
 
-                    if closing_outer_blockquote
+                    if (was_callout || closing_outer_blockquote)
                         && (has_visible_content || self.config.show_empty_elements)
                     {
-                        self.ensure_contextual_blank_line();
+                        self.ensure_contextual_blank_lines(block_spacing.bottom);
                     }
 
                     return Ok(());
@@ -1101,29 +1125,17 @@ impl<'a> EventRenderer<'a> {
                 }
                 self.active_blockquote_smart_indents.pop();
 
-                if was_callout && (has_visible_content || self.config.show_empty_elements) {
-                    self.ensure_contextual_blank_line();
-                }
-
                 if matches!(self.config.link_style, LinkStyle::InlineTable)
                     && !callout_inline_links.is_empty()
                 {
                     self.trim_trailing_blank_lines();
-                    let in_list = !self.list_stack.is_empty();
-                    self.render_link_reference_blocks(
-                        &callout_inline_links,
-                        true,
-                        in_list,
-                        false,
-                        0,
-                    );
-                    self.ensure_contextual_blank_line();
+                    self.render_link_reference_blocks(&callout_inline_links, true, false, 0);
                 }
 
-                if closing_outer_blockquote
+                if (was_callout || closing_outer_blockquote)
                     && (has_visible_content || self.config.show_empty_elements)
                 {
-                    self.ensure_contextual_blank_line();
+                    self.ensure_contextual_blank_lines(block_spacing.bottom);
                 }
             }
             TagEnd::CodeBlock => {
@@ -1135,17 +1147,16 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             TagEnd::List(_) => {
-                let closed_list = self.list_stack.pop();
+                let Some(closed_list) = self.list_stack.pop() else {
+                    return Ok(());
+                };
                 let closed_top_level_list = self.list_stack.is_empty();
-                let list_has_visible_items = closed_list
-                    .as_ref()
-                    .is_some_and(|list_state| list_state.has_visible_items);
+                let spacing_element = closed_list.spacing_element;
+                let list_has_visible_items = closed_list.has_visible_items;
 
                 if !list_has_visible_items {
-                    if let Some(list_state) = closed_list {
-                        self.output
-                            .truncate(list_state.block_start.min(self.output.len()));
-                    }
+                    self.output
+                        .truncate(closed_list.block_start.min(self.output.len()));
                     return Ok(());
                 }
 
@@ -1158,7 +1169,8 @@ impl<'a> EventRenderer<'a> {
                     self.output.push('\n');
                 }
                 if closed_top_level_list {
-                    self.ensure_contextual_blank_line();
+                    let spacing = self.config.block_spacing.spacing(spacing_element);
+                    self.ensure_contextual_blank_lines(spacing.bottom);
                 }
             }
             TagEnd::Item => {

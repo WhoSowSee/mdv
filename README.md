@@ -159,6 +159,7 @@ cat <FILE> | mdv
 - `-k, --show-heading-markers` — prefixes headings with markdown-style markers matching their level.
 - `-I, --smart-indent` — smooths indentation jumps between heading levels in `level` mode.
 - `-K, --code-wrap-indent <none|base|double>` — sets the hanging indent applied to wrapped code block lines (default `double`).
+- `--block-spacing <spec>` — overrides top and bottom blank lines per block. Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
 
 ### Content visibility
 
@@ -204,6 +205,7 @@ table_wrap: "fit"
 pretty_table: false
 heading_layout: "level"
 smart_indent: false
+block_spacing: null
 code_wrap_indent: "double"
 link_style: "clickable"
 link_truncation: "wrap"

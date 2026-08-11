@@ -1,3 +1,4 @@
+use crate::block_spacing::BlockSpacingOverrides;
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
@@ -140,6 +141,7 @@ pub struct Config {
     // Smart heading indentation (applies only to HeadingLayout::Level)
     pub smart_indent: bool,
     pub table_smart_indent: bool,
+    pub block_spacing: BlockSpacingOverrides,
     pub hide_comments: bool,
     pub render_html: bool,
     #[serde(
@@ -217,6 +219,7 @@ impl Default for Config {
             show_heading_markers: false,
             smart_indent: false,
             table_smart_indent: false,
+            block_spacing: BlockSpacingOverrides::default(),
             hide_comments: false,
             render_html: false,
             line_numbers: None,
@@ -402,6 +405,9 @@ impl Config {
         }
         if cli.table_smart_indent {
             config.table_smart_indent = true;
+        }
+        if let Some(spacing) = &cli.block_spacing {
+            config.block_spacing.merge(spacing);
         }
 
         if cli.hide_comments {
@@ -650,6 +656,7 @@ impl Config {
         if other.table_smart_indent {
             self.table_smart_indent = true;
         }
+        self.block_spacing.merge(&other.block_spacing);
 
         if other.hide_comments {
             self.hide_comments = true;
@@ -1142,6 +1149,32 @@ link_truncation: tablecut
         let config = Config::from_cli(&cli, &matches).expect("load config with overrides");
         assert!(matches!(config.wrap, TextWrapMode::None));
         assert!(matches!(config.link_style, LinkStyle::Hide));
+    }
+
+    #[test]
+    fn cli_block_spacing_merges_each_side_over_config() {
+        let _env_lock = env_lock();
+        let temp_dir = TempDir::new().expect("create temp dir");
+        let config_path = temp_dir.path().join("config.yaml");
+        std::fs::write(
+            &config_path,
+            "block_spacing: \"paragraph:top=2,bottom=3\"\n",
+        )
+        .expect("write config file");
+
+        let (cli, matches) = parse_cli_from(vec![
+            OsString::from("mdv"),
+            OsString::from("--config-file"),
+            temp_dir.path().as_os_str().to_owned(),
+            OsString::from("--block-spacing"),
+            OsString::from("paragraph:top=0"),
+        ]);
+
+        let config = Config::from_cli(&cli, &matches).expect("load block spacing overrides");
+        let paragraph = config
+            .block_spacing
+            .spacing(crate::block_spacing::BlockElement::Paragraph);
+        assert_eq!((paragraph.top, paragraph.bottom), (0, 3));
     }
 
     #[test]

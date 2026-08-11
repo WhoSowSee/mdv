@@ -1,5 +1,6 @@
 use super::core::{CalloutFold, CalloutKind, CalloutState};
 use super::{EventRenderer, PRETTY_ACCENT_COLOR, ThemeElement, create_style};
+use crate::block_spacing::BlockElement;
 use crate::terminal::AnsiStyle;
 use crate::utils::{WrapMode, display_width, strip_ansi, wrap_text_with_mode};
 use crossterm::style::Color as CrosstermColor;
@@ -165,6 +166,30 @@ impl<'a> EventRenderer<'a> {
         self.ensure_contextual_blank_line_for_blockquote_level(self.blockquote_level);
     }
 
+    pub(super) fn ensure_contextual_blank_lines(&mut self, count: usize) {
+        let prefix = self.current_line_prefix_for_blockquote_level(self.blockquote_level);
+        self.ensure_contextual_blank_lines_with_prefix(count, &prefix);
+    }
+
+    pub(super) fn ensure_contextual_blank_lines_with_prefix(&mut self, count: usize, prefix: &str) {
+        if self.output.is_empty() {
+            return;
+        }
+        if count == 0 {
+            if !self.output.ends_with('\n') {
+                self.output.push('\n');
+            }
+            return;
+        }
+
+        self.ensure_contextual_blank_line_with_prefix(prefix);
+        let existing = self.trailing_blank_line_count();
+        for _ in existing..count {
+            self.output.push_str(prefix);
+            self.output.push('\n');
+        }
+    }
+
     pub(super) fn effective_text_width(&self) -> usize {
         let mut width = self.config.get_content_width();
         if self.should_reserve_callout_padding() {
@@ -225,6 +250,22 @@ impl<'a> EventRenderer<'a> {
         clean
             .chars()
             .all(|ch| ch.is_whitespace() || is_quote_prefix_char(ch))
+    }
+
+    fn trailing_blank_line_count(&self) -> usize {
+        if self.output.is_empty() || !self.output.ends_with('\n') {
+            return 0;
+        }
+
+        self.output[..self.output.len().saturating_sub(1)]
+            .rsplit('\n')
+            .take_while(|line| {
+                let clean = strip_layout_metadata(line);
+                clean
+                    .chars()
+                    .all(|ch| ch.is_whitespace() || is_quote_prefix_char(ch))
+            })
+            .count()
     }
 
     pub(super) fn normalize_trailing_blank_line(&mut self) {
@@ -734,13 +775,13 @@ impl<'a> EventRenderer<'a> {
                 .saturating_sub(self.content_indent)
         };
 
-        let mut leading_blank_line: Option<String> = None;
+        let mut leading_blank_lines = Vec::new();
         let mut start_idx = 0usize;
         while start_idx < lines.len() {
             let stripped =
                 self.strip_callout_prefix_from_line(lines[start_idx], callout_level, list_indent);
             if strip_ansi(&stripped).trim().is_empty() {
-                leading_blank_line = Some(stripped);
+                leading_blank_lines.push(stripped);
                 start_idx += 1;
             } else {
                 break;
@@ -884,16 +925,19 @@ impl<'a> EventRenderer<'a> {
             return false;
         }
 
-        if let Some(blank_line) = leading_blank_line {
-            if !self.output.is_empty() && !self.output.ends_with('\n') {
+        let spacing = self.config.block_spacing.spacing(BlockElement::Callout);
+        if leading_blank_lines.is_empty() {
+            self.ensure_contextual_blank_lines(spacing.top);
+        } else {
+            for blank_line in leading_blank_lines {
+                if !self.output.is_empty() && !self.output.ends_with('\n') {
+                    self.output.push('\n');
+                }
+                if !blank_line.is_empty() {
+                    self.output.push_str(&blank_line);
+                }
                 self.output.push('\n');
             }
-            if !blank_line.is_empty() {
-                self.output.push_str(&blank_line);
-            }
-            self.output.push('\n');
-        } else {
-            self.ensure_contextual_blank_line();
         }
 
         self.push_indent_for_line_start();
@@ -918,8 +962,6 @@ impl<'a> EventRenderer<'a> {
         let bottom_line = self.render_callout_pretty_bottom_border(inner_box_width);
         self.output.push_str(&bottom_line);
         self.output.push('\n');
-
-        self.ensure_contextual_blank_line();
 
         true
     }

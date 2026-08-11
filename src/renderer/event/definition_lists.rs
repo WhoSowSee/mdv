@@ -1,4 +1,5 @@
 use super::{EventRenderer, ThemeElement, create_style};
+use crate::block_spacing::BlockElement;
 
 struct ActiveDefinitionDescription {
     output_start: usize,
@@ -21,7 +22,11 @@ impl EventRenderer<'_> {
     }
 
     pub(super) fn handle_definition_list_start(&mut self) {
-        self.ensure_contextual_blank_line();
+        let spacing = self
+            .config
+            .block_spacing
+            .spacing(BlockElement::DefinitionList);
+        self.ensure_contextual_blank_lines(spacing.top);
         self.definition_list_stack
             .push(DefinitionListState::default());
     }
@@ -119,7 +124,11 @@ impl EventRenderer<'_> {
             .pop()
             .is_some_and(|state| state.has_term);
         if had_terms {
-            self.ensure_contextual_blank_line();
+            let spacing = self
+                .config
+                .block_spacing
+                .spacing(BlockElement::DefinitionList);
+            self.ensure_contextual_blank_lines(spacing.bottom);
         }
     }
 }

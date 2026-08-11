@@ -342,6 +342,10 @@ impl<'a> EventRenderer<'a> {
         })
     }
 
+    pub(super) fn is_callout_marker_text(text: &str) -> bool {
+        Self::parse_callout_marker(text).is_some()
+    }
+
     fn evaluate_callout_buffer(buffer: &str) -> CalloutBufferEval {
         let trimmed = buffer.trim_start();
         if !trimmed.starts_with('[') {

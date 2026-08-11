@@ -2,6 +2,7 @@ use super::{
     EventRenderer, LinkStyle, LinkTruncationStyle, Result, TableInlineUrlTarget, TableRenderer,
     TableState,
 };
+use crate::block_spacing::BlockElement;
 use crate::utils::{display_width, strip_ansi};
 use pulldown_cmark::Alignment;
 
@@ -131,11 +132,12 @@ impl<'a> EventRenderer<'a> {
         rendered_table = Self::indent_table_block(rendered_table, table_indent);
         rendered_table = Self::prefix_table_block(rendered_table, &line_prefix);
 
-        self.ensure_contextual_blank_line();
+        let spacing = self.config.block_spacing.spacing(BlockElement::Table);
+        self.ensure_contextual_blank_lines(spacing.top);
 
         self.output.push_str(&rendered_table);
         self.output.push('\n');
-        self.ensure_contextual_blank_line();
+        self.ensure_contextual_blank_lines(spacing.bottom);
         self.commit_pending_heading_placeholder_if_content();
 
         Ok(table_indent)

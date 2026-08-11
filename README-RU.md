@@ -156,6 +156,7 @@ cat <FILE> | mdv
 - `-k, --show-heading-markers` — добавляет перед заголовками markdown-маркеры, соответствующие их уровню.
 - `-I, --smart-indent` — сглаживание скачков отступов между уровнями заголовков в режиме `level`.
 - `-K, --code-wrap-indent <none|base|double>` — управляет «висячим» отступом при переносе строк внутри блоков кода (по умолчанию `double`).
+- `--block-spacing <спецификация>` — переопределяет количество пустых строк сверху и снизу для отдельных блоков. Неуказанные стороны сохраняют стандартные значения, а отступы соседних блоков схлопываются до большего значения.
 
 ### Видимость элементов
 
@@ -200,6 +201,7 @@ table_wrap: "fit"
 pretty_table: false
 heading_layout: "level"
 smart_indent: false
+block_spacing: null
 code_wrap_indent: "double"
 link_style: "clickable"
 link_truncation: "wrap"

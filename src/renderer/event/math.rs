@@ -1,5 +1,6 @@
 use super::code::CodeBlockRenderInput;
 use super::{CodeBlockStyle, CowStr, EventRenderer, Result, ThemeElement, WrapMode, create_style};
+use crate::block_spacing::BlockElement;
 use crate::math::{MathMode, render_math};
 
 impl<'a> EventRenderer<'a> {
@@ -172,7 +173,8 @@ impl<'a> EventRenderer<'a> {
             &rendered,
         );
 
-        self.ensure_contextual_blank_line();
+        let spacing = self.config.block_spacing.spacing(BlockElement::DisplayMath);
+        self.ensure_contextual_blank_lines(spacing.top);
 
         match self.config.code_block_style.style {
             CodeBlockStyle::Basic => {
@@ -186,7 +188,7 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        self.ensure_contextual_blank_line();
+        self.ensure_contextual_blank_lines(spacing.bottom);
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
     }

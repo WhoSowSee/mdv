@@ -3,6 +3,7 @@ use super::{
     CapturedReferenceBlock, Event, EventRenderer, FootnoteStyle, MissingFootnoteStyle,
     PRETTY_ACCENT_COLOR, Result, Tag, TagEnd, ThemeElement, create_style, wrap_text_with_mode,
 };
+use crate::block_spacing::BlockElement;
 use crate::terminal::AnsiStyle;
 use regex::Regex;
 use std::collections::HashSet;
@@ -176,15 +177,12 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        // Ensure exactly one blank line before the footnote block, without piling up
-        // extra spacing left by preceding elements.
-        self.trim_trailing_blank_lines();
-        if !self.output.is_empty() {
-            if !self.output.ends_with('\n') {
-                self.output.push('\n');
-            }
-            self.output.push('\n');
-        }
+        let spacing_element = match self.config.footnote_style {
+            FootnoteStyle::Attached => BlockElement::AttachedFootnotes,
+            FootnoteStyle::Endnotes => BlockElement::Endnotes,
+        };
+        let spacing = self.config.block_spacing.spacing(spacing_element);
+        self.ensure_contextual_blank_lines(spacing.top);
 
         for (line_idx, line) in block_lines.iter().enumerate() {
             if line_idx > 0 {
@@ -196,11 +194,10 @@ impl<'a> EventRenderer<'a> {
         }
 
         if add_trailing_newline {
-            self.trim_trailing_blank_lines();
             if !self.output.ends_with('\n') {
                 self.output.push('\n');
             }
-            self.output.push('\n');
+            self.ensure_contextual_blank_lines(spacing.bottom);
         }
 
         self.commit_pending_heading_placeholder_if_content();
