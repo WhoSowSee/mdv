@@ -15,18 +15,32 @@ permissions:
 jobs:
   linux:
     name: Linux target ${{ matrix.target }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - aarch64-unknown-linux-gnu
-          - aarch64-unknown-linux-musl
-          - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - i686-unknown-linux-gnu
-          - riscv64gc-unknown-linux-gnu
-          - sparc64-unknown-linux-gnu
+        include:
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+            builder: cargo
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-latest
+            builder: cross
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cargo
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            builder: cross
+          - target: i686-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cross
+          - target: riscv64gc-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cross
+          - target: sparc64-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cross
 
     steps:
       - name: Checkout sources
@@ -40,17 +54,22 @@ jobs:
       - name: Cache cargo build artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          cache-targets: false
-          save-if: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
-
-      - name: Clean target before cross build
-        run: rm -rf target
+          key: ${{ matrix.target }}
 
       - name: Install cross
-        run: cargo install cross --git https://github.com/cross-rs/cross --locked
+        if: matrix.builder == 'cross'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross@0.2.5
+          fallback: none
 
-      - name: Build release binary
-        run: cross build --release --target ${{ matrix.target }}
+      - name: Build native release binary
+        if: matrix.builder == 'cargo'
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Build cross-compiled release binary
+        if: matrix.builder == 'cross'
+        run: cross build --release --locked --target ${{ matrix.target }}
 
       - name: Ensure artifacts directory
         run: mkdir -p artifacts
@@ -66,7 +85,10 @@ jobs:
 
       - name: Install cargo-deb
         if: contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')
-        run: cargo install cargo-deb --locked
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deb
+          fallback: none
 
       - name: Build deb package
         if: contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')
@@ -77,6 +99,7 @@ jobs:
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
+          compression-level: 0
 
   macos:
     name: macOS target ${{ matrix.target }}
@@ -100,9 +123,11 @@ jobs:
 
       - name: Cache cargo build artifacts
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Package zip
         run: |
@@ -119,6 +144,7 @@ jobs:
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
+          compression-level: 0
 
   windows:
     name: Windows target ${{ matrix.target }}
@@ -142,9 +168,11 @@ jobs:
 
       - name: Cache cargo build artifacts
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Package zip
         shell: pwsh
@@ -161,6 +189,7 @@ jobs:
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
+          compression-level: 0
 
   snap:
     name: Snap package ${{ matrix.arch }}
@@ -201,6 +230,7 @@ jobs:
         with:
           name: mdv-snap-${{ matrix.arch }}
           path: artifacts/*
+          compression-level: 0
 
   nix:
     name: Nix package

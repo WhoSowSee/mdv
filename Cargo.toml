@@ -2,6 +2,7 @@
 name = "mdv"
 version = "4.2.1"
 edition = "2024"
+autotests = false
 authors = ["WhoSowSee"]
 description = "Terminal Markdown Viewer"
 license = "MIT"
@@ -19,14 +20,33 @@ exclude = [
 [[bin]]
 name = "mdv"
 path = "src/main.rs"
+test = false
+bench = false
+
+[lib]
+doctest = false
+bench = false
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive", "color"] }
-pulldown-cmark = { version = "0.13.0", features = ["simd"] }
+pulldown-cmark = { version = "0.13.0", default-features = false, features = ["html", "simd"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
-syntect = "5.3.0"
-crossterm = "0.29.0"
+syntect = { version = "5.3.0", default-features = false, features = [
+    "default-syntaxes",
+    "default-themes",
+    "regex-onig",
+    "yaml-load",
+] }
+crossterm = { version = "0.29.0", default-features = false, features = [
+    "bracketed-paste",
+    "events",
+    "windows",
+] }
 jiff = "0.2"
 anyhow = "1.0.100"
 thiserror = "2.0.17"
@@ -36,10 +56,10 @@ notify = "8.2.0"
 unicode-width = "0.2.2"
 log = "0.4.28"
 env_logger = "0.11.8"
-comfy-table = { version = "7.2.1", features = ["custom_styling"] }
+comfy-table = { version = "7.2.1", default-features = false, features = ["custom_styling"] }
 minus = { version = "5.7.2", features = ["dynamic_output", "search"] }
 arboard = { version = "3.6.1", default-features = false }
-scraper = "0.27.0"
+scraper = { version = "0.27.0", default-features = false }
 ego-tree = "0.11.0"
 ignore = "0.4"
 fuzzy-matcher = "0.3"
@@ -55,13 +75,31 @@ libc = "0.2"
 [dev-dependencies]
 tempfile = "3.23.0"
 assert_cmd = "2.0.17"
-predicates = "3.1.3"
+predicates = { version = "3.1.3", default-features = false }
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.test]
+debug = "line-tables-only"
+
+[profile.test.package."*"]
+debug = false
 
 [profile.release]
-lto = true
-codegen-units = 1
+lto = "thin"
+codegen-units = 16
 panic = "abort"
 strip = true
+
+[profile.dev-opt]
+inherits = "release"
+codegen-units = 256
+incremental = true
+lto = false
 
 [patch.crates-io]
 minus = { path = "vendor/minus" }
