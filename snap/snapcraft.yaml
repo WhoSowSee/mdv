@@ -1,5 +1,5 @@
 name: mdv
-base: core22
+base: core24
 version: git
 summary: Fast, themeable Markdown viewer for the terminal
 description: |

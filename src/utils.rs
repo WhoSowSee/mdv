@@ -1,13 +1,7 @@
-use regex::Regex;
+use regex::regex;
 use std::iter::Peekable;
 use std::str::Chars;
-use std::sync::LazyLock;
 use unicode_width::UnicodeWidthStr;
-
-static SGR_SEQUENCE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\x1b\[[0-9;]*m").expect("valid SGR regex"));
-static OSC8_SEQUENCE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\x1b\]8;;[^\x1b]*\x1b\\").expect("valid OSC 8 regex"));
 
 /// Calculate the display width of a string, accounting for Unicode characters
 pub fn display_width(s: &str) -> usize {
@@ -20,8 +14,10 @@ pub fn strip_ansi(s: &str) -> String {
         return s.to_string();
     }
 
-    let without_ansi = SGR_SEQUENCE.replace_all(s, "");
-    OSC8_SEQUENCE.replace_all(&without_ansi, "").to_string()
+    let without_ansi = regex!(r"\x1b\[[0-9;]*m").replace_all(s, "");
+    regex!(r"\x1b\]8;;[^\x1b]*\x1b\\")
+        .replace_all(&without_ansi, "")
+        .to_string()
 }
 
 /// Text wrapping mode

@@ -2,16 +2,18 @@ use crate::theme::{Color as ThemeColor, Theme, ThemeElement, create_style};
 use crate::utils::{display_width, strip_ansi};
 use anyhow::Result;
 use comfy_table::{
-    Attribute, Cell, CellAlignment, Color, ContentArrangement, Table,
-    TableComponent::{HeaderLines, MiddleHeaderIntersections, VerticalLines},
-    modifiers::UTF8_ROUND_CORNERS,
-    presets::{NOTHING, UTF8_FULL},
+    Attribute, Cell, CellAlignment, Color, ContentArrangement, ContentLineStyle, LineStyle, Table,
+    TableStyle, presets::UTF8_FULL,
 };
 use pulldown_cmark::Alignment;
 
 use crate::cli::TableWrapMode;
 
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
+const COMPACT_TABLE_STYLE: TableStyle = TableStyle::new()
+    .header_lines(ContentLineStyle::none().junction('│'))
+    .header_separator(LineStyle::none().fill('─').junction('┼'))
+    .content_lines(ContentLineStyle::none().junction('│'));
 type TableBlock = (Vec<String>, Vec<Vec<String>>, Vec<Alignment>);
 
 /// Table renderer using comfy-table for proper Unicode handling
@@ -46,15 +48,9 @@ impl TableRenderer {
 
     fn configure_table(&self, table: &mut Table) {
         if self.pretty_table {
-            table
-                .load_preset(UTF8_FULL)
-                .apply_modifier(UTF8_ROUND_CORNERS);
+            table.load_style(UTF8_FULL.with_rounded_corners());
         } else {
-            table
-                .load_preset(NOTHING)
-                .set_style(HeaderLines, '─')
-                .set_style(MiddleHeaderIntersections, '┼')
-                .set_style(VerticalLines, '│');
+            table.load_style(COMPACT_TABLE_STYLE);
         }
         table.set_content_arrangement(ContentArrangement::Dynamic);
     }

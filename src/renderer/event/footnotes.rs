@@ -5,9 +5,8 @@ use super::{
 };
 use crate::block_spacing::BlockElement;
 use crate::terminal::AnsiStyle;
-use regex::Regex;
+use regex::regex;
 use std::collections::HashSet;
-use std::sync::LazyLock;
 
 const MISSING_FOOTNOTE_PLACEHOLDER: &str = "Missing footnote definition";
 const INVALID_FOOTNOTE_SYNTAX_MESSAGE: &str = "Invalid footnote syntax";
@@ -393,10 +392,9 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn register_footnotes_in_text(&mut self, text: &str) {
-        static REGEX: LazyLock<Regex> =
-            LazyLock::new(|| Regex::new(r"\[\^([^\]\s][^\]]*)\]").unwrap());
+        let regex = regex!(r"\[\^([^\]\s][^\]]*)\]");
 
-        for capture in REGEX.captures_iter(text) {
+        for capture in regex.captures_iter(text) {
             if let Some(name) = capture.get(1) {
                 self.register_footnote_reference(name.as_str());
             }
@@ -597,20 +595,16 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn parse_placeholder_footnote_line(line: &str) -> Option<(String, FootnoteDefinitionKind)> {
-        static BARE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-            Regex::new(r"^\[\^([^\]\s][^\]]*)\]\s*$").expect("valid bare footnote regex")
-        });
-        static EMPTY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-            Regex::new(r"^\[\^([^\]\s][^\]]*)\]:\s*$").expect("valid empty footnote regex")
-        });
+        let bare_regex = regex!(r"^\[\^([^\]\s][^\]]*)\]\s*$");
+        let empty_regex = regex!(r"^\[\^([^\]\s][^\]]*)\]:\s*$");
 
-        if let Some(caps) = EMPTY_REGEX.captures(line) {
+        if let Some(caps) = empty_regex.captures(line) {
             return caps
                 .get(1)
                 .map(|name| (name.as_str().to_string(), FootnoteDefinitionKind::EmptyBody));
         }
 
-        if let Some(caps) = BARE_REGEX.captures(line) {
+        if let Some(caps) = bare_regex.captures(line) {
             return caps.get(1).map(|name| {
                 (
                     name.as_str().to_string(),

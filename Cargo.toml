@@ -32,9 +32,9 @@ name = "integration"
 path = "tests/integration.rs"
 
 [dependencies]
-clap = { version = "4.5.49", features = ["derive", "color"] }
-pulldown-cmark = { version = "0.13.0", default-features = false, features = ["html", "simd"] }
-serde = { version = "1.0.228", features = ["derive"] }
+clap = { version = "4.6.6", features = ["derive", "color"] }
+pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html", "simd"] }
+serde = { version = "1.0.229", features = ["derive"] }
 serde_yaml = "0.9.34"
 syntect = { version = "5.3.0", default-features = false, features = [
     "default-syntaxes",
@@ -47,35 +47,35 @@ crossterm = { version = "0.29.0", default-features = false, features = [
     "events",
     "windows",
 ] }
-jiff = "0.2"
-anyhow = "1.0.100"
-thiserror = "2.0.17"
-regex = "1.12.2"
+jiff = "0.2.35"
+anyhow = "1.0.104"
+thiserror = "2.0.20"
+regex = "1.13.1"
 dirs = "6.0.0"
 notify = "8.2.0"
 unicode-width = "0.2.2"
-log = "0.4.28"
-env_logger = "0.11.8"
-comfy-table = { version = "7.2.1", default-features = false, features = ["custom_styling"] }
+log = "0.4.33"
+env_logger = "0.11.11"
+comfy-table = { version = "8.0.0", default-features = false, features = ["custom_styling"] }
 minus = { version = "5.7.2", features = ["dynamic_output", "search"] }
 arboard = { version = "3.6.1", default-features = false }
 scraper = { version = "0.27.0", default-features = false }
 ego-tree = "0.11.0"
-ignore = "0.4"
-fuzzy-matcher = "0.3"
-unicode-normalization = "0.1"
+ignore = "0.4.33"
+fuzzy-matcher = "0.3.7"
+unicode-normalization = "0.1.25"
 
 [target.'cfg(windows)'.dependencies]
 winsplit = "0.1.0"
 
 [target.'cfg(not(windows))'.dependencies]
 shell-words = "1.1.1"
-libc = "0.2"
+libc = "0.2.189"
 
 [dev-dependencies]
-tempfile = "3.23.0"
-assert_cmd = "2.0.17"
-predicates = { version = "3.1.3", default-features = false }
+tempfile = "3.27.0"
+assert_cmd = "2.2.2"
+predicates = { version = "3.1.4", default-features = false }
 
 [profile.dev]
 debug = "line-tables-only"
