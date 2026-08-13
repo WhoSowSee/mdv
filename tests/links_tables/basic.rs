@@ -1,4 +1,39 @@
 use super::*;
+use mdv::utils::{display_width, strip_ansi};
+
+fn render_link_wrapping_case(
+    markdown: &str,
+    width: &str,
+    wrap_mode: &str,
+    link_style: &str,
+) -> String {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, markdown).unwrap();
+
+    let mut cmd = mdv_cmd();
+    let output = cmd
+        .env("MDV_NO_COLOR", "false")
+        .args([
+            "--no-config",
+            "--cols",
+            width,
+            "--wrap",
+            wrap_mode,
+            "--link-style",
+            link_style,
+        ])
+        .arg(temp_file.path())
+        .output()
+        .expect("render link wrapping case");
+
+    assert!(
+        output.status.success(),
+        "mdv execution failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    String::from_utf8(output.stdout).expect("stdout is valid utf-8")
+}
 
 fn render_basic_table(configure: impl FnOnce(&mut Command)) -> String {
     let temp_file = NamedTempFile::new().unwrap();
@@ -159,6 +194,63 @@ fn test_link_styles() {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Link Test"));
+}
+
+#[test]
+fn test_clickable_link_text_wraps_with_surrounding_paragraph() {
+    const LINKED_MARKDOWN: &str = concat!(
+        "# Простой тест ссылок\n\n",
+        "Короткая [ссылка](https://example.com) Длинная ссылка ",
+        "[ссылка которая занимает почти всю строку]",
+        "(https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams) sd",
+    );
+    const PLAIN_MARKDOWN: &str = concat!(
+        "# Простой тест ссылок\n\n",
+        "Короткая ссылка Длинная ссылка ссылка которая занимает почти всю строку sd",
+    );
+
+    for width in ["10", "29", "30", "31", "80"] {
+        for wrap_mode in ["char", "word"] {
+            let plain_stdout =
+                render_link_wrapping_case(PLAIN_MARKDOWN, width, wrap_mode, "clickable");
+            let plain = strip_ansi(&plain_stdout);
+
+            for link_style in ["clickable", "fclickable"] {
+                let stdout =
+                    render_link_wrapping_case(LINKED_MARKDOWN, width, wrap_mode, link_style);
+                let clean = strip_ansi(&stdout);
+                let paragraph_lines = clean
+                    .lines()
+                    .skip_while(|line| !line.trim().is_empty())
+                    .skip_while(|line| line.trim().is_empty())
+                    .filter(|line| !line.trim().is_empty())
+                    .collect::<Vec<_>>();
+                let width = width.parse::<usize>().unwrap();
+
+                assert_eq!(clean, plain, "{width}/{wrap_mode}/{link_style}: {stdout:?}");
+                assert!(
+                    paragraph_lines
+                        .iter()
+                        .all(|line| display_width(line) <= width),
+                    "{wrap_mode}/{link_style} exceeded {width} columns: {paragraph_lines:?}"
+                );
+                if width == 30 {
+                    assert!(
+                        paragraph_lines.iter().all(|line| line.trim() != "а"),
+                        "{wrap_mode}/{link_style} left a dangling word fragment: {paragraph_lines:?}"
+                    );
+                }
+
+                for line in stdout.lines() {
+                    assert_eq!(
+                        line.matches("\x1b]8;;https://").count(),
+                        line.matches("\x1b]8;;\x1b\\").count(),
+                        "OSC 8 hyperlink spans a visual line in {width}/{wrap_mode}/{link_style}: {line:?}"
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[test]

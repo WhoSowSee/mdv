@@ -150,10 +150,11 @@ impl<'a> EventRenderer<'a> {
         }
 
         match self.config.link_style {
-            LinkStyle::Clickable => {
+            LinkStyle::Clickable | LinkStyle::ClickableForced => {
                 let link_text = self.current_link_text.clone();
                 let current_link_key = format!("current_{}", self.link_counter);
                 let link_url = self.link_references.get(&current_link_key).cloned();
+                let force_underline = matches!(self.config.link_style, LinkStyle::ClickableForced);
 
                 if let Some(ref mut table) = self.table_state {
                     push_clickable_table_link(
@@ -162,112 +163,8 @@ impl<'a> EventRenderer<'a> {
                         link_url.as_deref(),
                         self.config.no_colors,
                     );
-                } else {
-                    // For non-table content, use clickable links as before
-                    if let Some(url) = link_url.as_deref() {
-                        // Apply formatting to the link text
-                        let formatted_text = self.apply_formatting(&link_text);
-
-                        // Create the complete clickable link
-                        let final_link = if !self.config.no_colors {
-                            format!("\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\", url, formatted_text)
-                        } else {
-                            // If colors are disabled, just show the text without hyperlink
-                            formatted_text
-                        };
-
-                        // Process the complete link as a single unit to avoid unwanted line breaks
-                        // Check if we need to wrap text
-                        let should_wrap = self.config.is_text_wrapping_enabled();
-
-                        if should_wrap {
-                            // Check if current line is getting too long (without ANSI codes)
-                            let current_line_clean =
-                                if let Some(last_newline) = self.output.rfind('\n') {
-                                    crate::utils::strip_ansi(&self.output[last_newline + 1..])
-                                } else {
-                                    crate::utils::strip_ansi(&self.output)
-                                };
-
-                            let terminal_width = self.effective_text_width();
-                            let current_line_width =
-                                crate::utils::display_width(&current_line_clean);
-                            let link_width = crate::utils::display_width(&link_text);
-                            let would_exceed = current_line_width + link_width > terminal_width;
-
-                            // If the complete link would exceed the line width, add a line break before it
-                            if would_exceed
-                                && current_line_width > 0
-                                && !current_line_clean.trim().is_empty()
-                            {
-                                self.output.push('\n');
-                            }
-                        }
-
-                        self.output.push_str(&final_link);
-                    }
-                }
-                self.in_link = false;
-                self.current_link_text.clear();
-            }
-            LinkStyle::ClickableForced => {
-                let link_text = self.current_link_text.clone();
-                let formatted_text = self.apply_formatting(&link_text);
-                let current_link_key = format!("current_{}", self.link_counter);
-                let link_url = self.link_references.get(&current_link_key).cloned();
-
-                if let Some(ref mut table) = self.table_state {
-                    push_clickable_table_link(
-                        table,
-                        &link_text,
-                        link_url.as_deref(),
-                        self.config.no_colors,
-                    );
-                } else {
-                    // For non-table content, use clickable forced links as before
-                    if let Some(url) = link_url.as_deref() {
-                        let final_link = if !self.config.no_colors {
-                            // Wrap the entire OSC 8 construct in underline codes
-                            format!(
-                                "\x1b[4m\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\\x1b[0m",
-                                url,
-                                formatted_text // formatted_text already contains bold/italic
-                            )
-                        } else {
-                            // If colors (and styles) are disabled, just output the text
-                            formatted_text
-                        };
-
-                        // Process the complete link as a single unit to avoid unwanted line breaks
-                        // Check if we need to wrap text
-                        let should_wrap = self.config.is_text_wrapping_enabled();
-
-                        if should_wrap {
-                            // Check if current line is getting too long (without ANSI codes)
-                            let current_line_clean =
-                                if let Some(last_newline) = self.output.rfind('\n') {
-                                    crate::utils::strip_ansi(&self.output[last_newline + 1..])
-                                } else {
-                                    crate::utils::strip_ansi(&self.output)
-                                };
-
-                            let terminal_width = self.effective_text_width();
-                            let current_line_width =
-                                crate::utils::display_width(&current_line_clean);
-                            let link_width = crate::utils::display_width(&link_text);
-                            let would_exceed = current_line_width + link_width > terminal_width;
-
-                            // If the complete link would exceed the line width, add a line break before it
-                            if would_exceed
-                                && current_line_width > 0
-                                && !current_line_clean.trim().is_empty()
-                            {
-                                self.output.push('\n');
-                            }
-                        }
-
-                        self.output.push_str(&final_link);
-                    }
+                } else if let Some(url) = link_url.as_deref() {
+                    self.process_clickable_text_with_wrapping(&link_text, url, force_underline)?;
                 }
                 self.in_link = false;
                 self.current_link_text.clear();
@@ -1108,6 +1005,24 @@ impl<'a> EventRenderer<'a> {
 
         // Add ellipsis
         format!("{}{}", truncated, ellipsis)
+    }
+
+    fn process_clickable_text_with_wrapping(
+        &mut self,
+        text: &str,
+        url: &str,
+        force_underline: bool,
+    ) -> Result<()> {
+        self.process_wrapped_inline_fragments(text, |renderer, fragment| {
+            let formatted = renderer.apply_formatting(fragment);
+            let clickable = renderer.make_clickable_link(&formatted, url);
+
+            if force_underline && !renderer.config.no_colors {
+                format!("\x1b[4m{}\x1b[0m", clickable)
+            } else {
+                clickable
+            }
+        })
     }
 
     /// Make a text line clickable by wrapping it in terminal hyperlink escape sequences

@@ -752,28 +752,38 @@ impl<'a> EventRenderer<'a> {
         total_indent
     }
 
-    /// Process text with underline formatting applied to continuous fragments between line breaks
-    pub(super) fn process_underlined_text_with_wrapping(&mut self, text: &str) -> Result<()> {
+    fn push_wrapped_inline_fragment<F>(&mut self, fragment: &str, render_fragment: &mut F)
+    where
+        F: FnMut(&Self, &str) -> String,
+    {
+        let content = fragment.trim_end();
+        let trailing_whitespace = &fragment[content.len()..];
+
+        if !content.is_empty() {
+            let rendered = render_fragment(self, content);
+            self.output.push_str(&rendered);
+        }
+        self.output.push_str(trailing_whitespace);
+    }
+
+    pub(super) fn process_wrapped_inline_fragments<F>(
+        &mut self,
+        text: &str,
+        mut render_fragment: F,
+    ) -> Result<()>
+    where
+        F: FnMut(&Self, &str) -> String,
+    {
         let should_wrap = self.config.is_text_wrapping_enabled();
 
         if !should_wrap {
-            // No wrapping - just apply underline to entire text
-            let formatted_text = if !self.config.no_colors {
-                format!("\x1b[4m{}\x1b[0m", text)
-            } else {
-                text.to_string()
-            };
-            self.output.push_str(&formatted_text);
+            let rendered = render_fragment(self, text);
+            self.output.push_str(&rendered);
             return Ok(());
         }
 
-        let terminal_width = self.effective_text_width();
-        let effective_width = terminal_width;
-
-        // Determine wrap mode based on config
+        let effective_width = self.effective_text_width();
         let wrap_mode = self.config.text_wrap_mode();
-
-        // Split text into wrappable units (words or characters)
         let units = match wrap_mode {
             crate::utils::WrapMode::Word => self
                 .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
@@ -781,10 +791,7 @@ impl<'a> EventRenderer<'a> {
             crate::utils::WrapMode::None => vec![text.to_string()],
         };
 
-        // Process units in groups - each group becomes one continuous underlined fragment
         let mut current_fragment = String::new();
-
-        // Get initial line width
         let initial_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
             crate::utils::strip_ansi(&self.output[last_newline + 1..])
         } else {
@@ -792,15 +799,9 @@ impl<'a> EventRenderer<'a> {
         };
         let mut fragment_start_line_width = crate::utils::display_width(&initial_line_clean);
 
-        // If there's no space left on the current line, move to a new one before adding any underlined text
-        // If only 0 or 1 cells remain, start on a fresh line to avoid placing
-        // a single dangling character at the line edge (which looks like overflow).
         if effective_width.saturating_sub(fragment_start_line_width) <= 1 && !text.trim().is_empty()
         {
             self.push_newline_with_context();
-
-            // Account for full visual prefix on the new line (heading indent, list content
-            // indent, blockquote pipes, etc.)
             fragment_start_line_width = self.compute_line_start_context_width();
         }
 
@@ -811,83 +812,54 @@ impl<'a> EventRenderer<'a> {
             let would_exceed =
                 fragment_start_line_width + current_fragment_width + unit_width > effective_width;
 
-            // Special handling for whitespace: never allow trailing spaces to cause overflow
             if is_ws && i > 0 {
                 if would_exceed && !current_fragment.trim().is_empty() {
-                    // Flush current fragment and break line; drop the whitespace (no leading spaces)
-                    let fragment_to_format = current_fragment.trim_end();
-                    let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-
-                    let formatted_fragment = if !self.config.no_colors {
-                        format!("\x1b[4m{}\x1b[0m{}", fragment_to_format, trailing_spaces)
-                    } else {
-                        current_fragment.clone()
-                    };
-                    self.output.push_str(&formatted_fragment);
-
-                    // Start new visual line with proper indent/prefix
+                    self.push_wrapped_inline_fragment(&current_fragment, &mut render_fragment);
                     self.push_newline_with_context();
-
                     fragment_start_line_width = self.compute_line_start_context_width();
-
                     current_fragment.clear();
-                    continue; // Skip adding whitespace at the start of the new line
+                    continue;
                 } else {
-                    // Safe to keep whitespace in the fragment
                     current_fragment.push_str(unit);
                     continue;
                 }
             }
 
             if would_exceed && !current_fragment.trim().is_empty() {
-                // We need to break - output current fragment first
-                // Remove trailing spaces before applying underline to avoid underlined spaces at line end
-                let fragment_to_format = current_fragment.trim_end();
-                let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-
-                let formatted_fragment = if !self.config.no_colors {
-                    format!("\x1b[4m{}\x1b[0m{}", fragment_to_format, trailing_spaces)
-                } else {
-                    current_fragment.clone()
-                };
-                self.output.push_str(&formatted_fragment);
+                self.push_wrapped_inline_fragment(&current_fragment, &mut render_fragment);
 
                 if wrap_mode != crate::utils::WrapMode::None {
                     self.push_newline_with_context();
                     fragment_start_line_width = self.compute_line_start_context_width();
                 }
 
-                // Start new fragment with current unit
                 current_fragment = unit.clone();
             } else {
                 if would_exceed {
-                    // Nothing in fragment yet but even this unit would exceed the line.
-                    // Break the line first, then start with this unit.
                     self.push_newline_with_context();
-
                     fragment_start_line_width = self.compute_line_start_context_width();
                 }
 
-                // Add unit to current fragment
                 current_fragment.push_str(unit);
             }
         }
 
-        // Output remaining fragment if any
         if !current_fragment.is_empty() {
-            // Remove trailing spaces before applying underline to avoid underlined spaces at line end
-            let fragment_to_format = current_fragment.trim_end();
-            let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-
-            let formatted_fragment = if !self.config.no_colors {
-                format!("\x1b[4m{}\x1b[0m{}", fragment_to_format, trailing_spaces)
-            } else {
-                current_fragment
-            };
-            self.output.push_str(&formatted_fragment);
+            self.push_wrapped_inline_fragment(&current_fragment, &mut render_fragment);
         }
 
         Ok(())
+    }
+
+    /// Process text with underline formatting applied to continuous fragments between line breaks
+    pub(super) fn process_underlined_text_with_wrapping(&mut self, text: &str) -> Result<()> {
+        self.process_wrapped_inline_fragments(text, |renderer, fragment| {
+            if renderer.config.no_colors {
+                fragment.to_string()
+            } else {
+                format!("\x1b[4m{}\x1b[0m", fragment)
+            }
+        })
     }
 
     /// Process text with strikethrough formatting applied as a continuous run (includes spaces)

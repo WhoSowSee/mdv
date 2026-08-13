@@ -115,7 +115,7 @@ pub fn strip_ansi(line: &str) -> Cow<'_, str> {
     Cow::Owned(visible)
 }
 
-fn ansi_sequence_end(bytes: &[u8], start: usize) -> Option<(usize, bool)> {
+pub fn ansi_sequence_end(bytes: &[u8], start: usize) -> Option<(usize, bool)> {
     if bytes.get(start) != Some(&b'\x1b') {
         return None;
     }

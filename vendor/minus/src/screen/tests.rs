@@ -190,3 +190,58 @@ third line\n",
         assert_eq!(3, append_style.num_unterminated);
     }
 }
+
+mod wrapping {
+    use super::super::format_line;
+    use crate::LineNumbers;
+    use crate::selection::strip_ansi;
+
+    #[test]
+    fn osc8_hyperlink_does_not_change_wrap_position() {
+        let plain = "Короткая ссылка Длинная ссылка ссылка которая занимает почти всю строку sd";
+        let linked = concat!(
+            "Короткая \x1b]8;;https://example.com\x1b\\ссылка\x1b]8;;\x1b\\ ",
+            "Длинная ссылка ",
+            "\x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
+            "ссылка которая занимает почти всю строку",
+            "\x1b]8;;\x1b\\ sd"
+        );
+
+        for width in [10, 29, 30, 31, 80] {
+            let plain_rows = format_line(plain, 1, 0, LineNumbers::Disabled, width, true)
+                .map(|row| row.raw_row().to_string())
+                .collect::<Vec<_>>();
+            let linked_rows = format_line(linked, 1, 0, LineNumbers::Disabled, width, true)
+                .map(|row| strip_ansi(row.raw_row()).into_owned())
+                .collect::<Vec<_>>();
+
+            assert_eq!(
+                linked_rows, plain_rows,
+                "mismatched wrap at {width} columns"
+            );
+        }
+
+        let narrow_lines = [
+            concat!(
+                " Короткая \x1b]8;;https://example.com\x1b\\ссылка\x1b]8;;\x1b\\ ",
+                "Длинная ссылк"
+            ),
+            concat!(
+                " а \x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
+                "ссылка которая занимает поч\x1b]8;;\x1b\\"
+            ),
+            concat!(
+                " \x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
+                "ти всю строку\x1b]8;;\x1b\\ sd"
+            ),
+        ];
+
+        for line in narrow_lines {
+            let rows = format_line(line, 1, 0, LineNumbers::Disabled, 30, true)
+                .map(|row| row.raw_row().to_string())
+                .collect::<Vec<_>>();
+
+            assert_eq!(rows, vec![line.to_string()]);
+        }
+    }
+}

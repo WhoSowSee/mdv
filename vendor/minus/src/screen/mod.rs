@@ -4,6 +4,7 @@
 use crate::{
     LineNumbers,
     minus_core::{self, utils::LinesRowMap},
+    selection::ansi_sequence_end,
 };
 #[cfg(feature = "search")]
 use regex::Regex;
@@ -430,7 +431,15 @@ pub(crate) fn format_line(
         } else {
             cols
         };
-        textwrap::wrap(line, cols_avail)
+        let options = textwrap::Options::new(cols_avail);
+        let options = if line.as_bytes().contains(&b'\x1b') {
+            options.word_splitter(textwrap::WordSplitter::Custom(
+                ansi_aware_hyphen_split_points,
+            ))
+        } else {
+            options
+        };
+        textwrap::wrap(line, options)
     } else {
         vec![Cow::from(line)]
     }
@@ -447,6 +456,44 @@ pub(crate) fn format_line(
         },
         padding,
     })
+}
+
+fn ansi_aware_hyphen_split_points(word: &str) -> Vec<usize> {
+    let mut split_points = Vec::new();
+    let mut cursor = 0;
+    let Some((_, mut previous)) = next_visible_char(word, &mut cursor) else {
+        return split_points;
+    };
+    let Some((mut current_index, mut current)) = next_visible_char(word, &mut cursor) else {
+        return split_points;
+    };
+
+    while let Some((next_index, next)) = next_visible_char(word, &mut cursor) {
+        if current == '-' && previous.is_alphanumeric() && next.is_alphanumeric() {
+            split_points.push(current_index + current.len_utf8());
+        }
+        previous = current;
+        current_index = next_index;
+        current = next;
+    }
+
+    split_points
+}
+
+fn next_visible_char(text: &str, cursor: &mut usize) -> Option<(usize, char)> {
+    let bytes = text.as_bytes();
+    while *cursor < bytes.len() {
+        if let Some((sequence_end, _)) = ansi_sequence_end(bytes, *cursor) {
+            *cursor = sequence_end;
+            continue;
+        }
+
+        let index = *cursor;
+        let character = text[index..].chars().next().unwrap();
+        *cursor += character.len_utf8();
+        return Some((index, character));
+    }
+    None
 }
 
 #[cfg(feature = "search")]
