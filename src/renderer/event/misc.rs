@@ -36,23 +36,25 @@ impl<'a> EventRenderer<'a> {
         self.note_paragraph_content();
 
         let mut followup_prefix: Option<String> = None;
-        let line_start = self
-            .output
-            .rfind('\n')
-            .map(|idx| idx.saturating_add(1))
-            .unwrap_or(0);
-        let current_line = &self.output[line_start..];
+        if self.table_state.is_none() {
+            let line_start = self
+                .output
+                .rfind('\n')
+                .map(|idx| idx.saturating_add(1))
+                .unwrap_or(0);
+            let current_line = &self.output[line_start..];
 
-        if current_line.is_empty() {
-            let prefix = self.current_line_prefix();
-            if !prefix.is_empty() {
-                self.push_indent_for_line_start();
-                followup_prefix = Some(prefix);
-            }
-        } else {
-            let prefix = self.current_line_prefix();
-            if !prefix.is_empty() && current_line == prefix {
-                followup_prefix = Some(prefix);
+            if current_line.is_empty() {
+                let prefix = self.current_line_prefix();
+                if !prefix.is_empty() {
+                    self.push_indent_for_line_start();
+                    followup_prefix = Some(prefix);
+                }
+            } else {
+                let prefix = self.current_line_prefix();
+                if !prefix.is_empty() && current_line == prefix {
+                    followup_prefix = Some(prefix);
+                }
             }
         }
 
