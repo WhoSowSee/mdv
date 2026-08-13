@@ -12,7 +12,7 @@ fn test_inline_math_renders_unicode() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        "Inline math: $E = mc^2$ and $\\alpha + \\beta$.",
+        "Inline math: $E = mc^2$, $H_2O$, and $\\alpha + \\beta$.",
     )
     .unwrap();
 
@@ -23,6 +23,7 @@ fn test_inline_math_renders_unicode() {
     let clean = strip_ansi(&stdout);
 
     assert!(clean.contains("E = mc²"));
+    assert!(clean.contains("H₂O"));
     assert!(clean.contains("α + β"));
     assert!(!clean.contains("$E = mc^2$"));
 }

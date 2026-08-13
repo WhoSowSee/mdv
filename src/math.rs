@@ -27,7 +27,7 @@ pub fn is_math_language_hint(language_hint: &str) -> bool {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum ScriptKind {
+pub(crate) enum ScriptKind {
     Sup,
     Sub,
 }
@@ -492,7 +492,7 @@ fn split_rows(content: &str) -> Vec<String> {
         .collect()
 }
 
-fn convert_script(text: &str, kind: ScriptKind) -> String {
+pub(crate) fn convert_script(text: &str, kind: ScriptKind) -> String {
     let mut out = String::new();
     for ch in text.chars() {
         if let Some(mapped) = map_script_char(ch, kind) {

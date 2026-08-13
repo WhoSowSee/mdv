@@ -298,7 +298,7 @@ fn test_render_html_formats_inline_semantic_tags() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        r#"<p><code>cargo test</code> <kbd>Ctrl+C</kbd> <samp>ok</samp> <mark>marked</mark> <small>tiny</small> H<sub>2</sub> x<sup>2</sup> <abbr title="HyperText Markup Language">HTML</abbr></p>
+        r#"<p><code>cargo test</code> <kbd>Ctrl+C</kbd> <samp>ok</samp> <mark>marked</mark> <small>tiny</small> H<sub>2</sub>O x<sup>2</sup> <abbr title="HyperText Markup Language">HTML</abbr></p>
 "#,
     )
     .unwrap();
@@ -316,7 +316,7 @@ fn test_render_html_formats_inline_semantic_tags() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(
         strip_ansi(&stdout).contains(
-            "`cargo test` [Ctrl+C] `ok` marked tiny H_2 x^2 HTML (HyperText Markup Language)"
+            "`cargo test` [Ctrl+C] `ok` marked tiny H₂O x² HTML (HyperText Markup Language)"
         ),
         "stdout:\n{}",
         stdout
@@ -328,7 +328,7 @@ fn test_render_html_formats_semantic_tags_inside_markdown_paragraph() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        r#"Prefix <code>cargo test</code> <kbd>Ctrl+C</kbd> <samp>ok</samp> <mark>marked</mark> <small>tiny</small> H<sub>2</sub> x<sup>2</sup> <abbr title="HyperText Markup Language">HTML</abbr> suffix.
+        r#"Prefix <code>cargo test</code> <kbd>Ctrl+C</kbd> <samp>ok</samp> <mark>marked</mark> <small>tiny</small> H<sub>2</sub>O x<sup>2</sup> <abbr title="HyperText Markup Language">HTML</abbr> suffix.
 "#,
     )
     .unwrap();
@@ -346,7 +346,7 @@ fn test_render_html_formats_semantic_tags_inside_markdown_paragraph() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(
         strip_ansi(&stdout).contains(
-            "Prefix `cargo test` [Ctrl+C] `ok` marked tiny H_2 x^2 HTML (HyperText Markup Language) suffix."
+            "Prefix `cargo test` [Ctrl+C] `ok` marked tiny H₂O x² HTML (HyperText Markup Language) suffix."
         ),
         "stdout:\n{}",
         stdout

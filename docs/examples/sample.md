@@ -282,7 +282,7 @@ ___
 
 Combined emphasis: **_bold italic text_** and __*alternate bold italic*__ demonstrate redundancy.
 
-Superscripts and subscripts (GitHub extension): X^2^ and H~2~O.
+Superscripts and subscripts using math delimiters: $X^2$ and $H_2O$.
 
 Emoji shortcodes: :rocket:, :tada:, and :memo:.
 

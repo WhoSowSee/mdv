@@ -4,6 +4,7 @@ use super::{
     Alignment, CowStr, EventRenderer, HeadingLevel, HtmlBlockBuffer, LinkStyle, Result, TableState,
     ThemeElement, create_style,
 };
+use crate::math::{ScriptKind, convert_script};
 use crate::utils::{display_width, strip_ansi};
 use ego_tree::NodeRef;
 use scraper::{ElementRef, Html, Node as HtmlNode};
@@ -20,6 +21,7 @@ struct HtmlContext {
     alignment: HtmlAlignment,
     preserve_whitespace: bool,
     highlighted: bool,
+    script: Option<ScriptKind>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -70,6 +72,7 @@ impl Default for HtmlContext {
             alignment: HtmlAlignment::Left,
             preserve_whitespace: false,
             highlighted: false,
+            script: None,
         }
     }
 }
@@ -89,6 +92,13 @@ impl HtmlContext {
     fn with_highlighted(self) -> Self {
         Self {
             highlighted: true,
+            ..self
+        }
+    }
+
+    fn with_script(self, script: ScriptKind) -> Self {
+        Self {
+            script: Some(script),
             ..self
         }
     }
@@ -254,8 +264,8 @@ impl<'a> EventRenderer<'a> {
             "small" => {
                 self.render_html_with_formatting(element, child_context, ThemeElement::TextLight)
             }
-            "sub" => self.render_html_code_like(element, child_context, "_", ""),
-            "sup" => self.render_html_code_like(element, child_context, "^", ""),
+            "sub" => self.render_html_children(element, child_context.with_script(ScriptKind::Sub)),
+            "sup" => self.render_html_children(element, child_context.with_script(ScriptKind::Sup)),
             "abbr" => self.render_html_abbr(element, child_context),
             "pre" | "textarea" => self.render_html_preformatted_block(element, child_context),
             "h1" => self.render_html_heading(element, child_context, HeadingLevel::H1),
@@ -971,6 +981,11 @@ impl<'a> EventRenderer<'a> {
         if text.is_empty() {
             return Ok(());
         }
+
+        let text = context
+            .script
+            .map(|script| convert_script(&text, script))
+            .unwrap_or(text);
 
         if context.highlighted {
             self.note_paragraph_content();
