@@ -13,6 +13,28 @@ fn heading_block_element(level: HeadingLevel) -> BlockElement {
     }
 }
 
+pub(super) fn heading_theme_element(level: HeadingLevel) -> ThemeElement {
+    match level {
+        HeadingLevel::H1 => ThemeElement::H1,
+        HeadingLevel::H2 => ThemeElement::H2,
+        HeadingLevel::H3 => ThemeElement::H3,
+        HeadingLevel::H4 => ThemeElement::H4,
+        HeadingLevel::H5 => ThemeElement::H5,
+        HeadingLevel::H6 => ThemeElement::H6,
+    }
+}
+
+pub(super) fn heading_marker_count(level: HeadingLevel) -> usize {
+    match level {
+        HeadingLevel::H1 => 1,
+        HeadingLevel::H2 => 2,
+        HeadingLevel::H3 => 3,
+        HeadingLevel::H4 => 4,
+        HeadingLevel::H5 => 5,
+        HeadingLevel::H6 => 6,
+    }
+}
+
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_header_start(&mut self, level: HeadingLevel) -> Result<()> {
         self.finalize_pending_heading_placeholder();
@@ -160,22 +182,8 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn handle_header_end(&mut self, level: HeadingLevel) -> Result<()> {
-        let element = match level {
-            HeadingLevel::H1 => ThemeElement::H1,
-            HeadingLevel::H2 => ThemeElement::H2,
-            HeadingLevel::H3 => ThemeElement::H3,
-            HeadingLevel::H4 => ThemeElement::H4,
-            HeadingLevel::H5 => ThemeElement::H5,
-            HeadingLevel::H6 => ThemeElement::H6,
-        };
-        let marker_count = match level {
-            HeadingLevel::H1 => 1,
-            HeadingLevel::H2 => 2,
-            HeadingLevel::H3 => 3,
-            HeadingLevel::H4 => 4,
-            HeadingLevel::H5 => 5,
-            HeadingLevel::H6 => 6,
-        };
+        let element = heading_theme_element(level);
+        let marker_count = heading_marker_count(level);
 
         if let Some(start) = self.current_heading_start.take() {
             let is_empty_heading = {

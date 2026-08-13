@@ -810,20 +810,14 @@ impl<'a> EventRenderer<'a> {
 
                 let indent_level = self.list_stack.len().saturating_sub(1);
                 let styled_marker = if let Some(list_state) = self.list_stack.last() {
-                    let (marker, color) = if list_state.is_ordered {
-                        (format!("{}. ", list_state.counter), None)
-                    } else if let Some((icon, color)) =
-                        self.config.list_marker.resolve(indent_level + 1)
-                    {
-                        (format!("{icon} "), color)
+                    let marker = if list_state.is_ordered {
+                        format!("{}. ", list_state.counter)
                     } else {
-                        ("- ".to_string(), None)
+                        "- ".to_string()
                     };
-                    let mut style = create_style(self.theme, ThemeElement::ListMarker);
-                    if let Some(c) = color {
-                        style = style.fg(c.into());
-                    }
-                    style.apply(&marker, self.config.no_colors)
+                    let pretty_level =
+                        (!list_state.is_ordered).then_some(indent_level.saturating_add(1));
+                    self.styled_list_marker(&marker, pretty_level)
                 } else {
                     String::new()
                 };
@@ -1265,7 +1259,11 @@ impl<'a> EventRenderer<'a> {
             }
             TagEnd::TableCell => {
                 if let Some(ref mut table) = self.table_state {
-                    table.current_row.push(table.current_cell.clone());
+                    let trimmed_len = table.current_cell.trim_end().len();
+                    table.current_cell.truncate(trimmed_len);
+                    table
+                        .current_row
+                        .push(std::mem::take(&mut table.current_cell));
                 }
             }
             TagEnd::Link => {

@@ -1,14 +1,16 @@
 use super::{
-    EventRenderer, LinkStyle, LinkTruncationStyle, Result, TableInlineUrlTarget, TableRenderer,
-    TableState,
+    EventRenderer, LinkStyle, LinkTruncationStyle, PRETTY_ACCENT_COLOR, Result,
+    TableInlineUrlTarget, TableRenderer, TableState,
 };
 use crate::block_spacing::BlockElement;
+use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
 use pulldown_cmark::Alignment;
 
 const TABLE_COLUMN_OVERHEAD: usize = 3;
 const TABLE_BORDER_OVERHEAD: usize = 1;
 const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
+pub(super) const HTML_TABLE_HORIZONTAL_RULE: &str = "\u{E000}MDV_HTML_HR\u{E001}";
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_table_end(&mut self) -> Result<()> {
@@ -28,63 +30,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn render_table(&mut self, mut table: TableState) -> Result<usize> {
-        let headers_empty = table
-            .headers
-            .iter()
-            .all(|header| strip_ansi(header).trim().is_empty());
-        let rows_empty = table
-            .rows
-            .iter()
-            .all(|row| row.iter().all(|cell| strip_ansi(cell).trim().is_empty()));
-
-        if table.headers.is_empty() && !self.config.show_empty_elements {
-            return Ok(0);
-        }
-
-        if headers_empty && rows_empty && !self.config.show_empty_elements {
-            return Ok(0);
-        }
-
-        if self.config.show_empty_elements {
-            if table.headers.is_empty() {
-                table.headers.push(" ".to_string());
-            } else if headers_empty {
-                for header in table.headers.iter_mut() {
-                    if strip_ansi(header).trim().is_empty() {
-                        *header = " ".to_string();
-                    }
-                }
-            }
-
-            if table.alignments.len() < table.headers.len() {
-                table.alignments.extend(std::iter::repeat_n(
-                    Alignment::Left,
-                    table.headers.len().saturating_sub(table.alignments.len()),
-                ));
-            }
-
-            if rows_empty {
-                if table.rows.is_empty() {
-                    table
-                        .rows
-                        .push(vec![" ".to_string(); table.headers.len().max(1)]);
-                } else {
-                    for row in table.rows.iter_mut() {
-                        if row.len() < table.headers.len() {
-                            row.extend(std::iter::repeat_n(
-                                String::new(),
-                                table.headers.len().saturating_sub(row.len()),
-                            ));
-                        }
-                        for cell in row.iter_mut() {
-                            if strip_ansi(cell).trim().is_empty() {
-                                *cell = " ".to_string();
-                            }
-                        }
-                    }
-                }
-            }
-        } else if table.headers.is_empty() {
+        if !self.prepare_table(&mut table) {
             return Ok(0);
         }
 
@@ -105,30 +51,7 @@ impl<'a> EventRenderer<'a> {
             .saturating_sub(table_indent)
             .max(1);
 
-        if matches!(self.config.link_style, LinkStyle::Inline)
-            && matches!(self.config.link_truncation, LinkTruncationStyle::TableCut)
-        {
-            self.apply_table_inline_url_truncation(&mut table, available_width);
-        }
-
-        let table_renderer = TableRenderer::new(
-            self.theme,
-            self.config.no_colors,
-            available_width,
-            self.config.table_wrap,
-        )
-        .with_pretty_table(self.config.pretty_table);
-
-        let mut rendered_table =
-            table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;
-        rendered_table = rendered_table.replace(TABLE_REFERENCE_WRAP_DELIMITER, "");
-
-        if !table.clickable_link_replacements.is_empty() {
-            rendered_table = crate::table::apply_clickable_link_replacements(
-                rendered_table,
-                &table.clickable_link_replacements,
-            );
-        }
+        let mut rendered_table = self.render_table_content(&mut table, available_width)?;
         rendered_table = Self::indent_table_block(rendered_table, table_indent);
         rendered_table = Self::prefix_table_block(rendered_table, &line_prefix);
 
@@ -141,6 +64,169 @@ impl<'a> EventRenderer<'a> {
         self.commit_pending_heading_placeholder_if_content();
 
         Ok(table_indent)
+    }
+
+    pub(super) fn render_embedded_table(&self, mut table: TableState) -> Result<String> {
+        if !self.prepare_table(&mut table) {
+            return Ok(String::new());
+        }
+
+        self.render_table_content(&mut table, self.config.get_content_width().max(1))
+    }
+
+    fn prepare_table(&self, table: &mut TableState) -> bool {
+        self.expand_html_table_horizontal_rules(table);
+        let headers_empty = table
+            .headers
+            .iter()
+            .all(|header| strip_ansi(header).trim().is_empty());
+        let rows_empty = table
+            .rows
+            .iter()
+            .all(|row| row.iter().all(|cell| strip_ansi(cell).trim().is_empty()));
+
+        if table.headers.is_empty() && !self.config.show_empty_elements {
+            return false;
+        }
+
+        if headers_empty && rows_empty && !self.config.show_empty_elements {
+            return false;
+        }
+
+        if self.config.show_empty_elements {
+            if table.headers.is_empty() {
+                table.headers.push(" ".to_string());
+            } else if headers_empty {
+                for header in &mut table.headers {
+                    if strip_ansi(header).trim().is_empty() {
+                        *header = " ".to_string();
+                    }
+                }
+            }
+
+            if table.alignments.len() < table.headers.len() {
+                table.alignments.extend(std::iter::repeat_n(
+                    Alignment::Left,
+                    table.headers.len().saturating_sub(table.alignments.len()),
+                ));
+            }
+
+            if rows_empty {
+                if table.rows.is_empty() {
+                    table
+                        .rows
+                        .push(vec![" ".to_string(); table.headers.len().max(1)]);
+                } else {
+                    for row in &mut table.rows {
+                        if row.len() < table.headers.len() {
+                            row.extend(std::iter::repeat_n(
+                                String::new(),
+                                table.headers.len().saturating_sub(row.len()),
+                            ));
+                        }
+                        for cell in row {
+                            if strip_ansi(cell).trim().is_empty() {
+                                *cell = " ".to_string();
+                            }
+                        }
+                    }
+                }
+            }
+        } else if table.headers.is_empty() {
+            return false;
+        }
+
+        true
+    }
+
+    fn expand_html_table_horizontal_rules(&self, table: &mut TableState) {
+        if !table
+            .headers
+            .iter()
+            .chain(table.rows.iter().flatten())
+            .any(|cell| cell.contains(HTML_TABLE_HORIZONTAL_RULE))
+        {
+            return;
+        }
+
+        let column_count = table
+            .rows
+            .iter()
+            .map(Vec::len)
+            .chain(std::iter::once(table.headers.len()))
+            .max()
+            .unwrap_or(0);
+        let mut widths = vec![3usize; column_count];
+
+        for row in std::iter::once(&table.headers).chain(table.rows.iter()) {
+            for (column, cell) in row.iter().enumerate() {
+                for line in cell.lines() {
+                    if !line.contains(HTML_TABLE_HORIZONTAL_RULE) {
+                        widths[column] = widths[column].max(display_width(&strip_ansi(line)));
+                    }
+                }
+            }
+        }
+
+        for row in std::iter::once(&mut table.headers).chain(table.rows.iter_mut()) {
+            for (column, cell) in row.iter_mut().enumerate() {
+                if !cell.contains(HTML_TABLE_HORIZONTAL_RULE) {
+                    continue;
+                }
+                let width = widths.get(column).copied().unwrap_or(3);
+                *cell = cell
+                    .split('\n')
+                    .map(|line| {
+                        if !line.contains(HTML_TABLE_HORIZONTAL_RULE) {
+                            return line.to_string();
+                        }
+                        let (before, after) = line
+                            .split_once(HTML_TABLE_HORIZONTAL_RULE)
+                            .expect("horizontal rule marker must be present");
+                        let fixed_width = display_width(&strip_ansi(&format!("{before}{after}")));
+                        let rule = "─".repeat(width.saturating_sub(fixed_width).max(3));
+                        let styled = AnsiStyle::new()
+                            .fg(PRETTY_ACCENT_COLOR)
+                            .apply(&rule, self.config.no_colors);
+                        format!("{before}{styled}{after}")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+            }
+        }
+    }
+
+    fn render_table_content(
+        &self,
+        table: &mut TableState,
+        available_width: usize,
+    ) -> Result<String> {
+        if matches!(self.config.link_style, LinkStyle::Inline)
+            && matches!(self.config.link_truncation, LinkTruncationStyle::TableCut)
+        {
+            self.apply_table_inline_url_truncation(table, available_width);
+        }
+
+        let table_renderer = TableRenderer::new(
+            self.theme,
+            self.config.no_colors,
+            available_width,
+            self.config.table_wrap,
+        )
+        .with_pretty_table(self.config.pretty_table);
+
+        let mut rendered =
+            table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;
+        rendered = rendered.replace(TABLE_REFERENCE_WRAP_DELIMITER, "");
+
+        if !table.clickable_link_replacements.is_empty() {
+            rendered = crate::table::apply_clickable_link_replacements(
+                rendered,
+                &table.clickable_link_replacements,
+            );
+        }
+
+        Ok(rendered)
     }
 
     fn apply_table_inline_url_truncation(&self, table: &mut TableState, table_width: usize) {

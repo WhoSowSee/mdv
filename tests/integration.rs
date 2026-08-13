@@ -10,6 +10,8 @@ mod code_blocks;
 mod definition_lists;
 #[path = "footnotes.rs"]
 mod footnotes;
+#[path = "html_table_content.rs"]
+mod html_table_content;
 #[path = "layout.rs"]
 mod layout;
 #[path = "line_numbers.rs"]

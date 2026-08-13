@@ -9,6 +9,9 @@ use crate::utils::{display_width, strip_ansi};
 use ego_tree::NodeRef;
 use scraper::{ElementRef, Html, Node as HtmlNode};
 
+mod forms;
+mod table_cells;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum HtmlAlignment {
     Left,
@@ -22,6 +25,7 @@ struct HtmlContext {
     preserve_whitespace: bool,
     highlighted: bool,
     script: Option<ScriptKind>,
+    list_depth: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -73,6 +77,7 @@ impl Default for HtmlContext {
             preserve_whitespace: false,
             highlighted: false,
             script: None,
+            list_depth: 0,
         }
     }
 }
@@ -102,6 +107,20 @@ impl HtmlContext {
             ..self
         }
     }
+
+    fn in_nested_list(self) -> Self {
+        Self {
+            list_depth: self.list_depth + 1,
+            ..self
+        }
+    }
+
+    fn without_list_depth(self) -> Self {
+        Self {
+            list_depth: 0,
+            ..self
+        }
+    }
 }
 
 impl<'a> EventRenderer<'a> {
@@ -120,7 +139,7 @@ impl<'a> EventRenderer<'a> {
             self.pending_html_block_buffer = Some(HtmlBlockBuffer {
                 tag,
                 content: html.to_string(),
-                captures_markdown_events: false,
+                captures_markdown_events: self.table_state.is_some(),
             });
             return Ok(());
         }
@@ -245,7 +264,14 @@ impl<'a> EventRenderer<'a> {
                 self.render_html_line_break();
                 Ok(())
             }
-            "hr" => self.handle_horizontal_rule(),
+            "hr" => {
+                if self.table_state.is_some() {
+                    self.render_html_table_horizontal_rule(child_context);
+                    Ok(())
+                } else {
+                    self.handle_horizontal_rule()
+                }
+            }
             "a" => self.render_html_link(element, child_context),
             "strong" | "b" => {
                 self.render_html_with_formatting(element, child_context, ThemeElement::Strong)
@@ -284,6 +310,9 @@ impl<'a> EventRenderer<'a> {
             "thead" | "tbody" | "tfoot" | "tr" | "th" | "td" | "caption" | "colgroup" => {
                 self.render_html_children(element, child_context)
             }
+            "input" => self.render_html_input(element),
+            "button" => self.render_html_button(element, child_context),
+            "select" => self.render_html_select(element),
             "img" | "video" | "audio" | "source" | "track" | "embed" | "iframe" | "object" => {
                 if self.render_html_media(element)? || is_void_html_element(&name) {
                     Ok(())
@@ -293,7 +322,12 @@ impl<'a> EventRenderer<'a> {
             }
             "ul" => self.render_html_list(element, child_context, false),
             "ol" => self.render_html_list(element, child_context, true),
-            "li" => self.render_html_list_item(element, child_context, "- "),
+            "li" => self.render_html_list_item(
+                element,
+                child_context,
+                "- ",
+                Some(child_context.list_depth.saturating_add(1)),
+            ),
             "details" => self.render_html_details(element, child_context),
             "summary" => self.render_html_summary_label(element, child_context),
             _ if is_html_block_element(&name) => self.render_html_block(element, child_context),
@@ -318,10 +352,7 @@ impl<'a> EventRenderer<'a> {
 
     fn render_html_block(&mut self, element: ElementRef<'_>, context: HtmlContext) -> Result<()> {
         if self.table_state.is_some() {
-            self.begin_html_block();
-            self.render_html_children(element, context)?;
-            self.end_html_block();
-            return Ok(());
+            return self.render_html_table_block(element, context);
         }
 
         self.begin_html_block();
@@ -340,10 +371,7 @@ impl<'a> EventRenderer<'a> {
         level: HeadingLevel,
     ) -> Result<()> {
         if self.table_state.is_some() {
-            self.begin_html_block();
-            self.render_html_children(element, context)?;
-            self.end_html_block();
-            return Ok(());
+            return self.render_html_table_heading(element, context, level);
         }
 
         self.handle_header_start(level)?;
@@ -434,12 +462,7 @@ impl<'a> EventRenderer<'a> {
     ) -> Result<()> {
         let text = normalize_preformatted_html_text(&element.text().collect::<String>());
         if self.table_state.is_some() {
-            self.append_html_table_cell_separator();
-            if let Some(ref mut table) = self.table_state {
-                table.current_cell.push_str(&text);
-            }
-            self.append_html_table_cell_separator();
-            return Ok(());
+            return self.render_html_table_preformatted_block(element, context, text);
         }
 
         self.begin_html_block();
@@ -476,7 +499,7 @@ impl<'a> EventRenderer<'a> {
         context: HtmlContext,
     ) -> Result<()> {
         if self.table_state.is_some() {
-            return self.render_html_block(element, context);
+            return self.render_html_table_blockquote(element, context);
         }
 
         self.blockquote_indent_stack
@@ -537,23 +560,7 @@ impl<'a> EventRenderer<'a> {
         element: ElementRef<'_>,
         context: HtmlContext,
     ) -> Result<()> {
-        if !self.output.is_empty() && !self.output.ends_with('\n') {
-            self.output.push('\n');
-        }
-        self.push_indent_for_line_start();
-        self.formatting_stack.push(ThemeElement::Strong);
-        let result = self.render_html_children(element, context);
-        if let Some(index) = self
-            .formatting_stack
-            .iter()
-            .rposition(|current| *current == ThemeElement::Strong)
-        {
-            self.formatting_stack.remove(index);
-        }
-        if result.is_ok() && !self.output.ends_with('\n') {
-            self.output.push('\n');
-        }
-        result
+        self.render_html_styled_block_line(element, context, &[ThemeElement::Strong])
     }
 
     fn render_html_definition_description(
@@ -561,12 +568,30 @@ impl<'a> EventRenderer<'a> {
         element: ElementRef<'_>,
         context: HtmlContext,
     ) -> Result<()> {
+        if self.table_state.is_some() {
+            self.begin_html_table_cell_line(context.list_depth * 2 + 2);
+            return self.render_html_definition_description_children(element, context);
+        }
+
         if !self.output.is_empty() && !self.output.ends_with('\n') {
             self.output.push('\n');
         }
         self.push_indent_for_line_start();
         let content_start = self.output.len();
         self.note_paragraph_content();
+        self.render_html_definition_description_children(element, context)?;
+        self.indent_rendered_html_span(content_start, 2);
+        if !self.output.ends_with('\n') {
+            self.output.push('\n');
+        }
+        Ok(())
+    }
+
+    fn render_html_definition_description_children(
+        &mut self,
+        element: ElementRef<'_>,
+        context: HtmlContext,
+    ) -> Result<()> {
         for child in element.children() {
             if let Some(child_element) = ElementRef::wrap(child)
                 && is_definition_description_inline_block(child_element.value().name())
@@ -576,20 +601,28 @@ impl<'a> EventRenderer<'a> {
             }
             self.render_html_node(child, context)?;
         }
-        self.indent_rendered_html_span(content_start, 2);
-        if !self.output.ends_with('\n') {
-            self.output.push('\n');
-        }
         Ok(())
     }
 
     fn render_html_figure(&mut self, element: ElementRef<'_>, context: HtmlContext) -> Result<()> {
         if self.table_state.is_some() {
-            return self.render_html_children(element, context);
+            return self.render_html_table_figure(element, context);
         }
 
         self.begin_html_block();
         let content_start = self.output.len();
+        self.render_html_figure_children(element, context)?;
+        self.align_rendered_html_span(content_start, context.alignment);
+        self.end_html_block();
+        self.flush_html_inline_table_references();
+        Ok(())
+    }
+
+    fn render_html_figure_children(
+        &mut self,
+        element: ElementRef<'_>,
+        context: HtmlContext,
+    ) -> Result<()> {
         for child in element.children() {
             if let Some(child_element) = ElementRef::wrap(child)
                 && child_element
@@ -607,9 +640,6 @@ impl<'a> EventRenderer<'a> {
         {
             self.render_html_figcaption(caption, context)?;
         }
-        self.align_rendered_html_span(content_start, context.alignment);
-        self.end_html_block();
-        self.flush_html_inline_table_references();
         Ok(())
     }
 
@@ -618,31 +648,11 @@ impl<'a> EventRenderer<'a> {
         element: ElementRef<'_>,
         context: HtmlContext,
     ) -> Result<()> {
-        if !self.output.is_empty() && !self.output.ends_with('\n') {
-            self.output.push('\n');
-        }
-        self.push_indent_for_line_start();
-        self.formatting_stack.push(ThemeElement::TextLight);
-        self.formatting_stack.push(ThemeElement::Emphasis);
-        let result = self.render_html_children(element, context);
-        if let Some(index) = self
-            .formatting_stack
-            .iter()
-            .rposition(|current| *current == ThemeElement::Emphasis)
-        {
-            self.formatting_stack.remove(index);
-        }
-        if let Some(index) = self
-            .formatting_stack
-            .iter()
-            .rposition(|current| *current == ThemeElement::TextLight)
-        {
-            self.formatting_stack.remove(index);
-        }
-        if result.is_ok() && !self.output.ends_with('\n') {
-            self.output.push('\n');
-        }
-        result
+        self.render_html_styled_block_line(
+            element,
+            context,
+            &[ThemeElement::TextLight, ThemeElement::Emphasis],
+        )
     }
 
     fn render_html_list(
@@ -652,33 +662,25 @@ impl<'a> EventRenderer<'a> {
         ordered: bool,
     ) -> Result<()> {
         let mut marker_state = html_list_marker_state(&element, ordered);
-        if self.table_state.is_some() {
-            for child in element.children() {
-                if let Some(child_element) = ElementRef::wrap(child)
-                    && child_element.value().name().eq_ignore_ascii_case("li")
-                {
-                    let marker = marker_state.next_marker(child_element);
-                    self.render_html_list_item(child_element, context, &marker)?;
-                    continue;
-                }
-                self.render_html_node(child, context)?;
-            }
-            return Ok(());
+        let in_table = self.table_state.is_some();
+        if !in_table {
+            self.begin_html_block();
         }
-
-        self.begin_html_block();
         for child in element.children() {
             if let Some(child_element) = ElementRef::wrap(child)
                 && child_element.value().name().eq_ignore_ascii_case("li")
             {
                 let marker = marker_state.next_marker(child_element);
-                self.render_html_list_item(child_element, context, &marker)?;
+                let pretty_level = (!ordered).then_some(context.list_depth.saturating_add(1));
+                self.render_html_list_item(child_element, context, &marker, pretty_level)?;
                 continue;
             }
             self.render_html_node(child, context)?;
         }
-        self.end_html_block();
-        self.flush_html_inline_table_references();
+        if !in_table {
+            self.end_html_block();
+            self.flush_html_inline_table_references();
+        }
         Ok(())
     }
 
@@ -687,14 +689,21 @@ impl<'a> EventRenderer<'a> {
         element: ElementRef<'_>,
         context: HtmlContext,
         marker: &str,
+        pretty_level: Option<usize>,
     ) -> Result<()> {
+        let marker = if html_list_item_starts_with_checkbox(&element) {
+            String::new()
+        } else {
+            self.styled_list_marker(marker, pretty_level)
+        };
+        let child_context = context.in_nested_list();
+
         if self.table_state.is_some() {
-            self.append_html_table_cell_separator();
+            self.begin_html_table_cell_line(context.list_depth * 2);
             if let Some(ref mut table) = self.table_state {
-                table.current_cell.push_str(marker);
+                table.current_cell.push_str(&marker);
             }
-            self.render_html_children(element, context)?;
-            self.append_html_table_cell_separator();
+            self.render_html_children(element, child_context)?;
             return Ok(());
         }
 
@@ -702,9 +711,9 @@ impl<'a> EventRenderer<'a> {
             self.output.push('\n');
         }
         self.push_indent_for_line_start();
-        self.output.push_str(marker);
+        self.output.push_str(&marker);
         self.note_paragraph_content();
-        self.render_html_children(element, context)?;
+        self.render_html_children(element, child_context)?;
         if !self.output.ends_with('\n') {
             self.output.push('\n');
         }
@@ -741,39 +750,55 @@ impl<'a> EventRenderer<'a> {
         element: ElementRef<'_>,
         context: HtmlContext,
     ) -> Result<()> {
-        if !self.output.is_empty() && !self.output.ends_with('\n') {
-            self.output.push('\n');
+        self.render_html_styled_block_line(element, context, &[ThemeElement::Strong])
+    }
+
+    fn render_html_styled_block_line(
+        &mut self,
+        element: ElementRef<'_>,
+        context: HtmlContext,
+        styles: &[ThemeElement],
+    ) -> Result<()> {
+        let in_table = self.table_state.is_some();
+        if in_table {
+            self.begin_html_table_cell_line(context.list_depth * 2);
+        } else {
+            if !self.output.is_empty() && !self.output.ends_with('\n') {
+                self.output.push('\n');
+            }
+            self.push_indent_for_line_start();
         }
 
-        self.push_indent_for_line_start();
-        self.formatting_stack.push(ThemeElement::Strong);
+        let stack_len = self.formatting_stack.len();
+        self.formatting_stack.extend_from_slice(styles);
         let result = self.render_html_children(element, context);
-        if let Some(index) = self
-            .formatting_stack
-            .iter()
-            .rposition(|current| *current == ThemeElement::Strong)
-        {
-            self.formatting_stack.remove(index);
-        }
-        if result.is_ok() && !self.output.ends_with('\n') {
-            self.output.push('\n');
+        self.formatting_stack.truncate(stack_len);
+        if result.is_ok() {
+            if in_table {
+                self.end_html_table_cell_line();
+            } else if !self.output.ends_with('\n') {
+                self.output.push('\n');
+            }
         }
         result
     }
 
     fn render_html_table(&mut self, element: ElementRef<'_>, context: HtmlContext) -> Result<()> {
-        if self.table_state.is_some() {
-            return self.render_html_children(element, context);
-        }
-
+        let embedded = self.table_state.is_some();
         for caption in element
             .child_elements()
             .filter(|child| child.value().name().eq_ignore_ascii_case("caption"))
         {
-            self.render_html_block(caption, context)?;
+            if embedded {
+                self.begin_html_table_cell_line(context.list_depth * 2);
+                self.render_html_children(caption, context)?;
+            } else {
+                self.render_html_block(caption, context)?;
+            }
         }
 
-        if matches!(self.config.link_style, LinkStyle::InlineTable) {
+        let parent_table = self.table_state.take();
+        if !embedded && matches!(self.config.link_style, LinkStyle::InlineTable) {
             self.paragraph_link_counter = 0;
             self.paragraph_links.clear();
         }
@@ -789,12 +814,31 @@ impl<'a> EventRenderer<'a> {
             inline_url_segments: Vec::new(),
         });
 
-        self.render_html_table_section(element, context, false)?;
+        if let Err(error) = self.render_html_table_section(element, context, false) {
+            self.table_state.take();
+            self.table_state = parent_table;
+            return Err(error);
+        }
 
         let Some(mut table) = self.table_state.take() else {
+            self.table_state = parent_table;
             return Ok(());
         };
         normalize_html_table(&mut table);
+
+        if embedded {
+            let rendered = self.render_embedded_table(table);
+            self.table_state = parent_table;
+            let rendered = rendered?;
+            if !rendered.is_empty() {
+                self.begin_html_table_cell_line(context.list_depth * 2);
+                if let Some(ref mut parent) = self.table_state {
+                    parent.current_cell.push_str(&rendered);
+                }
+            }
+            return Ok(());
+        }
+
         let table_indent = self.render_table(table)?;
 
         if matches!(self.config.link_style, LinkStyle::InlineTable)
@@ -1058,11 +1102,6 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn begin_html_block(&mut self) {
-        if self.table_state.is_some() {
-            self.append_html_table_cell_separator();
-            return;
-        }
-
         if self.output.is_empty() {
             return;
         }
@@ -1072,26 +1111,25 @@ impl<'a> EventRenderer<'a> {
     }
 
     fn end_html_block(&mut self) {
-        if self.table_state.is_some() {
-            self.append_html_table_cell_separator();
-            return;
-        }
-
         if !self.output.is_empty() && !self.output.ends_with('\n') {
             self.output.push('\n');
         }
     }
 
-    fn append_html_table_cell_separator(&mut self) {
+    fn begin_html_table_cell_line(&mut self, indent: usize) {
+        self.end_html_table_cell_line();
         if let Some(ref mut table) = self.table_state {
-            let needs_space = table
-                .current_cell
-                .chars()
-                .next_back()
-                .map(|ch| !ch.is_whitespace())
-                .unwrap_or(false);
-            if needs_space {
-                table.current_cell.push(' ');
+            table.current_cell.extend(std::iter::repeat_n(' ', indent));
+        }
+    }
+
+    fn end_html_table_cell_line(&mut self) {
+        if let Some(ref mut table) = self.table_state {
+            while matches!(table.current_cell.chars().next_back(), Some(' ' | '\t')) {
+                table.current_cell.pop();
+            }
+            if !table.current_cell.is_empty() && !table.current_cell.ends_with('\n') {
+                table.current_cell.push('\n');
             }
         }
     }
@@ -1263,6 +1301,30 @@ fn matches_ignore_ascii_case_any(value: &str, candidates: &[&str]) -> bool {
     candidates
         .iter()
         .any(|candidate| value.eq_ignore_ascii_case(candidate))
+}
+
+fn is_html_checkbox(element: &ElementRef<'_>) -> bool {
+    element.value().name().eq_ignore_ascii_case("input")
+        && element
+            .attr("type")
+            .is_some_and(|kind| kind.trim().eq_ignore_ascii_case("checkbox"))
+}
+
+fn html_list_item_starts_with_checkbox(element: &ElementRef<'_>) -> bool {
+    for child in element.children() {
+        if let HtmlNode::Text(text) = child.value() {
+            if text.trim().is_empty() {
+                continue;
+            }
+            return false;
+        }
+        if matches!(child.value(), HtmlNode::Comment(_)) {
+            continue;
+        }
+        return ElementRef::wrap(child).is_some_and(|child| is_html_checkbox(&child));
+    }
+
+    false
 }
 
 fn html_list_marker_state(element: &ElementRef<'_>, ordered: bool) -> HtmlListMarkerState {
@@ -1562,18 +1624,30 @@ fn is_definition_description_inline_block(name: &str) -> bool {
 
 const BUFFERED_HTML_CONTAINER_TAGS: &[&str] = &[
     "table",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
     "p",
     "div",
+    "address",
     "center",
     "section",
     "figure",
+    "figcaption",
     "header",
     "footer",
     "main",
     "article",
     "aside",
     "nav",
+    "dialog",
+    "fieldset",
+    "form",
     "details",
+    "summary",
     "blockquote",
     "dl",
     "ol",
@@ -1583,8 +1657,8 @@ const BUFFERED_HTML_CONTAINER_TAGS: &[&str] = &[
 ];
 
 const BUFFERED_INLINE_HTML_CONTAINER_TAGS: &[&str] = &[
-    "a", "abbr", "b", "cite", "code", "del", "em", "i", "kbd", "mark", "s", "samp", "small",
-    "span", "strike", "strong", "sub", "sup",
+    "a", "abbr", "b", "button", "cite", "code", "del", "em", "i", "kbd", "mark", "s", "samp",
+    "select", "small", "span", "strike", "strong", "sub", "sup",
 ];
 
 fn normalize_preformatted_html_text(text: &str) -> String {

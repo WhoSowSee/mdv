@@ -67,7 +67,7 @@ impl<'a> EventRenderer<'a> {
     /// Apply current formatting stack to text
     ///
     /// Ensures consistent precedence when multiple styles are active at once
-    /// (e.g. Strong + Emphasis). Color precedence: Code > Strong > Emphasis > Strikethrough > TextLight > Text.
+    /// (e.g. Strong + Emphasis). Color precedence: Code > Heading > Strong > Emphasis > Strikethrough > TextLight > Text.
     pub(super) fn apply_formatting(&self, text: &str) -> String {
         self.apply_formatting_with_highlight(text, false)
     }
@@ -84,10 +84,23 @@ impl<'a> EventRenderer<'a> {
         let has_code = self.formatting_stack.contains(&ThemeElement::Code);
         let has_text_light = self.formatting_stack.contains(&ThemeElement::TextLight);
         let has_underline = self.formatting_stack.contains(&ThemeElement::Underline);
+        let heading = self.formatting_stack.iter().rev().copied().find(|element| {
+            matches!(
+                element,
+                ThemeElement::H1
+                    | ThemeElement::H2
+                    | ThemeElement::H3
+                    | ThemeElement::H4
+                    | ThemeElement::H5
+                    | ThemeElement::H6
+            )
+        });
 
         // Choose base element to take the color from with deterministic precedence
         let base_element = if has_code {
             ThemeElement::Code
+        } else if let Some(heading) = heading {
+            heading
         } else if has_strong {
             ThemeElement::Strong
         } else if has_emphasis {

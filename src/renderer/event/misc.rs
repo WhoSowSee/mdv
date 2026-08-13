@@ -161,15 +161,7 @@ impl<'a> EventRenderer<'a> {
         self.pending_task_marker = false;
         self.pending_task_marker_buffer.clear();
         self.strip_bullet_for_checkbox_item();
-        let marker = if self.config.pretty_checkbox.is_some() {
-            self.styled_checkbox_marker(if checked { 'x' } else { ' ' })
-        } else if checked {
-            let style = create_style(self.theme, ThemeElement::ListMarker);
-            style.apply("[✓]", self.config.no_colors)
-        } else {
-            let style = create_style(self.theme, ThemeElement::ListMarker);
-            style.apply("[ ]", self.config.no_colors)
-        };
+        let marker = self.checkbox_marker(checked);
         self.output.push_str(&marker);
         self.output.push(' ');
         if let Some(list_state) = self.list_stack.last_mut() {
@@ -177,6 +169,27 @@ impl<'a> EventRenderer<'a> {
         }
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
+    }
+
+    pub(super) fn styled_list_marker(&self, fallback: &str, pretty_level: Option<usize>) -> String {
+        let (marker, color) = pretty_level
+            .and_then(|level| self.config.list_marker.resolve(level))
+            .map(|(icon, color)| (format!("{icon} "), color))
+            .unwrap_or_else(|| (fallback.to_string(), None));
+        let mut style = create_style(self.theme, ThemeElement::ListMarker);
+        if let Some(color) = color {
+            style = style.fg(color.into());
+        }
+        style.apply(&marker, self.config.no_colors)
+    }
+
+    pub(super) fn checkbox_marker(&self, checked: bool) -> String {
+        if self.config.pretty_checkbox.is_some() {
+            return self.styled_checkbox_marker(if checked { 'x' } else { ' ' });
+        }
+
+        let marker = if checked { "[✓]" } else { "[ ]" };
+        create_style(self.theme, ThemeElement::ListMarker).apply(marker, self.config.no_colors)
     }
 
     /// Returns the checkbox icon. Callers add the separating space.

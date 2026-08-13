@@ -4,6 +4,7 @@ use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd}
 use std::mem;
 use std::ops::Range;
 
+mod raw_html;
 mod source_lines;
 
 pub(crate) const BLANK_LINE_MARKER: &str = "MDV_BLANK_LINE_MARKER";
@@ -983,6 +984,21 @@ impl MarkdownProcessor {
                         .unwrap_or(covered_end),
                 );
                 idx += 3;
+                continue;
+            }
+
+            if let Some((event, range, end_idx)) =
+                raw_html::coalesce_raw_text_container(content, &events, idx)
+            {
+                self.push_event_with_source_marker(
+                    &mut processed,
+                    event,
+                    &range,
+                    line_starts,
+                    source_lines,
+                );
+                covered_end = covered_end.max(range.end);
+                idx = end_idx + 1;
                 continue;
             }
 
