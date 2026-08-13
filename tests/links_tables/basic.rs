@@ -41,7 +41,7 @@ fn test_table_rendering() {
 }
 
 #[test]
-fn test_default_table_uses_glow_borders() {
+fn test_default_table_uses_compact_borders() {
     let stdout = render_basic_table(|cmd| {
         cmd.args(["--no-config", "--no-colors", "--cols", "80"]);
     });
@@ -55,7 +55,7 @@ fn test_default_table_uses_glow_borders() {
         stdout
             .lines()
             .any(|line| line.contains('─') && line.contains('┼')),
-        "default table must have a Glow-style header separator: {stdout}"
+        "default table must have a compact header separator: {stdout}"
     );
     assert!(
         stdout

@@ -33,7 +33,7 @@ pub mod state;
 mod static_pager;
 
 #[cfg(feature = "dynamic_output")]
-pub use dynamic_pager::dynamic_paging;
+pub use dynamic_pager::{dynamic_paging, dynamic_paging_in_place};
 #[cfg(feature = "static_output")]
 pub use static_pager::page_all;
 

@@ -32,6 +32,12 @@ impl PagerDocument {
 
 pub(super) type RefreshCallback = Arc<dyn Fn() -> Result<PagerDocument> + Send + Sync>;
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(super) enum PagerScreen {
+    Alternate,
+    InPlace,
+}
+
 struct ActiveWatcher {
     stop: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
@@ -225,6 +231,7 @@ pub(super) fn page(
     document: PagerDocument,
     file: Option<PathBuf>,
     refresh: Option<RefreshCallback>,
+    screen: PagerScreen,
 ) -> Result<()> {
     let editor = EditorCommand::from_env();
     let editor_enabled = !matches!(editor, Ok(None)) && file.is_some();
@@ -269,7 +276,10 @@ pub(super) fn page(
             _ => None,
         };
 
-        minus::dynamic_paging(pager)?;
+        match screen {
+            PagerScreen::Alternate => minus::dynamic_paging(pager)?,
+            PagerScreen::InPlace => minus::dynamic_paging_in_place(pager)?,
+        }
         drop(watcher);
 
         if !editor_requested.load(Ordering::SeqCst) {
@@ -571,7 +581,7 @@ mod tests {
     }
 
     #[test]
-    fn copy_key_matches_glow_without_modifiers() {
+    fn copy_key_accepts_only_unmodified_c() {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE));
         let modified = Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
 
@@ -580,7 +590,7 @@ mod tests {
     }
 
     #[test]
-    fn reload_key_matches_glow_without_modifiers() {
+    fn reload_key_accepts_only_unmodified_r() {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE));
         let modified = Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::ALT));
 

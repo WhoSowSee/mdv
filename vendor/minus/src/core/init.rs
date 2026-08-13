@@ -33,7 +33,11 @@ use super::{CommandQueue, RUNMODE, utils::display::draw_for_change};
 
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
-pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusError> {
+pub fn init_core(
+    pager: &Pager,
+    rm: RunMode,
+    use_alternate_screen: bool,
+) -> std::result::Result<(), MinusError> {
     #[cfg(not(test))]
     let mut out = stdout();
     #[cfg(test)]
@@ -70,7 +74,7 @@ pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusErr
     }
 
     #[cfg(not(test))]
-    term::setup(&mut out)?;
+    term::setup(&mut out, use_alternate_screen)?;
 
     let is_exited = Arc::new(AtomicBool::new(false));
     let is_exited2 = is_exited.clone();
@@ -86,7 +90,7 @@ pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusErr
             let mut out2 = stdout();
 
             // Cleanup failures cannot supersede the active panic.
-            drop(term::cleanup(&mut out2, true));
+            drop(term::cleanup(&mut out2, true, use_alternate_screen));
             panic_hook(pinfo);
         }));
     }
@@ -134,6 +138,7 @@ pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusErr
                 #[cfg(feature = "search")]
                 &input_thread_running,
                 &is_exited4,
+                use_alternate_screen,
             );
 
             if res.is_err() {
@@ -147,7 +152,7 @@ pub fn init_core(pager: &Pager, rm: RunMode) -> std::result::Result<(), MinusErr
 
         if r1.is_err() || r2.is_err() {
             *RUNMODE.lock() = RunMode::Uninitialized;
-            term::cleanup(&mut out, true)?;
+            term::cleanup(&mut out, true, use_alternate_screen)?;
         }
 
         r1?;
@@ -164,6 +169,7 @@ fn start_reactor(
     #[cfg(feature = "search")] pager: &Pager,
     #[cfg(feature = "search")] input_thread_running: &Arc<(Mutex<bool>, Condvar)>,
     is_exited: &Arc<AtomicBool>,
+    use_alternate_screen: bool,
 ) -> Result<(), MinusError> {
     let mut command_queue = CommandQueue::new();
 
@@ -183,7 +189,7 @@ fn start_reactor(
         #[cfg(feature = "dynamic_output")]
         RunMode::Dynamic => loop {
             if is_exited.load(Ordering::SeqCst) {
-                term::cleanup(&mut out_lock, true)?;
+                term::cleanup(&mut out_lock, true, use_alternate_screen)?;
                 ps.lock().run_hooks(Hook::PostPagerExit);
                 let mut rm = RUNMODE.lock();
                 *rm = RunMode::Uninitialized;
@@ -218,7 +224,7 @@ fn start_reactor(
         #[cfg(feature = "static_output")]
         RunMode::Static => loop {
             if is_exited.load(Ordering::SeqCst) {
-                term::cleanup(&mut out_lock, true)?;
+                term::cleanup(&mut out_lock, true, use_alternate_screen)?;
                 ps.lock().run_hooks(Hook::PostPagerExit);
 
                 let mut rm = RUNMODE.lock();

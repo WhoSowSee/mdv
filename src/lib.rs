@@ -7,6 +7,7 @@ pub mod config;
 mod custom_code_block;
 mod editor;
 pub mod error;
+mod interactive;
 mod list_marker;
 pub mod markdown;
 pub mod math;
@@ -19,6 +20,9 @@ pub mod terminal;
 pub mod theme;
 mod user_themes;
 pub mod utils;
+
+#[cfg(test)]
+mod interactive_tests;
 
 pub use list_marker::{PrettyListStyle, UniformListMarker};
 
@@ -67,6 +71,16 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     let show_current_theme = config.theme_info || cli.theme_info.is_some();
     let current_preset = cli.preset.as_deref().filter(|_| cli.preset_info);
 
+    let stdin_is_terminal = io::stdin().is_terminal();
+    if let Some(target) = interactive::select_interactive_target(
+        cli.filename.as_deref(),
+        cli.interactive,
+        cli.pager,
+        stdin_is_terminal,
+    )? {
+        return interactive::run(target, config);
+    }
+
     let content = get_input_content(&cli)?;
     let stdout_is_terminal = std::io::stdout().is_terminal();
     let output = render_document(
@@ -104,6 +118,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             pager::PagerDocument::new(output, content),
             pager_file,
             refresh,
+            pager::PagerScreen::Alternate,
         )?;
     } else {
         print!("{}", output);

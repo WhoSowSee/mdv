@@ -84,6 +84,10 @@ pub struct Cli {
     #[arg(short = 'p', long = "pager")]
     pub pager: bool,
 
+    /// Browse and read Markdown documents in an interactive terminal interface
+    #[arg(short = 'L', long = "interactive", conflicts_with = "pager")]
+    pub interactive: bool,
+
     /// Set theme
     #[arg(short = 't', long = "theme", default_value = "terminal")]
     pub theme: Option<String>,
@@ -1059,6 +1063,20 @@ mod tests {
 
         let cli = Cli::parse_from(["mdv", "-p"]);
         assert!(cli.pager);
+    }
+
+    #[test]
+    fn interactive_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "--interactive"]);
+        assert!(cli.interactive);
+
+        let cli = Cli::parse_from(["mdv", "-L"]);
+        assert!(cli.interactive);
+    }
+
+    #[test]
+    fn interactive_conflicts_with_pager() {
+        assert!(Cli::try_parse_from(["mdv", "--interactive", "--pager"]).is_err());
     }
 
     #[test]

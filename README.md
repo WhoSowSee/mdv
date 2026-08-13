@@ -101,6 +101,7 @@ cat <FILE> | mdv
 - `-f, --from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
 - `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.
 - `-p, --pager` — opens the rendered output in the built-in `minus` pager. Press `E`|`e` or `У`|`у` to open the current file in the configured editor; saved changes are rendered automatically.
+- `-L, --interactive` — opens the interactive document browser. Running `mdv` without arguments opens the current directory, and passing a directory opens that directory. The browser recursively finds Markdown files while honoring hidden-file and `.gitignore` rules.
 - `-m, --monitor` — watches the source file and re-renders when it changes.
 - `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
 - `-x, --preset <NAME>` — applies a built-in or user preset above the configuration file and below explicit CLI options.

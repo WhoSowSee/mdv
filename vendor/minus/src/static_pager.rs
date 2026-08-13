@@ -14,5 +14,5 @@ use crate::{Pager, error::MinusError};
 #[cfg_attr(docsrs, doc(cfg(feature = "static_output")))]
 #[allow(clippy::needless_pass_by_value)]
 pub fn page_all(pager: Pager) -> Result<(), MinusError> {
-    init::init_core(&pager, crate::RunMode::Static)
+    init::init_core(&pager, crate::RunMode::Static, true)
 }

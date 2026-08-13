@@ -60,7 +60,7 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     #[test]
-    fn help_panel_contains_mdv_and_glow_shortcuts() {
+    fn help_panel_contains_expected_shortcuts() {
         let lines = build_help_panel(true, true).unwrap();
         let text = lines
             .iter()
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn help_panel_uses_glow_colors() {
+    fn help_panel_uses_expected_colors() {
         let rendered = build_help_panel(true, true).unwrap()[1].render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));

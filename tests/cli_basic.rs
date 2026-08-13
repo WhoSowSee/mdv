@@ -2,6 +2,7 @@ use assert_cmd::Command;
 use mdv::utils::{display_width, strip_ansi};
 use predicates::prelude::*;
 use std::fs;
+use std::time::Duration;
 use tempfile::{NamedTempFile, TempDir};
 
 fn mdv_cmd() -> Command {
@@ -1245,12 +1246,12 @@ fn test_pager_mode_prints_to_stdout_when_output_is_not_a_terminal() {
 }
 
 #[test]
-fn test_interactive_flag_is_rejected() {
-    mdv_cmd()
-        .arg("--interactive")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "unexpected argument '--interactive'",
-        ));
+fn test_interactive_requires_terminal_output() {
+    let mut cmd = mdv_cmd();
+    cmd.arg("--interactive")
+        .write_stdin("# Input")
+        .timeout(Duration::from_secs(2));
+    cmd.assert().failure().stderr(predicate::str::contains(
+        "interactive mode requires a terminal",
+    ));
 }

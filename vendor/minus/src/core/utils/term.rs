@@ -9,15 +9,20 @@ use crossterm::{
 use std::io;
 
 // Keep setup and cleanup adjacent; cleanup must reverse this sequence.
-pub fn setup(out: &mut io::Stdout) -> std::result::Result<(), SetupError> {
+pub fn setup(
+    out: &mut io::Stdout,
+    use_alternate_screen: bool,
+) -> std::result::Result<(), SetupError> {
     if out.is_tty() {
         Ok(())
     } else {
         Err(SetupError::InvalidTerminal)
     }?;
 
-    execute!(out, terminal::EnterAlternateScreen)
-        .map_err(|e| SetupError::AlternateScreen(e.into()))?;
+    if use_alternate_screen {
+        execute!(out, terminal::EnterAlternateScreen)
+            .map_err(|e| SetupError::AlternateScreen(e.into()))?;
+    }
     terminal::enable_raw_mode().map_err(|e| SetupError::RawMode(e.into()))?;
     execute!(out, event::EnableMouseCapture)
         .map_err(|e| SetupError::EnableMouseCapture(e.into()))?;
@@ -28,14 +33,17 @@ pub fn setup(out: &mut io::Stdout) -> std::result::Result<(), SetupError> {
 pub fn cleanup(
     out: &mut impl io::Write,
     cleanup_screen: bool,
+    use_alternate_screen: bool,
 ) -> std::result::Result<(), CleanupError> {
     if cleanup_screen {
         execute!(out, cursor::Show).map_err(|e| CleanupError::ShowCursor(e.into()))?;
         execute!(out, event::DisableMouseCapture)
             .map_err(|e| CleanupError::DisableMouseCapture(e.into()))?;
         terminal::disable_raw_mode().map_err(|e| CleanupError::DisableRawMode(e.into()))?;
-        execute!(out, terminal::LeaveAlternateScreen)
-            .map_err(|e| CleanupError::LeaveAlternateScreen(e.into()))?;
+        if use_alternate_screen {
+            execute!(out, terminal::LeaveAlternateScreen)
+                .map_err(|e| CleanupError::LeaveAlternateScreen(e.into()))?;
+        }
     }
     Ok(())
 }

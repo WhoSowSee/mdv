@@ -74,7 +74,7 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     #[test]
-    fn footer_layout_matches_glow_structure() {
+    fn footer_layout_contains_all_sections() {
         let plain = build_footer("AGENTS.md", 22).unwrap().render_plain(80);
 
         assert_eq!(plain.width(), 80);
@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn footer_uses_glow_colors() {
+    fn footer_uses_expected_colors() {
         let rendered = build_footer("AGENTS.md", 22).unwrap().render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));
