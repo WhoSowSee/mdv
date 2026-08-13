@@ -29,13 +29,9 @@ pub fn draw_for_change(
     // Scroll bounds must use the panel-aware viewport height.
     let writable_rows = ps.content_rows();
 
-    let lower_bound = ps.upper_mark.saturating_add(writable_rows.min(line_count));
-    let mut new_lower_bound = new_upper_mark.saturating_add(writable_rows.min(line_count));
-
-    if new_lower_bound > line_count {
-        *new_upper_mark = line_count.saturating_sub(writable_rows);
-        new_lower_bound = line_count;
-    }
+    let lower_bound = ps.upper_mark.saturating_add(writable_rows).min(line_count);
+    *new_upper_mark = (*new_upper_mark).min(ps.max_upper_mark());
+    let new_lower_bound = new_upper_mark.saturating_add(writable_rows).min(line_count);
 
     if ps.prompt_panel_rows() > 0 {
         if *new_upper_mark == ps.upper_mark {
@@ -70,10 +66,7 @@ pub fn draw_for_change(
             if delta < writable_rows {
                 (lower_bound, new_lower_bound)
             } else {
-                (
-                    *new_upper_mark,
-                    new_upper_mark.saturating_add(normalized_delta),
-                )
+                (*new_upper_mark, new_lower_bound)
             }
         }
         Ordering::Less => {
@@ -243,11 +236,8 @@ pub fn write_from_pagerstate(out: &mut impl Write, ps: &mut PagerState) -> Resul
     let line_count = ps.screen.formatted_lines_count();
 
     let writable_rows = ps.content_rows();
-
-    let lower_mark = ps.upper_mark.saturating_add(writable_rows.min(line_count));
-    if lower_mark > line_count {
-        ps.upper_mark = line_count.saturating_sub(writable_rows);
-    }
+    ps.upper_mark = ps.upper_mark.min(ps.max_upper_mark());
+    let lower_mark = ps.upper_mark.saturating_add(writable_rows).min(line_count);
 
     let display_lines = ps.render_rows_for_display(ps.upper_mark, lower_mark);
     write_raw_lines(out, &display_lines, Some("\r"))

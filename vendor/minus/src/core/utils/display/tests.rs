@@ -100,10 +100,10 @@ fn long_no_line_numbers() {
     assert!(write_from_pagerstate(&mut out, &mut pager).is_ok());
 
     assert_eq!(
-        "\rThird line\n\rFourth line\n\rFifth line\n",
+        "\rFourth line\n\rFifth line\n",
         String::from_utf8(out).expect("Should have written valid UTF-8")
     );
-    assert_eq!(pager.upper_mark, 1);
+    assert_eq!(pager.upper_mark, 2);
 }
 
 #[test]
@@ -173,10 +173,10 @@ fn long_with_line_numbers() {
     assert!(write_from_pagerstate(&mut out, &mut pager).is_ok());
 
     assert_eq!(
-        "\r     2. Another line\n\r     3. Third line\n\r     4. Fourth line\n",
+        "\r     3. Third line\n\r     4. Fourth line\n",
         String::from_utf8(out).expect("Should have written valid UTF-8")
     );
-    assert_eq!(pager.upper_mark, 1);
+    assert_eq!(pager.upper_mark, 2);
 }
 
 #[test]
@@ -300,9 +300,9 @@ fn draw_long_no_line_numbers() {
     assert!(
         String::from_utf8(out)
             .expect("Should have written valid UTF-8")
-            .contains("\rThird line\n\rFourth line")
+            .contains("\rFourth line\n")
     );
-    assert_eq!(pager.upper_mark, 2);
+    assert_eq!(pager.upper_mark, 3);
 }
 
 #[test]
@@ -375,9 +375,9 @@ fn draw_long_with_line_numbers() {
     assert!(
         String::from_utf8(out)
             .expect("Should have written valid UTF-8")
-            .contains("\r     3. Third line\n\r     4. Fourth line")
+            .contains("\r     4. Fourth line\n")
     );
-    assert_eq!(pager.upper_mark, 2);
+    assert_eq!(pager.upper_mark, 3);
 }
 
 #[test]
@@ -571,6 +571,23 @@ mod draw_for_change_tests {
         draw_for_change(&mut out, &mut ps, &mut 3).unwrap();
 
         assert_eq!(out, res);
+    }
+
+    #[test]
+    fn scrolls_one_row_past_eof() {
+        let mut ps = PagerState::new().unwrap();
+        ps.rows = 4;
+        ps.screen.orig_text = "First line\nSecond line\nThird line\nFourth line".to_string();
+        ps.reformat_display().unwrap();
+        ps.upper_mark = 1;
+        let mut upper_mark = 2;
+        let mut out = Vec::new();
+
+        draw_for_change(&mut out, &mut ps, &mut upper_mark).unwrap();
+
+        assert_eq!(upper_mark, 2);
+        assert_eq!(ps.upper_mark, 2);
+        assert!(out.starts_with(ScrollUp(1).to_string().as_bytes()));
     }
 
     #[test]

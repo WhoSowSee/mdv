@@ -665,7 +665,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(ps.content_rows(), 7);
-        assert_eq!(ps.upper_mark, 23);
+        assert_eq!(ps.upper_mark, 24);
         assert_eq!(ps.displayed_prompt_panel.len(), 2);
         assert_eq!(
             command_queue.pop_front(),
@@ -681,7 +681,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(ps.content_rows(), 9);
-        assert_eq!(ps.upper_mark, 21);
+        assert_eq!(ps.upper_mark, 22);
     }
 
     #[test]

@@ -36,6 +36,8 @@ use crate::selection::{
 };
 use crossbeam_channel::Receiver;
 
+const EOF_SCROLL_MARGIN_ROWS: usize = 1;
+
 #[cfg(feature = "search")]
 #[cfg_attr(docsrs, doc(cfg(feature = "search")))]
 #[allow(clippy::module_name_repetitions)]
@@ -265,9 +267,17 @@ impl PagerState {
 
     #[must_use]
     pub const fn max_upper_mark(&self) -> usize {
+        let content_rows = self.content_rows();
+        let available_trailing_rows = content_rows.saturating_sub(1);
+        let trailing_rows = if available_trailing_rows < EOF_SCROLL_MARGIN_ROWS {
+            available_trailing_rows
+        } else {
+            EOF_SCROLL_MARGIN_ROWS
+        };
         self.screen
             .formatted_lines_count()
-            .saturating_sub(self.content_rows())
+            .saturating_add(trailing_rows)
+            .saturating_sub(content_rows)
     }
 
     pub(crate) const fn prompt_row(&self) -> usize {
@@ -667,7 +677,7 @@ mod tests {
 
         assert_eq!(
             ps.displayed_prompt,
-            format!("{:<42}\x1b[0m", "base prompt:42:12:7:3:30:37")
+            format!("{:<42}\x1b[0m", "base prompt:42:12:7:3:30:35")
         );
     }
 
