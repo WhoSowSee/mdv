@@ -23,6 +23,7 @@ pub(super) struct PagerDocument {
     output: String,
     source: String,
     title: Option<String>,
+    status_bar_transparent: bool,
 }
 
 impl PagerDocument {
@@ -31,11 +32,17 @@ impl PagerDocument {
             output,
             source,
             title: None,
+            status_bar_transparent: false,
         }
     }
 
     pub(super) fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
+        self
+    }
+
+    pub(super) const fn with_status_bar_transparent(mut self, transparent: bool) -> Self {
+        self.status_bar_transparent = transparent;
         self
     }
 }
@@ -252,13 +259,17 @@ pub(super) fn page(
     loop {
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
-        let (output, title) = {
+        let (output, title, status_bar_transparent) = {
             let document = document
                 .read()
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-            (document.output.clone(), document.title.clone())
+            (
+                document.output.clone(),
+                document.title.clone(),
+                document.status_bar_transparent,
+            )
         };
-        let footer = PagerFooter::new(title.as_deref(), file.as_deref());
+        let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
         pager.set_text(output)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;
         pager.set_search_prompt("Find: ")?;

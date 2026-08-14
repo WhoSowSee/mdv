@@ -1,5 +1,6 @@
 name: catppuccin
 description: Catppuccin color scheme
+pager_status_bar_transparent: false
 text: "205,214,244"
 text_light: "186,194,222"
 line_number: "186,194,222"

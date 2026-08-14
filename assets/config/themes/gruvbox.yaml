@@ -1,5 +1,6 @@
 name: gruvbox
 description: Gruvbox Dark color scheme
+pager_status_bar_transparent: false
 text: "235,219,178"
 text_light: "168,153,132"
 line_number: "168,153,132"

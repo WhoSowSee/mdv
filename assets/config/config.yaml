@@ -8,7 +8,7 @@ theme: "terminal"          # Option: "terminal" | "solarized-dark" | "nord" | "t
 code_theme: null           # Use null to follow theme; accepts the same values as theme
 syntaxes_dir: null         # Directory with custom .sublime-syntax files; relative paths start from the config directory
 theme_info: false          # Print palette information alongside rendered output
-custom_theme: null         # Override individual UI colors (see formats below)
+custom_theme: null         # Override individual UI theme values (see formats below)
 custom_code_theme: null    # Override syntax colors (same format as custom_theme)
 custom_callout: null       # Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
                            # icon/color are optional
@@ -68,6 +68,7 @@ from_text: null            # Render starting from the first line that contains t
 # `table_wrap` accepts the values above; `heading_layout` also understands camel-case variants from earlier releases.
 
 # Available keys for custom_theme:
+# pager_status_bar_transparent (true or false)
 # text, text_light, line_number, line_number_separator, h1..h6,
 # code, quote, link, emphasis, strong,
 # strikethrough, highlight_background, background, border, list_marker,

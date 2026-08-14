@@ -15,6 +15,8 @@
 #   * `extends` is optional and may name a built-in theme or any other
 #     theme file loaded earlier in the same directory (alphabetical order).
 #     When omitted, missing fields are filled from the default terminal theme.
+#   * `pager_status_bar_transparent` removes the pager footer background and
+#     uses `|` between its sections. It is optional and inherits from the base.
 #   * Every color field is optional; the rest is inherited from the base.
 #   * The `syntax:` block is also optional and merges field-by-field against
 #     the base theme's syntax palette.
@@ -27,6 +29,7 @@
 name: warm
 description: Warm red accent layered on top of monokai.
 extends: monokai
+pager_status_bar_transparent: true
 
 # Override only the colors you want to tweak. Everything else stays
 # inherited from monokai.

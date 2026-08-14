@@ -82,6 +82,10 @@ impl TerminalRenderer {
         Ok(apply_left_margin(&output, self.config.margin.left))
     }
 
+    pub(crate) const fn pager_status_bar_transparent(&self) -> bool {
+        self.theme.pager_status_bar_transparent
+    }
+
     fn render_events(&self, config: &Config, events: Vec<Event<'static>>) -> Result<String> {
         config.validate_horizontal_margins()?;
         let mut renderer =
@@ -245,4 +249,21 @@ pub(crate) fn build_theme_manager(config: &Config) -> ThemeManager {
         }
     }
     manager
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn renderer_exposes_pager_status_bar_transparency() {
+        let config = Config {
+            custom_theme: Some("pager_status_bar_transparent=true".to_string()),
+            ..Config::default()
+        };
+
+        let renderer = TerminalRenderer::new(&config).unwrap();
+
+        assert!(renderer.pager_status_bar_transparent());
+    }
 }

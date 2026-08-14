@@ -1,5 +1,6 @@
 name: material-ocean
 description: Material Theme Ocean color scheme
+pager_status_bar_transparent: false
 text: "238,255,255"
 text_light: "176,190,197"
 line_number: "176,190,197"

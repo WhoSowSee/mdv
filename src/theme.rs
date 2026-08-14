@@ -62,6 +62,8 @@ impl From<Color> for CrosstermColor {
 pub struct Theme {
     pub name: String,
     pub description: String,
+    #[serde(default)]
+    pub pager_status_bar_transparent: bool,
 
     // Text colors
     pub text: Color,
@@ -316,6 +318,9 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         "line_number_separator" | "linenumberseparator" => {
             theme.line_number_separator = parse_color_spec(value)?
         }
+        "pager_status_bar_transparent" | "pagerstatusbartransparent" => {
+            theme.pager_status_bar_transparent = parse_bool_spec(value)?
+        }
         "h1" => theme.h1 = parse_color_spec(value)?,
         "h2" => theme.h2 = parse_color_spec(value)?,
         "h3" => theme.h3 = parse_color_spec(value)?,
@@ -377,6 +382,14 @@ fn normalize_key(key: &str) -> String {
 
 fn default_line_number_color() -> Color {
     Color::Grey
+}
+
+fn parse_bool_spec(value: &str) -> Result<bool> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => bail!("Boolean value '{}' must be 'true' or 'false'.", value),
+    }
 }
 
 pub(crate) fn parse_color_value(value: &str) -> Result<Color> {
@@ -646,6 +659,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn builtin_themes_define_opaque_pager_status_bar() {
+        for (name, source) in BUILTIN_THEME_FILES {
+            let yaml: serde_yaml::Value = serde_yaml::from_str(source).unwrap();
+            assert_eq!(
+                yaml.get("pager_status_bar_transparent"),
+                Some(&serde_yaml::Value::Bool(false)),
+                "built-in theme '{name}' must explicitly use an opaque pager status bar"
+            );
+        }
+    }
+
+    #[test]
     fn test_theme_manager() {
         let manager = ThemeManager::new();
         assert!(manager.get_theme("terminal").is_ok());
@@ -716,6 +741,20 @@ mod tests {
         ));
         assert_eq!(theme.line_number, Color::Rgb { r: 1, g: 2, b: 3 });
         assert_eq!(theme.line_number_separator, Color::Rgb { r: 4, g: 5, b: 6 });
+    }
+
+    #[test]
+    fn custom_theme_can_enable_transparent_pager_status_bar() {
+        let mut theme = Theme::default();
+
+        apply_custom_theme(&mut theme, "pager_status_bar_transparent=true")
+            .expect("pager status bar transparency override should be accepted");
+
+        let yaml = serde_yaml::to_value(theme).unwrap();
+        assert_eq!(
+            yaml.get("pager_status_bar_transparent"),
+            Some(&serde_yaml::Value::Bool(true))
+        );
     }
 
     #[test]

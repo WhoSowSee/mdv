@@ -377,7 +377,7 @@ Built-in themes include:
 
 Switch between them with `--theme` or set a default in your configuration file.
 
-Use `--custom-theme` to override UI colors and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match palette fields (for example `text`, `h1`, `border`, `line_number`, `line_number_separator`, `keyword`, `function`). Color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
+Use `--custom-theme` to override UI theme values and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match theme fields (for example `text`, `h1`, `border`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` accepts `true` or `false`; color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
 
 Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-info README.md`) to inspect how colors apply to a document. Starting from `examples/config.yaml` you can build your own theme variants and keep them in version control.
 
@@ -393,6 +393,7 @@ Drop one or more `*.yaml`/`*.yml` files into `<config_dir>/themes/` to register 
 name: warm
 description: Warm red accent layered on top of monokai.
 extends: monokai
+pager_status_bar_transparent: true
 
 h1: "#ff5577"
 link: "#66ccff"
@@ -407,6 +408,7 @@ Field reference:
 - `name` (required) — the value accepted by `--theme`.
 - `description` (optional) — shown in `mdv --theme-info`; falls back to the base theme's description.
 - `extends` (optional) — names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
+- `pager_status_bar_transparent` (optional) — `false` keeps the filled pager status bar; `true` removes its background and separates sections with `|`. It inherits from the base theme when omitted.
 - Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
 - `syntax:` (optional) — overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).

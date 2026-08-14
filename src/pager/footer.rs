@@ -27,10 +27,11 @@ const PROGRESS_FOREGROUND: PromptColor = PromptColor::Rgb {
 
 pub(super) struct PagerFooter {
     title: String,
+    transparent: bool,
 }
 
 impl PagerFooter {
-    pub(super) fn new(title: Option<&str>, file: Option<&Path>) -> Self {
+    pub(super) fn new(title: Option<&str>, file: Option<&Path>, transparent: bool) -> Self {
         let title = title
             .map(str::to_owned)
             .filter(|name| !name.trim().is_empty())
@@ -41,16 +42,28 @@ impl PagerFooter {
             })
             .unwrap_or_else(|| "stdin".to_string());
 
-        Self { title }
+        Self { title, transparent }
     }
 
     pub(super) fn render(&self, context: &PromptContext<'_>) -> Result<PromptLine, PromptError> {
         let content = context.message().unwrap_or(&self.title);
-        build_footer(content, context.scroll_percentage())
+        build_footer(content, context.scroll_percentage(), self.transparent)
     }
 }
 
-fn build_footer(content: &str, percentage: u8) -> Result<PromptLine, PromptError> {
+fn build_footer(
+    content: &str,
+    percentage: u8,
+    transparent: bool,
+) -> Result<PromptLine, PromptError> {
+    if transparent {
+        build_transparent_footer(content, percentage)
+    } else {
+        build_opaque_footer(content, percentage)
+    }
+}
+
+fn build_opaque_footer(content: &str, percentage: u8) -> Result<PromptLine, PromptError> {
     let brand_style = PromptStyle::default()
         .foreground(MAIN_FOREGROUND)
         .background(ACCENT_BACKGROUND);
@@ -72,6 +85,23 @@ fn build_footer(content: &str, percentage: u8) -> Result<PromptLine, PromptError
         .truncation_indicator(PromptSpan::new("…", main_style)?))
 }
 
+fn build_transparent_footer(content: &str, percentage: u8) -> Result<PromptLine, PromptError> {
+    let main_style = PromptStyle::default().foreground(MAIN_FOREGROUND);
+    let progress_style = main_style.foreground(PROGRESS_FOREGROUND);
+
+    Ok(PromptLine::new()
+        .left(PromptSpan::new(BRAND_TEXT, main_style)?)
+        .left(PromptSpan::new("|", main_style)?)
+        .left(PromptSpan::new(format!(" {content}"), main_style)?)
+        .right(PromptSpan::new(
+            format!(" {percentage:>3}% "),
+            progress_style,
+        )?)
+        .right(PromptSpan::new("| ? Help ", main_style)?)
+        .fill_style(main_style)
+        .truncation_indicator(PromptSpan::new("…", main_style)?))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -79,7 +109,9 @@ mod tests {
 
     #[test]
     fn footer_layout_contains_all_sections() {
-        let plain = build_footer("AGENTS.md", 22).unwrap().render_plain(80);
+        let plain = build_footer("AGENTS.md", 22, false)
+            .unwrap()
+            .render_plain(80);
 
         assert_eq!(plain.width(), 80);
         assert!(plain.starts_with(" MDV  AGENTS.md"));
@@ -88,14 +120,14 @@ mod tests {
 
     #[test]
     fn explicit_title_overrides_the_file_name() {
-        let footer = PagerFooter::new(Some("Help"), Some(Path::new("README.md")));
+        let footer = PagerFooter::new(Some("Help"), Some(Path::new("README.md")), false);
 
         assert_eq!(footer.title, "Help");
     }
 
     #[test]
     fn footer_uses_expected_colors() {
-        let rendered = build_footer("AGENTS.md", 22).unwrap().render(80);
+        let rendered = build_footer("AGENTS.md", 22, false).unwrap().render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));
         assert!(rendered.contains("38;2;90;90;90"));
@@ -105,8 +137,20 @@ mod tests {
     }
 
     #[test]
+    fn transparent_footer_uses_separators_without_background() {
+        let footer = build_footer("AGENTS.md", 22, true).unwrap();
+        let plain = footer.render_plain(80);
+
+        assert!(plain.starts_with(" MDV | AGENTS.md"));
+        assert!(plain.ends_with("  22% | ? Help "));
+        assert!(!plain.contains("|  22%"));
+        assert_eq!(plain.matches('|').count(), 2);
+        assert!(!footer.render(80).contains("\x1b[48;"));
+    }
+
+    #[test]
     fn long_unicode_file_name_is_truncated_to_terminal_width() {
-        let plain = build_footer("очень-длинный-файл-📚.md", 7)
+        let plain = build_footer("очень-длинный-файл-📚.md", 7, false)
             .unwrap()
             .render_plain(32);
 
@@ -116,7 +160,7 @@ mod tests {
 
     #[test]
     fn narrow_footer_never_exceeds_terminal_width() {
-        let footer = build_footer("README.md", 100).unwrap();
+        let footer = build_footer("README.md", 100, false).unwrap();
         for columns in 0..20 {
             assert_eq!(footer.render_plain(columns).width(), columns);
         }

@@ -1,5 +1,6 @@
 name: terminal
 description: Terminal theme with standard colors
+pager_status_bar_transparent: false
 text: reset
 text_light: grey
 line_number: grey

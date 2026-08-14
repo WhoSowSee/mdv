@@ -1,6 +1,8 @@
 #![allow(clippy::shadow_unrelated)]
 #![allow(clippy::cast_possible_truncation)]
-use super::{draw_for_change, draw_full, draw_selection_rows, write_from_pagerstate};
+use super::{
+    draw_for_change, draw_full, draw_selection_rows, write_from_pagerstate, write_prompt_view,
+};
 use crate::{LineNumbers, PagerState, state::Selection};
 use crossterm::cursor::MoveTo;
 use std::fmt::Write;
@@ -61,6 +63,19 @@ fn selection_redraw_updates_rows_without_clearing_the_screen() {
         !rendered
             .contains(&crossterm::terminal::Clear(crossterm::terminal::ClearType::All).to_string())
     );
+}
+
+#[test]
+fn prompt_view_resets_inherited_attributes_before_content() {
+    let mut pager = PagerState::new().unwrap();
+    pager.displayed_prompt = "status".to_string();
+    let mut out = crossterm::style::Attribute::Italic.to_string().into_bytes();
+
+    write_prompt_view(&mut out, &pager).unwrap();
+
+    let rendered = String::from_utf8(out).unwrap();
+    let prompt = format!("{}\r\x1b[0mstatus", MoveTo(0, pager.prompt_row() as u16));
+    assert!(rendered.contains(&prompt));
 }
 
 #[test]
@@ -492,11 +507,18 @@ mod draw_for_change_tests {
     fn write_expected_prompt(out: &mut Vec<u8>, ps: &PagerState) {
         write!(
             out,
-            "{}\r{}",
+            "{}\r{}{}",
             MoveTo(0, ps.prompt_row().try_into().unwrap()),
+            crossterm::style::Attribute::Reset,
             ps.displayed_prompt
         )
         .unwrap();
+    }
+
+    fn atomic_body(out: &[u8]) -> &[u8] {
+        out.strip_prefix(b"\x1b[?2026h")
+            .and_then(|body| body.strip_suffix(b"\x1b[?2026l"))
+            .expect("scroll output should be synchronized")
     }
 
     #[test]
@@ -550,6 +572,26 @@ mod draw_for_change_tests {
     }
 
     #[test]
+    fn incremental_scrolling_is_atomic_in_both_directions() {
+        for (initial_upper_mark, requested_upper_mark, expected_scroll) in [
+            (0, 3, ScrollUp(3).to_string()),
+            (60, 50, ScrollDown(9).to_string()),
+        ] {
+            let mut ps = create_pager_state();
+            ps.upper_mark = initial_upper_mark;
+            let mut upper_mark = requested_upper_mark;
+            let mut out = Vec::new();
+
+            draw_for_change(&mut out, &mut ps, &mut upper_mark).unwrap();
+
+            let written = String::from_utf8(out).unwrap();
+            assert!(written.starts_with("\x1b[?2026h"));
+            assert!(written.contains(&expected_scroll));
+            assert!(written.ends_with("\x1b[?2026l"));
+        }
+    }
+
+    #[test]
     fn small_scrolldown() {
         let mut ps = create_pager_state();
         let mut out = Vec::with_capacity(100);
@@ -570,7 +612,7 @@ mod draw_for_change_tests {
 
         draw_for_change(&mut out, &mut ps, &mut 3).unwrap();
 
-        assert_eq!(out, res);
+        assert_eq!(atomic_body(&out), res.as_slice());
     }
 
     #[test]
@@ -587,7 +629,7 @@ mod draw_for_change_tests {
 
         assert_eq!(upper_mark, 2);
         assert_eq!(ps.upper_mark, 2);
-        assert!(out.starts_with(ScrollUp(1).to_string().as_bytes()));
+        assert!(atomic_body(&out).starts_with(ScrollUp(1).to_string().as_bytes()));
     }
 
     #[test]
@@ -611,7 +653,7 @@ mod draw_for_change_tests {
 
         draw_for_change(&mut out, &mut ps, &mut 50).unwrap();
 
-        assert_eq!(out, res);
+        assert_eq!(atomic_body(&out), res.as_slice());
     }
 
     #[test]
@@ -643,10 +685,7 @@ mod draw_for_change_tests {
 
         draw_for_change(&mut out, &mut ps, &mut 20).unwrap();
 
-        dbg!(String::from_utf8_lossy(&out));
-        dbg!(String::from_utf8_lossy(&res));
-
-        assert_eq!(out, res);
+        assert_eq!(atomic_body(&out), res.as_slice());
     }
 
     #[test]
@@ -664,10 +703,7 @@ mod draw_for_change_tests {
 
         draw_for_change(&mut out, &mut ps, &mut 50).unwrap();
 
-        dbg!(String::from_utf8_lossy(&out));
-        dbg!(String::from_utf8_lossy(&res));
-
-        assert_eq!(out, res);
+        assert_eq!(atomic_body(&out), res.as_slice());
     }
 }
 

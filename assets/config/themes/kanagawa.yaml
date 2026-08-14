@@ -1,5 +1,6 @@
 name: kanagawa
 description: Kanagawa color scheme
+pager_status_bar_transparent: false
 text: "220,215,186"
 text_light: "200,192,147"
 line_number: "200,192,147"

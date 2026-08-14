@@ -1,5 +1,6 @@
 name: monokai
 description: Monokai color scheme
+pager_status_bar_transparent: false
 text: "248,248,242"
 text_light: "117,113,94"
 line_number: "117,113,94"

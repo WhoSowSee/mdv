@@ -1,5 +1,6 @@
 name: solarized-dark
 description: Solarized Dark color scheme
+pager_status_bar_transparent: false
 text: "131,148,150"
 text_light: "88,110,117"
 line_number: "88,110,117"

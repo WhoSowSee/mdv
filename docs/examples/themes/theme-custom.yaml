@@ -19,6 +19,7 @@
 
 name: custom
 description: Fully standalone palette with every field set explicitly.
+pager_status_bar_transparent: false
 
 # Text colors
 text: white

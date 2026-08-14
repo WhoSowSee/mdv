@@ -1,5 +1,6 @@
 name: nord
 description: Nord color scheme
+pager_status_bar_transparent: false
 text: "236,239,244"
 text_light: "216,222,233"
 line_number: "216,222,233"

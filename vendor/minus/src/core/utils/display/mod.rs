@@ -3,7 +3,7 @@
 use crossterm::{
     SynchronizedUpdate,
     cursor::MoveTo,
-    execute, queue,
+    queue,
     terminal::{Clear, ClearType},
 };
 
@@ -46,54 +46,62 @@ pub fn draw_for_change(
     // Large jumps redraw at most one viewport; downward bounds still use the clamped lower bound.
     let normalized_delta = delta.min(writable_rows);
 
-    let (start, end) = match (*new_upper_mark).cmp(&ps.upper_mark) {
-        Ordering::Greater => {
-            queue!(
-                out,
-                crossterm::terminal::ScrollUp(normalized_delta.try_into().unwrap())
-            )?;
-            term::move_cursor(
-                out,
-                0,
-                writable_rows
-                    .saturating_sub(normalized_delta)
-                    .try_into()
-                    .unwrap(),
-                false,
-            )?;
-            queue!(out, Clear(ClearType::CurrentLine))?;
-
-            if delta < writable_rows {
-                (lower_bound, new_lower_bound)
-            } else {
-                (*new_upper_mark, new_lower_bound)
-            }
-        }
-        Ordering::Less => {
-            execute!(
-                out,
-                crossterm::terminal::ScrollDown(normalized_delta.try_into().unwrap())
-            )?;
-            term::move_cursor(out, 0, 0, false)?;
-
-            (
-                *new_upper_mark,
-                new_upper_mark.saturating_add(normalized_delta),
-            )
-        }
-        Ordering::Equal => return Ok(()),
-    };
-
-    let lines = ps.render_rows_for_display(start, end);
-    write_raw_lines(out, &lines, Some("\r"))?;
-
-    ps.upper_mark = *new_upper_mark;
-    ps.format_prompt()?;
-
-    if ps.show_prompt {
-        super::display::write_prompt_view(out, ps)?;
+    if *new_upper_mark == ps.upper_mark {
+        return Ok(());
     }
-    out.flush()?;
+
+    out.sync_update(|out| -> Result<(), MinusError> {
+        let (start, end) = match (*new_upper_mark).cmp(&ps.upper_mark) {
+            Ordering::Greater => {
+                queue!(
+                    out,
+                    crossterm::terminal::ScrollUp(normalized_delta.try_into().unwrap())
+                )?;
+                term::move_cursor(
+                    out,
+                    0,
+                    writable_rows
+                        .saturating_sub(normalized_delta)
+                        .try_into()
+                        .unwrap(),
+                    false,
+                )?;
+                queue!(out, Clear(ClearType::CurrentLine))?;
+
+                if delta < writable_rows {
+                    (lower_bound, new_lower_bound)
+                } else {
+                    (*new_upper_mark, new_lower_bound)
+                }
+            }
+            Ordering::Less => {
+                queue!(
+                    out,
+                    crossterm::terminal::ScrollDown(normalized_delta.try_into().unwrap())
+                )?;
+                term::move_cursor(out, 0, 0, false)?;
+
+                (
+                    *new_upper_mark,
+                    new_upper_mark.saturating_add(normalized_delta),
+                )
+            }
+            Ordering::Equal => return Ok(()),
+        };
+
+        let lines = ps.render_rows_for_display(start, end);
+        write_raw_lines(out, &lines, Some("\r"))?;
+
+        ps.upper_mark = *new_upper_mark;
+        ps.format_prompt()?;
+
+        if ps.show_prompt {
+            super::display::write_prompt_view(out, ps)?;
+        }
+        out.flush()?;
+
+        Ok(())
+    })??;
 
     Ok(())
 }
@@ -103,7 +111,13 @@ pub fn write_prompt_view(out: &mut impl Write, ps: &PagerState) -> Result<(), Mi
         .prompt_row()
         .try_into()
         .map_err(|_| MinusError::Conversion)?;
-    write!(out, "{}\r{}", MoveTo(0, prompt_row), ps.displayed_prompt)?;
+    write!(
+        out,
+        "{}\r{}{}",
+        MoveTo(0, prompt_row),
+        crossterm::style::Attribute::Reset,
+        ps.displayed_prompt
+    )?;
     for line in ps
         .displayed_prompt_panel
         .iter()

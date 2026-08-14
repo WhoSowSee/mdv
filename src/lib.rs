@@ -87,7 +87,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
 
     let content = get_input_content(&cli)?;
     let stdout_is_terminal = std::io::stdout().is_terminal();
-    let output = render_document(
+    let rendered = render_document(
         &content,
         &config,
         cli.do_html,
@@ -119,13 +119,14 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             }) as pager::RefreshCallback
         });
         pager::page(
-            pager::PagerDocument::new(output, content),
+            pager::PagerDocument::new(rendered.output, content)
+                .with_status_bar_transparent(rendered.pager_status_bar_transparent),
             pager_file,
             refresh,
             pager::PagerScreen::Alternate,
         )?;
     } else {
-        print!("{}", output);
+        print!("{}", rendered.output);
     }
 
     if cli.monitor_file
@@ -161,6 +162,11 @@ fn show_help() -> Result<()> {
     }
 }
 
+struct RenderedOutput {
+    output: String,
+    pager_status_bar_transparent: bool,
+}
+
 fn render_document(
     content: &str,
     config: &Config,
@@ -168,13 +174,17 @@ fn render_document(
     show_current_theme: bool,
     current_preset: Option<&str>,
     add_leading_blank: bool,
-) -> Result<String> {
+) -> Result<RenderedOutput> {
     let processor = MarkdownProcessor::new(config);
     let events = processor.parse(content)?;
     let renderer = TerminalRenderer::new(config)?;
+    let pager_status_bar_transparent = renderer.pager_status_bar_transparent();
 
     if do_html {
-        return renderer.to_html(events);
+        return Ok(RenderedOutput {
+            output: renderer.to_html(events)?,
+            pager_status_bar_transparent,
+        });
     }
 
     let mut output = String::new();
@@ -191,7 +201,10 @@ fn render_document(
         output.push('\n');
     }
     output.push_str(&renderer.render(events)?);
-    Ok(output)
+    Ok(RenderedOutput {
+        output,
+        pager_status_bar_transparent,
+    })
 }
 
 fn render_document_file(
@@ -203,7 +216,7 @@ fn render_document_file(
 ) -> Result<pager::PagerDocument> {
     let mut content = std::fs::read_to_string(path)?;
     strip_leading_bom(&mut content);
-    let output = render_document(
+    let rendered = render_document(
         &content,
         config,
         do_html,
@@ -211,7 +224,8 @@ fn render_document_file(
         current_preset,
         true,
     )?;
-    Ok(pager::PagerDocument::new(output, content))
+    Ok(pager::PagerDocument::new(rendered.output, content)
+        .with_status_bar_transparent(rendered.pager_status_bar_transparent))
 }
 
 fn format_current_themes(config: &Config) -> String {

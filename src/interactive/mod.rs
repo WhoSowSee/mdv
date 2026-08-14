@@ -133,9 +133,10 @@ fn open_file_in_pager(path: PathBuf, config: &Config, screen: PagerScreen) -> Re
 }
 
 fn open_source_in_pager(source: String, config: &Config) -> Result<()> {
-    let output = crate::render_document(&source, config, false, false, None, true)?;
+    let rendered = crate::render_document(&source, config, false, false, None, true)?;
     pager::page(
-        PagerDocument::new(output, source),
+        PagerDocument::new(rendered.output, source)
+            .with_status_bar_transparent(rendered.pager_status_bar_transparent),
         None,
         None,
         PagerScreen::Alternate,

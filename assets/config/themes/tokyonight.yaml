@@ -1,5 +1,6 @@
 name: tokyonight
 description: Tokyonight color scheme
+pager_status_bar_transparent: false
 text: "192,202,245"
 text_light: "169,177,214"
 line_number: "169,177,214"

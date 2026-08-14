@@ -32,6 +32,7 @@ pub(crate) struct ThemeFile {
     pub name: String,
     pub description: Option<String>,
     pub extends: Option<String>,
+    pub pager_status_bar_transparent: Option<bool>,
 
     pub text: Option<ColorYaml>,
     pub text_light: Option<ColorYaml>,
@@ -112,6 +113,9 @@ impl ThemeFile {
                 .description
                 .clone()
                 .unwrap_or_else(|| base.description.clone()),
+            pager_status_bar_transparent: self
+                .pager_status_bar_transparent
+                .unwrap_or(base.pager_status_bar_transparent),
             text: pick(&self.text, &base.text),
             text_light: pick(&self.text_light, &base.text_light),
             line_number: pick(&self.line_number, &base.line_number),
@@ -173,6 +177,12 @@ impl ThemeFile {
 
         Ok(Theme {
             description,
+            pager_status_bar_transparent: self.pager_status_bar_transparent.with_context(|| {
+                format!(
+                    "Embedded theme '{}' is missing 'pager_status_bar_transparent'",
+                    name
+                )
+            })?,
             text: color!(self, text),
             text_light: color!(self, text_light),
             line_number: color!(self, line_number),
@@ -408,6 +418,26 @@ mod tests {
         assert_eq!(theme.h2, Theme::default().h2);
         assert_eq!(theme.line_number, Color::Yellow);
         assert_eq!(theme.line_number_separator, Color::Blue);
+    }
+
+    #[test]
+    fn user_theme_can_enable_transparent_pager_status_bar() {
+        let tmp = TempDir::new().unwrap();
+        let themes = tmp.path().join(THEMES_DIR);
+        fs::create_dir(&themes).unwrap();
+        fs::write(
+            themes.join("transparent.yaml"),
+            "name: transparent\npager_status_bar_transparent: true\n",
+        )
+        .unwrap();
+
+        let loaded = load_user_themes(tmp.path(), &ThemeManager::new()).unwrap();
+        assert_eq!(loaded.len(), 1);
+        let yaml = serde_yaml::to_value(&loaded[0]).unwrap();
+        assert_eq!(
+            yaml.get("pager_status_bar_transparent"),
+            Some(&serde_yaml::Value::Bool(true))
+        );
     }
 
     #[test]
