@@ -22,11 +22,21 @@ const STATUS_MESSAGE_TIMEOUT: Duration = Duration::from_secs(3);
 pub(super) struct PagerDocument {
     output: String,
     source: String,
+    title: Option<String>,
 }
 
 impl PagerDocument {
     pub(super) fn new(output: String, source: String) -> Self {
-        Self { output, source }
+        Self {
+            output,
+            source,
+            title: None,
+        }
+    }
+
+    pub(super) fn with_title(mut self, title: impl Into<String>) -> Self {
+        self.title = Some(title.into());
+        self
     }
 }
 
@@ -242,12 +252,13 @@ pub(super) fn page(
     loop {
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
-        let footer = PagerFooter::new(file.as_deref());
-        let output = document
-            .read()
-            .map_err(|_| anyhow!("Pager document lock poisoned"))?
-            .output
-            .clone();
+        let (output, title) = {
+            let document = document
+                .read()
+                .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+            (document.output.clone(), document.title.clone())
+        };
+        let footer = PagerFooter::new(title.as_deref(), file.as_deref());
         pager.set_text(output)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;
         pager.set_search_prompt("Find: ")?;
@@ -654,16 +665,16 @@ mod tests {
         std::fs::write(&file, "# Before").unwrap();
         let refresh_count = Arc::new(AtomicUsize::new(0));
         let callback_count = refresh_count.clone();
-        let document = Arc::new(std::sync::RwLock::new(PagerDocument {
-            output: "rendered before".to_string(),
-            source: "# Before".to_string(),
-        }));
+        let document = Arc::new(std::sync::RwLock::new(PagerDocument::new(
+            "rendered before".to_string(),
+            "# Before".to_string(),
+        )));
         let refresh = Arc::new(move || {
             callback_count.fetch_add(1, Ordering::SeqCst);
-            Ok(PagerDocument {
-                output: "rendered after".to_string(),
-                source: "# After".to_string(),
-            })
+            Ok(PagerDocument::new(
+                "rendered after".to_string(),
+                "# After".to_string(),
+            ))
         });
         let watcher = ActiveWatcher::start(&file, Pager::new(), refresh, document.clone()).unwrap();
 

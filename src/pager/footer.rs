@@ -26,22 +26,26 @@ const PROGRESS_FOREGROUND: PromptColor = PromptColor::Rgb {
 };
 
 pub(super) struct PagerFooter {
-    file_name: String,
+    title: String,
 }
 
 impl PagerFooter {
-    pub(super) fn new(file: Option<&Path>) -> Self {
-        let file_name = file
-            .and_then(Path::file_name)
-            .map(|name| name.to_string_lossy().into_owned())
+    pub(super) fn new(title: Option<&str>, file: Option<&Path>) -> Self {
+        let title = title
+            .map(str::to_owned)
             .filter(|name| !name.trim().is_empty())
+            .or_else(|| {
+                file.and_then(Path::file_name)
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .filter(|name| !name.trim().is_empty())
+            })
             .unwrap_or_else(|| "stdin".to_string());
 
-        Self { file_name }
+        Self { title }
     }
 
     pub(super) fn render(&self, context: &PromptContext<'_>) -> Result<PromptLine, PromptError> {
-        let content = context.message().unwrap_or(&self.file_name);
+        let content = context.message().unwrap_or(&self.title);
         build_footer(content, context.scroll_percentage())
     }
 }
@@ -80,6 +84,13 @@ mod tests {
         assert_eq!(plain.width(), 80);
         assert!(plain.starts_with(" MDV  AGENTS.md"));
         assert!(plain.ends_with("  22%  ? Help "));
+    }
+
+    #[test]
+    fn explicit_title_overrides_the_file_name() {
+        let footer = PagerFooter::new(Some("Help"), Some(Path::new("README.md")));
+
+        assert_eq!(footer.title, "Help");
     }
 
     #[test]

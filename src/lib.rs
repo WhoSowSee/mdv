@@ -27,8 +27,8 @@ mod interactive_tests;
 pub use list_marker::{PrettyListStyle, UniformListMarker};
 
 use anyhow::Result;
-use clap::ArgMatches;
-use cli::Cli;
+use clap::{ArgMatches, CommandFactory};
+use cli::{Cli, CliCommand};
 use config::Config;
 use markdown::MarkdownProcessor;
 use renderer::TerminalRenderer;
@@ -39,6 +39,10 @@ use std::sync::Arc;
 
 /// Main entry point for the mdv application
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
+    if matches!(cli.command, Some(CliCommand::Help)) {
+        return show_help();
+    }
+
     if cli.init_config.is_some() {
         let path = Config::write_default_config(&cli, matches)?;
         println!("Created config file: {}", path.display());
@@ -132,6 +136,29 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn show_help() -> Result<()> {
+    let mut command = Cli::command();
+    if let Some(bin_name) = std::env::args_os()
+        .next()
+        .and_then(|arg| PathBuf::from(arg).file_name().map(|name| name.to_owned()))
+        .and_then(|name| name.into_string().ok())
+    {
+        command = command.bin_name(bin_name);
+    }
+    let help = command.render_long_help().to_string();
+    if io::stdin().is_terminal() && io::stdout().is_terminal() {
+        pager::page(
+            pager::PagerDocument::new(help.clone(), help).with_title("Help"),
+            None,
+            None,
+            pager::PagerScreen::Alternate,
+        )
+    } else {
+        print!("{help}");
+        Ok(())
+    }
 }
 
 fn render_document(

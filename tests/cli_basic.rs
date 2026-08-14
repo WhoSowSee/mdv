@@ -25,6 +25,21 @@ fn test_help_command() {
 }
 
 #[test]
+fn test_help_subcommand_prints_long_help_when_output_is_not_a_terminal() {
+    let subcommand = mdv_cmd().arg("help").output().unwrap();
+    let help_flag = mdv_cmd().arg("--help").output().unwrap();
+
+    assert!(subcommand.status.success());
+    assert!(help_flag.status.success());
+    assert_eq!(subcommand.stdout, help_flag.stdout);
+
+    let stdout = String::from_utf8(subcommand.stdout).unwrap();
+    assert!(stdout.contains("terminal-based markdown viewer"));
+    assert!(stdout.contains("Usage:"));
+    assert!(stdout.contains("--block-spacing <SPACING>"));
+}
+
+#[test]
 fn test_pretty_marker_help_documents_font_behavior() {
     let mut cmd = mdv_cmd();
     cmd.arg("--help");

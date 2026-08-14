@@ -1,7 +1,7 @@
 use crate::block_spacing::BlockSpacingOverrides;
 use crate::list_marker::{PrettyListStyle, UniformListMarker};
 use clap::builder::PossibleValue;
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::fmt;
 use std::path::PathBuf;
 
@@ -10,11 +10,13 @@ use std::path::PathBuf;
     name = "mdv",
     version = env!("CARGO_PKG_VERSION"),
     about = "Terminal Markdown Viewer - A fast, feature-rich markdown viewer for the terminal",
+    disable_help_subcommand = true,
     long_about = r#"
 mdv is a terminal-based markdown viewer that renders markdown files with syntax highlighting, themes, and various formatting options. It supports monitoring files for changes, custom themes, and can output both formatted text and HTML.
 
 Examples:
   mdv README.md                    # View a markdown file
+  mdv help                         # Browse the full help
   mdv -t monokai README.md         # Use monokai theme
   mdv -m README.md                 # Monitor file for changes
   mdv -H README.md                 # Output HTML instead of terminal formatting
@@ -23,6 +25,9 @@ Examples:
 "#
 )]
 pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<CliCommand>,
+
     /// Path to markdown file (use '-' for stdin)
     #[arg(value_name = "FILE")]
     pub filename: Option<String>,
@@ -357,6 +362,12 @@ pub struct Cli {
         long_help = "Configure blank lines above and below individual block elements\nEntries are separated by ';', sides by ','\nOmitted elements and sides keep their default spacing\nElements: paragraph, h1..h6, code-block, display-math, table, horizontal-rule\nunordered-list, ordered-list, task-list, blockquote, callout, definition-list\ninline-references, end-references, attached-footnotes, endnotes\n\nExample: --block-spacing 'paragraph:top=0,bottom=1;callout:top=1'"
     )]
     pub block_spacing: Option<BlockSpacingOverrides>,
+}
+
+#[derive(Debug, Clone, Copy, Subcommand)]
+pub enum CliCommand {
+    /// Show the full help in the built-in pager
+    Help,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -1063,6 +1074,16 @@ mod tests {
 
         let cli = Cli::parse_from(["mdv", "-p"]);
         assert!(cli.pager);
+    }
+
+    #[test]
+    fn help_subcommand_does_not_steal_an_escaped_file_name() {
+        let cli = Cli::parse_from(["mdv", "help"]);
+        assert!(matches!(cli.command, Some(CliCommand::Help)));
+
+        let cli = Cli::parse_from(["mdv", "--", "help"]);
+        assert!(cli.command.is_none());
+        assert_eq!(cli.filename.as_deref(), Some("help"));
     }
 
     #[test]

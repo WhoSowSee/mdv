@@ -81,6 +81,7 @@ Use the `mdv` binary from `target/release` directly or add it to your PATH.
 
 ```text
 mdv [OPTIONS] [FILE]
+mdv help
 ```
 
 Also, mdv supports reading from standard input (stdin) and working in pipelines
@@ -181,6 +182,7 @@ cat <FILE> | mdv
 
 ### Information
 
+- `mdv help` — opens the full `mdv --help` output in the built-in pager. When input or output is redirected, it prints the same help directly.
 - `-h, --help` — shows the help text.
 - `-V, --version` — prints the current version.
 
