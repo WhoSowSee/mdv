@@ -216,7 +216,7 @@ impl InputClassifier for PagerInputClassifier {
         state: &PagerState,
     ) -> Option<InputEvent> {
         let help_visible = state.prompt_panel_rows() > 0;
-        match help_input_action(&event, help_visible) {
+        match help_input_action(&event, help_visible, state.search_is_active()) {
             HelpInputAction::Toggle => {
                 self.toggle_help(help_visible);
                 return None;
@@ -252,7 +252,6 @@ pub(super) fn page(
 ) -> Result<()> {
     let editor = EditorCommand::from_env();
     let editor_enabled = !matches!(editor, Ok(None)) && file.is_some();
-    let help_panel = build_help_panel(editor_enabled, refresh.is_some())?;
     let document = Arc::new(RwLock::new(document));
     let mut pending_message = None;
 
@@ -269,6 +268,8 @@ pub(super) fn page(
                 document.status_bar_transparent,
             )
         };
+        let help_panel =
+            build_help_panel(editor_enabled, refresh.is_some(), status_bar_transparent)?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
         pager.set_text(output)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;
@@ -436,10 +437,11 @@ enum HelpInputAction {
 fn help_input_action(
     event: &minus::input::crossterm_event::Event,
     help_visible: bool,
+    search_active: bool,
 ) -> HelpInputAction {
     if is_help_key(event) {
         HelpInputAction::Toggle
-    } else if help_visible && is_escape_key(event) {
+    } else if help_visible && is_escape_key(event) && !search_active {
         HelpInputAction::Dismiss
     } else if help_visible && is_search_key(event) {
         HelpInputAction::DismissAndForward
@@ -565,11 +567,21 @@ mod tests {
     }
 
     #[test]
-    fn escape_closes_visible_help_without_reaching_minus() {
+    fn escape_routing_respects_help_and_search_state() {
         let event = Event::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
-        assert_eq!(help_input_action(&event, true), HelpInputAction::Dismiss);
-        assert_eq!(help_input_action(&event, false), HelpInputAction::Forward);
+        assert_eq!(
+            help_input_action(&event, true, false),
+            HelpInputAction::Dismiss
+        );
+        assert_eq!(
+            help_input_action(&event, false, false),
+            HelpInputAction::Forward
+        );
+        assert_eq!(
+            help_input_action(&event, true, true),
+            HelpInputAction::Forward
+        );
     }
 
     #[test]
@@ -577,10 +589,13 @@ mod tests {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
 
         assert_eq!(
-            help_input_action(&event, true),
+            help_input_action(&event, true, false),
             HelpInputAction::DismissAndForward
         );
-        assert_eq!(help_input_action(&event, false), HelpInputAction::Forward);
+        assert_eq!(
+            help_input_action(&event, false, false),
+            HelpInputAction::Forward
+        );
     }
 
     #[test]
@@ -588,18 +603,27 @@ mod tests {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL));
 
         assert_eq!(
-            help_input_action(&event, true),
+            help_input_action(&event, true, false),
             HelpInputAction::DismissAndForward
         );
-        assert_eq!(help_input_action(&event, false), HelpInputAction::Forward);
+        assert_eq!(
+            help_input_action(&event, false, false),
+            HelpInputAction::Forward
+        );
     }
 
     #[test]
     fn question_mark_always_toggles_help() {
         let event = Event::Key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::SHIFT));
 
-        assert_eq!(help_input_action(&event, false), HelpInputAction::Toggle);
-        assert_eq!(help_input_action(&event, true), HelpInputAction::Toggle);
+        assert_eq!(
+            help_input_action(&event, false, false),
+            HelpInputAction::Toggle
+        );
+        assert_eq!(
+            help_input_action(&event, true, false),
+            HelpInputAction::Toggle
+        );
     }
 
     #[test]

@@ -46,6 +46,7 @@ pub struct SearchState {
     /// Active search direction.
     pub search_mode: SearchMode,
     pub(crate) search_term: Option<regex::Regex>,
+    pub(crate) last_search_query: String,
     pub(crate) search_idx: BTreeSet<usize>,
     pub(crate) search_mark: usize,
     pub(crate) incremental_search_condition:
@@ -68,6 +69,7 @@ impl Default for SearchState {
         Self {
             search_mode: SearchMode::Unknown,
             search_term: None,
+            last_search_query: String::new(),
             search_idx: BTreeSet::new(),
             search_mark: 0,
             incremental_search_condition,
@@ -263,6 +265,13 @@ impl PagerState {
         } else {
             available
         }
+    }
+
+    /// Returns whether search highlights are currently active.
+    #[cfg(feature = "search")]
+    #[must_use]
+    pub const fn search_is_active(&self) -> bool {
+        self.search_state.search_term.is_some()
     }
 
     #[must_use]

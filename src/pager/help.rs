@@ -15,10 +15,14 @@ const LEFT_COLUMN_WIDTH: usize = 30;
 pub(super) fn build_help_panel(
     editor_enabled: bool,
     reload_enabled: bool,
+    transparent: bool,
 ) -> Result<Vec<PromptLine>, PromptError> {
-    let style = PromptStyle::default()
-        .foreground(HELP_FOREGROUND)
-        .background(HELP_BACKGROUND);
+    let style = PromptStyle::default().foreground(HELP_FOREGROUND);
+    let style = if transparent {
+        style
+    } else {
+        style.background(HELP_BACKGROUND)
+    };
     let edit = editor_enabled.then_some("e/E     edit this document");
     let reload = reload_enabled.then_some("r       reload this document");
 
@@ -26,11 +30,11 @@ pub(super) fn build_help_panel(
         None,
         Some(("k/↑      up", Some("g/home  go to top"))),
         Some(("j/↓      down", Some("G/end   go to bottom"))),
-        Some(("b/pgup   page up", Some("c       copy contents"))),
+        Some(("b/pgup   page up", Some("esc/?   close help"))),
         Some(("f/pgdn   page down", edit)),
-        Some(("u        ½ page up", reload)),
-        Some(("d        ½ page down", Some("/       search"))),
-        Some(("q        quit", Some("esc/?   close help"))),
+        Some(("u        ½ page up", Some("c       copy contents"))),
+        Some(("d        ½ page down", reload)),
+        Some(("q        quit", Some("/       search"))),
         None,
     ]
     .into_iter()
@@ -61,12 +65,12 @@ mod tests {
 
     #[test]
     fn help_panel_contains_expected_shortcuts() {
-        let lines = build_help_panel(true, true).unwrap();
-        let text = lines
+        let lines = build_help_panel(true, true, false).unwrap();
+        let rendered_lines = lines
             .iter()
             .map(|line| line.render_plain(100))
-            .collect::<Vec<_>>()
-            .join("\n");
+            .collect::<Vec<_>>();
+        let text = rendered_lines.join("\n");
 
         for shortcut in [
             "k/↑      up",
@@ -91,11 +95,15 @@ mod tests {
         let lowercase = text.to_ascii_lowercase();
         assert!(!lowercase.contains("ctrl+f"));
         assert!(!lowercase.contains("c-f"));
+        assert!(rendered_lines[2].contains("G/end   go to bottom"));
+        assert!(rendered_lines[3].contains("esc/?   close help"));
+        assert!(rendered_lines[4].contains("e/E     edit this document"));
+        assert!(rendered_lines[5].contains("c       copy contents"));
     }
 
     #[test]
     fn help_panel_has_symmetric_vertical_padding() {
-        let lines = build_help_panel(true, true).unwrap();
+        let lines = build_help_panel(true, true, false).unwrap();
 
         assert!(lines.first().unwrap().render_plain(80).trim().is_empty());
         assert!(lines.last().unwrap().render_plain(80).trim().is_empty());
@@ -103,7 +111,7 @@ mod tests {
 
     #[test]
     fn help_panel_omits_unavailable_file_actions() {
-        let lines = build_help_panel(false, false).unwrap();
+        let lines = build_help_panel(false, false, false).unwrap();
         let text = lines
             .iter()
             .map(|line| line.render_plain(100))
@@ -116,7 +124,7 @@ mod tests {
 
     #[test]
     fn help_panel_fills_the_terminal_width() {
-        let lines = build_help_panel(true, true).unwrap();
+        let lines = build_help_panel(true, true, false).unwrap();
 
         for columns in [20, 80, 120] {
             assert!(
@@ -129,10 +137,19 @@ mod tests {
 
     #[test]
     fn help_panel_uses_expected_colors() {
-        let rendered = build_help_panel(true, true).unwrap()[1].render(80);
+        let rendered = build_help_panel(true, true, false).unwrap()[1].render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));
         assert!(rendered.contains("48;2;27;27;27"));
+        assert!(rendered.ends_with("\x1b[0m"));
+    }
+
+    #[test]
+    fn transparent_help_panel_does_not_set_a_background() {
+        let rendered = build_help_panel(true, true, true).unwrap()[1].render(80);
+
+        assert!(rendered.contains("38;2;125;125;125"));
+        assert!(!rendered.contains("\x1b[48;"));
         assert!(rendered.ends_with("\x1b[0m"));
     }
 }

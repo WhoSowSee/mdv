@@ -59,6 +59,9 @@ pub enum InputEvent {
     /// `/`, Searching for certain pattern of text
     #[cfg(feature = "search")]
     Search(SearchMode),
+    /// Clears the active search highlights without exiting the pager.
+    #[cfg(feature = "search")]
+    CancelSearch,
     /// Moves to the next match.
     #[cfg(feature = "search")]
     #[deprecated = "Use [InputEvent::MoveToNextMatch(1)](InputEvent::MoveToNextMatch) for the same effect."]
@@ -98,7 +101,17 @@ pub fn generate_default_bindings<S>(map: &mut HashedEventRegister<S>)
 where
     S: std::hash::BuildHasher,
 {
-    map.add_key_events(&["q", "c-c", "esc"], |_, _| InputEvent::Exit);
+    map.add_key_events(&["q", "c-c"], |_, _| InputEvent::Exit);
+    #[cfg(feature = "search")]
+    map.add_key_events(&["esc"], |_, ps| {
+        if ps.search_is_active() {
+            InputEvent::CancelSearch
+        } else {
+            InputEvent::Exit
+        }
+    });
+    #[cfg(not(feature = "search"))]
+    map.add_key_events(&["esc"], |_, _| InputEvent::Exit);
 
     map.add_key_events(&["up", "k"], |_, ps| {
         let position = ps.prefix_num.parse::<usize>().unwrap_or(1);
@@ -385,6 +398,13 @@ impl InputClassifier for DefaultInputClassifier {
                 modifiers: KeyModifiers::CONTROL,
                 ..
             }) => Some(InputEvent::UpdateLineNumber(!ps.line_numbers)),
+
+            #[cfg(feature = "search")]
+            Event::Key(KeyEvent {
+                code: KeyCode::Esc,
+                modifiers: KeyModifiers::NONE,
+                ..
+            }) if ps.search_is_active() => Some(InputEvent::CancelSearch),
 
             Event::Key(KeyEvent {
                 code: KeyCode::Char('q'),

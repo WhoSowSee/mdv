@@ -175,6 +175,11 @@ pub fn handle_event(
             command_queue.push_back(Command::Io(IoCommand::FetchSearchQuery));
         }
         #[cfg(feature = "search")]
+        Command::UserInput(InputEvent::CancelSearch) => {
+            deactivate_search(p)?;
+            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        }
+        #[cfg(feature = "search")]
         Command::UserInput(InputEvent::NextMatch | InputEvent::MoveToNextMatch(1))
             if p.search_state.search_term.is_some() =>
         {
@@ -428,6 +433,59 @@ fn set_search_position(p: &mut PagerState, pager: &Pager) -> Result<(), MinusErr
     Ok(())
 }
 
+#[cfg(feature = "search")]
+fn deactivate_search(p: &mut PagerState) -> Result<(), PromptError> {
+    p.search_mode = search::SearchMode::Unknown;
+    p.search_state.search_mode = search::SearchMode::Unknown;
+    p.search_state.search_term = None;
+    p.search_state.search_mark = 0;
+    p.reformat_display()?;
+    Ok(())
+}
+
+#[cfg(feature = "search")]
+fn apply_search_result(
+    p: &mut PagerState,
+    pager: &Pager,
+    command_queue: &mut CommandQueue,
+    search_result: search::FetchInputResult,
+) -> Result<(), MinusError> {
+    let search::FetchInputResult {
+        string,
+        compiled_regex,
+        input_status,
+    } = search_result;
+
+    if string.is_empty() {
+        p.search_state.last_search_query.clear();
+        deactivate_search(p)?;
+        command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        return Ok(());
+    }
+
+    if input_status == search::InputStatus::Cancelled {
+        p.search_state.last_search_query = string;
+        command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        return Ok(());
+    }
+
+    let Some(search_term) = compiled_regex.or_else(|| regex::Regex::new(&string).ok()) else {
+        p.search_state.last_search_query = string;
+        command_queue.push_back(Command::SendMessage(
+            "Invalid regular expression. Press Enter".to_string(),
+        ));
+        return Ok(());
+    };
+    p.search_state.last_search_query = string;
+    p.search_state.search_term = Some(search_term);
+
+    p.reformat_display()?;
+    set_search_position(p, pager)?;
+    command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+    command_queue.push_back(Command::Io(IoCommand::RedrawPrompt));
+    Ok(())
+}
+
 #[cfg_attr(
     not(feature = "search"),
     allow(unused_variables),
@@ -492,26 +550,7 @@ pub fn handle_io_command(
             drop(active);
             cvar.notify_one();
 
-            p.search_state.search_term = if search_result.compiled_regex.is_some() {
-                search_result.compiled_regex
-            } else if !search_result.string.is_empty() {
-                let compiled_regex = regex::Regex::new(&search_result.string).ok();
-                if compiled_regex.is_none() {
-                    command_queue.push_back(Command::SendMessage(
-                        "Invalid regular expression. Press Enter".to_string(),
-                    ));
-                    return Ok(());
-                }
-                compiled_regex
-            } else {
-                command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
-                return Ok(());
-            };
-
-            p.reformat_display()?;
-            set_search_position(p, pager)?;
-            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
-            command_queue.push_back(Command::Io(IoCommand::RedrawPrompt));
+            apply_search_result(p, pager, command_queue, search_result)?;
         }
     }
     Ok(())
@@ -529,6 +568,121 @@ mod tests {
     use std::sync::{Arc, atomic::AtomicBool};
 
     const TEST_STR: &str = "This is some sample text";
+
+    #[cfg(feature = "search")]
+    #[allow(clippy::trivial_regex)]
+    fn pager_with_active_search() -> PagerState {
+        let mut ps = PagerState::new().unwrap();
+        ps.screen.orig_text = "pager\nother".to_string();
+        ps.search_mode = crate::search::SearchMode::Forward;
+        ps.search_state.search_mode = crate::search::SearchMode::Forward;
+        ps.search_state.last_search_query = "pager".to_string();
+        ps.search_state.search_term = Some(regex::Regex::new("pager").unwrap());
+        ps.reformat_display().unwrap();
+        ps
+    }
+
+    #[cfg(feature = "search")]
+    #[test]
+    fn cancel_search_clears_highlights_but_keeps_the_query_for_reuse() {
+        let mut ps = pager_with_active_search();
+        let mut command_queue = CommandQueue::new_zero();
+        let is_exited = Arc::new(AtomicBool::new(false));
+        assert!(!ps.search_state.search_idx.is_empty());
+
+        handle_event(
+            Command::UserInput(InputEvent::CancelSearch),
+            &mut ps,
+            &mut command_queue,
+            &is_exited,
+        )
+        .unwrap();
+
+        assert!(ps.search_state.search_term.is_none());
+        assert!(ps.search_state.search_idx.is_empty());
+        assert_eq!(ps.search_mode, crate::search::SearchMode::Unknown);
+        assert_eq!(
+            ps.search_state.search_mode,
+            crate::search::SearchMode::Unknown
+        );
+        assert!(!is_exited.load(std::sync::atomic::Ordering::SeqCst));
+        assert_eq!(
+            command_queue.pop_front(),
+            Some(Command::Io(IoCommand::RedrawDisplay))
+        );
+
+        handle_event(
+            Command::UserInput(InputEvent::Search(crate::search::SearchMode::Forward)),
+            &mut ps,
+            &mut command_queue,
+            &is_exited,
+        )
+        .unwrap();
+        let search_opts = crate::search::SearchOpts::from(&ps);
+
+        assert_eq!(search_opts.string, "pager");
+    }
+
+    #[cfg(feature = "search")]
+    #[test]
+    fn manually_cleared_search_input_forgets_the_saved_query() {
+        let mut ps = pager_with_active_search();
+        let pager = Pager::new();
+        let mut command_queue = CommandQueue::new_zero();
+
+        super::apply_search_result(
+            &mut ps,
+            &pager,
+            &mut command_queue,
+            crate::search::FetchInputResult {
+                string: String::new(),
+                compiled_regex: None,
+                input_status: crate::search::InputStatus::Cancelled,
+            },
+        )
+        .unwrap();
+
+        assert!(ps.search_state.last_search_query.is_empty());
+        assert!(ps.search_state.search_term.is_none());
+        assert!(ps.search_state.search_idx.is_empty());
+        assert_eq!(ps.search_mode, crate::search::SearchMode::Unknown);
+        assert_eq!(
+            command_queue.pop_front(),
+            Some(Command::Io(IoCommand::RedrawDisplay))
+        );
+
+        ps.search_state.search_mode = crate::search::SearchMode::Forward;
+        assert!(crate::search::SearchOpts::from(&ps).string.is_empty());
+    }
+
+    #[cfg(feature = "search")]
+    #[test]
+    fn cancelled_search_input_preserves_the_new_draft() {
+        let mut ps = pager_with_active_search();
+        let pager = Pager::new();
+        let mut command_queue = CommandQueue::new_zero();
+
+        super::apply_search_result(
+            &mut ps,
+            &pager,
+            &mut command_queue,
+            crate::search::FetchInputResult {
+                string: "[draft".to_string(),
+                compiled_regex: None,
+                input_status: crate::search::InputStatus::Cancelled,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            ps.search_state
+                .search_term
+                .as_ref()
+                .map(regex::Regex::as_str),
+            Some("pager")
+        );
+        assert_eq!(crate::search::SearchOpts::from(&ps).string, "[draft");
+    }
 
     #[cfg(feature = "search")]
     #[test]

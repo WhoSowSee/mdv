@@ -437,6 +437,30 @@ fn test_misc_events() {
 }
 
 #[test]
+#[cfg(feature = "search")]
+#[allow(clippy::trivial_regex)]
+fn escape_does_not_exit_while_search_highlights_are_active() {
+    let mut pager = PagerState::new().unwrap();
+    pager.search_state.search_mode = SearchMode::Forward;
+    pager.search_state.search_term = Some(regex::Regex::new("pager").unwrap());
+    let event = Event::Key(KeyEvent {
+        code: KeyCode::Esc,
+        modifiers: KeyModifiers::NONE,
+        kind: crossterm::event::KeyEventKind::Press,
+        state: KeyEventState::NONE,
+    });
+
+    assert_eq!(
+        handle_input(event.clone(), &pager),
+        Some(InputEvent::CancelSearch)
+    );
+    assert_eq!(
+        DefaultInputClassifier.classify_input(event, &pager),
+        Some(InputEvent::CancelSearch)
+    );
+}
+
+#[test]
 #[allow(clippy::too_many_lines)]
 #[cfg(feature = "search")]
 fn test_search_bindings() {

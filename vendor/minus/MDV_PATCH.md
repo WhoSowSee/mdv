@@ -17,10 +17,11 @@ mdv adds a typed prompt-rendering API:
 - The prompt is regenerated after vertical or horizontal scrolling, appends, resize/reformat operations, temporary messages, and renderer lifecycle changes.
 - Prompt-panel scrolling uses synchronized full redraws so terminal scroll commands cannot move panel fragments into the document viewport.
 - Entering search pauses the general event reader before the search command is queued, keeping search cancellation keys inside the search input loop.
+- Search input restores and selects the last query draft. Escape closes the prompt while preserving its current text even without confirmation; Backspace or Delete removes the selected query, cursor movement collapses the selection for ordinary editing, and a manually cleared query is not restored later. Shifted characters are accepted, and editing uses Unicode character positions instead of UTF-8 byte offsets. Outside the input prompt, Escape clears active highlights while retaining the query for reuse; only the next Escape exits.
 - Mouse selection maps terminal display cells to ANSI-free Unicode text coordinates, converts horizontal byte offsets back to character offsets, keeps complete grapheme clusters intact, redraws only changed rows inside a synchronized terminal update, and remains highlighted after mouse release.
 - The fixed mdv selection palette (`#8F93A2` on `#1F2233`) overrides embedded SGR colors and attributes while selected, then restores the original style at the selection boundary.
 - `dynamic_paging_in_place` runs the same dynamic pager without entering or leaving a terminal screen buffer, allowing callers that already own an alternate screen to hand it over without exposing the underlying terminal.
-- Default navigation adds `b`/`f` for full-page movement and `Esc` for exit, uses the panel-aware content height for full- and half-page movement, maps Space to single-line down, and maps `Ctrl+F` to forward search. The Space and `Ctrl+F` aliases stay out of mdv's help panel.
+- Default navigation adds `b`/`f` for full-page movement and state-aware `Esc`, uses the panel-aware content height for full- and half-page movement, maps Space to single-line down, and maps `Ctrl+F` to forward search. The Space and `Ctrl+F` aliases stay out of mdv's help panel.
 
 The renderer runs synchronously while the pager state is locked. Implementations must remain fast, non-blocking, and free of terminal I/O.
 

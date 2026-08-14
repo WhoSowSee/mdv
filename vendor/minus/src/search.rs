@@ -68,11 +68,11 @@ pub struct SearchOpts<'a> {
     pub string: String,
     /// Search-input status.
     pub input_status: InputStatus,
-    /// One-based cursor column within the query.
+    /// One-based character position within the query.
     pub cursor_position: u16,
     /// Active search direction.
     pub search_mode: SearchMode,
-    /// Start column of each word in the query.
+    /// Character position where each word starts in the query.
     pub word_index: Vec<u16>,
     /// Search marker selected by [`SearchMode`].
     pub search_char: char,
@@ -83,6 +83,7 @@ pub struct SearchOpts<'a> {
     /// Incremental-search state, when available.
     pub incremental_search_options: Option<IncrementalSearchOpts<'a>>,
     compiled_regex: Option<Regex>,
+    query_selected: bool,
 }
 
 /// Pager state captured for incremental-search previews.
@@ -137,19 +138,24 @@ impl<'a> From<&'a PagerState> for SearchOpts<'a> {
             .search_prompt
             .clone()
             .unwrap_or_else(|| search_char.to_string());
+        let string = ps.search_state.last_search_query.clone();
+        let cursor_position = query_end_position(&string);
+        let word_index = word_start_positions(&string);
+        let query_selected = !string.is_empty();
 
         Self {
             ev: None,
-            string: String::with_capacity(200),
+            string,
             input_status: InputStatus::Active,
-            cursor_position: 1,
-            word_index: Vec::with_capacity(200),
+            cursor_position,
+            word_index,
             prompt,
             search_char,
             rows: ps.prompt_row().try_into().unwrap(),
             cols: ps.cols.try_into().unwrap(),
             incremental_search_options: Some(incremental_search_options),
             compiled_regex: None,
+            query_selected,
             search_mode: ps.search_state.search_mode,
         }
     }
@@ -160,8 +166,40 @@ impl SearchOpts<'_> {
         let prompt_width =
             u16::try_from(unicode_width::UnicodeWidthStr::width(self.prompt.as_str()))
                 .unwrap_or(u16::MAX);
-        prompt_width.saturating_add(self.cursor_position.saturating_sub(1))
+        let cursor_byte_index =
+            byte_index_at_character_position(&self.string, self.cursor_position);
+        let query_width = u16::try_from(unicode_width::UnicodeWidthStr::width(
+            &self.string[..cursor_byte_index],
+        ))
+        .unwrap_or(u16::MAX);
+        prompt_width.saturating_add(query_width)
     }
+}
+
+fn query_end_position(query: &str) -> u16 {
+    query.chars().count().saturating_add(1).try_into().unwrap()
+}
+
+fn byte_index_at_character_position(query: &str, position: u16) -> usize {
+    query
+        .char_indices()
+        .nth(usize::from(position.saturating_sub(1)))
+        .map_or(query.len(), |(index, _)| index)
+}
+
+fn character_position_at_byte_index(query: &str, byte_index: usize) -> u16 {
+    query[..byte_index]
+        .chars()
+        .count()
+        .saturating_add(1)
+        .try_into()
+        .unwrap()
+}
+
+fn word_start_positions(query: &str) -> Vec<u16> {
+    WORD.find_iter(query)
+        .map(|word| character_position_at_byte_index(query, word.start()))
+        .collect()
 }
 
 /// Search-input lifecycle state.
@@ -186,15 +224,7 @@ impl InputStatus {
 pub(crate) struct FetchInputResult {
     pub(crate) string: String,
     pub(crate) compiled_regex: Option<Regex>,
-}
-
-impl FetchInputResult {
-    const fn new_empty() -> Self {
-        Self {
-            string: String::new(),
-            compiled_regex: None,
-        }
-    }
+    pub(crate) input_status: InputStatus,
 }
 
 fn line_matches_query(line: &str, query: &Regex) -> bool {
@@ -422,32 +452,24 @@ where
     F: Fn(&SearchOpts<'_>) -> bool,
 {
     const FIRST_AVAILABLE_COLUMN: u16 = 1;
-    let last_available_column: u16 = so.string.len().saturating_add(1).try_into().unwrap();
+    let last_available_column = query_end_position(&so.string);
 
     if so.ev.is_none() {
         return Ok(());
     }
 
-    let populate_word_index = |so: &mut SearchOpts<'_>| {
-        so.word_index = WORD
-            .find_iter(&so.string)
-            .map(|c| c.start().saturating_add(1).try_into().unwrap())
-            .collect::<Vec<u16>>();
-    };
-
     let refresh_display = |out: &mut O, so: &mut SearchOpts<'_>| -> Result<(), MinusError> {
-        so.compiled_regex = Regex::new(&so.string).ok();
+        so.compiled_regex = if so.string.is_empty() {
+            None
+        } else {
+            Regex::new(&so.string).ok()
+        };
 
         run_incremental_search(out, so, incremental_search_condition)?;
 
         term::move_cursor(out, 0, so.rows, false)?;
-        write!(
-            out,
-            "\r{}{}{}",
-            Clear(ClearType::CurrentLine),
-            so.prompt,
-            so.string,
-        )?;
+        write!(out, "\r{}{}", Clear(ClearType::CurrentLine), so.prompt)?;
+        write_search_query(out, so)?;
         Ok(())
     };
     match so.ev.as_ref().unwrap() {
@@ -457,7 +479,6 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
-            so.string.clear();
             so.input_status = InputStatus::Cancelled;
         }
         Event::Key(KeyEvent {
@@ -465,13 +486,15 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
-            if so.cursor_position == FIRST_AVAILABLE_COLUMN {
-                return Ok(());
+            if !clear_selected_query(so) {
+                if so.cursor_position == FIRST_AVAILABLE_COLUMN {
+                    return Ok(());
+                }
+                so.cursor_position = so.cursor_position.saturating_sub(1);
+                let byte_index = byte_index_at_character_position(&so.string, so.cursor_position);
+                so.string.remove(byte_index);
             }
-            so.cursor_position = so.cursor_position.saturating_sub(1);
-            so.string
-                .remove(so.cursor_position.saturating_sub(1).into());
-            populate_word_index(so);
+            so.word_index = word_start_positions(&so.string);
             refresh_display(out, so)?;
             term::move_cursor(out, so.terminal_cursor_column(), so.rows, false)?;
             out.flush()?;
@@ -481,14 +504,14 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
-            if so.cursor_position >= last_available_column {
-                return Ok(());
+            if !clear_selected_query(so) {
+                if so.cursor_position >= last_available_column {
+                    return Ok(());
+                }
+                let byte_index = byte_index_at_character_position(&so.string, so.cursor_position);
+                so.string.remove(byte_index);
             }
-            so.cursor_position = so.cursor_position.saturating_sub(1);
-            so.string
-                .remove(<u16 as Into<usize>>::into(so.cursor_position));
-            populate_word_index(so);
-            so.cursor_position = so.cursor_position.saturating_add(1);
+            so.word_index = word_start_positions(&so.string);
             refresh_display(out, so)?;
             term::move_cursor(out, so.terminal_cursor_column(), so.rows, false)?;
             out.flush()?;
@@ -505,6 +528,9 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
+            if collapse_query_selection(out, so, FIRST_AVAILABLE_COLUMN)? {
+                return Ok(());
+            }
             if so.cursor_position == FIRST_AVAILABLE_COLUMN {
                 return Ok(());
             }
@@ -516,6 +542,9 @@ where
             modifiers: KeyModifiers::CONTROL,
             ..
         }) => {
+            if collapse_query_selection(out, so, FIRST_AVAILABLE_COLUMN)? {
+                return Ok(());
+            }
             so.cursor_position = *so
                 .word_index
                 .iter()
@@ -528,6 +557,9 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
+            if collapse_query_selection(out, so, last_available_column)? {
+                return Ok(());
+            }
             if so.cursor_position >= last_available_column {
                 return Ok(());
             }
@@ -539,6 +571,9 @@ where
             modifiers: KeyModifiers::CONTROL,
             ..
         }) => {
+            if collapse_query_selection(out, so, last_available_column)? {
+                return Ok(());
+            }
             so.cursor_position = *so
                 .word_index
                 .iter()
@@ -551,6 +586,9 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
+            if collapse_query_selection(out, so, FIRST_AVAILABLE_COLUMN)? {
+                return Ok(());
+            }
             so.cursor_position = 1;
             term::move_cursor(out, so.terminal_cursor_column(), so.rows, true)?;
         }
@@ -559,17 +597,22 @@ where
             modifiers: KeyModifiers::NONE,
             ..
         }) => {
-            so.cursor_position = so.string.len().saturating_add(1).try_into().unwrap();
+            if collapse_query_selection(out, so, last_available_column)? {
+                return Ok(());
+            }
+            so.cursor_position = query_end_position(&so.string);
             term::move_cursor(out, so.terminal_cursor_column(), so.rows, true)?;
         }
         Event::Key(KeyEvent {
             code: KeyCode::Char(c),
-            modifiers: KeyModifiers::NONE,
+            modifiers,
             ..
-        }) => {
-            so.string
-                .insert(so.cursor_position.saturating_sub(1).into(), *c);
-            populate_word_index(so);
+        }) if modifiers.is_empty() || *modifiers == KeyModifiers::SHIFT => {
+            let c = *c;
+            clear_selected_query(so);
+            let byte_index = byte_index_at_character_position(&so.string, so.cursor_position);
+            so.string.insert(byte_index, c);
+            so.word_index = word_start_positions(&so.string);
             refresh_display(out, so)?;
             so.cursor_position = so.cursor_position.saturating_add(1);
             term::move_cursor(out, so.terminal_cursor_column(), so.rows, false)?;
@@ -580,6 +623,65 @@ where
     Ok(())
 }
 
+fn write_search_query(
+    out: &mut impl std::io::Write,
+    search_opts: &SearchOpts<'_>,
+) -> Result<(), MinusError> {
+    if search_opts.query_selected {
+        write!(out, "{}{}{}", *INVERT, search_opts.string, *NORMAL)?;
+    } else {
+        write!(out, "{}", search_opts.string)?;
+    }
+    Ok(())
+}
+
+fn write_search_input(
+    out: &mut impl std::io::Write,
+    search_opts: &SearchOpts<'_>,
+) -> Result<(), MinusError> {
+    term::move_cursor(out, 0, search_opts.rows, false)?;
+    write!(
+        out,
+        "{}{}",
+        Clear(ClearType::CurrentLine),
+        search_opts.prompt
+    )?;
+    write_search_query(out, search_opts)?;
+    write!(out, "{}", cursor::Show)?;
+    term::move_cursor(
+        out,
+        search_opts.terminal_cursor_column(),
+        search_opts.rows,
+        false,
+    )?;
+    out.flush()?;
+    Ok(())
+}
+
+fn clear_selected_query(search_opts: &mut SearchOpts<'_>) -> bool {
+    if !search_opts.query_selected {
+        return false;
+    }
+    search_opts.string.clear();
+    search_opts.cursor_position = 1;
+    search_opts.query_selected = false;
+    true
+}
+
+fn collapse_query_selection(
+    out: &mut impl std::io::Write,
+    search_opts: &mut SearchOpts<'_>,
+    cursor_position: u16,
+) -> Result<bool, MinusError> {
+    if !search_opts.query_selected {
+        return Ok(false);
+    }
+    search_opts.query_selected = false;
+    search_opts.cursor_position = cursor_position;
+    write_search_input(out, search_opts)?;
+    Ok(true)
+}
+
 #[cfg(feature = "search")]
 pub(crate) fn fetch_input(
     out: &mut impl std::io::Write,
@@ -587,15 +689,7 @@ pub(crate) fn fetch_input(
 ) -> Result<FetchInputResult, MinusError> {
     let mut search_opts = SearchOpts::from(ps);
 
-    term::move_cursor(out, 0, search_opts.rows, false)?;
-    write!(
-        out,
-        "{}{}{}",
-        Clear(ClearType::CurrentLine),
-        search_opts.prompt,
-        cursor::Show
-    )?;
-    out.flush()?;
+    write_search_input(out, &search_opts)?;
 
     loop {
         if event::poll(Duration::from_millis(100)).map_err(|e| MinusError::HandleEvent(e.into()))? {
@@ -616,15 +710,11 @@ pub(crate) fn fetch_input(
     write!(out, "{}{}", Clear(ClearType::CurrentLine), cursor::Hide)?;
     out.flush()?;
 
-    let fetch_input_result = match search_opts.input_status {
-        InputStatus::Active => unreachable!(),
-        InputStatus::Cancelled => FetchInputResult::new_empty(),
-        InputStatus::Confirmed => FetchInputResult {
-            string: search_opts.string,
-            compiled_regex: search_opts.compiled_regex,
-        },
-    };
-    Ok(fetch_input_result)
+    Ok(FetchInputResult {
+        string: search_opts.string,
+        compiled_regex: search_opts.compiled_regex,
+        input_status: search_opts.input_status,
+    })
 }
 
 pub(crate) fn highlight_matches_args<'a, 'b>(
@@ -779,11 +869,12 @@ mod tests {
     mod input_handling {
         use crate::{
             SearchMode,
-            search::{InputStatus, SearchOpts, handle_key_press},
+            search::{InputStatus, SearchOpts, handle_key_press, write_search_input},
         };
         use crossterm::{
             cursor::MoveTo,
             event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
+            style::Attribute,
             terminal::{Clear, ClearType},
         };
         use std::{convert::TryInto, io::Write};
@@ -807,6 +898,7 @@ mod tests {
                 cols: 100,
                 incremental_search_options: None,
                 compiled_regex: None,
+                query_selected: false,
                 search_mode: sm,
             }
         }
@@ -854,6 +946,44 @@ mod tests {
         }
 
         #[test]
+        fn shifted_unicode_query_supports_navigation_and_deletion() {
+            let mut search_opts = new_search_opts(SearchMode::Forward);
+            let mut out = Vec::new();
+            search_opts.ev = Some(Event::Key(KeyEvent {
+                code: KeyCode::Char('Т'),
+                kind: KeyEventKind::Press,
+                modifiers: KeyModifiers::SHIFT,
+                state: KeyEventState::NONE,
+            }));
+
+            handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+            for c in "екст".chars() {
+                search_opts.ev = Some(make_event_from_keycode(KeyCode::Char(c)));
+                handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+            }
+
+            assert_eq!(search_opts.string, "Текст");
+            assert_eq!(search_opts.cursor_position, 6);
+
+            search_opts.ev = Some(make_event_from_keycode(KeyCode::Left));
+            handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+            search_opts.ev = Some(make_event_from_keycode(KeyCode::Backspace));
+            handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+            assert_eq!(search_opts.string, "Тект");
+            assert_eq!(search_opts.cursor_position, 4);
+
+            search_opts.ev = Some(make_event_from_keycode(KeyCode::Home));
+            handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+            search_opts.ev = Some(make_event_from_keycode(KeyCode::Delete));
+            handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+            assert_eq!(search_opts.string, "ект");
+            assert_eq!(search_opts.cursor_position, 1);
+        }
+
+        #[test]
         fn custom_prompt_uses_the_status_row_with_a_panel() {
             let mut state = crate::PagerState::new().unwrap();
             state.rows = 10;
@@ -873,6 +1003,61 @@ mod tests {
             assert!(rendered.contains("Find: x"));
             assert!(rendered.contains(&MoveTo(7, search_opts.rows).to_string()));
             assert_eq!(usize::from(search_opts.rows), state.prompt_row());
+        }
+
+        #[test]
+        fn restored_query_is_selected_and_rendered() {
+            let mut state = crate::PagerState::new().unwrap();
+            state.search_state.search_mode = SearchMode::Forward;
+            state.search_state.last_search_query = "pager".to_string();
+            state.search_prompt = Some("Find: ".to_string());
+            let mut search_opts = SearchOpts::from(&state);
+            let mut out = Vec::new();
+
+            write_search_input(&mut out, &search_opts).unwrap();
+
+            assert_eq!(search_opts.string, "pager");
+            assert_eq!(search_opts.cursor_position, 6);
+            assert!(search_opts.query_selected);
+
+            search_opts.ev = Some(make_event_from_keycode(KeyCode::Left));
+            handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+            assert_eq!(search_opts.string, "pager");
+            assert_eq!(search_opts.cursor_position, 1);
+            assert!(!search_opts.query_selected);
+            let rendered = String::from_utf8(out).unwrap();
+            assert!(rendered.contains(&format!(
+                "Find: {}pager{}",
+                Attribute::Reverse,
+                Attribute::NoReverse
+            )));
+            assert!(rendered.contains(&MoveTo(11, search_opts.rows).to_string()));
+        }
+
+        #[test]
+        fn deleting_selected_query_returns_an_empty_cancelled_draft() {
+            for key_code in [KeyCode::Backspace, KeyCode::Delete] {
+                let mut state = crate::PagerState::new().unwrap();
+                state.search_state.search_mode = SearchMode::Forward;
+                state.search_state.last_search_query = "pager".to_string();
+                let mut search_opts = SearchOpts::from(&state);
+                let mut out = Vec::new();
+
+                search_opts.ev = Some(make_event_from_keycode(key_code));
+                handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+                assert!(search_opts.string.is_empty());
+                assert_eq!(search_opts.cursor_position, 1);
+                assert!(search_opts.compiled_regex.is_none());
+                assert_eq!(search_opts.input_status, InputStatus::Active);
+
+                search_opts.ev = Some(make_event_from_keycode(KeyCode::Esc));
+                handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+                assert!(search_opts.string.is_empty());
+                assert_eq!(search_opts.input_status, InputStatus::Cancelled);
+            }
         }
 
         #[test]
@@ -991,11 +1176,13 @@ mod tests {
         }
 
         #[test]
-        fn esc_key() {
-            let (mut search_opts, mut out, _, _) = pretest_setup_forward_search();
+        fn escape_cancels_a_non_empty_search_without_clearing_it() {
+            let (mut search_opts, mut out, _, query) = pretest_setup_forward_search();
 
             search_opts.ev = Some(make_event_from_keycode(KeyCode::Esc));
             handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
+
+            assert_eq!(search_opts.string, query);
             assert_eq!(search_opts.input_status, InputStatus::Cancelled);
         }
 

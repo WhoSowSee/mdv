@@ -408,7 +408,7 @@ Field reference:
 - `name` (required) — the value accepted by `--theme`.
 - `description` (optional) — shown in `mdv --theme-info`; falls back to the base theme's description.
 - `extends` (optional) — names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
-- `pager_status_bar_transparent` (optional) — `false` keeps the filled pager status bar; `true` removes its background and separates sections with `|`. It inherits from the base theme when omitted.
+- `pager_status_bar_transparent` (optional) — `false` keeps the filled pager status bar and Help panel; `true` removes both backgrounds and separates footer sections with `|`. It inherits from the base theme when omitted.
 - Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
 - `syntax:` (optional) — overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).
