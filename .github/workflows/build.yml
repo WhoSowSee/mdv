@@ -84,11 +84,15 @@ jobs:
           zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "$binary"
 
       - name: Install cargo-deb
-        if: contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')
+        if: (contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')) && runner.arch != 'ARM64'
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-deb
           fallback: none
+
+      - name: Install cargo-deb on ARM64
+        if: (contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')) && runner.arch == 'ARM64'
+        run: cargo install cargo-deb --version 3.7.0 --locked
 
       - name: Build deb package
         if: contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')
