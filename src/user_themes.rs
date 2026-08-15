@@ -1,4 +1,5 @@
 //! User-defined themes loaded from `<config_dir>/themes/*.yaml`.
+use crate::inline_style::{InlineStyleOverrides, InlineStyleSet};
 use crate::theme::{Color, SyntaxTheme, Theme, ThemeManager, parse_color_value};
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
@@ -49,8 +50,15 @@ pub(crate) struct ThemeFile {
     pub link: Option<ColorYaml>,
     pub emphasis: Option<ColorYaml>,
     pub strong: Option<ColorYaml>,
+    pub strong_emphasis: Option<ColorYaml>,
     pub strikethrough: Option<ColorYaml>,
+    pub highlight: Option<ColorYaml>,
     pub highlight_background: Option<ColorYaml>,
+    pub emphasis_background: Option<ColorYaml>,
+    pub strong_background: Option<ColorYaml>,
+    pub strong_emphasis_background: Option<ColorYaml>,
+    pub code_background: Option<ColorYaml>,
+    pub strikethrough_background: Option<ColorYaml>,
     pub background: Option<ColorYaml>,
     pub border: Option<ColorYaml>,
     pub list_marker: Option<ColorYaml>,
@@ -58,6 +66,8 @@ pub(crate) struct ThemeFile {
     pub table_border: Option<ColorYaml>,
     pub error: Option<ColorYaml>,
     pub warning: Option<ColorYaml>,
+
+    pub inline_style: InlineStyleOverrides,
 
     pub syntax: Option<SyntaxFile>,
 }
@@ -85,7 +95,7 @@ impl ThemeFile {
                 .map(|c| c.0.clone())
                 .unwrap_or_else(|| base_color.clone())
         };
-        let pick_bg =
+        let pick_optional =
             |override_color: &Option<ColorYaml>, base_color: &Option<Color>| -> Option<Color> {
                 override_color
                     .as_ref()
@@ -106,6 +116,8 @@ impl ThemeFile {
             },
             None => base.syntax.clone(),
         };
+        let mut inline_style = base.inline_style.clone();
+        inline_style.apply_overrides(&self.inline_style);
 
         Theme {
             name: self.name.clone(),
@@ -131,10 +143,27 @@ impl ThemeFile {
             link: pick(&self.link, &base.link),
             emphasis: pick(&self.emphasis, &base.emphasis),
             strong: pick(&self.strong, &base.strong),
+            strong_emphasis: pick_optional(&self.strong_emphasis, &base.strong_emphasis),
             strikethrough: pick(&self.strikethrough, &base.strikethrough),
+            highlight: pick_optional(&self.highlight, &base.highlight),
             highlight_background: pick(&self.highlight_background, &base.highlight_background),
-            background: pick_bg(&self.background, &base.background),
+            emphasis_background: pick_optional(
+                &self.emphasis_background,
+                &base.emphasis_background,
+            ),
+            strong_background: pick_optional(&self.strong_background, &base.strong_background),
+            strong_emphasis_background: pick_optional(
+                &self.strong_emphasis_background,
+                &base.strong_emphasis_background,
+            ),
+            code_background: pick_optional(&self.code_background, &base.code_background),
+            strikethrough_background: pick_optional(
+                &self.strikethrough_background,
+                &base.strikethrough_background,
+            ),
+            background: pick_optional(&self.background, &base.background),
             border: pick(&self.border, &base.border),
+            inline_style,
             list_marker: pick(&self.list_marker, &base.list_marker),
             table_header: pick(&self.table_header, &base.table_header),
             table_border: pick(&self.table_border, &base.table_border),
@@ -162,6 +191,8 @@ impl ThemeFile {
             .syntax
             .take()
             .with_context(|| format!("Embedded theme '{name}' is missing 'syntax'"))?;
+        let mut inline_style = InlineStyleSet::default();
+        inline_style.apply_overrides(&self.inline_style);
 
         macro_rules! color {
             ($owner:expr, $field:ident) => {
@@ -198,10 +229,18 @@ impl ThemeFile {
             link: color!(self, link),
             emphasis: color!(self, emphasis),
             strong: color!(self, strong),
+            strong_emphasis: self.strong_emphasis.take().map(|value| value.0),
             strikethrough: color!(self, strikethrough),
+            highlight: self.highlight.take().map(|value| value.0),
             highlight_background: color!(self, highlight_background),
+            emphasis_background: self.emphasis_background.take().map(|value| value.0),
+            strong_background: self.strong_background.take().map(|value| value.0),
+            strong_emphasis_background: self.strong_emphasis_background.take().map(|value| value.0),
+            code_background: self.code_background.take().map(|value| value.0),
+            strikethrough_background: self.strikethrough_background.take().map(|value| value.0),
             background: self.background.take().map(|value| value.0),
             border: color!(self, border),
+            inline_style,
             list_marker: color!(self, list_marker),
             table_header: color!(self, table_header),
             table_border: color!(self, table_border),

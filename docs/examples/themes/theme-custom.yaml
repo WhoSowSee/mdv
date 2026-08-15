@@ -43,13 +43,34 @@ quote: darkgrey
 link: blue
 emphasis: yellow
 strong: red
+strong_emphasis: null
 strikethrough: darkgrey
+highlight: null
 
 # Background and borders
-# background is the only field that accepts `null` (meaning "no background").
 highlight_background: "ansi(236)"
+emphasis_background: null
+strong_background: null
+strong_emphasis_background: null
+code_background: null
+strikethrough_background: null
 background: "rgb(30,30,46)"
 border: grey
+
+# Inline decorations
+inline_style:
+  emphasis:
+    italic: true
+  strong:
+    bold: true
+  strong_emphasis:
+    bold: true
+    italic: true
+  code:
+    backticks: true
+  strikethrough:
+    strikethrough: true
+  highlight: {}
 
 # Lists and tables
 list_marker: green

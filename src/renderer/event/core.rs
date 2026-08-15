@@ -4,6 +4,7 @@ use super::{
     create_style, extract_code_language,
 };
 use crate::block_spacing::BlockElement;
+use crate::inline_style::InlineStyleKind;
 use crate::renderer::syntax_theme::CodeHighlightTheme;
 use crate::theme::Color;
 use crate::utils::strip_ansi;
@@ -326,6 +327,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) footnote_text_buffer: String,
     pub(crate) last_header_level: HeadingLevel,
     pub(crate) formatting_stack: Vec<ThemeElement>,
+    pub(crate) active_backtick_style: Option<InlineStyleKind>,
     pub(crate) current_heading_level: Option<HeadingLevel>,
     pub(crate) current_heading_start: Option<usize>,
     pub(crate) pending_heading_placeholder: Option<(usize, usize)>,
@@ -395,6 +397,7 @@ impl<'a> EventRenderer<'a> {
             footnote_text_buffer: String::new(),
             last_header_level: HeadingLevel::H1,
             formatting_stack: Vec::new(),
+            active_backtick_style: None,
             current_heading_level: None,
             current_heading_start: None,
             pending_heading_placeholder: None,
@@ -444,6 +447,7 @@ impl<'a> EventRenderer<'a> {
             self.process_event(event)?;
         }
 
+        self.close_inline_backticks();
         self.flush_pending_html_block_buffer()?;
         self.finalize_pending_heading_placeholder();
         if matches!(self.config.footnote_style, FootnoteStyle::Attached)
@@ -904,12 +908,15 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             Tag::Emphasis => {
+                self.close_inline_backticks();
                 self.formatting_stack.push(ThemeElement::Emphasis);
             }
             Tag::Strong => {
+                self.close_inline_backticks();
                 self.formatting_stack.push(ThemeElement::Strong);
             }
             Tag::Strikethrough => {
+                self.close_inline_backticks();
                 self.formatting_stack.push(ThemeElement::Strikethrough);
             }
             Tag::Link { dest_url, .. } => {
@@ -926,6 +933,7 @@ impl<'a> EventRenderer<'a> {
     fn handle_end_tag(&mut self, tag_end: TagEnd) -> Result<()> {
         match tag_end {
             TagEnd::Paragraph => {
+                self.close_inline_backticks();
                 self.finalize_pending_callout_label_override();
                 let paragraph_start = self.current_paragraph_start.take();
                 let paragraph_has_content = self.current_paragraph_has_content;
@@ -1258,6 +1266,7 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             TagEnd::TableCell => {
+                self.close_inline_backticks();
                 if let Some(ref mut table) = self.table_state {
                     let trimmed_len = table.current_cell.trim_end().len();
                     table.current_cell.truncate(trimmed_len);
@@ -1267,19 +1276,23 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             TagEnd::Link => {
+                self.close_inline_backticks();
                 self.handle_link_end()?;
             }
             TagEnd::Image => {
                 self.handle_image_end()?;
             }
             TagEnd::Emphasis => {
+                self.close_inline_backticks();
                 self.formatting_stack
                     .retain(|&x| x != ThemeElement::Emphasis);
             }
             TagEnd::Strong => {
+                self.close_inline_backticks();
                 self.formatting_stack.retain(|&x| x != ThemeElement::Strong);
             }
             TagEnd::Strikethrough => {
+                self.close_inline_backticks();
                 self.formatting_stack
                     .retain(|&x| x != ThemeElement::Strikethrough);
             }

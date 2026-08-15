@@ -117,6 +117,7 @@ cat <FILE> | mdv
 - `-z, --syntaxes-dir <DIR>` — recursively loads custom `.sublime-syntax` files on top of the embedded syntax set. Custom entries take precedence over matching built-in syntaxes.
 - `-s, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` — selects an indented borderless block, a single gutter, or a boxed frame. Labels are hidden by default; `show-name` displays the language name, `show-icon` displays its icon, and both options may be combined (default `basic`).
 - `-y, --custom-theme <key=value;...>` — overrides UI colors on top of the selected theme.
+- `-Z, --inline-style <STYLES>` — overrides decorations for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Use `element:property=true,property=false` entries separated by `;`; properties are `backticks`, `bold`, `italic`, `underline`, and `strikethrough` (for example `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
 - `-Y, --custom-code-theme <key=value;...>` — overrides syntax colors using the same format as `--custom-theme`.
 - `-J, --custom-code-block <lang:icon=...,label=...,aliases=...>[;...]` — overrides the icon, label, and aliases for specific code block languages. Multiple languages are separated by `;`, options within one language by `,`, and aliases by `|` (for example, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Works for any language hint, even if it is not in the built-in icon mapping. Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic. Use `default:icon=...` to set the fallback icon for unknown languages.
 
@@ -203,6 +204,7 @@ Configuration files must be written in YAML (`.yaml` or `.yml`). See `docs/examp
 # docs/examples/config.yaml
 theme: "terminal"
 code_theme: null
+inline_style: {}
 wrap: "char"
 table_wrap: "fit"
 pretty_table: false
@@ -213,6 +215,8 @@ code_wrap_indent: "double"
 link_style: "clickable"
 link_truncation: "wrap"
 ```
+
+`inline_style` is merged per element and property instead of replacing the whole mapping. Its effective order is semantic defaults, user theme, main config, preset, then `--inline-style`.
 
 ## Presets
 
@@ -234,6 +238,9 @@ wrap: word
 reflow: true
 table_wrap: wrap
 link_style: inlinetable
+inline_style:
+  code:
+    backticks: false
 ```
 
 Every preset accepts the same keys and values as [`docs/examples/config.yaml`](docs/examples/config.yaml), plus the required non-empty `name` field. Presets are partial layers: omitted settings remain unchanged, while explicit values—including `false`, default-valued options, and `null`—override the configuration beneath them. A user preset with the same name as a built-in replaces the built-in. Run `mdv --preset-info` to list the active catalog. When a file and preset are both provided, `mdv --preset-info FILE --preset NAME` renders the file with `Current preset: NAME`; without `--preset`, the flag does not alter file rendering.
@@ -377,7 +384,7 @@ Built-in themes include:
 
 Switch between them with `--theme` or set a default in your configuration file.
 
-Use `--custom-theme` to override UI theme values and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match theme fields (for example `text`, `h1`, `border`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` accepts `true` or `false`; color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
+Use `--custom-theme` to override UI theme values and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match theme fields (for example `text`, `h1`, `border`, `code_background`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` accepts `true` or `false`; optional inline foreground/background colors accept `none`; other color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
 
 Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-info README.md`) to inspect how colors apply to a document. Starting from `examples/config.yaml` you can build your own theme variants and keep them in version control.
 
@@ -399,6 +406,11 @@ h1: "#ff5577"
 link: "#66ccff"
 background: "#1c1c1c"
 
+inline_style:
+  code:
+    backticks: false
+    underline: true
+
 syntax:
   keyword: "#ff5577"
 ```
@@ -409,7 +421,8 @@ Field reference:
 - `description` (optional) — shown in `mdv --theme-info`; falls back to the base theme's description.
 - `extends` (optional) — names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
 - `pager_status_bar_transparent` (optional) — `false` keeps the filled pager status bar and Help panel; `true` removes both backgrounds and separates footer sections with `|`. It inherits from the base theme when omitted.
-- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
+- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. `strong_emphasis` falls back to `strong`, while an omitted `highlight` keeps the surrounding foreground.
+- `inline_style:` (optional) — partially overrides `backticks`, `bold`, `italic`, `underline`, and `strikethrough` for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Omitted properties inherit from the base theme. The defaults are italic emphasis, bold strong, bold-italic strong emphasis, backticks around code, strikethrough decoration, and no extra highlight decoration.
 - `syntax:` (optional) — overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).
 

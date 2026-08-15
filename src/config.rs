@@ -7,6 +7,7 @@ use crate::cli::{
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
+use crate::inline_style::InlineStyleOverrides;
 use crate::list_marker::{ListMarkerConfig, PrettyListStyle, UniformListMarker};
 use crate::preset;
 use anyhow::Result;
@@ -174,6 +175,7 @@ pub struct Config {
     pub theme: String,
     pub code_theme: Option<String>,
     pub custom_theme: Option<String>,
+    pub inline_style: InlineStyleOverrides,
     pub custom_code_theme: Option<String>,
     pub custom_callout: Option<String>,
     #[serde(skip)]
@@ -242,6 +244,7 @@ impl Default for Config {
             theme: "terminal".to_string(),
             code_theme: None,
             custom_theme: None,
+            inline_style: InlineStyleOverrides::default(),
             custom_code_theme: None,
             custom_callout: None,
             custom_callouts: HashMap::new(),
@@ -348,6 +351,12 @@ impl Config {
             && arg_has_user_value(matches, "custom_theme")
         {
             config.custom_theme = Some(custom_theme.clone());
+        }
+
+        if let Some(inline_style) = &cli.inline_style
+            && arg_has_user_value(matches, "inline_style")
+        {
+            config.inline_style.merge(inline_style);
         }
 
         if let Some(custom_code_theme) = &cli.custom_code_theme
@@ -715,6 +724,8 @@ impl Config {
         if other.custom_theme.is_some() {
             self.custom_theme = other.custom_theme;
         }
+
+        self.inline_style.merge(&other.inline_style);
 
         if other.custom_code_theme.is_some() {
             self.custom_code_theme = other.custom_code_theme;

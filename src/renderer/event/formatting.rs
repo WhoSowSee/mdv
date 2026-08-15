@@ -1,6 +1,7 @@
 use super::core::{CalloutFold, CalloutKind, CalloutState};
 use super::{EventRenderer, PRETTY_ACCENT_COLOR, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
+use crate::inline_style::{InlineStyle, InlineStyleKind};
 use crate::terminal::AnsiStyle;
 use crate::utils::{WrapMode, display_width, strip_ansi, wrap_text_with_mode};
 use crossterm::style::Color as CrosstermColor;
@@ -67,12 +68,11 @@ impl<'a> EventRenderer<'a> {
     /// Apply current formatting stack to text
     ///
     /// Ensures consistent precedence when multiple styles are active at once
-    /// (e.g. Strong + Emphasis). Color precedence: Code > Heading > Strong > Emphasis > Strikethrough > TextLight > Text.
+    /// (e.g. Strong + Emphasis). Color precedence: Highlight > Code > Heading > StrongEmphasis > Strong > Emphasis > Strikethrough > TextLight > Text.
     pub(super) fn apply_formatting(&self, text: &str) -> String {
         self.apply_formatting_with_highlight(text, false)
     }
 
-    /// Apply formatting stack plus optional background highlight (==text==)
     pub(super) fn apply_formatting_with_highlight(&self, text: &str, highlighted: bool) -> String {
         if self.formatting_stack.is_empty() && !highlighted {
             return text.to_string();
@@ -96,44 +96,136 @@ impl<'a> EventRenderer<'a> {
             )
         });
 
-        // Choose base element to take the color from with deterministic precedence
-        let base_element = if has_code {
-            ThemeElement::Code
-        } else if let Some(heading) = heading {
-            heading
+        let semantic_kind = if has_code {
+            Some(InlineStyleKind::Code)
+        } else if has_strong && has_emphasis {
+            Some(InlineStyleKind::StrongEmphasis)
         } else if has_strong {
-            ThemeElement::Strong
+            Some(InlineStyleKind::Strong)
         } else if has_emphasis {
-            ThemeElement::Emphasis
+            Some(InlineStyleKind::Emphasis)
         } else if has_strike {
-            ThemeElement::Strikethrough
-        } else if has_text_light {
-            ThemeElement::TextLight
+            Some(InlineStyleKind::Strikethrough)
         } else {
-            ThemeElement::Text
+            None
         };
 
-        let mut style = create_style(self.theme, base_element);
+        let mut style = if has_code {
+            AnsiStyle::new().fg(self.theme.code.clone().into())
+        } else if let Some(heading) = heading {
+            create_style(self.theme, heading)
+        } else if let Some(kind) = semantic_kind {
+            let color = self
+                .theme
+                .inline_foreground(kind)
+                .expect("semantic inline styles must define a foreground");
+            AnsiStyle::new().fg(color.clone().into())
+        } else if has_text_light {
+            create_style(self.theme, ThemeElement::TextLight)
+        } else {
+            create_style(self.theme, ThemeElement::Text)
+        };
 
-        // Add missing attributes without changing the chosen color
-        if has_strong {
-            style = style.bold();
+        if highlighted && let Some(color) = self.theme.inline_foreground(InlineStyleKind::Highlight)
+        {
+            style = style.fg(color.clone().into());
         }
-        if has_emphasis {
-            style = style.italic();
+
+        let background_kind = if highlighted {
+            Some(InlineStyleKind::Highlight)
+        } else {
+            semantic_kind
+        };
+        if let Some(background) =
+            background_kind.and_then(|kind| self.theme.inline_background(kind))
+        {
+            style = style.bg(background.clone().into());
+        }
+
+        let mut attributes = InlineStyle::plain();
+        if has_code {
+            attributes.merge_attributes(self.theme.inline_style.get(InlineStyleKind::Code));
+        }
+        if has_strong && has_emphasis {
+            attributes
+                .merge_attributes(self.theme.inline_style.get(InlineStyleKind::StrongEmphasis));
+        } else {
+            if has_strong {
+                attributes.merge_attributes(self.theme.inline_style.get(InlineStyleKind::Strong));
+            }
+            if has_emphasis {
+                attributes.merge_attributes(self.theme.inline_style.get(InlineStyleKind::Emphasis));
+            }
         }
         if has_strike {
-            style = style.strikethrough();
+            attributes
+                .merge_attributes(self.theme.inline_style.get(InlineStyleKind::Strikethrough));
+        }
+        if highlighted {
+            attributes.merge_attributes(self.theme.inline_style.get(InlineStyleKind::Highlight));
         }
         if has_underline {
-            style = style.underline();
+            attributes.underline = true;
         }
-
-        if highlighted {
-            style = style.bg(self.theme.highlight_background.clone().into());
-        }
+        style = attributes.apply_attributes(style);
 
         style.apply(text, self.config.no_colors)
+    }
+
+    pub(super) fn sync_inline_backticks(&mut self, highlighted: bool) -> bool {
+        let desired = self.desired_backtick_style(highlighted);
+        if desired == self.active_backtick_style {
+            return false;
+        }
+
+        self.close_inline_backticks();
+        if let Some(kind) = desired {
+            self.active_backtick_style = Some(kind);
+            return true;
+        }
+        false
+    }
+
+    pub(super) fn close_inline_backticks(&mut self) {
+        if self.active_backtick_style.take().is_some() {
+            self.push_inline_backtick();
+        }
+    }
+
+    fn desired_backtick_style(&self, highlighted: bool) -> Option<InlineStyleKind> {
+        let enabled = |kind| self.theme.inline_style.get(kind).backticks;
+        if highlighted && enabled(InlineStyleKind::Highlight) {
+            return Some(InlineStyleKind::Highlight);
+        }
+
+        let has_strong = self.formatting_stack.contains(&ThemeElement::Strong);
+        let has_emphasis = self.formatting_stack.contains(&ThemeElement::Emphasis);
+        if has_strong && has_emphasis {
+            return enabled(InlineStyleKind::StrongEmphasis)
+                .then_some(InlineStyleKind::StrongEmphasis);
+        }
+        if has_strong && enabled(InlineStyleKind::Strong) {
+            return Some(InlineStyleKind::Strong);
+        }
+        if has_emphasis && enabled(InlineStyleKind::Emphasis) {
+            return Some(InlineStyleKind::Emphasis);
+        }
+        if self.formatting_stack.contains(&ThemeElement::Strikethrough)
+            && enabled(InlineStyleKind::Strikethrough)
+        {
+            return Some(InlineStyleKind::Strikethrough);
+        }
+        None
+    }
+
+    fn push_inline_backtick(&mut self) {
+        if self.in_link {
+            self.current_link_text.push('`');
+        } else if let Some(table) = self.table_state.as_mut() {
+            table.current_cell.push('`');
+        } else {
+            self.output.push('`');
+        }
     }
 
     /// Helper: add a newline and then indent for the current context
@@ -207,6 +299,9 @@ impl<'a> EventRenderer<'a> {
         let mut width = self.config.get_content_width();
         if self.should_reserve_callout_padding() {
             width = width.saturating_sub(2);
+        }
+        if self.active_backtick_style.is_some() {
+            width = width.saturating_sub(1);
         }
         width
     }

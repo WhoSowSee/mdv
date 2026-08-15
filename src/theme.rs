@@ -1,4 +1,5 @@
 use crate::error::MdvError;
+use crate::inline_style::{InlineStyleKind, InlineStyleSet};
 use crate::terminal::{AnsiStyle, ansi256_to_rgb, calculate_luminosity};
 use crate::user_themes::parse_embedded_theme;
 use anyhow::{Context, Result, anyhow, bail};
@@ -87,12 +88,29 @@ pub struct Theme {
     pub link: Color,
     pub emphasis: Color,
     pub strong: Color,
+    #[serde(default)]
+    pub strong_emphasis: Option<Color>,
     pub strikethrough: Color,
+    #[serde(default)]
+    pub highlight: Option<Color>,
 
     // Background and borders
     pub highlight_background: Color,
+    #[serde(default)]
+    pub emphasis_background: Option<Color>,
+    #[serde(default)]
+    pub strong_background: Option<Color>,
+    #[serde(default)]
+    pub strong_emphasis_background: Option<Color>,
+    #[serde(default)]
+    pub code_background: Option<Color>,
+    #[serde(default)]
+    pub strikethrough_background: Option<Color>,
     pub background: Option<Color>,
     pub border: Color,
+
+    #[serde(default)]
+    pub inline_style: InlineStyleSet,
 
     // List and table elements
     pub list_marker: Color,
@@ -131,6 +149,32 @@ impl Default for Theme {
 impl Default for SyntaxTheme {
     fn default() -> Self {
         Theme::default().syntax
+    }
+}
+
+impl Theme {
+    pub(crate) fn inline_foreground(&self, kind: InlineStyleKind) -> Option<&Color> {
+        match kind {
+            InlineStyleKind::Emphasis => Some(&self.emphasis),
+            InlineStyleKind::Strong => Some(&self.strong),
+            InlineStyleKind::StrongEmphasis => {
+                Some(self.strong_emphasis.as_ref().unwrap_or(&self.strong))
+            }
+            InlineStyleKind::Code => Some(&self.code),
+            InlineStyleKind::Strikethrough => Some(&self.strikethrough),
+            InlineStyleKind::Highlight => self.highlight.as_ref(),
+        }
+    }
+
+    pub(crate) fn inline_background(&self, kind: InlineStyleKind) -> Option<&Color> {
+        match kind {
+            InlineStyleKind::Emphasis => self.emphasis_background.as_ref(),
+            InlineStyleKind::Strong => self.strong_background.as_ref(),
+            InlineStyleKind::StrongEmphasis => self.strong_emphasis_background.as_ref(),
+            InlineStyleKind::Code => self.code_background.as_ref(),
+            InlineStyleKind::Strikethrough => self.strikethrough_background.as_ref(),
+            InlineStyleKind::Highlight => Some(&self.highlight_background),
+        }
     }
 }
 
@@ -332,17 +376,28 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         "link" => theme.link = parse_color_spec(value)?,
         "emphasis" => theme.emphasis = parse_color_spec(value)?,
         "strong" => theme.strong = parse_color_spec(value)?,
+        "strong_emphasis" | "strongemphasis" => {
+            theme.strong_emphasis = parse_optional_color_spec(value)?
+        }
         "strikethrough" | "strike" | "del" => theme.strikethrough = parse_color_spec(value)?,
+        "highlight" => theme.highlight = parse_optional_color_spec(value)?,
         "highlight_background" | "highlight_bg" => {
             theme.highlight_background = parse_color_spec(value)?
         }
-        "background" | "bg" => {
-            if is_none_value(value) {
-                theme.background = None;
-            } else {
-                theme.background = Some(parse_color_spec(value)?);
-            }
+        "emphasis_background" | "emphasis_bg" => {
+            theme.emphasis_background = parse_optional_color_spec(value)?
         }
+        "strong_background" | "strong_bg" => {
+            theme.strong_background = parse_optional_color_spec(value)?
+        }
+        "strong_emphasis_background" | "strong_emphasis_bg" => {
+            theme.strong_emphasis_background = parse_optional_color_spec(value)?
+        }
+        "code_background" | "code_bg" => theme.code_background = parse_optional_color_spec(value)?,
+        "strikethrough_background" | "strikethrough_bg" | "strike_background" | "strike_bg" => {
+            theme.strikethrough_background = parse_optional_color_spec(value)?
+        }
+        "background" | "bg" => theme.background = parse_optional_color_spec(value)?,
         "border" => theme.border = parse_color_spec(value)?,
         "list_marker" | "listmarker" => theme.list_marker = parse_color_spec(value)?,
         "table_header" | "tableheader" => theme.table_header = parse_color_spec(value)?,
@@ -353,6 +408,14 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
     }
 
     Ok(())
+}
+
+fn parse_optional_color_spec(value: &str) -> Result<Option<Color>> {
+    if is_none_value(value) {
+        Ok(None)
+    } else {
+        parse_color_spec(value).map(Some)
+    }
 }
 
 fn apply_code_theme_override(syntax: &mut SyntaxTheme, key: &str, value: &str) -> Result<()> {
@@ -702,7 +765,7 @@ mod tests {
         let mut theme = Theme::default();
         apply_custom_theme(
             &mut theme,
-            "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30); highlight_bg=#112233; line_number=#010203; line_number_separator=#040506",
+            "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30); strong_emphasis=#070809; highlight=#0a0b0c; highlight_bg=#112233; emphasis_background=#0d0e0f; code_background=none; line_number=#010203; line_number_separator=#040506",
         )
         .expect("custom theme overrides should be applied");
 
@@ -731,6 +794,24 @@ mod tests {
             }
         ));
         assert!(theme.background.is_none());
+        assert_eq!(theme.strong_emphasis, Some(Color::Rgb { r: 7, g: 8, b: 9 }));
+        assert_eq!(
+            theme.highlight,
+            Some(Color::Rgb {
+                r: 10,
+                g: 11,
+                b: 12
+            })
+        );
+        assert_eq!(
+            theme.emphasis_background,
+            Some(Color::Rgb {
+                r: 13,
+                g: 14,
+                b: 15
+            })
+        );
+        assert!(theme.code_background.is_none());
         assert!(matches!(
             theme.highlight_background,
             Color::Rgb {

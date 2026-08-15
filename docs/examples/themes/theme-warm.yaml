@@ -19,6 +19,7 @@
 #     backgrounds and uses `|` between footer sections. It is optional and
 #     inherits from the base.
 #   * Every color field is optional; the rest is inherited from the base.
+#   * `inline_style` is optional and merges per element and property.
 #   * The `syntax:` block is also optional and merges field-by-field against
 #     the base theme's syntax palette.
 #   * Color values follow the same syntax as `--custom-theme`:
@@ -39,6 +40,11 @@ h2: "#ffaa33"
 link: "#66ccff"
 emphasis: "#ffaa33"
 background: "#1c1c1c"
+
+inline_style:
+  code:
+    backticks: false
+    underline: true
 
 # `syntax` is optional too. Each field overrides a single syntax color.
 syntax:

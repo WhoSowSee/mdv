@@ -453,13 +453,17 @@ impl<'a> EventRenderer<'a> {
         }
 
         for segment in self.split_highlight_segments(text) {
-            if !segment.text.is_empty() {
-                self.process_segment_with_wrapping_and_formatting(
-                    &segment.text,
-                    segment.highlighted,
-                    self.table_state.is_some(),
-                )?;
+            if segment.text.is_empty() {
+                if !segment.highlighted {
+                    self.close_inline_backticks();
+                }
+                continue;
             }
+            self.process_segment_with_wrapping_and_formatting(
+                &segment.text,
+                segment.highlighted,
+                self.table_state.is_some(),
+            )?;
         }
 
         Ok(())
@@ -471,6 +475,14 @@ impl<'a> EventRenderer<'a> {
         highlighted: bool,
         is_table_cell: bool,
     ) -> Result<()> {
+        let prefixed_text;
+        let text = if self.sync_inline_backticks(highlighted) {
+            prefixed_text = format!("`{text}");
+            prefixed_text.as_str()
+        } else {
+            text
+        };
+
         // Check if this is for a table cell
         if is_table_cell {
             // For table cells, apply formatting directly without complex wrapping

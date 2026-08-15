@@ -1,4 +1,5 @@
 use crate::block_spacing::BlockSpacingOverrides;
+use crate::inline_style::InlineStyleOverrides;
 use crate::list_marker::{PrettyListStyle, UniformListMarker};
 use clap::builder::PossibleValue;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -280,6 +281,15 @@ pub struct Cli {
     /// Override colors of the selected theme (e.g. `text=#ffffff;h1=187,154,247`)
     #[arg(short = 'y', long = "custom-theme", value_name = "PAIRS")]
     pub custom_theme: Option<String>,
+
+    /// Override inline Markdown element decorations
+    #[arg(
+        short = 'Z',
+        long = "inline-style",
+        value_name = "STYLES",
+        long_help = "Override inline Markdown element decorations\nElements: emphasis, strong, strong_emphasis, code, strikethrough, highlight\nProperties: backticks, bold, italic, underline, strikethrough\n\nFormat: '<element>:<property>=<true|false>,<property>=<true|false>;<element>:...'\nExample: --inline-style 'code:backticks=false,bold=true;highlight:underline=true'"
+    )]
+    pub inline_style: Option<InlineStyleOverrides>,
 
     /// Override syntax highlighting colors (e.g. `keyword=#ffffff;string=128,0,128`)
     #[arg(short = 'Y', long = "custom-code-theme", value_name = "PAIRS")]

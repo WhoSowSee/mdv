@@ -78,7 +78,11 @@ impl PresetFile {
     }
 
     fn apply_to(self, config: &mut Config) -> Result<()> {
+        let inherited_inline_style = config.inline_style.clone();
         let mut merged = self.merged_with(config, &self.name)?;
+        let preset_inline_style =
+            std::mem::replace(&mut merged.inline_style, inherited_inline_style);
+        merged.inline_style.merge(&preset_inline_style);
         merged.config_file = config.config_file.clone();
         merged.config_dir = config.config_dir.clone();
         *config = merged;

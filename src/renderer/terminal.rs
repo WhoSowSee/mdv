@@ -33,6 +33,8 @@ impl TerminalRenderer {
             apply_custom_code_theme(&mut theme, overrides)?;
         }
 
+        theme.inline_style.apply_overrides(&config.inline_style);
+
         if (config.custom_theme.is_some() || config.custom_code_theme.is_some())
             && !theme.name.ends_with("+custom")
         {

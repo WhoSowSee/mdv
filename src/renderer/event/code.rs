@@ -4,6 +4,7 @@ use super::{
     Result, ThemeElement, WrapMode, as_terminal_escaped, create_style, detect_source_code,
 };
 use crate::block_spacing::BlockElement;
+use crate::inline_style::InlineStyleKind;
 use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
@@ -65,14 +66,21 @@ impl<'a> CodeBlockRenderInput<'a> {
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_inline_code(&mut self, code: CowStr) -> Result<()> {
-        // Render inline code as a single token but with correct wrapping.
-        // We color only foreground (no background) to keep width calculations stable.
-        let mut style = crate::terminal::AnsiStyle::new();
-        style = style.fg(self.theme.code.clone().into());
+        self.close_inline_backticks();
+        let inline_style = self.theme.inline_style.get(InlineStyleKind::Code);
+        let mut style = AnsiStyle::new().fg(self.theme.code.clone().into());
+        if let Some(background) = self.theme.inline_background(InlineStyleKind::Code) {
+            style = style.bg(background.clone().into());
+        }
+        style = inline_style.apply_attributes(style);
 
         self.register_footnotes_in_text(&code);
 
-        let raw_code = format!("`{}`", code);
+        let raw_code = if inline_style.backticks {
+            format!("`{}`", code)
+        } else {
+            code.to_string()
+        };
         self.note_paragraph_content();
 
         // Table cells: let the table renderer decide about wrapping; just push styled.

@@ -7,6 +7,7 @@ pub mod config;
 mod custom_code_block;
 mod editor;
 pub mod error;
+pub mod inline_style;
 mod interactive;
 mod list_marker;
 pub mod markdown;

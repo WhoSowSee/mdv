@@ -284,7 +284,19 @@ impl<'a> EventRenderer<'a> {
                 child_context,
                 ThemeElement::Strikethrough,
             ),
-            "code" | "samp" => self.render_html_code_like(element, child_context, "`", "`"),
+            "code" | "samp" => {
+                let marker = if self
+                    .theme
+                    .inline_style
+                    .get(crate::inline_style::InlineStyleKind::Code)
+                    .backticks
+                {
+                    "`"
+                } else {
+                    ""
+                };
+                self.render_html_code_like(element, child_context, marker, marker)
+            }
             "kbd" => self.render_html_code_like(element, child_context, "[", "]"),
             "mark" => self.render_html_children(element, child_context.with_highlighted()),
             "small" => {
@@ -399,8 +411,10 @@ impl<'a> EventRenderer<'a> {
         context: HtmlContext,
         theme_element: ThemeElement,
     ) -> Result<()> {
+        self.close_inline_backticks();
         self.formatting_stack.push(theme_element);
         let result = self.render_html_children(element, context);
+        self.close_inline_backticks();
         if let Some(index) = self
             .formatting_stack
             .iter()
@@ -418,12 +432,14 @@ impl<'a> EventRenderer<'a> {
         prefix: &str,
         suffix: &str,
     ) -> Result<()> {
+        self.close_inline_backticks();
         self.formatting_stack.push(ThemeElement::Code);
         let code_context = context.with_preserve_whitespace();
         let result = self
             .render_html_inline_literal(prefix)
             .and_then(|()| self.render_html_children(element, code_context))
             .and_then(|()| self.render_html_inline_literal(suffix));
+        self.close_inline_backticks();
         if let Some(index) = self
             .formatting_stack
             .iter()

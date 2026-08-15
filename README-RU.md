@@ -115,6 +115,7 @@ cat <FILE> | mdv
 - `-z, --syntaxes-dir <DIR>` — рекурсивная загрузка пользовательских `.sublime-syntax` поверх встроенного набора. Пользовательские определения имеют приоритет при совпадении со встроенными.
 - `-s, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` — стиль оформления блоков кода: безрамочный блок с отступом, одинарная граница или полная рамка. По умолчанию подпись скрыта; `show-name` показывает название языка, `show-icon` — его иконку, обе опции можно комбинировать (по умолчанию `basic`).
 - `-y, --custom-theme <key=value;...>` — переопределение цветов интерфейса поверх выбранной темы.
+- `-Z, --inline-style <STYLES>` — переопределение оформления `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough` и `highlight`. Записи формата `element:property=true,property=false` разделяются `;`; доступны свойства `backticks`, `bold`, `italic`, `underline` и `strikethrough` (например, `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
 - `-Y, --custom-code-theme <key=value;...>` — переопределение цветов подсветки кода в том же формате, что и `--custom-theme`.
 - `-J, --custom-code-block <lang:icon=...,label=...,aliases=...|...>` — переопределение иконки, подписи и псевдонимов для конкретных языков блоков кода. Несколько языков разделяются `;`, опции внутри одного языка — `,`, а псевдонимы — `|` (например, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Работает для любого указанного языка, даже если его нет во встроенной карте иконок. Подсветка синтаксиса применяется только к языкам, которые поддерживает текущая логика подсветки mdv. Используйте `default:icon=...`, чтобы задать fallback-иконку для неизвестных языков.
 
@@ -188,8 +189,9 @@ cat <FILE> | mdv
 mdv объединяет настройки из нескольких источников в порядке уменьшения приоритета:
 
 1. Параметры командной строки (максимальный приоритет).
-2. Переменная окружения `MDV_CONFIG_PATH` или флаг `--config-file`.
-3. Пользовательские файлы в `~/.config/mdv/` (`~\.config\mdv\` в Windows).
+2. Пресет, выбранный через `--preset`.
+3. Конфигурация из `--config-file`, `MDV_CONFIG_PATH` или пользовательского каталога.
+4. Встроенные значения по умолчанию.
 
 Создать конфиг по умолчанию можно командой `mdv --init-config` или `mdv -G`. Укажите каталог (`mdv -G custom/dir`), используйте `--config-file <CONFIG_DIR>` или задайте `MDV_CONFIG_PATH`, чтобы записать его в другой путь.
 
@@ -199,6 +201,7 @@ mdv объединяет настройки из нескольких источ
 # docs/examples/config.yaml
 theme: "terminal"
 code_theme: null
+inline_style: {}
 wrap: "char"
 table_wrap: "fit"
 pretty_table: false
@@ -209,6 +212,35 @@ code_wrap_indent: "double"
 link_style: "clickable"
 link_truncation: "wrap"
 ```
+
+`inline_style` объединяется отдельно для каждого элемента и свойства, а не заменяет всю секцию. Итоговый порядок наложения: семантические значения по умолчанию, пользовательская тема, основной конфиг, пресет, затем `--inline-style`.
+
+## Пресеты
+
+В mdv встроены три пресета:
+
+- `reader` — перенос по словам, переформатирование абзацев, прикреплённые сноски, инлайн-таблица ссылок и тема `nord` для чтения длинных текстов.
+- `compact` — плоские заголовки, простые блоки кода и callout, скрытые подписи кода и ссылки в конце документа для плотного вывода в терминале.
+- `showcase` — центрированные заголовки, тема `tokyonight`, расширенные рамки кода и callout, чекбоксы и иконки списков. Для иконок требуется Nerd Font.
+
+Выберите пресет командой `mdv --preset reader README.md`. Явные параметры CLI имеют приоритет: например, `mdv --preset compact --cols 100 README.md` применит пресет `compact` с шириной 100 столбцов.
+
+Пользовательские пресеты — это файлы `*.yaml` или `*.yml` в каталоге `<config_dir>/presets/`. Каталог определяется в том же порядке, что и `config.yaml`: `--config-file`, `MDV_CONFIG_PATH`, затем `~/.config/mdv/`. Он необязателен, а `--no-config` не отключает его.
+
+```yaml
+# <config_dir>/presets/project-docs.yaml
+name: project-docs
+theme: monokai
+wrap: word
+reflow: true
+table_wrap: wrap
+link_style: inlinetable
+inline_style:
+  code:
+    backticks: false
+```
+
+В пресете доступны те же ключи и значения, что и в [`docs/examples/config.yaml`](docs/examples/config.yaml), а также обязательное непустое поле `name`. Пресеты являются частичными слоями: пропущенные настройки остаются без изменений, а явно заданные значения — включая `false`, значения по умолчанию и `null` — переопределяют нижележащую конфигурацию. Пользовательский пресет с именем встроенного заменяет его. Команда `mdv --preset-info` выводит активный каталог. Если одновременно переданы файл и пресет, `mdv --preset-info FILE --preset NAME` рендерит файл со строкой `Current preset: NAME`; без `--preset` этот флаг не меняет рендеринг файла.
 
 ## Переменные окружения
 
@@ -349,7 +381,7 @@ link_truncation: "wrap"
 
 Выбирайте их параметром `--theme` или задавайте по умолчанию в конфигурации.
 
-Для переопределения значений темы интерфейса используйте `--custom-theme`, а для тонкой настройки подсветки синтаксиса — `--custom-code-theme`. Переопределения передаются в формате `ключ=значение`, пары разделяются точкой с запятой. Ключи соответствуют полям темы (например, `text`, `h1`, `border`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` принимает `true` или `false`; цветовые значения поддерживают форматы `#rrggbb`, `r,g,b`, именованные цвета ANSI (`red`, `darkgrey`) и индексы 256-цветной палитры (`ansi(42)`).
+Для переопределения значений темы интерфейса используйте `--custom-theme`, а для тонкой настройки подсветки синтаксиса — `--custom-code-theme`. Переопределения передаются в формате `ключ=значение`, пары разделяются точкой с запятой. Ключи соответствуют полям темы (например, `text`, `h1`, `border`, `code_background`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` принимает `true` или `false`; необязательные цвета текста и фона inline-элементов также принимают `none`; остальные цветовые значения поддерживают форматы `#rrggbb`, `r,g,b`, именованные цвета ANSI (`red`, `darkgrey`) и индексы 256-цветной палитры (`ansi(42)`).
 
 Команда `mdv --theme-info` отображает выбранную палитру; добавление пути (`mdv --theme-info README.md`) позволяет посмотреть, как цвета применяются к документу. Используйте `examples/config.yaml` как отправную точку для своих тем и храните настройки в системе контроля версий.
 
@@ -371,6 +403,11 @@ h1: "#ff5577"
 link: "#66ccff"
 background: "#1c1c1c"
 
+inline_style:
+  code:
+    backticks: false
+    underline: true
+
 syntax:
   keyword: "#ff5577"
 ```
@@ -381,7 +418,8 @@ syntax:
 - `description` (необязательно) — отображается в `mdv --theme-info`; если не задано, берётся описание базовой темы.
 - `extends` (необязательно) — имя встроенной темы или другой темы, загруженной раньше в этом же каталоге (в алфавитном порядке). Если не указано, недостающие поля подставляются из встроенной темы `terminal`.
 - `pager_status_bar_transparent` (необязательно) — `false` сохраняет фон статус-бара и панели Help; `true` убирает оба фона и разделяет секции footer символом `|`. Если поле не указано, значение наследуется от базовой темы.
-- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`.
+- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. Для `strong_emphasis` используется цвет `strong`, если отдельный цвет не задан; при отсутствии `highlight` сохраняется цвет окружающего текста.
+- `inline_style:` (необязательно) — частично переопределяет `backticks`, `bold`, `italic`, `underline` и `strikethrough` для `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough` и `highlight`. Пропущенные свойства наследуются от базовой темы. По умолчанию `emphasis` отображается курсивом, `strong` — жирным, `strong_emphasis` — жирным курсивом, `code` обрамляется обратными кавычками, `strikethrough` зачёркивается, а у `highlight` нет дополнительных начертаний.
 - `syntax:` (необязательно) — переопределение палитры подсветки синтаксиса; каждое поле необязательно и мерджится поверх базовой. Поля: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Значения цвета используют тот же синтаксис, что и `--custom-theme`: именованные (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`) или 256-цветные (`ansi(42)` или просто `42`).
 

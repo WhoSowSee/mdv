@@ -9,6 +9,7 @@ code_theme: null           # Use null to follow theme; accepts the same values a
 syntaxes_dir: null         # Directory with custom .sublime-syntax files; relative paths start from the config directory
 theme_info: false          # Print palette information alongside rendered output
 custom_theme: null         # Override individual UI theme values (see formats below)
+inline_style: {}           # Per-element backticks/bold/italic/underline/strikethrough overrides
 custom_code_theme: null    # Override syntax colors (same format as custom_theme)
 custom_callout: null       # Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
                            # icon/color are optional
@@ -70,9 +71,22 @@ from_text: null            # Render starting from the first line that contains t
 # Available keys for custom_theme:
 # pager_status_bar_transparent (true or false)
 # text, text_light, line_number, line_number_separator, h1..h6,
-# code, quote, link, emphasis, strong,
-# strikethrough, highlight_background, background, border, list_marker,
+# code, quote, link, emphasis, strong, strong_emphasis, strikethrough, highlight,
+# highlight_background, emphasis_background, strong_background,
+# strong_emphasis_background, code_background, strikethrough_background,
+# background, border, list_marker,
 # table_header, table_border, error, warning
+
+# Available inline_style elements:
+# emphasis, strong, strong_emphasis, code, strikethrough, highlight
+# Each element accepts: backticks, bold, italic, underline, strikethrough (true or false)
+# Example:
+# inline_style:
+#   code:
+#     backticks: false
+#     bold: true
+#   highlight:
+#     underline: true
 
 # Available keys for custom_code_theme:
 # keyword, string, comment, number, operator, function, variable, type_name
