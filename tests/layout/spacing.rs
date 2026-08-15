@@ -10,8 +10,8 @@ fn test_backslash_line_creates_single_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -57,8 +57,8 @@ fn test_backslash_after_paragraph_gap_keeps_single_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -104,8 +104,8 @@ fn test_backslash_after_code_block_does_not_stack_blank_lines() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--code-block-style")
         .arg("simple")
@@ -153,8 +153,8 @@ fn test_backslash_after_task_list_resets_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -205,8 +205,8 @@ fn test_task_list_following_text_is_not_indented_without_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -232,8 +232,8 @@ fn test_backslash_end_of_line_before_list_adds_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -274,8 +274,8 @@ fn test_multiple_backslash_lines_create_multiple_blank_lines() {
     fs::write(&temp_file, "Alpha line\n\\\n\\\n\\\nBeta line\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -311,8 +311,8 @@ fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
     fs::write(&temp_file, "Status update\\\n```\nSample output\n```\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--code-block-style")
         .arg("simple")
@@ -382,7 +382,7 @@ fn test_reflow_collapses_soft_break_that_would_otherwise_be_preserved() {
     fs::write(&temp_file, "Alpha beta\nGamma delta epsilon\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--reflow")
         .arg("-c")
         .arg("26")
@@ -411,7 +411,7 @@ fn test_reflow_preserves_hard_breaks() {
     fs::write(&temp_file, "Line one\\\nLine two\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--reflow")
         .arg("-c")
         .arg("40")

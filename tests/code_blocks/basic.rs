@@ -28,7 +28,7 @@ fn test_default_code_block_style_has_no_frame_or_label() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -62,7 +62,7 @@ fn test_basic_code_block_label_options_are_independent() {
             .arg("--no-config")
             .arg("--code-block-style")
             .arg(style)
-            .arg("-A")
+            .arg("--no-colors")
             .arg(temp_file.path())
             .output()
             .expect("mdv executed");
@@ -87,7 +87,7 @@ fn test_basic_code_block_wrap_reserves_indent_width() {
         .arg("char")
         .arg("--cols")
         .arg("10")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -183,7 +183,7 @@ fn test_code_language_simple_style_named_block() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -200,7 +200,7 @@ fn test_code_language_simple_style_plain_block() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -216,8 +216,8 @@ fn test_markdown_code_block_setext_heading_renders_as_heading() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()

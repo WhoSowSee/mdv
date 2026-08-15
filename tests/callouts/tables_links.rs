@@ -88,8 +88,8 @@ fn test_callout_inline_table_references_render_outside() {
     fs::write(&temp_file, "> [!tip]\n> See [README](README.md)\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--link-style")
         .arg("inlinetable")
@@ -130,8 +130,8 @@ fn test_callout_inline_table_references_increment_and_compact() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--link-style")
         .arg("inlinetable")
@@ -194,8 +194,8 @@ fn test_callout_table_inline_table_references_stay_inside_callout() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--link-style")
         .arg("inlinetable")
@@ -240,8 +240,8 @@ fn test_callout_pretty_table_reference_block_has_no_trailing_blank_when_last() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--link-style")
         .arg("inlinetable")
@@ -287,7 +287,7 @@ fn test_callout_pretty_reference_marker_is_not_split_from_url() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--cols")
         .arg("60")
         .arg("--wrap")
@@ -336,7 +336,7 @@ fn test_callout_inline_links_render_outside_while_table_links_stay_inside() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--cols")
         .arg("90")
         .arg("--wrap")

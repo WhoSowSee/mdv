@@ -6,8 +6,8 @@ fn test_callout_pretty_style_renders_frame() {
     fs::write(&temp_file, "> [!info]\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -53,10 +53,10 @@ fn test_callout_pretty_style_keeps_padding_for_plain_text() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("40")
-        .arg("-W")
+        .arg("-w")
         .arg("word")
         .arg("--callout-style")
         .arg("pretty")
@@ -103,10 +103,10 @@ fn test_callout_pretty_style_keeps_padding_when_wrapping_for_frame() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("30")
-        .arg("-W")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -153,10 +153,10 @@ fn test_callout_pretty_word_wrap_keeps_frame_for_long_unbroken_lines() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("60")
-        .arg("-W")
+        .arg("-w")
         .arg("word")
         .arg("--callout-style")
         .arg("pretty")
@@ -199,7 +199,7 @@ fn test_callout_pretty_char_wrap_avoids_single_character_tail_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("101")
         .arg("--callout-style")
@@ -237,7 +237,7 @@ fn test_callout_pretty_char_wrap_avoids_single_character_tail_with_heading_inden
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("101")
         .arg("--callout-style")
@@ -276,8 +276,8 @@ fn test_callout_pretty_style_preserves_heading_content_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -314,8 +314,8 @@ fn test_callout_simple_horizontal_rule_stays_inside() {
     fs::write(&temp_file, "> [!tip]\n> Before\n> ***\n> After\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("-c")
         .arg("20")
@@ -347,8 +347,8 @@ fn test_callout_pretty_horizontal_rule_keeps_padding() {
     fs::write(&temp_file, "> [!tip]\n> Before\n> ***\n> After\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("-c")
         .arg("20")
@@ -394,8 +394,8 @@ fn test_callout_rule_ignores_heading_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("-c")
         .arg("30")
@@ -428,8 +428,8 @@ fn test_callout_setext_heading_does_not_render_rule() {
     fs::write(&temp_file, "> [!note]\n> Title\n> ---\n> Body\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple")
@@ -458,8 +458,8 @@ fn test_callout_setext_heading_simple_keeps_single_prefix() {
     fs::write(&temp_file, "> [!tip]\n> dadas\n> ---\n> Как сделать так\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple")
@@ -486,8 +486,8 @@ fn test_callout_setext_h1_simple_keeps_single_prefix() {
     fs::write(&temp_file, "> [!tip]\n> dadas\n> =\n> Как сделать так\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple")
@@ -514,8 +514,8 @@ fn test_callout_setext_heading_pretty_has_no_inner_pipe() {
     fs::write(&temp_file, "> [!tip]\n> dadas\n> ---\n> Как сделать так\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -552,8 +552,8 @@ fn test_callout_setext_h1_pretty_has_no_inner_pipe() {
     fs::write(&temp_file, "> [!tip]\n> dadas\n> =\n> Как сделать так\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -590,8 +590,8 @@ fn test_callout_headings_do_not_affect_global_smart_indent() {
     fs::write(&temp_file, "> [!tip]\n> # Inside\n>\n## Outside\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--heading-layout")
         .arg("level")

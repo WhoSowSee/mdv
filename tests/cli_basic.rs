@@ -61,8 +61,8 @@ fn test_pretty_marker_help_documents_font_behavior() {
         .stdout(predicate::str::contains("--pretty-list 'size:large'"))
         .stdout(predicate::str::contains("--pretty-list 'type:unicode'"))
         .stdout(predicate::str::contains("JetBrainsMono Nerd Font"))
-        .stdout(predicate::str::contains("-N, --uniform-list-marker"))
-        .stdout(predicate::str::contains("-v, --pretty-definition <STYLE>"))
+        .stdout(predicate::str::contains("--uniform-list-marker"))
+        .stdout(predicate::str::contains("-D, --pretty-definition <STYLE>"))
         .stdout(predicate::str::contains(
             "Unicode definition marker spacing may vary by font",
         ))
@@ -70,6 +70,31 @@ fn test_pretty_marker_help_documents_font_behavior() {
             "Nerd Font definition marker requires a Nerd Font terminal",
         ))
         .stdout(predicate::str::contains("U+F444").not());
+}
+
+#[test]
+fn custom_checkbox_help_uses_real_icons_in_examples() {
+    let mut cmd = mdv_cmd();
+    cmd.arg("--help");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "Override:  --custom-checkbox ' :󰀦'         replaces the unchecked icon",
+        ))
+        .stdout(predicate::str::contains(
+            "Add:       --custom-checkbox '*:󰞋'         adds a new '[*]' checkbox state",
+        ))
+        .stdout(predicate::str::contains(
+            "Color:     --custom-checkbox ' :󰀦:yellow'  accepts '#ffffff', '128,1,1', 'ansi(200)'",
+        ))
+        .stdout(predicate::str::contains(
+            "Iconless:  --custom-checkbox '?:red'       keeps the [?] icon and applies red",
+        ))
+        .stdout(predicate::str::contains(
+            "           --custom-checkbox '*:yellow'    uses the unchecked icon and applies yellow",
+        ))
+        .stdout(predicate::str::contains("--custom-checkbox ' :icon'").not())
+        .stdout(predicate::str::contains("--custom-checkbox '*:icon'").not());
 }
 
 #[test]
@@ -121,7 +146,7 @@ fn test_html_output() {
     fs::write(&temp_file, "# HTML Test\n\nThis is a test.").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-H").arg(temp_file.path());
+    cmd.arg("--html").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("<h1>"))
@@ -134,7 +159,7 @@ fn test_no_colors_option() {
     fs::write(&temp_file, "# Test\n\n**Bold text**").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A").arg(temp_file.path());
+    cmd.arg("--no-colors").arg(temp_file.path());
     cmd.assert().success();
     // Note: We can't easily test for absence of ANSI codes in integration tests
 }
@@ -157,7 +182,7 @@ fn test_comments_rendered_by_default() {
     fs::write(&temp_file, "<!-- note -->\n\nVisible text\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A").arg(temp_file.path());
+    cmd.arg("--no-colors").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("<!-- note -->"))
@@ -174,7 +199,7 @@ fn test_raw_html_rendered_as_literal_text() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A").arg(temp_file.path());
+    cmd.arg("--no-colors").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains(
@@ -195,7 +220,7 @@ fn test_render_html_option_formats_raw_html() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("40")
         .arg("-E")
@@ -241,7 +266,7 @@ fn test_render_html_buffers_centered_semantic_blocks() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("80")
         .arg("-E")
@@ -282,7 +307,7 @@ fn test_render_html_right_aligns_regular_blocks() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("40")
         .arg("-E")
@@ -319,7 +344,7 @@ fn test_render_html_formats_inline_semantic_tags() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("120")
         .arg("-E")
@@ -349,7 +374,7 @@ fn test_render_html_formats_semantic_tags_inside_markdown_paragraph() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("160")
         .arg("-E")
@@ -382,7 +407,7 @@ fn test_render_html_details_summary_static_output() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -417,7 +442,7 @@ textarea keeps spaces:
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg("-c")
         .arg("80")
@@ -453,7 +478,7 @@ fn test_render_html_blockquote_uses_quote_prefix() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -481,7 +506,7 @@ fn test_render_html_definition_lists() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -511,7 +536,7 @@ fn test_render_html_figure_caption_is_rendered_after_content() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg("-c")
         .arg("80")
@@ -590,7 +615,7 @@ fn test_render_html_inline_table_references_inside_html_containers() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg("-u")
         .arg("inlinetable")
@@ -640,7 +665,7 @@ fn test_render_html_inline_table_references_reset_across_blocks() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg("-u")
         .arg("inlinetable")
@@ -708,7 +733,7 @@ fn test_render_html_ordered_list_attributes() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -752,7 +777,7 @@ fn test_render_html_unordered_list_type_markers() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -797,7 +822,7 @@ fn test_render_html_option_formats_html_tables() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("80")
         .arg("--render-html")
@@ -838,10 +863,10 @@ fn test_comments_wrap_to_column_width() {
         .unwrap();
 
         let output = mdv_cmd()
-            .arg("-A")
+            .arg("--no-colors")
             .arg("-c")
             .arg("40")
-            .arg("-W")
+            .arg("-w")
             .arg(wrap_mode)
             .arg(temp_file.path())
             .output()
@@ -865,7 +890,9 @@ fn test_hide_comments_option_hides_comments() {
     fs::write(&temp_file, "<!-- secret -->\n\nVisible text\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--hide-comments").arg("-A").arg(temp_file.path());
+    cmd.arg("--hide-comments")
+        .arg("--no-colors")
+        .arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("<!-- secret -->").not())
@@ -891,7 +918,7 @@ fn test_word_wrap_splits_unbroken_text_to_column_width() {
     fs::write(&temp_file, &token).unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--wrap")
         .arg("word")
         .arg("--cols")
@@ -919,7 +946,7 @@ fn test_word_wrap_list_inline_code_does_not_hang() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A")
+    cmd.arg("--no-colors")
         .arg("--wrap")
         .arg("word")
         .arg("-c")
@@ -945,7 +972,7 @@ fn test_reverse_option_preserves_block_layout() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-r")
         .arg(temp_file.path())
         .output()
@@ -986,7 +1013,9 @@ fn test_from_text_option() {
     fs::write(&temp_file, "# Start\n\nSome content.\n\n## Target Section\n\nThis is the target.\n\n## End\n\nMore content.").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-f").arg("Target Section").arg(temp_file.path());
+    cmd.arg("--from")
+        .arg("Target Section")
+        .arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Target Section"));
@@ -998,7 +1027,7 @@ fn test_tab_length_option() {
     fs::write(&temp_file, "# Tab Test\n\n\tIndented with tab").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-b").arg("8").arg(temp_file.path());
+    cmd.arg("--tab-length").arg("8").arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Tab Test"));
@@ -1080,7 +1109,10 @@ fn test_preset_info_with_file_shows_active_preset() {
     fs::write(&temp_file, "preset info content").unwrap();
 
     let mut cmd = mdv_cmd_with_config(&config_dir);
-    cmd.arg("-X").arg(temp_file.path()).arg("-x").arg("reader");
+    cmd.arg("--preset-info")
+        .arg(temp_file.path())
+        .arg("-P")
+        .arg("reader");
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Current preset: reader"))

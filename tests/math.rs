@@ -16,7 +16,11 @@ fn test_inline_math_renders_unicode() {
     )
     .unwrap();
 
-    let output = mdv_cmd().arg("-A").arg(temp_file.path()).output().unwrap();
+    let output = mdv_cmd()
+        .arg("--no-colors")
+        .arg(temp_file.path())
+        .output()
+        .unwrap();
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
@@ -34,7 +38,7 @@ fn test_display_math_renders_block() {
     fs::write(&temp_file, "$$\\frac{1}{2} + \\sqrt{3}$$").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path())
@@ -54,7 +58,7 @@ fn test_display_math_spacing_is_single_blank_line_simple() {
     fs::write(&temp_file, "A\n\n$$x$$\n\nB\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path())
@@ -74,7 +78,7 @@ fn test_display_math_spacing_is_single_blank_line_pretty() {
     fs::write(&temp_file, "A\n\n$$x$$\n\nB\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--code-block-style")
         .arg("pretty")
         .arg(temp_file.path())
@@ -94,7 +98,7 @@ fn test_fenced_math_block_renders() {
     fs::write(&temp_file, "```math\n\\int_0^1 x^2 dx\n```").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("--code-block-style")
         .arg("simple:show-name")
         .arg(temp_file.path())

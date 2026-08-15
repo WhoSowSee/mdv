@@ -19,7 +19,7 @@ fn test_blockquote_code_block_preserves_prefix() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -88,7 +88,7 @@ fn test_markdown_code_block_in_blockquote_has_no_leading_blank_line() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -136,7 +136,7 @@ fn test_pretty_style_consecutive_code_blocks_in_blockquote_have_single_blank_lin
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()

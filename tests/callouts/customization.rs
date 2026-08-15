@@ -6,8 +6,8 @@ fn test_custom_callout_icon_applies() {
     fs::write(&temp_file, "> [!custom]\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple:show-icons")
@@ -33,8 +33,8 @@ fn test_custom_callout_color_keeps_default_icon_for_builtin() {
     fs::write(&temp_file, "> [!tip]\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple:show-icons")
@@ -60,8 +60,8 @@ fn test_callout_label_override_keeps_type_icon_over_custom_label() {
     fs::write(&temp_file, "> [!note] custom\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple:show-icons")
@@ -87,8 +87,8 @@ fn test_callout_label_override_requires_space() {
     fs::write(&temp_file, "> [!info]Myname\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple")
@@ -126,8 +126,8 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple")
@@ -183,10 +183,10 @@ fn test_callout_word_wrap_does_not_insert_extra_blank_line_after_header() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("60")
-        .arg("-W")
+        .arg("-w")
         .arg("word")
         .arg("--callout-style")
         .arg("simple:show-icons;fold-icons")
@@ -234,8 +234,8 @@ fn test_callout_fold_icons_show_when_enabled() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple:show-icons;fold-icons")
@@ -264,8 +264,8 @@ fn test_callout_fold_icons_hidden_without_show_icons() {
     fs::write(&temp_file, "> [!info]+\n> Example\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple:show-icons")

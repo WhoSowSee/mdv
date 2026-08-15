@@ -9,7 +9,7 @@ fn render_output(markdown: &str, extra_args: &[&str], no_colors: bool) -> String
     let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
     command.args(["--no-config", "-c", "120", "--render-html"]);
     if no_colors {
-        command.arg("-A");
+        command.arg("--no-colors");
     }
     let output = command
         .args(extra_args)

@@ -14,7 +14,7 @@ fn tab_indented_fence_after_heading_renders_as_fence() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -44,7 +44,7 @@ fn tab_indented_fence_after_list_is_not_nested_by_indent() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -79,7 +79,7 @@ fn space_indented_fence_inside_list_renders_without_list_offset() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -109,7 +109,7 @@ fn tab_inside_regular_fence_stays_as_code_indentation() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -134,7 +134,7 @@ fn tab_inside_regular_fence_after_heading_stays_as_code_indentation() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -159,7 +159,7 @@ fn fully_tab_indented_fence_dedents_code_content() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -189,7 +189,7 @@ fn fully_double_tab_indented_fence_dedents_code_content() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -219,7 +219,7 @@ fn fully_double_tab_indented_fence_preserves_extra_inner_tab() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -244,7 +244,7 @@ fn fully_double_tab_indented_fence_with_less_indented_content_dedents_to_plain_c
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -274,7 +274,7 @@ fn fully_double_tab_open_with_triple_tab_close_renders_clean_block() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("pretty")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -304,7 +304,7 @@ fn fully_five_tab_open_with_four_tab_close_renders_clean_block() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("pretty")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -347,7 +347,7 @@ fn heading_before_tab_indented_code_does_not_insert_empty_first_line() {
         .arg("word")
         .arg("--cols")
         .arg("80")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -385,7 +385,7 @@ fn top_level_tab_indented_text_renders_as_paragraph() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -416,7 +416,7 @@ fn top_level_space_indented_text_renders_as_paragraph() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path())
         .output()
         .expect("run mdv");

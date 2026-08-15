@@ -10,7 +10,7 @@ fn test_smart_indent_promotes_first_heading() {
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -28,7 +28,7 @@ fn test_smart_indent_limits_growth_per_step() {
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -50,7 +50,7 @@ fn test_smart_indent_handles_mixed_levels() {
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -73,7 +73,7 @@ fn test_center_heading_layout_adds_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--heading-layout")
         .arg("center")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -166,7 +166,7 @@ fn test_single_blank_line_before_heading_with_surrounding_elements() {
 }
 
 #[test]
-fn test_heading_markers_support_levels_short_alias_and_center_layout() {
+fn test_heading_markers_support_levels_and_center_layout() {
     let markdown = "# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n";
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, markdown).unwrap();
@@ -193,7 +193,7 @@ fn test_heading_markers_support_levels_short_alias_and_center_layout() {
         .arg("40")
         .arg("--heading-layout")
         .arg("center")
-        .arg("-k")
+        .arg("--show-heading-markers")
         .arg(alias_file.path())
         .output()
         .expect("mdv runs with the heading marker alias");

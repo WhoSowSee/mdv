@@ -47,7 +47,7 @@ callout_style: "pretty"    # Options: "simple:show-icons;fold-icons;uppercase" |
 code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hanging indent inside code blocks
 reverse: false             # Render document starting from the end while preserving layout
 pretty_checkbox: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
-custom_checkbox: null      # Override icons or add states with optional color, only with pretty_checkbox (e.g. " :icon:yellow;*:icon:#ff0000")
+custom_checkbox: null      # Override icons or add states with optional color, only with pretty_checkbox (e.g. " :󰀦:yellow;*:󰞋:#ff0000")
 pretty_list: null          # null | "type:nerd-font;size:small" | "type:unicode;size:large"; booleans are not accepted
                            # size only changes Nerd Font icons; Unicode accepts both sizes and uses the same glyphs.
                            # Unicode spacing depends on the font; verified especially with JetBrainsMono Nerd Font.

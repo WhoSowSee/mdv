@@ -12,7 +12,7 @@ fn horizontal_margins_indent_and_constrain_wrapped_output() {
         .arg("--no-colors")
         .arg("--cols")
         .arg("12")
-        .arg("-a")
+        .arg("-m")
         .arg("left:2;right:3")
         .arg(temp_file.path())
         .output()

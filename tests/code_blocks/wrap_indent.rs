@@ -15,7 +15,7 @@ fn capture_indent_spaces(mode: Option<&str>) -> (usize, usize) {
     .expect("write markdown");
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A")
+    cmd.arg("--no-colors")
         .arg("--code-block-style")
         .arg("simple")
         .arg("--wrap")

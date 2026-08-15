@@ -10,8 +10,8 @@ fn test_callout_pretty_style_respects_heading_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -36,8 +36,8 @@ fn test_callout_simple_heading_keeps_pipe_alignment() {
     fs::write(&temp_file, "> [!important]\n> ### Heading\n> Body line\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("simple")
@@ -98,8 +98,8 @@ fn test_callout_heading_has_no_blank_edges_in_pretty_style() {
     fs::write(&temp_file, "> [!important]\n> ### Heading\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")
@@ -145,8 +145,8 @@ fn test_callout_simple_headings_respect_smart_indent() {
     fs::write(&temp_file, "> [!note]\n> # H1\n> ### H3\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--heading-layout")
         .arg("level")
@@ -187,8 +187,8 @@ fn test_callout_pretty_headings_respect_smart_indent() {
     fs::write(&temp_file, "> [!note]\n> # H1\n> ### H3\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--heading-layout")
         .arg("level")
@@ -233,8 +233,8 @@ fn test_callout_pretty_spacing_between_callouts_after_heading() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg("pretty")

@@ -19,8 +19,8 @@ Examples:
   mdv README.md                    # View a markdown file
   mdv help                         # Browse the full help
   mdv -t monokai README.md         # Use monokai theme
-  mdv -m README.md                 # Monitor file for changes
-  mdv -H README.md                 # Output HTML instead of terminal formatting
+  mdv --monitor README.md          # Monitor file for changes
+  mdv --html README.md             # Output HTML instead of terminal formatting
   mdv -E README.md                 # Render embedded HTML in terminal output
   cat README.md | mdv              # Read from stdin
 "#
@@ -33,270 +33,365 @@ pub struct Cli {
     #[arg(value_name = "FILE")]
     pub filename: Option<String>,
 
-    /// Directory containing the configuration file.
-    #[arg(
-        short = 'F',
-        long = "config-file",
-        value_name = "CONFIG_DIR",
-        long_help = "Directory containing the configuration file.\nmdv looks for config.yaml or config.yml inside it"
-    )]
-    pub config_file: Option<PathBuf>,
-
-    /// Skip loading configuration files
-    #[arg(short = 'n', long = "no-config")]
-    pub no_config: bool,
-
-    /// Apply a named built-in or user preset
-    #[arg(short = 'x', long = "preset", value_name = "NAME")]
-    pub preset: Option<String>,
-
-    /// List presets, or show the active preset while rendering a file
-    #[arg(short = 'X', long = "preset-info")]
-    pub preset_info: bool,
-
-    /// Create the default configuration file
-    #[arg(short = 'G', long = "init-config", num_args = 0..=1, value_name = "CONFIG_DIR")]
-    pub init_config: Option<Option<PathBuf>>,
-
     /// Strip all ANSI colors
-    #[arg(short = 'A', long = "no-colors")]
+    #[arg(
+        long = "no-colors",
+        help_heading = "Output and flow",
+        display_order = 8
+    )]
     pub no_colors: bool,
 
     /// Hide Markdown comments from the rendered output
-    #[arg(short = 'C', long = "hide-comments")]
+    #[arg(
+        long = "hide-comments",
+        help_heading = "Output and flow",
+        display_order = 9
+    )]
     pub hide_comments: bool,
 
     /// Render raw HTML fragments as terminal-formatted content
-    #[arg(short = 'E', long = "render-html")]
+    #[arg(
+        short = 'E',
+        long = "render-html",
+        help_heading = "Output and flow",
+        display_order = 6
+    )]
     pub render_html: bool,
 
     /// Show rendered row numbers with optional source and separator modes
     #[arg(
-        short = 'j',
+        short = 'N',
         long = "line-numbers",
         num_args = 0..=1,
         value_name = "MODE",
         value_enum,
         hide_possible_values = true,
+        help_heading = "Output and flow",
+        display_order = 7,
         long_help = "Show row numbers in terminal and pager output\nWithout a value, number every rendered row without a separator\n\nPossible values:\n- source:    Number physical Markdown source lines instead of rendered rows\n- separator: Display a separator after each rendered row number\n\nExamples:\n  --line-numbers separator\n  --line-numbers source\n  --line-numbers \"source;separator\""
     )]
     pub line_numbers: Option<Option<LineNumberOptions>>,
 
     /// Print HTML version instead of terminal formatting
-    #[arg(short = 'H', long = "html")]
+    #[arg(long = "html", help_heading = "Output and flow", display_order = 5)]
     pub do_html: bool,
 
     /// Show output in the built-in pager instead of printing everything at once
-    #[arg(short = 'p', long = "pager")]
+    #[arg(
+        short = 'p',
+        long = "pager",
+        help_heading = "Output and flow",
+        display_order = 0
+    )]
     pub pager: bool,
 
     /// Browse and read Markdown documents in an interactive terminal interface
-    #[arg(short = 'L', long = "interactive", conflicts_with = "pager")]
+    #[arg(
+        short = 'i',
+        long = "interactive",
+        conflicts_with = "pager",
+        help_heading = "Output and flow",
+        display_order = 1
+    )]
     pub interactive: bool,
 
+    /// Fix columns to this width
+    #[arg(
+        short = 'c',
+        long = "cols",
+        help_heading = "Layout and wrapping",
+        display_order = 11
+    )]
+    pub cols: Option<usize>,
+
     /// Set theme
-    #[arg(short = 't', long = "theme", default_value = "terminal")]
+    #[arg(
+        short = 't',
+        long = "theme",
+        default_value = "terminal",
+        help_heading = "Themes and code",
+        display_order = 23
+    )]
     pub theme: Option<String>,
 
     /// Theme for code block highlighting
-    #[arg(short = 'T', long = "code-theme", default_value = "terminal")]
+    #[arg(
+        short = 'T',
+        long = "code-theme",
+        default_value = "terminal",
+        help_heading = "Themes and code",
+        display_order = 24
+    )]
     pub code_theme: Option<String>,
 
     /// Display empty Markdown elements such as blank code blocks and list items
-    #[arg(short = 'e', long = "show-empty-elements")]
+    #[arg(
+        long = "show-empty-elements",
+        help_heading = "Output and flow",
+        display_order = 10
+    )]
     pub show_empty_elements: bool,
 
     /// Disable heuristic language detection for code blocks
-    #[arg(short = 'g', long = "no-code-guessing")]
+    #[arg(
+        long = "no-code-guessing",
+        help_heading = "Themes and code",
+        display_order = 33
+    )]
     pub no_code_guessing: bool,
 
     /// Directory containing custom .sublime-syntax files
     #[arg(
-        short = 'z',
         long = "syntaxes-dir",
         value_name = "DIR",
+        help_heading = "Themes and code",
+        display_order = 32,
         long_help = "Directory containing custom .sublime-syntax files\nFiles are loaded recursively on top of the embedded syntax set\nCustom entries take precedence"
     )]
     pub syntaxes_dir: Option<PathBuf>,
 
     /// Configure visual style for code blocks
     #[arg(
-        short = 's',
+        short = 'b',
         long = "code-block-style",
         value_name = "CODE_STYLE",
         default_value = "basic",
         value_parser = parse_code_block_style_config,
+        help_heading = "Themes and code",
+        display_order = 29,
         long_help = "Configure visual style for code blocks\nStyles: basic, simple, pretty\nOptions: show-name, show-icon\nCombine options with ';', for example pretty:show-name;show-icon\nIcons require a Nerd Font in the terminal to display correctly"
     )]
     pub code_block_style: Option<CodeBlockStyleConfig>,
 
     /// Override code block icon/label/aliases.
     #[arg(
-        short = 'J',
         long = "custom-code-block",
         value_name = "BLOCKS",
+        help_heading = "Themes and code",
+        display_order = 30,
         long_help = "Override code block icon/label/aliases.\nEntries are separated by ';', options by ',', aliases by '|'.\nAt least one of 'icon' or 'label' is required; 'aliases' is optional.\n\nExample: rust:icon=*,label=russst;py:icon=?,aliases=py|py3"
     )]
     pub custom_code_block: Option<String>,
 
     #[arg(
-        short = 'O',
+        short = 'C',
         long = "callout-style",
         value_name = "CALLOUT_STYLE",
         default_value = "pretty",
         value_parser = parse_callout_style_config,
+        help_heading = "Callouts and lists",
+        display_order = 34,
         long_help = "Configure visual style for callouts\n(pretty:show-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;uppercase;fold-icons)\nOption fold-icons requires show-icons\nIcons require a Nerd Font in the terminal to display correctly"
     )]
     pub style_callout: Option<CalloutStyleConfig>,
 
     /// Render task-list checkboxes as Nerd Font icons (requires a Nerd Font terminal)
     #[arg(
-        short = 'P',
+        short = 'x',
         long = "pretty-checkbox",
         value_enum,
         value_name = "SHAPE",
+        help_heading = "Callouts and lists",
+        display_order = 36,
         long_help = "Render task-list checkboxes as Nerd Font icons\nChoose 'square' or 'circle' icon set\nDisabled by default; requires a Nerd Font to display correctly"
     )]
     pub pretty_checkbox: Option<CheckboxShape>,
 
-    /// Override or add checkbox icons with optional color (e.g. ` :icon:yellow`). Requires --pretty-checkbox
+    /// Override or add checkbox icons with optional color (e.g. ` :󰀦:yellow`). Requires --pretty-checkbox
     #[arg(
-        short = 'B',
         long = "custom-checkbox",
         value_name = "PAIRS",
-        long_help = "Override built-in checkbox icons or add new checkbox states (only with --pretty-checkbox)\n\nFormat: '<char>:<icon>[:<color>];<char>:<icon>[:<color>]'\nIcon is optional: '<char>:<color>' keeps the default icon, just changes the color\n\nOverride:  -B ' :icon'        replaces the unchecked icon\nAdd:       -B '*:icon'        adds a new '[*]' checkbox state\nColor:     -B ' :icon:yellow' or '#ffffff' or '128,1,1' or 'ansi(200)'\nIconless:  -B '?:red'         keeps default [?] icon, applies red color\n           -B '*:yellow'      new '[*]' uses default unchecked icon + yellow"
+        help_heading = "Callouts and lists",
+        display_order = 37,
+        long_help = "Override built-in checkbox icons or add new checkbox states (only with --pretty-checkbox)\n\nFormat: '<char>:<icon>[:<color>];<char>:<icon>[:<color>]'\nIcon is optional: '<char>:<color>' keeps the default icon, just changes the color\n\nOverride:  --custom-checkbox ' :󰀦'         replaces the unchecked icon\nAdd:       --custom-checkbox '*:󰞋'         adds a new '[*]' checkbox state\nColor:     --custom-checkbox ' :󰀦:yellow'  accepts '#ffffff', '128,1,1', 'ansi(200)'\nIconless:  --custom-checkbox '?:red'       keeps the [?] icon and applies red\n           --custom-checkbox '*:yellow'    uses the unchecked icon and applies yellow"
     )]
     pub custom_checkbox: Option<String>,
 
     /// Render unordered list markers with Nerd Font or Unicode icons
     #[arg(
-        short = 'D',
+        short = 'L',
         long = "pretty-list",
         value_name = "LIST_STYLE",
         value_parser = PrettyListStyle::parse,
+        help_heading = "Callouts and lists",
+        display_order = 38,
         long_help = "Render unordered list markers with a built-in icon set per nesting level\n\nFormat: 'type:<nerd-font|unicode>;size:<large|small>'\n\nThe size option only changes Nerd Font icons.\nIt is accepted for Unicode, but both sizes use the same glyphs.\nUnicode glyph spacing may vary by font.\nRendering was verified with Nerd Font families, especially JetBrainsMono Nerd Font.\n\nExamples:\n  --pretty-list 'type:nerd-font;size:large'\n  --pretty-list 'type:nerd-font;size:small'\n  --pretty-list 'type:unicode;size:large'\n  --pretty-list 'size:large'\n  --pretty-list 'type:unicode'"
     )]
     pub pretty_list: Option<PrettyListStyle>,
 
     /// Render definition descriptions with a Unicode or Nerd Font marker
     #[arg(
-        short = 'v',
+        short = 'D',
         long = "pretty-definition",
         value_enum,
         value_name = "STYLE",
+        help_heading = "Callouts and lists",
+        display_order = 41,
         long_help = "Render definition descriptions with a built-in marker\n\nUnicode definition marker spacing may vary by font.\nNerd Font definition marker requires a Nerd Font terminal.\nRendering was verified with Nerd Font families, especially JetBrainsMono Nerd Font."
     )]
     pub pretty_definition: Option<PrettyDefinitionStyle>,
 
     /// Use one list marker for every nesting level. Requires --pretty-list
     #[arg(
-        short = 'N',
         long = "uniform-list-marker",
         value_name = "MARKER",
         value_parser = UniformListMarker::parse,
+        help_heading = "Callouts and lists",
+        display_order = 39,
         long_help = "Use one marker for every unordered-list nesting level (only with --pretty-list)\n\nChoose exactly one form:\n  level:<1-4>  reuse that level's icon from the selected --pretty-list set\n  icon:<glyph> use a custom glyph or string\n\nExamples:\n  --uniform-list-marker 'level:2'\n  --uniform-list-marker 'icon:*'"
     )]
     pub uniform_list_marker: Option<UniformListMarker>,
 
     /// Override list marker icon and/or color per nesting level. Requires --pretty-list
     #[arg(
-        short = 'Q',
         long = "custom-list",
         value_name = "PAIRS",
+        help_heading = "Callouts and lists",
+        display_order = 40,
         long_help = "Override list marker icon and/or color per nesting level (only with --pretty-list)\n\nFormat: '<level>:<icon>[:<color>];<level>:<color>'\nLevel is 1-based nesting depth; icon is the marker glyph\n\nIcon + color:  --custom-list '1:*:yellow'   marker '*' in yellow\nIcon only:     --custom-list '1:>'          marker '>' in theme color\nColor only:    --custom-list '1:red'        keep built-in icon, red color\n\nColors accept: named ('red', 'blue'), hex ('#ff0000'), rgb ('255,0,0'), ansi ('ansi(200)')"
     )]
     pub custom_list: Option<String>,
     /// Set hanging indent style for wrapped code block lines
     #[arg(
-        short = 'K',
         long = "code-wrap-indent",
         value_enum,
         value_name = "MODE",
-        default_value = "double"
+        default_value = "double",
+        help_heading = "Themes and code",
+        display_order = 31
     )]
     pub code_wrap_indent: Option<CodeWrapIndent>,
 
     /// Show current theme and optionally display the contents of FILE when provided
-    #[arg(short = 'i', long = "theme-info", value_name = "FILE", num_args = 0..=1, value_hint = clap::ValueHint::FilePath)]
+    #[arg(
+        long = "theme-info",
+        value_name = "FILE",
+        num_args = 0..=1,
+        value_hint = clap::ValueHint::FilePath,
+        help_heading = "Themes and code",
+        display_order = 25
+    )]
     pub theme_info: Option<Option<PathBuf>>,
 
     /// Set tab length
-    #[arg(short = 'b', long = "tab-length", default_value = "4")]
+    #[arg(
+        long = "tab-length",
+        default_value = "4",
+        help_heading = "Layout and wrapping",
+        display_order = 13
+    )]
     pub tab_length: Option<usize>,
-
-    /// Fix columns to this width
-    #[arg(short = 'c', long = "cols")]
-    pub cols: Option<usize>,
 
     /// Set left and right terminal margins
     #[arg(
-        short = 'a',
+        short = 'm',
         long = "margin",
         value_name = "MARGINS",
         value_parser = parse_horizontal_margins,
+        help_heading = "Layout and wrapping",
+        display_order = 12,
         long_help = "Set horizontal margins around terminal output\nFormat: 'left:<columns>;right:<columns>'\nSpecify either side or both; an omitted side defaults to 0\n\nExamples:\n  --margin 'left:4'\n  --margin 'right:5'\n  --margin 'left:4;right:5'"
     )]
     pub margin: Option<HorizontalMargins>,
 
     /// Configure text wrapping mode
     #[arg(
-        short = 'W',
+        short = 'w',
         long = "wrap",
         value_enum,
         value_name = "MODE",
-        default_value = "char"
+        default_value = "char",
+        help_heading = "Layout and wrapping",
+        display_order = 14
     )]
     pub wrap_mode: Option<TextWrapMode>,
 
     /// Reflow paragraphs by collapsing source newlines and refilling to width
-    #[arg(short = 'R', long = "reflow")]
+    #[arg(
+        long = "reflow",
+        help_heading = "Layout and wrapping",
+        display_order = 15
+    )]
     pub reflow: bool,
 
     /// Configure table wrapping behavior
     #[arg(
-        short = 'w',
+        short = 'W',
         long = "table-wrap",
         value_enum,
         value_name = "MODE",
-        default_value = "fit"
+        default_value = "fit",
+        help_heading = "Layout and wrapping",
+        display_order = 19
     )]
     pub table_wrap_mode: Option<TableWrapMode>,
 
     /// Render tables with full rounded borders
-    #[arg(short = 'q', long = "pretty-table")]
+    #[arg(
+        short = 'B',
+        long = "pretty-table",
+        help_heading = "Layout and wrapping",
+        display_order = 20
+    )]
     pub pretty_table: bool,
 
     /// Display from given substring of the file
-    #[arg(short = 'f', long = "from", value_name = "TEXT")]
+    #[arg(
+        long = "from",
+        value_name = "TEXT",
+        help_heading = "Output and flow",
+        display_order = 3
+    )]
     pub from_txt: Option<String>,
 
     /// Render document starting from the end while preserving layout
-    #[arg(short = 'r', long = "reverse")]
+    #[arg(
+        short = 'r',
+        long = "reverse",
+        help_heading = "Output and flow",
+        display_order = 4
+    )]
     pub reverse: bool,
 
     /// Monitor file for changes and redisplay
-    #[arg(short = 'm', long = "monitor")]
+    #[arg(long = "monitor", help_heading = "Output and flow", display_order = 2)]
     pub monitor_file: bool,
 
     /// Override colors of the selected theme (e.g. `text=#ffffff;h1=187,154,247`)
-    #[arg(short = 'y', long = "custom-theme", value_name = "PAIRS")]
+    #[arg(
+        long = "custom-theme",
+        value_name = "PAIRS",
+        help_heading = "Themes and code",
+        display_order = 26
+    )]
     pub custom_theme: Option<String>,
 
     /// Override inline Markdown element decorations
     #[arg(
-        short = 'Z',
         long = "inline-style",
         value_name = "STYLES",
+        help_heading = "Themes and code",
+        display_order = 28,
         long_help = "Override inline Markdown element decorations\nElements: emphasis, strong, strong_emphasis, code, strikethrough, highlight\nProperties: backticks, bold, italic, underline, strikethrough\n\nFormat: '<element>:<property>=<true|false>,<property>=<true|false>;<element>:...'\nExample: --inline-style 'code:backticks=false,bold=true;highlight:underline=true'"
     )]
     pub inline_style: Option<InlineStyleOverrides>,
 
     /// Override syntax highlighting colors (e.g. `keyword=#ffffff;string=128,0,128`)
-    #[arg(short = 'Y', long = "custom-code-theme", value_name = "PAIRS")]
+    #[arg(
+        long = "custom-code-theme",
+        value_name = "PAIRS",
+        help_heading = "Themes and code",
+        display_order = 27
+    )]
     pub custom_code_theme: Option<String>,
 
     /// Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
-    #[arg(short = 'U', long = "custom-callout", value_name = "CALLOUTS")]
+    #[arg(
+        long = "custom-callout",
+        value_name = "CALLOUTS",
+        help_heading = "Callouts and lists",
+        display_order = 35
+    )]
     pub custom_callout: Option<String>,
 
     /// Set link style
@@ -304,7 +399,9 @@ pub struct Cli {
         short = 'u',
         long = "link-style",
         value_enum,
-        default_value = "clickable"
+        default_value = "clickable",
+        help_heading = "Links and footnotes",
+        display_order = 42
     )]
     pub link_style: Option<LinkStyle>,
 
@@ -313,46 +410,106 @@ pub struct Cli {
         short = 'l',
         long = "link-truncation",
         value_enum,
-        default_value = "wrap"
+        default_value = "wrap",
+        help_heading = "Links and footnotes",
+        display_order = 43
     )]
     pub link_truncation: Option<LinkTruncationStyle>,
 
     /// Configure footnote rendering style
     #[arg(
-        short = 'o',
         long = "footnote-style",
         value_enum,
         value_name = "STYLE",
-        default_value = "endnotes"
+        default_value = "endnotes",
+        help_heading = "Links and footnotes",
+        display_order = 44
     )]
     pub footnote_style: Option<FootnoteStyle>,
 
     /// Configure handling of missing footnote definitions
     #[arg(
-        short = 'M',
         long = "missing-footnote-style",
         value_enum,
         value_name = "STYLE",
-        default_value = "show"
+        default_value = "show",
+        help_heading = "Links and footnotes",
+        display_order = 45
     )]
     pub missing_footnote_style: Option<MissingFootnoteStyle>,
 
+    /// Directory containing the configuration file.
+    #[arg(
+        short = 'F',
+        long = "config-file",
+        value_name = "CONFIG_DIR",
+        help_heading = "Configuration",
+        display_order = 46,
+        long_help = "Directory containing the configuration file.\nmdv looks for config.yaml or config.yml inside it"
+    )]
+    pub config_file: Option<PathBuf>,
+
+    /// Skip loading configuration files
+    #[arg(
+        short = 'n',
+        long = "no-config",
+        help_heading = "Configuration",
+        display_order = 47
+    )]
+    pub no_config: bool,
+
+    /// Apply a named built-in or user preset
+    #[arg(
+        short = 'P',
+        long = "preset",
+        value_name = "NAME",
+        help_heading = "Configuration",
+        display_order = 48
+    )]
+    pub preset: Option<String>,
+
+    /// List presets, or show the active preset while rendering a file
+    #[arg(
+        long = "preset-info",
+        help_heading = "Configuration",
+        display_order = 49
+    )]
+    pub preset_info: bool,
+
+    /// Create the default configuration file
+    #[arg(
+        long = "init-config",
+        num_args = 0..=1,
+        value_name = "CONFIG_DIR",
+        help_heading = "Configuration",
+        display_order = 50
+    )]
+    pub init_config: Option<Option<PathBuf>>,
+
     /// Set heading layout
     #[arg(
-        short = 'd',
+        short = 'H',
         long = "heading-layout",
         value_enum,
-        default_value = "level"
+        default_value = "level",
+        help_heading = "Layout and wrapping",
+        display_order = 16
     )]
     pub heading_layout: Option<HeadingLayout>,
 
     /// Show Markdown-style markers before headings
-    #[arg(short = 'k', long = "show-heading-markers")]
+    #[arg(
+        long = "show-heading-markers",
+        help_heading = "Layout and wrapping",
+        display_order = 17
+    )]
     pub show_heading_markers: bool,
 
     #[arg(
         short = 'I',
         long = "smart-indent",
+        help_heading = "Layout and wrapping",
+        display_order = 18,
         long_help = "Smart indentation for headings when using `--heading-layout level`\ncompress large jumps between heading levels so consecutive headings \nchange indentation gradually (e.g. H1 → H4 indents like H2)"
     )]
     pub smart_indent: bool,
@@ -361,6 +518,8 @@ pub struct Cli {
         short = 'S',
         long = "table-smart-indent",
         help = "Automatically adjusts table indentation based on available width",
+        help_heading = "Layout and wrapping",
+        display_order = 21,
         long_help = "Automatically adjusts table indentation based on available width\nUses heading content indentation when space allows and reduces it when width is tight"
     )]
     pub table_smart_indent: bool,
@@ -369,6 +528,8 @@ pub struct Cli {
     #[arg(
         long = "block-spacing",
         value_name = "SPACING",
+        help_heading = "Layout and wrapping",
+        display_order = 22,
         long_help = "Configure blank lines above and below individual block elements\nEntries are separated by ';', sides by ','\nOmitted elements and sides keep their default spacing\nElements: paragraph, h1..h6, code-block, display-math, table, horizontal-rule\nunordered-list, ordered-list, task-list, blockquote, callout, definition-list\ninline-references, end-references, attached-footnotes, endnotes\n\nExample: --block-spacing 'paragraph:top=0,bottom=1;callout:top=1'"
     )]
     pub block_spacing: Option<BlockSpacingOverrides>,
@@ -962,7 +1123,135 @@ pub enum CodeWrapIndent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clap::Parser;
+    use clap::{CommandFactory, Parser};
+
+    #[test]
+    fn short_flags_match_public_cli_contract() {
+        let mut command = Cli::command();
+        let _ = command.render_help();
+
+        let mut actual = command
+            .get_arguments()
+            .filter_map(|arg| {
+                arg.get_short()
+                    .map(|short| (arg.get_long().expect("short option has a long name"), short))
+            })
+            .collect::<Vec<_>>();
+        actual.sort_unstable();
+
+        let mut expected = vec![
+            ("callout-style", 'C'),
+            ("code-block-style", 'b'),
+            ("code-theme", 'T'),
+            ("cols", 'c'),
+            ("config-file", 'F'),
+            ("heading-layout", 'H'),
+            ("help", 'h'),
+            ("interactive", 'i'),
+            ("line-numbers", 'N'),
+            ("link-style", 'u'),
+            ("link-truncation", 'l'),
+            ("margin", 'm'),
+            ("no-config", 'n'),
+            ("pager", 'p'),
+            ("preset", 'P'),
+            ("pretty-checkbox", 'x'),
+            ("pretty-definition", 'D'),
+            ("pretty-list", 'L'),
+            ("pretty-table", 'B'),
+            ("render-html", 'E'),
+            ("reverse", 'r'),
+            ("smart-indent", 'I'),
+            ("table-smart-indent", 'S'),
+            ("table-wrap", 'W'),
+            ("theme", 't'),
+            ("version", 'V'),
+            ("wrap", 'w'),
+        ];
+        expected.sort_unstable();
+
+        assert_eq!(actual, expected);
+        assert!(
+            command
+                .get_arguments()
+                .all(|arg| arg.get_all_short_aliases().is_none())
+        );
+    }
+
+    #[test]
+    fn help_groups_options_in_task_oriented_order() {
+        let help = Cli::command().render_long_help().to_string();
+        let expected = [
+            "Options:",
+            "--help",
+            "--version",
+            "Output and flow:",
+            "--pager",
+            "--interactive",
+            "--monitor",
+            "--from",
+            "--reverse",
+            "--html",
+            "--render-html",
+            "--line-numbers",
+            "--no-colors",
+            "--hide-comments",
+            "--show-empty-elements",
+            "Layout and wrapping:",
+            "--cols",
+            "--margin",
+            "--tab-length",
+            "--wrap",
+            "--reflow",
+            "--heading-layout",
+            "--show-heading-markers",
+            "--smart-indent",
+            "--table-wrap",
+            "--pretty-table",
+            "--table-smart-indent",
+            "--block-spacing",
+            "Themes and code:",
+            "--theme",
+            "--code-theme",
+            "--theme-info",
+            "--custom-theme",
+            "--custom-code-theme",
+            "--inline-style",
+            "--code-block-style",
+            "--custom-code-block",
+            "--code-wrap-indent",
+            "--syntaxes-dir",
+            "--no-code-guessing",
+            "Callouts and lists:",
+            "--callout-style",
+            "--custom-callout",
+            "--pretty-checkbox",
+            "--custom-checkbox",
+            "--pretty-list",
+            "--uniform-list-marker",
+            "--custom-list",
+            "--pretty-definition",
+            "Links and footnotes:",
+            "--link-style",
+            "--link-truncation",
+            "--footnote-style",
+            "--missing-footnote-style",
+            "Configuration:",
+            "--config-file",
+            "--no-config",
+            "--preset",
+            "--preset-info",
+            "--init-config",
+        ];
+
+        let mut offset = 0;
+        for fragment in expected {
+            let relative = help[offset..]
+                .find(fragment)
+                .unwrap_or_else(|| panic!("missing or misplaced help fragment: {fragment}"));
+            offset += relative + fragment.len();
+        }
+    }
 
     fn parse_link_style(value: &str) -> LinkStyle {
         Cli::parse_from(["mdv", "-u", value])
@@ -977,8 +1266,8 @@ mod tests {
     }
 
     #[test]
-    fn short_flag_parses_code_wrap_indent() {
-        let cli = Cli::parse_from(["mdv", "-K", "base"]);
+    fn code_wrap_indent_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "--code-wrap-indent", "base"]);
         assert!(matches!(
             cli.code_wrap_indent.expect("code wrap indent value"),
             CodeWrapIndent::Base
@@ -986,8 +1275,8 @@ mod tests {
     }
 
     #[test]
-    fn short_flag_parses_syntaxes_dir() {
-        let cli = Cli::parse_from(["mdv", "-z", "syntaxes"]);
+    fn syntaxes_dir_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "--syntaxes-dir", "syntaxes"]);
         assert_eq!(cli.syntaxes_dir, Some(PathBuf::from("syntaxes")));
     }
 
@@ -1022,8 +1311,8 @@ mod tests {
     }
 
     #[test]
-    fn pretty_table_short_alias_parses() {
-        let cli = Cli::parse_from(["mdv", "-q"]);
+    fn pretty_table_short_flag_parses() {
+        let cli = Cli::parse_from(["mdv", "-B"]);
         assert!(cli.pretty_table);
     }
 
@@ -1035,7 +1324,7 @@ mod tests {
 
     #[test]
     fn line_numbers_flags_parse() {
-        let options = Cli::parse_from(["mdv", "--line-numbers", "separator;source", "README.md"])
+        let options = Cli::parse_from(["mdv", "-N", "separator;source", "README.md"])
             .line_numbers
             .flatten()
             .expect("line-number options");
@@ -1069,10 +1358,6 @@ mod tests {
         assert!(cli.init_config.is_some());
         assert!(cli.init_config.unwrap().is_none());
 
-        let cli = Cli::parse_from(["mdv", "-G"]);
-        assert!(cli.init_config.is_some());
-        assert!(cli.init_config.unwrap().is_none());
-
         let cli = Cli::parse_from(["mdv", "--init-config", "."]);
         assert_eq!(cli.init_config.unwrap().unwrap(), PathBuf::from("."));
     }
@@ -1101,7 +1386,7 @@ mod tests {
         let cli = Cli::parse_from(["mdv", "--interactive"]);
         assert!(cli.interactive);
 
-        let cli = Cli::parse_from(["mdv", "-L"]);
+        let cli = Cli::parse_from(["mdv", "-i"]);
         assert!(cli.interactive);
     }
 
@@ -1176,18 +1461,9 @@ mod tests {
     }
 
     #[test]
-    fn custom_code_block_short_alias_parses() {
-        let cli = Cli::parse_from(["mdv", "-J", "rust:icon=;python:icon="]);
-        assert_eq!(
-            cli.custom_code_block.expect("custom code block parsed"),
-            "rust:icon=;python:icon="
-        );
-    }
-
-    #[test]
     fn pretty_list_rejects_legacy_bare_flag() {
         assert!(Cli::try_parse_from(["mdv", "--pretty-list"]).is_err());
-        assert!(Cli::try_parse_from(["mdv", "-D"]).is_err());
+        assert!(Cli::try_parse_from(["mdv", "-L"]).is_err());
         assert!(Cli::try_parse_from(["mdv", "--pretty-list", "README.md"]).is_err());
     }
 

@@ -74,7 +74,7 @@ fn cli_inline_style_controls_ansi_attributes() {
         .env("MDV_NO_COLOR", "false")
         .args([
             "--no-config",
-            "-Z",
+            "--inline-style",
             "emphasis:bold=true,italic=false,underline=true,strikethrough=true",
         ])
         .arg(file.path())

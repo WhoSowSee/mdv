@@ -12,7 +12,7 @@ fn render(markdown: &str, args: &[&str]) -> String {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(file.path())
         .args(args)
         .output()
@@ -35,7 +35,7 @@ fn assert_line_prefixes(output: &str, expected: &[&str]) {
 
 #[test]
 fn rendered_line_number_formats() {
-    let plain = render("# Heading\nParagraph.\n", &["-j"]);
+    let plain = render("# Heading\nParagraph.\n", &["-N"]);
     assert_line_prefixes(&plain, &["1 ", "2 ", "3 "]);
     assert!(plain.contains("Heading") && plain.contains("Paragraph."));
 
@@ -56,7 +56,7 @@ fn help_lists_line_number_values_and_examples() {
     let possible_values = &help[possible_values_start..examples_start];
 
     for expected in [
-        "-j, --line-numbers [<MODE>]",
+        "-N, --line-numbers [<MODE>]",
         "Possible values:",
         "source: Number physical Markdown source lines instead of rendered rows",
         "separator: Display a separator after each rendered row number",
@@ -83,7 +83,7 @@ fn line_number_options_reserve_exact_gutter_width() {
     let markdown = format!("{}abcdefghijklmnopq\n", "\n".repeat(10));
 
     assert_eq!(
-        render(&markdown, &["-j", "-c", "20"]),
+        render(&markdown, &["--line-numbers", "-c", "20"]),
         "1 abcdefghijklmnopq\n"
     );
     assert_eq!(
@@ -206,12 +206,15 @@ fn config_accepts_boolean_and_option_string() {
 
 #[test]
 fn line_numbers_do_not_change_html_export() {
-    let output = render("# Heading\n\nParagraph.\n", &["-j", "--html"]);
+    let output = render("# Heading\n\nParagraph.\n", &["--line-numbers", "--html"]);
     assert!(output.contains("<h1>Heading</h1>"));
     assert!(!output.contains('│'));
 }
 
 #[test]
 fn line_numbers_do_not_reveal_hidden_comments() {
-    assert_eq!(render("<!-- hidden -->\n", &["-j", "--hide-comments"]), "");
+    assert_eq!(
+        render("<!-- hidden -->\n", &["--line-numbers", "--hide-comments"]),
+        ""
+    );
 }

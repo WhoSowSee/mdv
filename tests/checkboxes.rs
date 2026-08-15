@@ -473,7 +473,12 @@ fn test_pretty_list_unicode_icons() {
 #[test]
 fn test_uniform_list_marker_accepts_level_or_icon() {
     let from_level = run(
-        &["--pretty-list", "type:unicode;size:large", "-N", "level:2"],
+        &[
+            "--pretty-list",
+            "type:unicode;size:large",
+            "--uniform-list-marker",
+            "level:2",
+        ],
         nested_list_markdown(),
     );
     assert_eq!(from_level.matches('▪').count(), 5);
@@ -512,7 +517,15 @@ fn test_custom_list_marker_stripped_for_checkbox() {
 fn test_custom_checkbox_color_only_existing_state() {
     // `?:yellow` — color-only override for existing [?], icon stays default.
     let md = "- [?] question\n";
-    let stdout = run_with_colors(&["--pretty-checkbox", "square", "-B", "?:yellow"], md);
+    let stdout = run_with_colors(
+        &[
+            "--pretty-checkbox",
+            "square",
+            "--custom-checkbox",
+            "?:yellow",
+        ],
+        md,
+    );
     let line = stdout.lines().find(|l| l.contains("question")).unwrap();
     // Default square [?] icon should still be present.
     assert!(
@@ -531,7 +544,15 @@ fn test_custom_checkbox_color_only_new_state() {
     // `*:yellow` — new [*] state with color only, no icon specified.
     // Should use the default unchecked icon + yellow color.
     let md = "- [*] starred\n";
-    let stdout = run_with_colors(&["--pretty-checkbox", "square", "-B", "*:yellow"], md);
+    let stdout = run_with_colors(
+        &[
+            "--pretty-checkbox",
+            "square",
+            "--custom-checkbox",
+            "*:yellow",
+        ],
+        md,
+    );
     let line = stdout.lines().find(|l| l.contains("starred")).unwrap();
     // Should use the default unchecked icon (F0131 for square).
     assert!(
@@ -550,7 +571,12 @@ fn test_custom_checkbox_icon_and_color_together() {
     // `*:icon:color` — full override with icon + color.
     let md = "- [*] starred\n";
     let stdout = run_with_colors(
-        &["--pretty-checkbox", "square", "-B", "*:\u{F078B}:red"],
+        &[
+            "--pretty-checkbox",
+            "square",
+            "--custom-checkbox",
+            "*:\u{F078B}:red",
+        ],
         md,
     );
     let line = stdout.lines().find(|l| l.contains("starred")).unwrap();

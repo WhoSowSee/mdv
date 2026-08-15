@@ -10,7 +10,7 @@ fn test_blockquote_list_preserves_marker_prefix() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
+        .arg("--no-colors")
         .arg("-c")
         .arg("20")
         .arg(temp_file.path())
@@ -65,8 +65,8 @@ fn test_blockquote_respects_heading_indent_and_single_space() {
     let output = mdv_cmd()
         .arg("--heading-layout")
         .arg("level")
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()
@@ -105,8 +105,8 @@ fn test_blockquote_backslash_keeps_prefix_on_blank_line() {
     fs::write(&temp_file, "> First\\\n> Second\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("-A")
-        .arg("-W")
+        .arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg(temp_file.path())
         .output()

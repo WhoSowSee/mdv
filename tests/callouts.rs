@@ -25,8 +25,8 @@ fn render_callout_table(callout_style: &str, table_smart_indent: bool) -> String
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("-A")
-        .arg("-W")
+    cmd.arg("--no-colors")
+        .arg("-w")
         .arg("none")
         .arg("--callout-style")
         .arg(callout_style);

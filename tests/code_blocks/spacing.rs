@@ -19,7 +19,7 @@ fn test_pretty_style_consecutive_code_blocks_have_single_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     cmd.assert()
@@ -36,7 +36,7 @@ fn test_code_block_followed_by_heading_has_single_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");
@@ -65,7 +65,7 @@ fn test_code_block_followed_by_rule_has_single_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("-A")
+        .arg("--no-colors")
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");
