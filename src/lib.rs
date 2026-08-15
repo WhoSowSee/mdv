@@ -41,7 +41,7 @@ use std::sync::Arc;
 /// Main entry point for the mdv application
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     if matches!(cli.command, Some(CliCommand::Help)) {
-        return show_help();
+        return show_help(&cli, matches);
     }
 
     if cli.init_config.is_some() {
@@ -140,7 +140,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn show_help() -> Result<()> {
+fn show_help(cli: &Cli, matches: &ArgMatches) -> Result<()> {
     let mut command = Cli::command();
     if let Some(bin_name) = std::env::args_os()
         .next()
@@ -152,7 +152,7 @@ fn show_help() -> Result<()> {
     let help = command.render_long_help().to_string();
     if io::stdin().is_terminal() && io::stdout().is_terminal() {
         pager::page(
-            pager::PagerDocument::new(help.clone(), help).with_title("Help"),
+            build_help_document(cli, matches, help)?,
             None,
             None,
             pager::PagerScreen::Alternate,
@@ -161,6 +161,18 @@ fn show_help() -> Result<()> {
         print!("{help}");
         Ok(())
     }
+}
+
+fn build_help_document(
+    cli: &Cli,
+    matches: &ArgMatches,
+    help: String,
+) -> Result<pager::PagerDocument> {
+    let config = Config::from_cli(cli, matches)?;
+    let status_bar_transparent = renderer::terminal::pager_status_bar_transparent(&config)?;
+    Ok(pager::PagerDocument::new(help.clone(), help)
+        .with_title("Help")
+        .with_status_bar_transparent(status_bar_transparent))
 }
 
 struct RenderedOutput {
@@ -274,5 +286,37 @@ fn strip_leading_bom(text: &mut String) {
         // Standard PowerShell adds a UTF-8 BOM when piping text.
         let bom_len = UTF8_BOM.len_utf8();
         text.drain(..bom_len);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::FromArgMatches;
+    use std::ffi::OsString;
+    use tempfile::TempDir;
+
+    #[test]
+    fn help_document_uses_configured_theme_transparency() {
+        let temp_dir = TempDir::new().unwrap();
+        let themes_dir = temp_dir.path().join("themes");
+        std::fs::create_dir(&themes_dir).unwrap();
+        std::fs::write(temp_dir.path().join("config.yaml"), "theme: transparent\n").unwrap();
+        std::fs::write(
+            themes_dir.join("transparent.yaml"),
+            "name: transparent\npager_status_bar_transparent: true\n",
+        )
+        .unwrap();
+        let matches = Cli::command().get_matches_from([
+            OsString::from("mdv"),
+            OsString::from("--config-file"),
+            temp_dir.path().as_os_str().to_owned(),
+            OsString::from("help"),
+        ]);
+        let cli = Cli::from_arg_matches(&matches).unwrap();
+
+        let document = build_help_document(&cli, &matches, "help".to_string()).unwrap();
+
+        assert!(document.status_bar_transparent());
     }
 }

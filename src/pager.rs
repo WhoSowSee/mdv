@@ -45,6 +45,10 @@ impl PagerDocument {
         self.status_bar_transparent = transparent;
         self
     }
+
+    pub(super) const fn status_bar_transparent(&self) -> bool {
+        self.status_bar_transparent
+    }
 }
 
 pub(super) type RefreshCallback = Arc<dyn Fn() -> Result<PagerDocument> + Send + Sync>;
@@ -265,7 +269,7 @@ pub(super) fn page(
             (
                 document.output.clone(),
                 document.title.clone(),
-                document.status_bar_transparent,
+                document.status_bar_transparent(),
             )
         };
         let help_panel =

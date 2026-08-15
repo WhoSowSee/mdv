@@ -24,22 +24,7 @@ pub struct TerminalRenderer {
 impl TerminalRenderer {
     pub fn new(config: &Config) -> Result<Self> {
         let theme_manager = build_theme_manager(config);
-        let mut theme = theme_manager.get_theme(&config.theme)?.clone();
-        if let Some(overrides) = &config.custom_theme {
-            apply_custom_theme(&mut theme, overrides)?;
-        }
-
-        if let Some(overrides) = &config.custom_code_theme {
-            apply_custom_code_theme(&mut theme, overrides)?;
-        }
-
-        theme.inline_style.apply_overrides(&config.inline_style);
-
-        if (config.custom_theme.is_some() || config.custom_code_theme.is_some())
-            && !theme.name.ends_with("+custom")
-        {
-            theme.name = format!("{}+custom", theme.name);
-        }
+        let theme = resolve_theme(config, &theme_manager)?;
 
         let syntax_set = load_full_syntax_set(config.syntaxes_dir.as_deref())?;
         let theme_set = default_theme_set();
@@ -195,6 +180,32 @@ fn apply_left_margin(output: &str, margin: usize) -> String {
         indented.push_str(line);
     }
     indented
+}
+
+fn resolve_theme(config: &Config, theme_manager: &ThemeManager) -> Result<Theme> {
+    let mut theme = theme_manager.get_theme(&config.theme)?.clone();
+    if let Some(overrides) = &config.custom_theme {
+        apply_custom_theme(&mut theme, overrides)?;
+    }
+
+    if let Some(overrides) = &config.custom_code_theme {
+        apply_custom_code_theme(&mut theme, overrides)?;
+    }
+
+    theme.inline_style.apply_overrides(&config.inline_style);
+
+    if (config.custom_theme.is_some() || config.custom_code_theme.is_some())
+        && !theme.name.ends_with("+custom")
+    {
+        theme.name = format!("{}+custom", theme.name);
+    }
+
+    Ok(theme)
+}
+
+pub(crate) fn pager_status_bar_transparent(config: &Config) -> Result<bool> {
+    let theme_manager = build_theme_manager(config);
+    Ok(resolve_theme(config, &theme_manager)?.pager_status_bar_transparent)
 }
 
 fn resolve_code_theme(
