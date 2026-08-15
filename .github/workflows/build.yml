@@ -13,6 +13,21 @@ permissions:
   contents: write
 
 jobs:
+  package:
+    name: Verify crates.io package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Verify publishable package
+        run: cargo publish --dry-run --locked
+
   linux:
     name: Linux target ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
@@ -256,6 +271,7 @@ jobs:
     name: Publish GitHub release
     runs-on: ubuntu-latest
     needs:
+      - package
       - linux
       - macos
       - windows

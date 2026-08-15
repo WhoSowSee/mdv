@@ -841,7 +841,7 @@ dependencies = [
  "jiff",
  "libc",
  "log",
- "minus",
+ "mdv-minus",
  "notify",
  "predicates",
  "pulldown-cmark",
@@ -856,6 +856,20 @@ dependencies = [
  "unicode-normalization",
  "unicode-width",
  "winsplit",
+]
+
+[[package]]
+name = "mdv-minus"
+version = "5.7.2"
+dependencies = [
+ "crossbeam-channel",
+ "crossterm",
+ "parking_lot",
+ "regex",
+ "textwrap",
+ "thiserror",
+ "unicode-segmentation",
+ "unicode-width",
 ]
 
 [[package]]
@@ -878,20 +892,6 @@ checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
  "simd-adler32",
-]
-
-[[package]]
-name = "minus"
-version = "5.7.2"
-dependencies = [
- "crossbeam-channel",
- "crossterm",
- "parking_lot",
- "regex",
- "textwrap",
- "thiserror",
- "unicode-segmentation",
- "unicode-width",
 ]
 
 [[package]]

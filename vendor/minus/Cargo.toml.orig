@@ -1,14 +1,16 @@
 [package]
-name = "minus"
+name = "mdv-minus"
 version = "5.7.2"
-authors = ["Arijit Dey <arijid79@gmail.com>"]
+authors = ["Arijit Dey <arijid79@gmail.com>", "WhoSowSee"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-documentation = "https://docs.rs/minus"
-repository = "https://github.com/AMythicDev/minus"
-description = "An asynchronous data feedable terminal paging library for Rust"
+documentation = "https://docs.rs/mdv-minus"
+repository = "https://github.com/WhoSowSee/mdv"
+description = "mdv-maintained fork of the asynchronous minus terminal paging library"
+readme = "MDV_PATCH.md"
 keywords = ["pager", "asynchronous", "dynamic", "less", "more"]
 categories = ["asynchronous", "command-line-interface"]
+exclude = ["Cargo.toml.orig"]
 
 [package.metadata.docs.rs]
 all-features = true
