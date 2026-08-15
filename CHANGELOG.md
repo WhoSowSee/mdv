@@ -1,5 +1,66 @@
 # Changelog
 
+## [5.0.0] - 2026-08-16
+
+### Breaking Changes
+
+- Simplified: renderer internals and removed dead `code_block` theme option
+- Added: configurable pretty-list styles and uniform markers
+- Reworked: code block styles and options
+- Removed: code block label suppression option
+- Reworked: CLI short aliases and help text
+
+### Features
+
+- Added: built-in and user configuration presets
+- Added: custom syntax support
+- Expanded: interactive pager with status bar, help, and selection
+- Added: symmetric spacing for block elements
+- Added: Markdown heading marker display
+- Added: configurable horizontal margins
+- Added: definition list support
+- Expanded: pager navigation and search shortcuts
+- Added: configurable line numbering
+- Added: configurable table border style
+- Added: configurable spacing for individual block elements
+- Added: interactive document browser
+- Added: scrolling past the last line in the pager
+- Expanded: HTML content rendering inside tables
+- Added: help subcommand using the built-in pager
+- Added: pager status bar transparency setting and fixed scrolling artifacts
+- Added: configurable Markdown inline element styles
+
+### Bug Fixes
+
+- Fixed: ANSI styles leaking into plain text in tables
+- Fixed: long unbroken text overflowing in word-wrap mode
+- Fixed: rendering of non-standard and empty checkboxes
+- Fixed: spacing after link reference blocks in inlinetable mode
+- Fixed: spacing after links from callouts and code blocks
+- Fixed: no-match search handling in the pager
+- Fixed: semantic HTML tag rendering inside paragraphs
+- Fixed: HTML superscript and subscript rendering
+- Fixed: clickable link wrapping in the pager
+- Fixed: extra blank lines before tables with HTML
+- Fixed: pager search and help behavior
+- Fixed: theme application in the help pager
+- Fixed: ARM64 deb and core24 Snap package builds
+
+### Changes
+
+- Changed: paragraph line break and spacing behavior
+
+### Internal
+
+- Consolidated: YAML assets for themes, presets, and configuration
+- Split: large modules and added developer documentation
+- Added: separately publishable `mdv-minus` crate for mdv-specific pager extensions
+
+### Maintenance
+
+- Optimized: local and CI builds
+- Updated: dependencies and adapted code to new APIs
+
 ## [4.2.1] - 2026-07-15
 
 ### Bug Fixes
