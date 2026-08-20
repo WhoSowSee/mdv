@@ -13,7 +13,10 @@ use screen::TerminalSession;
 use std::io::{IsTerminal, Read};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+const MAX_FRAMES_PER_SECOND: u64 = 120;
+const FRAME_INTERVAL: Duration = Duration::from_nanos(1_000_000_000 / MAX_FRAMES_PER_SECOND);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum InteractiveTarget {
@@ -74,14 +77,32 @@ pub(crate) fn run(target: InteractiveTarget, config: Config) -> Result<()> {
     let (width, height) = crossterm::terminal::size()?;
     let mut app = App::new(root, config.clone(), width, height);
     let mut terminal = TerminalSession::enter()?;
+    let mut next_frame = Instant::now();
+    let mut redraw_pending = true;
 
     loop {
+        let was_loading = app.is_loading();
         app.tick();
-        terminal.draw(&app)?;
-        if !event::poll(Duration::from_millis(80))? {
-            continue;
+        redraw_pending |= was_loading;
+
+        let now = Instant::now();
+        if redraw_pending && now >= next_frame {
+            terminal.draw(&app)?;
+            redraw_pending = false;
+            next_frame = Instant::now() + FRAME_INTERVAL;
         }
-        let action = match event::read()? {
+
+        let terminal_event = if app.is_loading() || redraw_pending {
+            let timeout = next_frame.saturating_duration_since(Instant::now());
+            if !event::poll(timeout)? {
+                continue;
+            }
+            event::read()?
+        } else {
+            event::read()?
+        };
+        redraw_pending = true;
+        let action = match terminal_event {
             Event::Key(key) => app.handle_key(key),
             Event::Mouse(mouse) => {
                 app.handle_mouse(mouse);

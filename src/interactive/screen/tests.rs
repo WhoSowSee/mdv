@@ -58,11 +58,63 @@ fn logo_block_delays_the_spinner_and_starts_from_the_first_frame() {
 }
 
 #[test]
+fn frame_diff_writes_only_changes_and_skips_an_unchanged_frame() {
+    let mut previous = ScreenFrame::new(80, 4);
+    previous.write_line(0, "unchanged");
+    previous.write_line(1, "removed");
+    let mut next = ScreenFrame::new(80, 4);
+    next.write_line(0, "unchanged");
+    next.write_line(2, "added");
+    let mut output = String::new();
+
+    encode_synchronized_frame(&mut output, Some(&previous), &next).unwrap();
+
+    assert!(output.contains("added"));
+    assert!(!output.contains("unchanged"));
+    assert!(output.contains("\x1b[2;1H\x1b[K"));
+
+    output.clear();
+    encode_synchronized_frame(&mut output, Some(&next), &next).unwrap();
+    assert!(output.is_empty());
+}
+
+#[test]
+fn first_frame_is_a_full_synchronized_redraw() {
+    let mut frame = ScreenFrame::new(80, 4);
+    frame.write_line(1, "first frame");
+    let mut output = String::new();
+
+    encode_synchronized_frame(&mut output, None, &frame).unwrap();
+
+    assert!(output.contains("\x1b[2J"));
+
+    let begin = output.find("\x1b[?2026h").unwrap();
+    let content = output.find("first frame").unwrap();
+    let end = output.find("\x1b[?2026l").unwrap();
+    assert!(begin < content && content < end);
+}
+
+#[test]
 fn mini_help_matches_the_navigation_status() {
     assert_eq!(
         browser_mini_help(&BrowserState::for_test(Vec::new(), 24), 120, true),
         "   h/l ←/→ page • / find • r refresh • e edit • q quit • ? more"
     );
+}
+
+#[test]
+fn collapsed_help_draws_only_the_mini_help() {
+    let browser = BrowserState::for_test(Vec::new(), 24);
+    let mut frame = ScreenFrame::new(120, 24);
+    let (_, help_y) = browser_footer_rows(24, &browser);
+
+    draw_browser_help(&mut frame, &browser, help_y, 120, true);
+
+    let mut output = String::new();
+    encode_synchronized_frame(&mut output, None, &frame).unwrap();
+    assert!(output.contains("h/l ←/→ page • / find"));
+    assert!(!output.contains("enter  open"));
+    assert!(!output.contains("j/k ↑/↓  choose"));
 }
 
 #[test]

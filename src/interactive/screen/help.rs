@@ -173,18 +173,15 @@ pub(super) fn browser_footer_rows(height: u16, browser: &BrowserState) -> (u16, 
 }
 
 pub(super) fn draw_browser_help(
-    stdout: &mut Stdout,
+    frame: &mut ScreenFrame,
     browser: &BrowserState,
     start_y: u16,
     width: usize,
     no_colors: bool,
-) -> Result<()> {
+) {
     if browser.filter_state() != FilterState::Editing && !browser.show_full_help() {
-        return write_line(
-            stdout,
-            start_y,
-            &browser_mini_help(browser, width, no_colors),
-        );
+        frame.write_line(start_y, &browser_mini_help(browser, width, no_colors));
+        return;
     }
 
     if browser.filter_state() == FilterState::Editing {
@@ -194,13 +191,12 @@ pub(super) fn draw_browser_help(
             vec![browser_filter_help(no_colors)]
         };
         for (index, row) in rows.iter().enumerate() {
-            write_line(stdout, start_y + index as u16, row)?;
+            frame.write_line(start_y + index as u16, row);
         }
-        return Ok(());
+        return;
     }
 
     for (index, row) in browser_full_help(no_colors).iter().enumerate() {
-        write_line(stdout, start_y + index as u16, row)?;
+        frame.write_line(start_y + index as u16, row);
     }
-    Ok(())
 }

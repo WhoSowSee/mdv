@@ -5,11 +5,12 @@ use crate::utils::display_width;
 use anyhow::{Context, Result};
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::event::{DisableBracketedPaste, EnableBracketedPaste};
-use crossterm::style::{Color, Print, ResetColor};
+use crossterm::style::{Color, ResetColor};
 use crossterm::terminal::{
-    Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate, EnterAlternateScreen,
+    LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use crossterm::{execute, queue};
+use crossterm::{Command, execute};
 use std::io::{Stdout, Write, stdout};
 use std::time::{Duration, SystemTime};
 use unicode_width::UnicodeWidthChar;
@@ -95,6 +96,7 @@ const BROWSER_FULL_HELP_ROWS: [[Option<(&str, &str)>; 4]; 4] = [
 ];
 
 mod draw;
+mod frame;
 mod header;
 mod help;
 mod session;
@@ -104,6 +106,7 @@ mod time;
 pub(super) use session::TerminalSession;
 
 use draw::*;
+use frame::*;
 use header::*;
 use help::*;
 #[cfg(test)]

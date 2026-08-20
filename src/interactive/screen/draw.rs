@@ -1,10 +1,11 @@
 use super::*;
 
-pub(super) fn draw_browser(stdout: &mut Stdout, app: &App) -> Result<()> {
+pub(super) fn draw_browser(frame: &mut ScreenFrame, app: &App) -> Result<()> {
     let browser = &app.browser;
     let no_colors = app.config.no_colors;
     if browser.show_error() {
-        return draw_browser_error(stdout, browser, app.width, app.height, no_colors);
+        draw_browser_error(frame, browser, app.width, app.height, no_colors);
+        return Ok(());
     }
 
     if browser.filter_state() == FilterState::Editing {
@@ -13,17 +14,13 @@ pub(super) fn draw_browser(stdout: &mut Stdout, app: &App) -> Result<()> {
             app.width.saturating_sub(3) as usize,
         );
         let filter = browser_filter_prompt_text(&filter_text, no_colors);
-        write_line(stdout, 1, &filter)?;
+        frame.write_line(1, &filter);
     } else {
-        write_line(
-            stdout,
-            1,
-            &browser_logo_line(browser.loading_elapsed(), no_colors),
-        )?;
+        frame.write_line(1, &browser_logo_line(browser.loading_elapsed(), no_colors));
     }
 
     let header = browser_header(browser, no_colors);
-    write_line(stdout, 3, &format!("   {header}"))?;
+    frame.write_line(3, &format!("   {header}"));
 
     let visible = browser.visible_indices();
     let page_start = browser.page() * browser.per_page();
@@ -35,14 +32,13 @@ pub(super) fn draw_browser(stdout: &mut Stdout, app: &App) -> Result<()> {
         } else {
             "Looking for local files..."
         };
-        write_line(
-            stdout,
+        frame.write_line(
             5,
             &format!(
                 "   {}",
                 styled(message, Some(rgb(98, 98, 98)), None, false, no_colors)
             ),
-        )?;
+        );
     } else {
         for (row, document_index) in visible[page_start..page_end].iter().enumerate() {
             let document = &browser.documents()[*document_index];
@@ -69,41 +65,36 @@ pub(super) fn draw_browser(stdout: &mut Stdout, app: &App) -> Result<()> {
             let date_text = relative_time(document.modified)?;
             let date = styled(&date_text, Some(date_color), None, false, no_colors);
             let prefix = item_prefix(selected, no_colors);
-            write_line(stdout, y, &format!("{prefix}{title}"))?;
-            write_line(stdout, y + 1, &format!("{prefix}{date}"))?;
+            frame.write_line(y, &format!("{prefix}{title}"));
+            frame.write_line(y + 1, &format!("{prefix}{date}"));
         }
     }
 
     let (pagination_y, help_y) = browser_footer_rows(app.height, browser);
     if browser.page_count() > 1 {
-        write_line(
-            stdout,
+        frame.write_line(
             pagination_y,
             &format!("   {}", pagination(browser, app.width as usize, no_colors)),
-        )?;
+        );
     }
-    draw_browser_help(stdout, browser, help_y, app.width as usize, no_colors)?;
+    draw_browser_help(frame, browser, help_y, app.width as usize, no_colors);
     if browser.filter_state() == FilterState::Editing {
         let filter_text = truncate_plain(
             &format!("Find: {}", browser.query()),
             app.width.saturating_sub(3) as usize,
         );
-        queue!(
-            stdout,
-            Show,
-            MoveTo(browser_filter_cursor_x(&filter_text, app.width), 1)
-        )?;
+        frame.show_cursor_at(browser_filter_cursor_x(&filter_text, app.width), 1);
     }
     Ok(())
 }
 
 pub(super) fn draw_browser_error(
-    stdout: &mut Stdout,
+    frame: &mut ScreenFrame,
     browser: &BrowserState,
     width: u16,
     height: u16,
     no_colors: bool,
-) -> Result<()> {
+) {
     let title = styled(
         " ERROR ",
         Some(rgb(255, 253, 245)),
@@ -111,7 +102,7 @@ pub(super) fn draw_browser_error(
         false,
         no_colors,
     );
-    write_line(stdout, 1, &format!("   {title}"))?;
+    frame.write_line(1, &format!("   {title}"));
     for (index, error) in browser
         .errors()
         .iter()
@@ -119,7 +110,7 @@ pub(super) fn draw_browser_error(
         .enumerate()
     {
         let error = truncate_plain(&sanitize_display(error), width.saturating_sub(6) as usize);
-        write_line(stdout, 3 + index as u16, &format!("   {error}"))?;
+        frame.write_line(3 + index as u16, &format!("   {error}"));
     }
     let prompt = styled(
         "press any key to return",
@@ -128,6 +119,5 @@ pub(super) fn draw_browser_error(
         false,
         no_colors,
     );
-    write_line(stdout, height.saturating_sub(2), &format!("   {prompt}"))?;
-    Ok(())
+    frame.write_line(height.saturating_sub(2), &format!("   {prompt}"));
 }

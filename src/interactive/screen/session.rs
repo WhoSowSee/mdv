@@ -3,6 +3,8 @@ use super::*;
 pub(in crate::interactive) struct TerminalSession {
     stdout: Stdout,
     active: bool,
+    previous_frame: Option<ScreenFrame>,
+    update_buffer: String,
 }
 
 impl TerminalSession {
@@ -10,15 +12,27 @@ impl TerminalSession {
         let mut session = Self {
             stdout: stdout(),
             active: false,
+            previous_frame: None,
+            update_buffer: String::new(),
         };
         session.resume()?;
         Ok(session)
     }
 
     pub(in crate::interactive) fn draw(&mut self, app: &App) -> Result<()> {
-        queue!(self.stdout, Hide, MoveTo(0, 0), Clear(ClearType::All))?;
-        draw_browser(&mut self.stdout, app)?;
-        self.stdout.flush()?;
+        let mut frame = ScreenFrame::new(app.width, app.height);
+        draw_browser(&mut frame, app)?;
+        self.update_buffer.clear();
+        encode_synchronized_frame(
+            &mut self.update_buffer,
+            self.previous_frame.as_ref(),
+            &frame,
+        )?;
+        if !self.update_buffer.is_empty() {
+            self.stdout.write_all(self.update_buffer.as_bytes())?;
+            self.stdout.flush()?;
+            self.previous_frame = Some(frame);
+        }
         Ok(())
     }
 
@@ -35,6 +49,7 @@ impl TerminalSession {
         );
         let raw_result = disable_raw_mode();
         self.active = false;
+        self.previous_frame = None;
         restore_result?;
         raw_result?;
         Ok(())
@@ -60,6 +75,7 @@ impl TerminalSession {
             let _ = disable_raw_mode();
             return Err(error.into());
         }
+        self.previous_frame = None;
         Ok(())
     }
 
@@ -78,6 +94,7 @@ impl TerminalSession {
             return Err(error.into());
         }
         self.active = true;
+        self.previous_frame = None;
         Ok(())
     }
 }

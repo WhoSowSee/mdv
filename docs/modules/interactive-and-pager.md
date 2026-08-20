@@ -32,6 +32,7 @@ With no filename and terminal standard input, the current directory opens automa
 |---|---|
 | [screen/session.rs](../../src/interactive/screen/session.rs) | Raw mode and alternate screen, pager pause, and editor suspension. |
 | [screen/draw.rs](../../src/interactive/screen/draw.rs) | Complete browser frame and error overlay. |
+| [screen/frame.rs](../../src/interactive/screen/frame.rs) | In-memory frames, synchronized row diffs, and cursor state. |
 | [screen/header.rs](../../src/interactive/screen/header.rs) | Logo, title, filter prompt, pagination, and selection helpers. |
 | [screen/help.rs](../../src/interactive/screen/help.rs) | Mini, full, and filter help plus footer rows. |
 | [screen/style.rs](../../src/interactive/screen/style.rs) | Crossterm styling, sanitization, and plain-text truncation. |
@@ -55,12 +56,15 @@ Discovery runs independently and publishes each document or error through a boun
 `interactive::run`:
 
 1. enters a `TerminalSession`;
-2. calls `app.tick()` and redraws;
-3. polls Crossterm events every 80 ms;
-4. maps each event to `AppAction`;
-5. temporarily pauses the browser screen for the pager;
-6. fully suspends the terminal session for an editor;
-7. restores the terminal and records the operation result in application state.
+2. calls `app.tick()` and marks discovery or input changes for redraw;
+3. coalesces pending states and renders at no more than 120 frames per second;
+4. blocks directly on Crossterm input while the browser is idle;
+5. maps each event to `AppAction`;
+6. temporarily pauses the browser screen for the pager;
+7. fully suspends the terminal session for an editor;
+8. restores the terminal and records the operation result in application state.
+
+`draw_browser` builds a `ScreenFrame` in memory instead of writing directly to standard output. `TerminalSession` compares it with the last displayed frame, encodes only changed or removed rows, and sends the complete ANSI update in one synchronized write. Identical frames produce no terminal output. The first frame, a terminal resize, and every resume after pager, editor, or suspension invalidate the cache and force a full redraw. Frame deadlines are scheduled from the completion of the previous write, so slow terminals lower the effective frame rate without accumulating catch-up frames.
 
 ## Pager files
 
@@ -120,4 +124,6 @@ The refresh callback re-reads and re-renders the document, atomically replaces `
 - A watcher updates only the selected file.
 - Background refresh does not hold a write lock while reading or rendering the file.
 - File discovery never waits for a complete directory scan before publishing matching documents.
+- Interactive state updates are coalesced, and terminal output never exceeds 120 frames per second.
+- Unchanged browser frames produce no output; ordinary updates rewrite only changed rows.
 - Transparent footer and help views do not set a background color.

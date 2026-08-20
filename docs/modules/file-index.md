@@ -97,6 +97,7 @@ Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/co
 | [screen.rs](../../src/interactive/screen.rs) | Screen facade and constants. |
 | [screen/session.rs](../../src/interactive/screen/session.rs) | Raw/alternate-terminal lifecycle. |
 | [screen/draw.rs](../../src/interactive/screen/draw.rs) | Main and error views. |
+| [screen/frame.rs](../../src/interactive/screen/frame.rs) | Buffered frames, synchronized row diffs, and cursor state. |
 | [screen/header.rs](../../src/interactive/screen/header.rs) | Header, filter, and pagination. |
 | [screen/help.rs](../../src/interactive/screen/help.rs) | Mini and full help. |
 | [screen/style.rs](../../src/interactive/screen/style.rs) | Styling, sanitization, and truncation. |

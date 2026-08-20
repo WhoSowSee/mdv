@@ -33,6 +33,10 @@ impl App {
         self.browser.poll_discovery();
     }
 
+    pub(super) fn is_loading(&self) -> bool {
+        !self.browser.is_loaded()
+    }
+
     pub(super) fn resize(&mut self, width: u16, height: u16) {
         self.width = width;
         self.height = height;

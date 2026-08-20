@@ -1,15 +1,5 @@
 use super::*;
 
-pub(super) fn write_line(stdout: &mut Stdout, y: u16, text: &str) -> Result<()> {
-    queue!(
-        stdout,
-        MoveTo(0, y),
-        Print(text),
-        Clear(ClearType::UntilNewLine)
-    )?;
-    Ok(())
-}
-
 pub(super) fn styled(
     text: &str,
     foreground: Option<Color>,
