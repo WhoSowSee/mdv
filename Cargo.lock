@@ -854,6 +854,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "unicode-normalization",
+ "unicode-segmentation",
  "unicode-width",
  "winsplit",
 ]

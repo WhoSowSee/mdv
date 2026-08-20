@@ -106,13 +106,24 @@ impl TableRenderer {
             return;
         };
 
-        for (column_index, content_width) in widths.iter().copied().enumerate() {
-            if content_width > 0
-                && let Some(column) = table.column_mut(column_index)
-            {
-                let width_with_padding =
-                    content_width.saturating_add(2).min(u16::MAX as usize) as u16;
-                column.set_constraint(ColumnConstraint::Absolute(Width::Fixed(width_with_padding)));
+        Self::apply_content_widths(
+            table,
+            widths
+                .iter()
+                .copied()
+                .enumerate()
+                .filter(|(_, width)| *width > 0),
+        );
+    }
+
+    pub(super) fn apply_content_widths(
+        table: &mut Table,
+        widths: impl IntoIterator<Item = (usize, usize)>,
+    ) {
+        for (column_index, content_width) in widths {
+            if let Some(column) = table.column_mut(column_index) {
+                let width = content_width.saturating_add(2).min(u16::MAX as usize) as u16;
+                column.set_constraint(ColumnConstraint::Absolute(Width::Fixed(width)));
             }
         }
         table.set_content_arrangement(ContentArrangement::DynamicFullWidth);

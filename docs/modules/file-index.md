@@ -139,6 +139,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 |---|---|
 | [layout.rs](../../src/table/layout.rs) | Cells, widths, and column blocks. |
 | [rendering.rs](../../src/table/rendering.rs) | Wrapping modes and borders. |
+| [whitespace.rs](../../src/table/whitespace.rs) | Boundary-space normalization using arranged column widths. |
 | [links.rs](../../src/table/links.rs) | Fragmented ANSI/OSC replacements. |
 | [tests.rs](../../src/table/tests.rs) | Test facade. |
 | [tests/rendering.rs](../../src/table/tests/rendering.rs) | Table-layout tests. |

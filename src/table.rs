@@ -28,6 +28,7 @@ enum ReferenceLayout {
 mod layout;
 mod links;
 mod rendering;
+mod whitespace;
 
 pub use links::apply_clickable_link_replacements;
 

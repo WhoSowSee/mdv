@@ -78,6 +78,7 @@ content is removed after `comfy-table` has positioned the borders.
 | [src/table.rs](../../src/table.rs) | `TableRenderer`, compact style, and the shared table-block type. |
 | [src/table/layout.rs](../../src/table/layout.rs) | Cells, maximum widths, total-width estimation, and column-block partitioning. |
 | [src/table/rendering.rs](../../src/table/rendering.rs) | `fit`, `wrap`, and `none` modes, alignment, and pretty/compact borders. |
+| [src/table/whitespace.rs](../../src/table/whitespace.rs) | Recover arranged widths and remove spaces that land on automatic grapheme boundaries. |
 | [src/table/links.rs](../../src/table/links.rs) | Restore ANSI and OSC wrappers after table layout. |
 
 ### Table wrap modes
@@ -90,7 +91,9 @@ Cell breakpoints are controlled independently by the document `wrap` mode. `char
 Unicode grapheme boundaries, while `word` prefers spaces and falls back to graphemes for an
 oversized token. `none` avoids soft breaks, but constrained `fit` and `wrap` layouts may still use
 the same grapheme fallback when a cell cannot otherwise fit. With `table_wrap=none`, no cell width
-is imposed and all three text modes leave cell lines unwrapped.
+is imposed and all three text modes leave cell lines unwrapped. Source spaces that land exactly at
+a grapheme-wrap boundary are removed before the final layout pass, so following graphemes consume
+the released width while column geometry and alignment padding remain unchanged.
 
 `pretty_table=false` uses compact borders without a complete outer grid. `pretty_table=true` enables `UTF8_FULL` with rounded corners.
 

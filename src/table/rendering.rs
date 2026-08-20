@@ -1,3 +1,4 @@
+use super::whitespace::{arranged_column_content_widths, remove_wrapped_boundary_spaces};
 use super::*;
 
 impl TableRenderer {
@@ -128,8 +129,10 @@ impl TableRenderer {
             table.add_row(row_cells);
         }
 
-        let rendered = table.to_string();
-        Ok(Self::collapse_header_only_separator(rendered, rows))
+        Ok(Self::collapse_header_only_separator(
+            table.to_string(),
+            rows,
+        ))
     }
 
     /// Render a single table block
@@ -138,6 +141,39 @@ impl TableRenderer {
         headers: &[String],
         rows: &[Vec<String>],
         alignments: &[Alignment],
+    ) -> Result<String> {
+        let rendered = self.render_single_table_block_once(headers, rows, alignments, None)?;
+        if !matches!(self.text_wrap, TextWrapMode::Char | TextWrapMode::None)
+            || matches!(self.table_wrap, TableWrapMode::None)
+        {
+            return Ok(rendered);
+        }
+
+        let Some(widths) =
+            arranged_column_content_widths(&rendered, headers.len(), self.pretty_table)
+        else {
+            return Ok(rendered);
+        };
+        let Some((normalized_headers, normalized_rows)) =
+            remove_wrapped_boundary_spaces(headers, rows, &widths)
+        else {
+            return Ok(rendered);
+        };
+
+        self.render_single_table_block_once(
+            &normalized_headers,
+            &normalized_rows,
+            alignments,
+            Some(&widths),
+        )
+    }
+
+    fn render_single_table_block_once(
+        &self,
+        headers: &[String],
+        rows: &[Vec<String>],
+        alignments: &[Alignment],
+        column_content_widths: Option<&[usize]>,
     ) -> Result<String> {
         let mut table = Table::new();
         let reference_layout = self.reference_layout(headers, rows);
@@ -212,9 +248,14 @@ impl TableRenderer {
         }
 
         Self::apply_reference_width_constraints(&mut table, &reference_layout);
+        if let Some(widths) = column_content_widths {
+            Self::apply_content_widths(&mut table, widths.iter().copied().enumerate());
+        }
 
-        let rendered = table.to_string();
-        Ok(Self::collapse_header_only_separator(rendered, rows))
+        Ok(Self::collapse_header_only_separator(
+            table.to_string(),
+            rows,
+        ))
     }
 
     fn collapse_header_only_separator(rendered: String, rows: &[Vec<String>]) -> String {

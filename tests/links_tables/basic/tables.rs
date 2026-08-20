@@ -154,3 +154,15 @@ fn table_cells_follow_text_wrap_mode_across_table_layout_modes() {
         );
     }
 }
+
+#[test]
+fn character_wrapped_table_reflows_after_boundary_spaces() {
+    let output = render_wrapped_table("1234567 abcdefgh", "11", "char", "fit");
+    assert_eq!(table_cell_lines(&output), ["1234567", "abcdefg", "h"]);
+    assert!(
+        output
+            .lines()
+            .all(|line| mdv::utils::display_width(line) == 11),
+        "table width changed after boundary-space reflow:\n{output}"
+    );
+}
