@@ -211,7 +211,6 @@ impl<'a> EventRenderer<'a> {
 
         let mut rendered =
             table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;
-        rendered = rendered.replace(TABLE_REFERENCE_WRAP_DELIMITER, "");
 
         if !table.clickable_link_replacements.is_empty() {
             rendered = crate::table::apply_clickable_link_replacements(

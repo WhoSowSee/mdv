@@ -5,8 +5,7 @@ use super::{
     ThemeElement, create_style, wrap_text_with_mode,
 };
 use crate::block_spacing::BlockElement;
-
-const TABLE_REFERENCE_WRAP_DELIMITER: char = '\u{200B}';
+use crate::table::TABLE_REFERENCE_WRAP_MARKER;
 
 fn style_underlined_table_link(link_text: &str, no_colors: bool) -> String {
     if no_colors {
@@ -60,20 +59,13 @@ fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors
 }
 
 fn push_wrappable_table_reference(cell: &mut String, rendered_reference: &str) {
-    if rendered_reference.is_empty() {
-        return;
-    }
-
-    // Insert a zero-width delimiter so comfy-table can wrap before `[N]` when needed
-    // without changing visible content width.
-    let needs_separator = cell
+    // Mark the optional break before `[N]`; table layout chooses how to expose it.
+    if cell
         .chars()
-        .last()
-        .map(|ch| !ch.is_whitespace() && ch != TABLE_REFERENCE_WRAP_DELIMITER)
-        .unwrap_or(false);
-
-    if needs_separator {
-        cell.push(TABLE_REFERENCE_WRAP_DELIMITER);
+        .next_back()
+        .is_some_and(|ch| !ch.is_whitespace())
+    {
+        cell.push(TABLE_REFERENCE_WRAP_MARKER);
     }
 
     cell.push_str(rendered_reference);

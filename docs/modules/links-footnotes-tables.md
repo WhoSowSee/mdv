@@ -36,7 +36,10 @@ These subsystems interact closely: links and footnotes may occur inside tables, 
 3. `table::apply_clickable_link_replacements` restores underline and OSC fragments in the rendered output.
 4. If `comfy-table` split visible text across rows, `table/links.rs` reconstructs wrappers within the same cell boundary.
 
-The zero-width delimiter `U+200B` permits a break before `[N]` without changing visible width.
+An internal zero-width marker identifies the optional break before `[N]`. Before layout,
+`TableRenderer` either reserves enough column width for the link's final word and marker or turns
+the marker into an explicit line break when those protected widths cannot fit. No visible-width
+content is removed after `comfy-table` has positioned the borders.
 
 ## Footnotes
 

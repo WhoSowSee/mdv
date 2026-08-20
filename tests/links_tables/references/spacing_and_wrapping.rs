@@ -1,5 +1,15 @@
 use super::*;
 
+const INLINE_REFERENCE_WRAPPING_TABLE: &str = concat!(
+    "| Platform | Protocol | Support |\n",
+    "| --- | --- | --- |\n",
+    "| [kitty](https://example.com/kitty) (>= 0.28.0) | [Kitty unicode placeholders](https://example.com/kgp) | Built-in |\n",
+    "| [Windows Terminal](https://example.com/wt) (>= v1.22.10352.0) | [Sixel graphics format](https://example.com/sixel) | Built-in |\n",
+    "| Fallback | [ASCII art (Unicode block)](https://example.com/ascii) | [Chafa](https://example.com/chafa) required (>= 1.16.0) |\n",
+    "| [alpha](https://example.com/alpha) | [beta](https://example.com/beta) | [gamma](https://example.com/gamma) |\n",
+    "| [delta](https://example.com/delta) | [epsilon](https://example.com/epsilon) | [zeta](https://example.com/zeta) |\n",
+);
+
 #[test]
 fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_content() {
     let cases = [
@@ -156,4 +166,73 @@ fn test_inline_table_reference_marker_keeps_brackets_together_when_wrapped() {
             stdout
         );
     }
+}
+
+#[test]
+fn test_inline_table_reference_marker_stays_with_link_when_trailing_text_wraps() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, INLINE_REFERENCE_WRAPPING_TABLE).unwrap();
+
+    let output = mdv_cmd()
+        .args([
+            "--no-config",
+            "--cols",
+            "64",
+            "--link-style",
+            "inlinetable",
+            "--pretty-table",
+        ])
+        .arg(temp_file.path())
+        .output()
+        .expect("run mdv for inline table link with trailing text");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let clean = mdv::utils::strip_ansi(&stdout);
+    assert!(
+        clean.contains("│ kitty[1]"),
+        "reference marker should stay with link text when trailing cell text wraps, stdout:\n{stdout}"
+    );
+    assert!(
+        clean
+            .lines()
+            .filter(|line| matches!(line.chars().next(), Some('╭' | '│' | '╞' | '├' | '╰')))
+            .all(|line| mdv::utils::display_width(line) == 64),
+        "table width changed after reference marker cleanup, stdout:\n{stdout}"
+    );
+}
+
+#[test]
+fn test_inline_table_reference_constraints_do_not_overflow_narrow_table() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, INLINE_REFERENCE_WRAPPING_TABLE).unwrap();
+
+    let output = mdv_cmd()
+        .arg("--no-config")
+        .arg("--no-colors")
+        .arg("--cols")
+        .arg("30")
+        .arg("--link-style")
+        .arg("inlinetable")
+        .arg("--pretty-table")
+        .arg(temp_file.path())
+        .output()
+        .expect("run mdv for narrow inline table references");
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    let table_lines: Vec<&str> = stdout
+        .lines()
+        .filter(|line| matches!(line.chars().next(), Some('╭' | '│' | '╞' | '├' | '╰')))
+        .collect();
+    assert!(
+        table_lines
+            .iter()
+            .all(|line| mdv::utils::display_width(line) <= 30),
+        "narrow table must not exceed configured terminal width, stdout:\n{stdout}"
+    );
+    assert!(
+        table_lines.iter().any(|line| line.contains("[10]")),
+        "multi-digit reference marker must stay intact in a narrow table, stdout:\n{stdout}"
+    );
 }

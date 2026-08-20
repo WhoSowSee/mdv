@@ -60,6 +60,7 @@ impl TableRenderer {
         alignments: &[Alignment],
     ) -> Result<String> {
         let mut table = Table::new();
+        let reference_layout = ReferenceLayout::Natural;
 
         self.configure_table(&mut table);
 
@@ -74,7 +75,7 @@ impl TableRenderer {
             .iter()
             .enumerate()
             .map(|(i, header)| {
-                let mut cell = self.create_cell(header);
+                let mut cell = self.create_cell(header, &reference_layout);
 
                 if !self.no_colors {
                     if let Some(color) = theme_color_to_comfy(&self.theme.table_header) {
@@ -108,7 +109,7 @@ impl TableRenderer {
                 .iter()
                 .enumerate()
                 .map(|(i, cell_content)| {
-                    let mut cell = self.create_cell(cell_content);
+                    let mut cell = self.create_cell(cell_content, &reference_layout);
 
                     if i < alignments.len() {
                         let alignment = match alignments[i] {
@@ -139,6 +140,7 @@ impl TableRenderer {
         alignments: &[Alignment],
     ) -> Result<String> {
         let mut table = Table::new();
+        let reference_layout = self.reference_layout(headers, rows);
 
         self.configure_table(&mut table);
 
@@ -156,7 +158,7 @@ impl TableRenderer {
             .iter()
             .enumerate()
             .map(|(i, header)| {
-                let mut cell = self.create_cell(header);
+                let mut cell = self.create_cell(header, &reference_layout);
 
                 if !self.no_colors {
                     if let Some(color) = theme_color_to_comfy(&self.theme.table_header) {
@@ -190,7 +192,7 @@ impl TableRenderer {
                 .iter()
                 .enumerate()
                 .map(|(i, cell_content)| {
-                    let mut cell = self.create_cell(cell_content);
+                    let mut cell = self.create_cell(cell_content, &reference_layout);
 
                     if i < alignments.len() {
                         let alignment = match alignments[i] {
@@ -208,6 +210,8 @@ impl TableRenderer {
 
             table.add_row(row_cells);
         }
+
+        Self::apply_reference_width_constraints(&mut table, &reference_layout);
 
         let rendered = table.to_string();
         Ok(Self::collapse_header_only_separator(rendered, rows))

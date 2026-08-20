@@ -31,19 +31,78 @@ impl TableRenderer {
     }
 
     /// Create a cell with proper ANSI handling for width calculation
-    pub(super) fn create_cell(&self, content: &str) -> Cell {
-        let clean_content = strip_ansi(content);
-
-        let mut cell = if self.no_colors {
-            Cell::new(&clean_content)
+    pub(super) fn create_cell(&self, content: &str, reference_layout: &ReferenceLayout) -> Cell {
+        let layout_content = if content.contains(TABLE_REFERENCE_WRAP_MARKER) {
+            let replacement = if matches!(reference_layout, ReferenceLayout::ForcedBreak) {
+                "\n"
+            } else {
+                ""
+            };
+            Cow::Owned(content.replace(TABLE_REFERENCE_WRAP_MARKER, replacement))
         } else {
-            Cell::new(content)
+            Cow::Borrowed(content)
         };
-        if clean_content.contains(TABLE_REFERENCE_WRAP_DELIMITER) {
-            cell = cell.set_delimiter(TABLE_REFERENCE_WRAP_DELIMITER);
+
+        if self.no_colors {
+            Cell::new(strip_ansi(layout_content.as_ref()))
+        } else {
+            Cell::new(layout_content.as_ref())
+        }
+    }
+
+    pub(super) fn reference_layout(
+        &self,
+        headers: &[String],
+        rows: &[Vec<String>],
+    ) -> ReferenceLayout {
+        let mut widths = vec![0usize; headers.len()];
+        for row in std::iter::once(headers).chain(rows.iter().map(Vec::as_slice)) {
+            for (width, cell) in widths.iter_mut().zip(row) {
+                *width = (*width).max(reference_token_width(cell));
+            }
+        }
+        if widths.iter().all(|width| *width == 0)
+            || self.estimate_table_width(headers, rows) <= self.terminal_width
+        {
+            return ReferenceLayout::Natural;
         }
 
-        cell
+        let border_width = if self.pretty_table {
+            headers.len().saturating_add(1)
+        } else {
+            headers.len().saturating_sub(1)
+        };
+        let required_width = widths
+            .iter()
+            .map(|width| (*width).max(1).saturating_add(2))
+            .sum::<usize>()
+            .saturating_add(border_width);
+
+        if required_width <= self.terminal_width {
+            ReferenceLayout::Constrained(widths)
+        } else {
+            ReferenceLayout::ForcedBreak
+        }
+    }
+
+    pub(super) fn apply_reference_width_constraints(
+        table: &mut Table,
+        reference_layout: &ReferenceLayout,
+    ) {
+        let ReferenceLayout::Constrained(widths) = reference_layout else {
+            return;
+        };
+
+        for (column_index, content_width) in widths.iter().copied().enumerate() {
+            if content_width > 0
+                && let Some(column) = table.column_mut(column_index)
+            {
+                let width_with_padding =
+                    content_width.saturating_add(2).min(u16::MAX as usize) as u16;
+                column.set_constraint(ColumnConstraint::Absolute(Width::Fixed(width_with_padding)));
+            }
+        }
+        table.set_content_arrangement(ContentArrangement::DynamicFullWidth);
     }
 
     fn maximum_column_widths(headers: &[String], rows: &[Vec<String>]) -> Vec<usize> {
@@ -144,4 +203,32 @@ impl TableRenderer {
 
         blocks
     }
+}
+
+fn reference_token_width(cell: &str) -> usize {
+    if !cell.contains(TABLE_REFERENCE_WRAP_MARKER) {
+        return 0;
+    }
+
+    let clean = strip_ansi(cell);
+    clean
+        .match_indices(TABLE_REFERENCE_WRAP_MARKER)
+        .map(|(marker_index, marker)| {
+            let token_start = clean[..marker_index]
+                .char_indices()
+                .rev()
+                .find(|(_, ch)| ch.is_whitespace())
+                .map(|(index, ch)| index + ch.len_utf8())
+                .unwrap_or(0);
+            let reference_start = marker_index + marker.len();
+            let reference_end = clean[reference_start..]
+                .find(']')
+                .map(|offset| reference_start + offset + 1)
+                .unwrap_or(reference_start);
+
+            display_width(&clean[token_start..marker_index])
+                + display_width(&clean[reference_start..reference_end])
+        })
+        .max()
+        .unwrap_or(0)
 }
