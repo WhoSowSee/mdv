@@ -139,7 +139,7 @@ pub struct Cli {
     #[arg(short = 'm', long = "margin", value_name = "MARGINS", value_parser = parse_horizontal_margins, help_heading = "Layout and wrapping", display_order = 12, long_help = MARGIN_LONG_HELP,)]
     pub margin: Option<HorizontalMargins>,
 
-    /// Configure text wrapping mode
+    /// Configure text and table-cell wrapping mode
     #[arg(short = 'w', long = "wrap", value_enum, value_name = "MODE", default_value = "char", help_heading = "Layout and wrapping", display_order = 14)]
     pub wrap_mode: Option<TextWrapMode>,
 
@@ -147,7 +147,7 @@ pub struct Cli {
     #[arg(long = "reflow", help_heading = "Layout and wrapping", display_order = 15)]
     pub reflow: bool,
 
-    /// Configure table wrapping behavior
+    /// Configure table geometry and overflow behavior
     #[arg(short = 'W', long = "table-wrap", value_enum, value_name = "MODE", default_value = "fit", help_heading = "Layout and wrapping", display_order = 19)]
     pub table_wrap_mode: Option<TableWrapMode>,
 

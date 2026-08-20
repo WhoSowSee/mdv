@@ -86,6 +86,12 @@ content is removed after `comfy-table` has positioned the borders.
 - `wrap`: an oversized table is divided into successive column blocks, each with an indicator.
 - `none`: no width limit is applied, so a table may exceed the terminal width.
 
+Cell breakpoints are controlled independently by the document `wrap` mode. `char` hard-wraps at
+Unicode grapheme boundaries, while `word` prefers spaces and falls back to graphemes for an
+oversized token. `none` avoids soft breaks, but constrained `fit` and `wrap` layouts may still use
+the same grapheme fallback when a cell cannot otherwise fit. With `table_wrap=none`, no cell width
+is imposed and all three text modes leave cell lines unwrapped.
+
 `pretty_table=false` uses compact borders without a complete outer grid. `pretty_table=true` enables `UTF8_FULL` with rounded corners.
 
 ## Smart table indentation

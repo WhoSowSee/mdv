@@ -155,9 +155,9 @@ cat <FILE> | mdv
 - `-c, --cols <N>` — enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
 - `-m, --margin <right:N;left:N>` — reserves separate left and right terminal margins. An omitted side defaults to `0`.
 - `--tab-length <N>` — replaces tab characters with `N` spaces (default `4`).
-- `-w, --wrap <char|word|none>` — selects the text wrapping mode (default `char`).
+- `-w, --wrap <char|word|none>` — selects the break strategy for text, code, callouts, and table cells (default `char`).
 - `--reflow` — collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.
-- `-W, --table-wrap <fit|wrap|none>` — chooses how wide tables are handled (default `fit`).
+- `-W, --table-wrap <fit|wrap|none>` — chooses table geometry: fit cells, split columns into blocks, or allow overflow (default `fit`). Cell breaks still follow `--wrap`.
 - `-B, --pretty-table` — restores full rounded table borders.
 - `-S, --table-smart-indent` — automatic table indent adjustment based on available width.
 - `-H, --heading-layout <level|center|flat|none>` — controls heading indentation (default `level`).

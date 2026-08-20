@@ -26,9 +26,9 @@ cols: null                 # Use detected terminal width; fallback is 80 when de
 margin: null              # null disables margins; otherwise use "left:N", "right:N", or both
 tab_length: 4              # Replace tab characters with this many spaces
 no_colors: false           # Strip all ANSI colors from output
-wrap: "char"               # Options: "char" | "word" | "none"
+wrap: "char"               # Text and table-cell breaks: "char" | "word" | "none"
 reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
-table_wrap: "fit"          # Options: "fit" | "wrap" | "none"
+table_wrap: "fit"          # Table geometry: fit cells | wrap columns into blocks | allow overflow
 pretty_table: false        # Use full rounded borders for tables
 heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 show_heading_markers: false # Prefix headings with markdown-style markers matching their level

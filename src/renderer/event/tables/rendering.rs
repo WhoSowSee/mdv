@@ -207,7 +207,8 @@ impl<'a> EventRenderer<'a> {
             available_width,
             self.config.table_wrap,
         )
-        .with_pretty_table(self.config.pretty_table);
+        .with_pretty_table(self.config.pretty_table)
+        .with_text_wrap_mode(self.config.wrap);
 
         let mut rendered =
             table_renderer.render_table(&table.headers, &table.rows, &table.alignments)?;

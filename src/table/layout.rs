@@ -12,12 +12,18 @@ impl TableRenderer {
             no_colors,
             terminal_width,
             table_wrap,
+            text_wrap: TextWrapMode::Word,
             pretty_table: false,
         }
     }
 
     pub fn with_pretty_table(mut self, pretty_table: bool) -> Self {
         self.pretty_table = pretty_table;
+        self
+    }
+
+    pub(crate) fn with_text_wrap_mode(mut self, text_wrap: TextWrapMode) -> Self {
+        self.text_wrap = text_wrap;
         self
     }
 
@@ -43,10 +49,17 @@ impl TableRenderer {
             Cow::Borrowed(content)
         };
 
-        if self.no_colors {
+        let cell = if self.no_colors {
             Cell::new(strip_ansi(layout_content.as_ref()))
         } else {
             Cell::new(layout_content.as_ref())
+        };
+
+        if matches!(self.text_wrap, TextWrapMode::Char | TextWrapMode::None) {
+            // An absent delimiter makes comfy-table use its grapheme-aware hard-wrap fallback.
+            cell.set_delimiter(TABLE_GRAPHEME_WRAP_DELIMITER)
+        } else {
+            cell
         }
     }
 

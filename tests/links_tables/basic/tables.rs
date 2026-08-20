@@ -102,3 +102,55 @@ fn test_header_only_table_does_not_render_empty_body_separator() {
         .stdout(predicate::str::contains("Col2"))
         .stdout(predicate::str::contains("╞").not());
 }
+
+fn render_wrapped_table(content: &str, width: &str, text_wrap: &str, table_wrap: &str) -> String {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(&temp_file, format!("| Value |\n| --- |\n| {content} |\n")).unwrap();
+
+    let output = mdv_cmd()
+        .args([
+            "--no-config",
+            "--no-colors",
+            "--pretty-table",
+            "--cols",
+            width,
+            "--wrap",
+            text_wrap,
+            "--table-wrap",
+            table_wrap,
+        ])
+        .arg(temp_file.path())
+        .output()
+        .expect("render table wrap combination");
+    assert!(output.status.success());
+    String::from_utf8(output.stdout).expect("stdout utf8")
+}
+
+fn table_cell_lines(output: &str) -> Vec<&str> {
+    output
+        .lines()
+        .filter_map(|line| line.strip_prefix("│ ")?.strip_suffix(" │"))
+        .map(str::trim_end)
+        .filter(|line| *line != "Value")
+        .collect()
+}
+
+#[test]
+fn table_cells_follow_text_wrap_mode_across_table_layout_modes() {
+    let cases: [(&str, &str, &[&str]); 5] = [
+        ("word", "fit", &["alpha", "beta", "gamma"]),
+        ("char", "fit", &["alpha be", "ta gamma"]),
+        ("none", "fit", &["alpha be", "ta gamma"]),
+        ("char", "wrap", &["alpha be", "ta gamma"]),
+        ("none", "none", &["alpha beta gamma"]),
+    ];
+
+    for (text_wrap, table_wrap, expected) in cases {
+        let output = render_wrapped_table("alpha beta gamma", "12", text_wrap, table_wrap);
+        assert_eq!(
+            table_cell_lines(&output),
+            expected,
+            "wrap={text_wrap}, table-wrap={table_wrap}"
+        );
+    }
+}

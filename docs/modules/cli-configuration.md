@@ -29,6 +29,9 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 | Links and footnotes | `--link-style`, `--link-truncation`, footnote options | Link and footnote event handlers. |
 | Configuration | `--config-file`, `--no-config`, `--preset`, `--init-config` | Configuration and preset loading. |
 
+`--wrap` selects breakpoints for prose, code, callouts, and table cells. `--table-wrap` is
+orthogonal: it controls whether table columns are fitted, split into blocks, or left unconstrained.
+
 ## Configuration files
 
 | File | Responsibility |

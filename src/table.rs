@@ -9,9 +9,10 @@ use comfy_table::{
 };
 use pulldown_cmark::Alignment;
 
-use crate::cli::TableWrapMode;
+use crate::cli::{TableWrapMode, TextWrapMode};
 
 pub(crate) const TABLE_REFERENCE_WRAP_MARKER: char = '\u{200B}';
+const TABLE_GRAPHEME_WRAP_DELIMITER: char = '\0';
 const COMPACT_TABLE_STYLE: TableStyle = TableStyle::new()
     .header_lines(ContentLineStyle::none().junction('│'))
     .header_separator(LineStyle::none().fill('─').junction('┼'))
@@ -35,6 +36,7 @@ pub struct TableRenderer {
     no_colors: bool,
     terminal_width: usize,
     table_wrap: TableWrapMode,
+    text_wrap: TextWrapMode,
     pretty_table: bool,
 }
 

@@ -7,18 +7,18 @@ pub enum TextWrapMode {
     Char,
     #[value(help = "Wrap at word boundaries")]
     Word,
-    #[value(help = "Disable wrapping")]
+    #[value(help = "Avoid soft wrapping; constrained table cells may hard-wrap")]
     None,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TableWrapMode {
-    #[value(help = "Wrap text within table cells, fit to terminal width")]
+    #[value(help = "Fit table cells to terminal width")]
     Fit,
     #[value(help = "Column wrapping: split table into blocks when too wide")]
     Wrap,
-    #[value(help = "No wrapping: tables overflow horizontally")]
+    #[value(help = "Allow tables to overflow horizontally without cell wrapping")]
     None,
 }
 
