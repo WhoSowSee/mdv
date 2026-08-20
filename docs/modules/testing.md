@@ -26,6 +26,7 @@ After large source files were split, large inline `mod tests` blocks moved into 
 | `src/theme.rs` | `src/theme/tests.rs` |
 | `src/user_themes.rs` | `src/user_themes/tests.rs` |
 | `src/pager.rs` | `src/pager/tests.rs`, plus tests in `footer.rs` and `help.rs` |
+| `src/interactive/browser.rs` | `src/interactive/browser/tests.rs`, plus screen tests in `src/interactive/screen/tests.rs` |
 | `src/editor.rs` | `src/editor/tests.rs` |
 | `src/list_marker.rs` | `src/list_marker/tests.rs` |
 | `src/utils.rs` | `src/utils/tests.rs` |

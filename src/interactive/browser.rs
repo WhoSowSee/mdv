@@ -1,6 +1,9 @@
-use super::discovery::{DiscoveryResult, DocumentEntry, filter_documents, start_discovery};
+use super::discovery::{DiscoveryEvent, DocumentEntry, filter_documents};
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, TryRecvError};
+use std::sync::mpsc::Receiver;
+use std::time::Instant;
+
+mod loading;
 
 const ITEM_HEIGHT: usize = 3;
 const TOP_PADDING: usize = 5;
@@ -35,30 +38,11 @@ pub(crate) struct BrowserState {
     show_error: bool,
     errors: Vec<String>,
     loaded: bool,
-    receiver: Option<Receiver<DiscoveryResult>>,
+    receiver: Option<Receiver<DiscoveryEvent>>,
+    loading_started: Instant,
 }
 
 impl BrowserState {
-    pub(super) fn new(root: PathBuf, height: u16) -> Self {
-        let receiver = Some(start_discovery(root.clone()));
-        Self {
-            root,
-            documents: Vec::new(),
-            filtered: Vec::new(),
-            document_selection: 0,
-            filter_selection: 0,
-            height,
-            filter_state: FilterState::Unfiltered,
-            section: BrowserSection::Documents,
-            query: String::new(),
-            show_full_help: false,
-            show_error: false,
-            errors: Vec::new(),
-            loaded: false,
-            receiver,
-        }
-    }
-
     #[cfg(test)]
     pub(crate) fn for_test(documents: Vec<DocumentEntry>, height: u16) -> Self {
         let filtered = (0..documents.len()).collect();
@@ -77,35 +61,8 @@ impl BrowserState {
             errors: Vec::new(),
             loaded: true,
             receiver: None,
+            loading_started: Instant::now(),
         }
-    }
-
-    pub(super) fn poll_discovery(&mut self) {
-        let Some(receiver) = self.receiver.take() else {
-            return;
-        };
-        match receiver.try_recv() {
-            Ok(result) => {
-                self.documents = result.documents;
-                self.errors = result.errors;
-                self.loaded = true;
-                self.update_filter();
-                self.clamp_selection();
-            }
-            Err(TryRecvError::Empty) => self.receiver = Some(receiver),
-            Err(TryRecvError::Disconnected) => self.loaded = true,
-        }
-    }
-
-    pub(super) fn refresh(&mut self) {
-        self.documents.clear();
-        self.filtered.clear();
-        self.document_selection = 0;
-        self.filter_selection = 0;
-        self.errors.clear();
-        self.show_error = false;
-        self.loaded = false;
-        self.receiver = Some(start_discovery(self.root.clone()));
     }
 
     pub(super) fn set_height(&mut self, height: u16) {
@@ -335,3 +292,6 @@ impl BrowserState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

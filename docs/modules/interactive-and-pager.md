@@ -21,6 +21,8 @@ With no filename and terminal standard input, the current directory opens automa
 | [interactive/mod.rs](../../src/interactive/mod.rs) | Target selection, event loop, and browser-to-pager/editor transitions. |
 | [interactive/app.rs](../../src/interactive/app.rs) | `App`, `AppAction`, and keyboard, mouse, paste, and resize handling. |
 | [interactive/browser.rs](../../src/interactive/browser.rs) | `BrowserState`: sections, selection, paging, filter, errors, and help state. |
+| [interactive/browser/loading.rs](../../src/interactive/browser/loading.rs) | Incremental discovery ingestion, refresh state, sorting, and selection preservation. |
+| [interactive/browser/tests.rs](../../src/interactive/browser/tests.rs) | Browser discovery-state regression tests. |
 | [interactive/discovery.rs](../../src/interactive/discovery.rs) | Background Markdown discovery and fuzzy matching. |
 | [interactive/screen.rs](../../src/interactive/screen.rs) | Screen constants and facade for visual submodules. |
 
@@ -46,7 +48,7 @@ With no filename and terminal standard input, the current directory opens automa
 - page size and count;
 - help and error overlays.
 
-Discovery runs independently, and `poll_discovery` transfers a completed result into UI state. Fuzzy matching normalizes Unicode but returns indices into the original string so highlighting remains correct.
+Discovery runs independently and publishes each document or error through a bounded channel. `poll_discovery` consumes a limited number of events on every UI tick, inserts newly found documents into the sorted list, refreshes an active filter, and preserves the selected path while the list grows. The line spinner beside the logo appears only after a 16 ms grace period and starts from its first frame; a final event stops it. Fuzzy matching normalizes Unicode but returns indices into the original string so highlighting remains correct.
 
 ## Event loop
 
@@ -117,4 +119,5 @@ The refresh callback re-reads and re-renders the document, atomically replaces `
 - Every pause or suspension has a matching resume even after an operation fails.
 - A watcher updates only the selected file.
 - Background refresh does not hold a write lock while reading or rendering the file.
+- File discovery never waits for a complete directory scan before publishing matching documents.
 - Transparent footer and help views do not set a background color.

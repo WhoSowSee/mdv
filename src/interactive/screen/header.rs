@@ -1,5 +1,9 @@
 use super::*;
 
+const BROWSER_SPINNER_FRAMES: &[&str] = &["|", "/", "-", "\\"];
+const BROWSER_SPINNER_DELAY: Duration = Duration::from_millis(16);
+const BROWSER_SPINNER_INTERVAL: Duration = Duration::from_millis(100);
+
 pub(super) fn browser_header(browser: &BrowserState, no_colors: bool) -> String {
     if browser.filter_state() == FilterState::Editing {
         return styled(
@@ -113,7 +117,7 @@ pub(super) fn filtered_title(
     output
 }
 
-pub(super) fn browser_logo_line(no_colors: bool) -> String {
+pub(super) fn browser_logo_line(loading_elapsed: Option<Duration>, no_colors: bool) -> String {
     let logo = styled(
         " MDV ",
         Some(BROWSER_LOGO_FOREGROUND),
@@ -121,5 +125,21 @@ pub(super) fn browser_logo_line(no_colors: bool) -> String {
         true,
         no_colors,
     );
-    format!("   {logo}")
+    let spinner = loading_elapsed
+        .and_then(|elapsed| elapsed.checked_sub(BROWSER_SPINNER_DELAY))
+        .map_or_else(
+            || " ".to_string(),
+            |elapsed| {
+                let frame = (elapsed.as_millis() / BROWSER_SPINNER_INTERVAL.as_millis()) as usize
+                    % BROWSER_SPINNER_FRAMES.len();
+                styled(
+                    BROWSER_SPINNER_FRAMES[frame],
+                    Some(BROWSER_ACCENT),
+                    None,
+                    false,
+                    no_colors,
+                )
+            },
+        );
+    format!(" {spinner} {logo}")
 }

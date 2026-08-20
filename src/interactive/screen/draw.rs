@@ -15,7 +15,11 @@ pub(super) fn draw_browser(stdout: &mut Stdout, app: &App) -> Result<()> {
         let filter = browser_filter_prompt_text(&filter_text, no_colors);
         write_line(stdout, 1, &filter)?;
     } else {
-        write_line(stdout, 1, &browser_logo_line(no_colors))?;
+        write_line(
+            stdout,
+            1,
+            &browser_logo_line(browser.loading_elapsed(), no_colors),
+        )?;
     }
 
     let header = browser_header(browser, no_colors);

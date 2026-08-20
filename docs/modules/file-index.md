@@ -91,6 +91,8 @@ Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/co
 | [mod.rs](../../src/interactive/mod.rs) | Target selection and terminal event loop. |
 | [app.rs](../../src/interactive/app.rs) | UI actions and state transitions. |
 | [browser.rs](../../src/interactive/browser.rs) | Browser, filter, and page state. |
+| [browser/loading.rs](../../src/interactive/browser/loading.rs) | Incremental discovery ingestion and refresh state. |
+| [browser/tests.rs](../../src/interactive/browser/tests.rs) | Browser discovery-state tests. |
 | [discovery.rs](../../src/interactive/discovery.rs) | File discovery and fuzzy matching. |
 | [screen.rs](../../src/interactive/screen.rs) | Screen facade and constants. |
 | [screen/session.rs](../../src/interactive/screen/session.rs) | Raw/alternate-terminal lifecycle. |

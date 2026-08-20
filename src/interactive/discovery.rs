@@ -8,6 +8,7 @@ use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
 
 const MARKDOWN_EXTENSIONS: &[&str] = &["md", "mdown", "mkdn", "mkd", "markdown"];
+const DISCOVERY_CHANNEL_CAPACITY: usize = 256;
 
 #[derive(Debug, Clone)]
 pub(crate) struct DocumentEntry {
@@ -48,21 +49,48 @@ impl DocumentEntry {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Default)]
 pub(crate) struct DiscoveryResult {
     pub(crate) documents: Vec<DocumentEntry>,
     pub(crate) errors: Vec<String>,
 }
 
-pub(crate) fn start_discovery(root: PathBuf) -> Receiver<DiscoveryResult> {
-    let (sender, receiver) = mpsc::channel();
+pub(crate) enum DiscoveryEvent {
+    Document(DocumentEntry),
+    Error(String),
+    Finished,
+}
+
+pub(crate) fn start_discovery(root: PathBuf) -> Receiver<DiscoveryEvent> {
+    let (sender, receiver) = mpsc::sync_channel(DISCOVERY_CHANNEL_CAPACITY);
     std::thread::spawn(move || {
-        let _ = sender.send(discover_paths(&root));
+        let completed = walk_paths(&root, |event| sender.send(event).is_ok());
+        if completed {
+            let _ = sender.send(DiscoveryEvent::Finished);
+        }
     });
     receiver
 }
 
+#[cfg(test)]
 pub(crate) fn discover_paths(root: &Path) -> DiscoveryResult {
+    let mut result = DiscoveryResult::default();
+    walk_paths(root, |event| {
+        match event {
+            DiscoveryEvent::Document(document) => result.documents.push(document),
+            DiscoveryEvent::Error(error) => result.errors.push(error),
+            DiscoveryEvent::Finished => {}
+        }
+        true
+    });
+    result
+        .documents
+        .sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
+    result
+}
+
+fn walk_paths(root: &Path, mut emit: impl FnMut(DiscoveryEvent) -> bool) -> bool {
     let mut builder = WalkBuilder::new(root);
     builder
         .hidden(true)
@@ -73,12 +101,13 @@ pub(crate) fn discover_paths(root: &Path) -> DiscoveryResult {
         .follow_links(false)
         .filter_entry(|entry| entry.file_name() != "node_modules");
 
-    let mut result = DiscoveryResult::default();
     for entry in builder.build() {
         let entry = match entry {
             Ok(entry) => entry,
             Err(error) => {
-                result.errors.push(error.to_string());
+                if !emit(DiscoveryEvent::Error(error.to_string())) {
+                    return false;
+                }
                 continue;
             }
         };
@@ -90,19 +119,24 @@ pub(crate) fn discover_paths(root: &Path) -> DiscoveryResult {
         }
 
         match entry.metadata() {
-            Ok(metadata) => result.documents.push(DocumentEntry::new(
-                entry.into_path(),
-                root,
-                metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
-            )),
-            Err(error) => result.errors.push(error.to_string()),
+            Ok(metadata) => {
+                let document = DocumentEntry::new(
+                    entry.into_path(),
+                    root,
+                    metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+                );
+                if !emit(DiscoveryEvent::Document(document)) {
+                    return false;
+                }
+            }
+            Err(error) => {
+                if !emit(DiscoveryEvent::Error(error.to_string())) {
+                    return false;
+                }
+            }
         }
     }
-
-    result
-        .documents
-        .sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
-    result
+    true
 }
 
 pub(crate) fn filter_documents(documents: &[DocumentEntry], query: &str) -> Vec<usize> {

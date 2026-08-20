@@ -38,7 +38,23 @@ fn document_titles_align_with_the_header() {
 
 #[test]
 fn logo_block_aligns_with_the_header_without_a_spinner() {
-    assert_eq!(browser_logo_line(true), "    MDV ");
+    assert_eq!(browser_logo_line(None, true), "    MDV ");
+}
+
+#[test]
+fn logo_block_delays_the_spinner_and_starts_from_the_first_frame() {
+    assert_eq!(
+        browser_logo_line(Some(Duration::from_millis(15)), true),
+        "    MDV "
+    );
+    assert_eq!(
+        browser_logo_line(Some(Duration::from_millis(16)), true),
+        " |  MDV "
+    );
+    assert_eq!(
+        browser_logo_line(Some(Duration::from_millis(116)), true),
+        " /  MDV "
+    );
 }
 
 #[test]
