@@ -111,9 +111,9 @@ impl<'a> EventRenderer<'a> {
             max_content_width = max_content_width.max(display_width(&strip_ansi(line)));
         }
 
-        let wrap_mode = match self.config.text_wrap_mode() {
-            WrapMode::None => WrapMode::Character,
-            other => other,
+        let wrap_mode = match (kind, self.config.text_wrap_mode()) {
+            (CalloutKind::Properties, _) | (_, WrapMode::None) => WrapMode::Character,
+            (_, other) => other,
         };
 
         if max_content_width > available_content_width {
@@ -200,13 +200,14 @@ impl<'a> EventRenderer<'a> {
                 &line,
                 left_padding,
                 right_padding,
+                kind,
             );
             self.output.push_str(&content_line);
             self.output.push('\n');
         }
 
         self.push_indent_for_line_start();
-        let bottom_line = self.render_callout_pretty_bottom_border(inner_box_width);
+        let bottom_line = self.render_callout_pretty_bottom_border(inner_box_width, kind);
         self.output.push_str(&bottom_line);
         self.output.push('\n');
 

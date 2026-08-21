@@ -10,6 +10,8 @@ mod code_blocks;
 mod definition_lists;
 #[path = "footnotes.rs"]
 mod footnotes;
+#[path = "front_matter.rs"]
+mod front_matter;
 #[path = "html_table_content.rs"]
 mod html_table_content;
 #[path = "inline_styles.rs"]

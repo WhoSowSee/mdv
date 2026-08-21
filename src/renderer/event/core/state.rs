@@ -64,6 +64,7 @@ pub(crate) enum CalloutKind {
     Bug,
     Example,
     Quote,
+    Properties,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

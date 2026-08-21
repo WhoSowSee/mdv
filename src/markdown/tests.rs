@@ -14,6 +14,24 @@ fn test_markdown_parsing() {
 }
 
 #[test]
+fn front_matter_is_extracted_only_from_the_document_start() {
+    let processor = MarkdownProcessor::new(&Config::default());
+    let document = processor
+        .parse_document("---\nsidebar_position: 5m\n---\n\n# Title\n")
+        .unwrap();
+    let front_matter = document.front_matter.expect("front matter");
+
+    assert_eq!(front_matter.raw, "sidebar_position: 5m\n");
+    assert_eq!(front_matter.properties["sidebar_position"], "5m");
+    assert!(
+        document
+            .events
+            .iter()
+            .any(|event| matches!(event, Event::Text(text) if text.as_ref() == "Title"))
+    );
+}
+
+#[test]
 fn test_filter_from_text() {
     let content = "Line 1\nTarget Line\nLine 3\nLine 4";
     let lines: Vec<&str> = content.lines().collect();

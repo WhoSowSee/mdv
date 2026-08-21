@@ -36,6 +36,8 @@ orthogonal: it controls whether table columns are fitted, split into blocks, or 
 bare flag to rendered numbering unless it is followed by an explicit mode, keeping the following
 Markdown path positional.
 
+`--front-matter` controls an exact `---`-delimited YAML property mapping whose opening delimiter is the first line. `hidden` is the default; `panel` uses the callout renderer; `table` uses the two-column table renderer; `plain` emits key/value lines; `inline` emits one wrapping paragraph; `blocks` uses definition-list layout; `code` uses the YAML code-block path; and `source` bypasses front matter recognition so the complete input follows ordinary Markdown parsing.
+
 ## Configuration files
 
 | File | Responsibility |
@@ -72,7 +74,7 @@ CLI candidates precede environment candidates when both are present. The first e
 
 ## `Config` field groups
 
-- Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, and document line numbers.
+- Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, front matter, and document line numbers.
 - Code, callouts, and lists: language guessing, custom syntaxes, styles, code-block line numbers, and compiled override maps.
 - Themes: terminal theme, code theme, inline styles, and custom palette strings.
 - Links and footnotes: link presentation plus footnote placement and missing-definition behavior.

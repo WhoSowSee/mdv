@@ -16,7 +16,9 @@ impl<'a> EventRenderer<'a> {
         kind: CalloutKind,
         label: &str,
     ) -> AnsiStyle {
-        let color = if let Some(custom) = self.config.custom_callouts.get(label) {
+        let color = if kind == CalloutKind::Properties {
+            self.theme.front_matter_title_color().clone()
+        } else if let Some(custom) = self.config.custom_callouts.get(label) {
             custom
                 .color
                 .clone()

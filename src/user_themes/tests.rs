@@ -72,7 +72,7 @@ fn partial_fields_fill_from_default() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("partial.yaml"),
-        "name: partial\nh1: red\nline_number: yellow\nline_number_separator: blue\n",
+        "name: partial\nh1: red\nline_number: yellow\nline_number_separator: blue\nfront_matter_key: magenta\n",
     )
     .unwrap();
 
@@ -82,6 +82,10 @@ fn partial_fields_fill_from_default() {
     assert_eq!(theme.h2, Theme::default().h2);
     assert_eq!(theme.line_number, Color::Yellow);
     assert_eq!(theme.line_number_separator, Color::Blue);
+    assert_eq!(theme.front_matter_key, Some(Color::Magenta));
+    assert_eq!(theme.front_matter_title_color(), &Theme::default().border);
+    assert_eq!(theme.front_matter_value_color(), &Theme::default().text);
+    assert_eq!(theme.front_matter_border_color(), &Theme::default().border);
 }
 
 #[test]

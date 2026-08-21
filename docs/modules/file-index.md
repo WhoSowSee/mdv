@@ -68,7 +68,7 @@ Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/co
 | [detection.rs](../../src/markdown/detection.rs) | Code-language extraction and detection. |
 | [events.rs](../../src/markdown/events.rs) | Event postprocessing. |
 | [fences.rs](../../src/markdown/fences.rs) | Tab-indented fence normalization. |
-| [parsing.rs](../../src/markdown/parsing.rs) | Constructor, parsing, and preprocessing order. |
+| [parsing.rs](../../src/markdown/parsing.rs) | Constructor, first-line YAML extraction, parsing, and preprocessing order. |
 | [raw_html.rs](../../src/markdown/raw_html.rs) | Raw-text HTML event coalescing. |
 | [source_lines.rs](../../src/markdown/source_lines.rs) | Source-line maps and markers. |
 | [structure.rs](../../src/markdown/structure.rs) | Structural-line predicates. |
@@ -154,7 +154,8 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | File | Responsibility |
 |---|---|
 | [mod.rs](../../src/renderer/mod.rs) | Renderer module facade. |
-| [terminal.rs](../../src/renderer/terminal.rs) | Document-level renderer. |
+| [terminal.rs](../../src/renderer/terminal.rs) | Event-stream renderer and prepared theme/syntax resources. |
+| [front_matter.rs](../../src/renderer/front_matter.rs) | Terminal and HTML front matter presentation. |
 | [line_numbers.rs](../../src/renderer/line_numbers.rs) | Number gutters and internal markers. |
 | [syntax_set.rs](../../src/renderer/syntax_set.rs) | Syntax cache and loader. |
 | [syntax_theme.rs](../../src/renderer/syntax_theme.rs) | Code-theme facade. |
@@ -244,7 +245,7 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Footnotes: [footnotes.rs](../../tests/footnotes.rs) and files under [tests/footnotes/](../../tests/footnotes/attached.rs).
 - Layout: [layout.rs](../../tests/layout.rs) and files under [tests/layout/](../../tests/layout/headings.rs).
 - Links and tables: [links_tables.rs](../../tests/links_tables.rs) and files under [tests/links_tables/](../../tests/links_tables/basic.rs).
-- Standalone groups: [definition_lists.rs](../../tests/definition_lists.rs), [html_table_content.rs](../../tests/html_table_content.rs), [inline_styles.rs](../../tests/inline_styles.rs), [line_numbers.rs](../../tests/line_numbers.rs), [math.rs](../../tests/math.rs), [media.rs](../../tests/media.rs), [syntax_palette.rs](../../tests/syntax_palette.rs), and [visibility.rs](../../tests/visibility.rs).
+- Standalone groups: [definition_lists.rs](../../tests/definition_lists.rs), [front_matter.rs](../../tests/front_matter.rs), [html_table_content.rs](../../tests/html_table_content.rs), [inline_styles.rs](../../tests/inline_styles.rs), [line_numbers.rs](../../tests/line_numbers.rs), [math.rs](../../tests/math.rs), [media.rs](../../tests/media.rs), [syntax_palette.rs](../../tests/syntax_palette.rs), and [visibility.rs](../../tests/visibility.rs).
 
 ### Complete nested integration-file list
 

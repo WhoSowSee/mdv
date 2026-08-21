@@ -20,8 +20,8 @@
 flowchart LR
     A["main.rs: Clap"] --> B["lib.rs: run"]
     B --> C["Config::from_cli"]
-    C --> D["MarkdownProcessor::parse"]
-    D --> E["Vec<Event<'static>>"]
+    C --> D["MarkdownProcessor::parse_document"]
+    D --> E["ParsedDocument"]
     E --> F["TerminalRenderer"]
     F --> G["EventRenderer"]
     G --> H["ANSI output"]
@@ -34,7 +34,7 @@ flowchart LR
 1. `main` initializes logging and creates both `Cli` and `ArgMatches`.
 2. `run` handles service modes such as help, configuration initialization, and theme or preset information.
 3. `Config::from_cli` produces one validated settings snapshot.
-4. `MarkdownProcessor::parse` returns `Vec<Event<'static>>`; renderers do not borrow the source string.
+4. `MarkdownProcessor::parse_document` returns owned front matter plus `Vec<Event<'static>>`; renderers do not borrow the source string.
 5. `TerminalRenderer` chooses themes and syntaxes, creates `EventRenderer`, and applies line numbers and margins.
 6. The result is printed, passed to the pager, or used by interactive mode.
 
@@ -54,7 +54,7 @@ flowchart LR
 | State | Owner | Reason |
 |---|---|---|
 | Effective user settings | `Config` | Downstream modules must not parse CLI arguments or YAML again. |
-| Markdown preprocessing | `MarkdownProcessor` | All source transformations happen before terminal output is constructed. |
+| Markdown preprocessing | `MarkdownProcessor` | Front matter extraction and all source transformations happen before terminal output is constructed. |
 | Current document state | `EventRenderer` | Lists, links, footnotes, tables, and callouts depend on event order. |
 | Theme and syntax set | `TerminalRenderer` | Document-wide resources are selected once and shared by event handlers. |
 | Pager document | `RwLock<PagerDocument>` | The watcher and input classifier update one coherent snapshot. |
@@ -66,7 +66,8 @@ flowchart LR
 |---|---|---|
 | `Cli` | `src/cli.rs` | Stable Clap surface and raw argument values. |
 | `Config` | `src/config.rs` | Runtime settings after all sources and overrides are applied. |
-| `MarkdownProcessor` | `src/markdown.rs` | Converts `&str` into normalized `Vec<Event<'static>>`. |
+| `MarkdownProcessor` | `src/markdown.rs` | Converts `&str` into a `ParsedDocument` with optional YAML front matter and normalized events. |
+| `ParsedDocument` | `src/markdown.rs` | Owns document metadata and the Markdown body event stream. |
 | `TerminalRenderer` | `src/renderer/terminal.rs` | Facade for rendering one document to ANSI or HTML. |
 | `EventRenderer<'a>` | `src/renderer/event/core.rs` | Stateful machine that consumes the Markdown event stream. |
 | `Theme` | `src/theme/types.rs` | Complete semantic palette for Markdown and syntax highlighting. |

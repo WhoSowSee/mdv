@@ -57,6 +57,9 @@ impl Config {
         if other.hide_comments {
             self.hide_comments = true;
         }
+        if !matches!(other.front_matter, FrontMatterMode::Hidden) {
+            self.front_matter = other.front_matter;
+        }
         if other.render_html {
             self.render_html = true;
         }

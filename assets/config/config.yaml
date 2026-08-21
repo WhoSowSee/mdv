@@ -36,6 +36,7 @@ smart_indent: false        # Smooth heading indentation jumps (only with "level"
 table_smart_indent: false  # Automatically adjusts table indentation based on available width
 block_spacing: null        # Per-block blank lines, e.g. "paragraph:top=0,bottom=1;callout:top=1"
 hide_comments: false       # Hide Markdown comments from the rendered output
+front_matter: "hidden"     # hidden | panel | table | plain | inline | blocks | code | source
 render_html: false         # Render raw HTML fragments as terminal-formatted content
 line_numbers: false        # false | true | "source" | "separator" | "source;separator"
 code_line_numbers: false   # false | true | "source" | "separator" | "source;separator"; resets for each code block
@@ -78,6 +79,7 @@ from_text: null            # Render starting from the first line that contains t
 # highlight_background, emphasis_background, strong_background,
 # strong_emphasis_background, code_background, strikethrough_background,
 # background, border, list_marker,
+# front_matter_title, front_matter_key, front_matter_value, front_matter_border,
 # table_header, table_border, error, warning
 
 # Available inline_style elements:

@@ -1,6 +1,7 @@
 use crate::config::Config;
 use anyhow::Result;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
+use serde_yaml::Mapping;
 use std::mem;
 use std::ops::Range;
 
@@ -14,6 +15,16 @@ pub(crate) use source_lines::{Marker as SourceLineMarker, from_event as source_l
 pub struct MarkdownProcessor {
     config: Config,
     options: Options,
+}
+
+pub(crate) struct ParsedDocument {
+    pub(crate) events: Vec<Event<'static>>,
+    pub(crate) front_matter: Option<FrontMatter>,
+}
+
+pub(crate) struct FrontMatter {
+    pub(crate) raw: String,
+    pub(crate) properties: Mapping,
 }
 
 mod admonitions;

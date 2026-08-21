@@ -7,7 +7,8 @@ Rendering is split between an outer document facade and one stateful `EventRende
 | File | Responsibility |
 |---|---|
 | [src/renderer/mod.rs](../../src/renderer/mod.rs) | Declares the terminal renderer, event handlers, line numbering, and syntax resources. |
-| [src/renderer/terminal.rs](../../src/renderer/terminal.rs) | `TerminalRenderer`: themes, syntax set, code theme, and ANSI/HTML entry points. |
+| [src/renderer/terminal.rs](../../src/renderer/terminal.rs) | `TerminalRenderer`: themes, syntax set, code theme, and event-stream ANSI/HTML entry points. |
+| [src/renderer/front_matter.rs](../../src/renderer/front_matter.rs) | Front matter panel, table, normalized text, blocks, YAML source, and HTML event formatting. |
 | [src/renderer/line_numbers.rs](../../src/renderer/line_numbers.rs) | Source and rendered gutters plus removal of internal line markers. |
 | [src/renderer/syntax_set.rs](../../src/renderer/syntax_set.rs) | Cached embedded `SyntaxSet` with optional user `.sublime-syntax` files. |
 | [src/renderer/syntax_theme.rs](../../src/renderer/syntax_theme.rs) | Adapts a `syntect` code theme to the terminal palette. |
@@ -43,6 +44,10 @@ Rendering is split between an outer document facade and one stateful `EventRende
 Only the left margin is added to output lines at the end. The right margin reduces available width but does not append spaces.
 
 `to_html(events)` is a separate export backend and does not treat ANSI output as an intermediate representation.
+
+`render_document(parsed_document)` and `to_html_document(parsed_document)` convert front matter into synthetic callout, table, paragraph, definition-list, code-block, or HTML events before using the existing event-only entry points. Source mode bypasses front matter extraction entirely. The properties callout uses dedicated title, key, value, and border theme roles and defers wrapping until the frame width is known. Generated property rows have an empty source-number gutter; rendered numbering includes them as ordinary visual rows.
+
+In reverse mode, front matter follows the reversed Markdown body so it remains at the visible end of long terminal output.
 
 ## `EventRenderer`
 

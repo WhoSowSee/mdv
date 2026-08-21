@@ -61,7 +61,8 @@ impl<'a> EventRenderer<'a> {
         text: &str,
         highlighted: bool,
     ) -> String {
-        if self.formatting_stack.is_empty() && !highlighted {
+        let in_front_matter = self.in_properties_callout();
+        if self.formatting_stack.is_empty() && !highlighted && !in_front_matter {
             return text.to_string();
         }
 
@@ -83,7 +84,9 @@ impl<'a> EventRenderer<'a> {
             )
         });
 
-        let semantic_kind = if has_code {
+        let semantic_kind = if in_front_matter && has_strong {
+            None
+        } else if has_code {
             Some(InlineStyleKind::Code)
         } else if has_strong && has_emphasis {
             Some(InlineStyleKind::StrongEmphasis)
@@ -97,7 +100,9 @@ impl<'a> EventRenderer<'a> {
             None
         };
 
-        let mut style = if has_code {
+        let mut style = if in_front_matter && has_strong {
+            create_style(self.theme, ThemeElement::FrontMatterKey)
+        } else if has_code {
             AnsiStyle::new().fg(self.theme.code.clone().into())
         } else if let Some(heading) = heading {
             create_style(self.theme, heading)
@@ -109,6 +114,8 @@ impl<'a> EventRenderer<'a> {
             AnsiStyle::new().fg(color.clone().into())
         } else if has_text_light {
             create_style(self.theme, ThemeElement::TextLight)
+        } else if in_front_matter {
+            create_style(self.theme, ThemeElement::FrontMatterValue)
         } else {
             create_style(self.theme, ThemeElement::Text)
         };
@@ -133,10 +140,10 @@ impl<'a> EventRenderer<'a> {
         if has_code {
             attributes.merge_attributes(self.theme.inline_style.get(InlineStyleKind::Code));
         }
-        if has_strong && has_emphasis {
+        if !in_front_matter && has_strong && has_emphasis {
             attributes
                 .merge_attributes(self.theme.inline_style.get(InlineStyleKind::StrongEmphasis));
-        } else {
+        } else if !in_front_matter {
             if has_strong {
                 attributes.merge_attributes(self.theme.inline_style.get(InlineStyleKind::Strong));
             }

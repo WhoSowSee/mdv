@@ -98,6 +98,7 @@ cat <FILE> | mdv
 - `-N, --line-numbers [<MODE>]` — prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
 - `--no-colors` — strips ANSI styling regardless of the selected theme.
 - `--hide-comments` — removes Markdown comments from the rendered output.
+- `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` — controls an exact `---`-delimited YAML property mapping beginning on the first line. `hidden` omits it; `panel` renders a property panel; `table` uses Property/Value columns; `plain` emits normalized key/value lines; `inline` joins properties into one flowing row; `blocks` places each value below its key; `code` renders highlighted YAML; and `source` parses the complete input as ordinary Markdown.
 - `--theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
 - `--from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
 - `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.

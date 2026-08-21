@@ -45,6 +45,10 @@ pub struct Cli {
     #[arg(long = "hide-comments", help_heading = "Output and flow", display_order = 9)]
     pub hide_comments: bool,
 
+    /// Control how YAML front matter at the beginning of a document is displayed
+    #[arg(long = "front-matter", value_enum, value_name = "MODE", default_value = "hidden", help_heading = "Output and flow", display_order = 10)]
+    pub front_matter: Option<FrontMatterMode>,
+
     /// Render raw HTML fragments as terminal-formatted content
     #[arg(short = 'E', long = "render-html", help_heading = "Output and flow", display_order = 6)]
     pub render_html: bool,
@@ -240,6 +244,19 @@ pub struct Cli {
     /// Configure blank lines around block elements
     #[arg(long = "block-spacing", value_name = "SPACING", help_heading = "Layout and wrapping", display_order = 22, long_help = BLOCK_SPACING_LONG_HELP,)]
     pub block_spacing: Option<BlockSpacingOverrides>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FrontMatterMode {
+    Hidden,
+    Panel,
+    Table,
+    Plain,
+    Inline,
+    Blocks,
+    Code,
+    Source,
 }
 
 mod callouts;

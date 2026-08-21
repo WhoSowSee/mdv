@@ -1,4 +1,6 @@
 use super::*;
+use crate::cli::FrontMatterMode;
+use crate::error::MdvError;
 
 impl MarkdownProcessor {
     pub fn new(config: &Config) -> Self {
@@ -18,8 +20,19 @@ impl MarkdownProcessor {
         }
     }
 
+    /// Parse Markdown body events, validating and omitting recognized front matter.
     pub fn parse(&self, markdown: &str) -> Result<Vec<Event<'static>>> {
-        let (content, source_lines) = self.preprocess_content(markdown)?;
+        Ok(self.parse_document(markdown)?.events)
+    }
+
+    pub(crate) fn parse_document(&self, markdown: &str) -> Result<ParsedDocument> {
+        let document = if matches!(self.config.front_matter, FrontMatterMode::Source) {
+            without_front_matter(markdown)
+        } else {
+            split_front_matter(markdown)?
+        };
+        let (content, source_lines) =
+            self.preprocess_content(document.body, document.body_start_line)?;
         let parser = Parser::new_ext(&content, self.options).into_offset_iter();
 
         let events: Vec<(Event, Range<usize>)> = parser.collect();
@@ -35,18 +48,23 @@ impl MarkdownProcessor {
             events
         };
 
-        Ok(events)
+        Ok(ParsedDocument {
+            events,
+            front_matter: document.front_matter,
+        })
     }
 
     pub(super) fn preprocess_content(
         &self,
         content: &str,
+        first_source_line: usize,
     ) -> Result<(String, Option<Vec<Option<usize>>>)> {
         let mut processed = content.to_string();
-        let mut source_lines = self
-            .config
-            .source_line_numbers_enabled()
-            .then(|| (1..=content.lines().count()).map(Some).collect::<Vec<_>>());
+        let mut source_lines = self.config.source_line_numbers_enabled().then(|| {
+            (first_source_line..first_source_line + content.lines().count())
+                .map(Some)
+                .collect::<Vec<_>>()
+        });
 
         if let Some(from_text) = &self.config.from_text {
             let lines: Vec<&str> = processed.lines().collect();
@@ -105,4 +123,73 @@ impl MarkdownProcessor {
         });
         start..end
     }
+}
+
+struct SplitDocument<'a> {
+    body: &'a str,
+    body_start_line: usize,
+    front_matter: Option<FrontMatter>,
+}
+
+fn split_front_matter(source: &str) -> Result<SplitDocument<'_>> {
+    let mut lines = source.split_inclusive('\n');
+    let Some(opening) = lines.next() else {
+        return Ok(without_front_matter(source));
+    };
+    if line_content(opening) != "---" {
+        return Ok(without_front_matter(source));
+    }
+
+    let raw_start = opening.len();
+    let mut line_start = raw_start;
+    for (line_index, line) in lines.enumerate() {
+        if line_content(line) == "---" {
+            let raw = &source[raw_start..line_start];
+            if raw.trim().is_empty() {
+                return Ok(without_front_matter(source));
+            }
+
+            let value = serde_yaml::from_str(raw).map_err(front_matter_error)?;
+            let serde_yaml::Value::Mapping(properties) = value else {
+                return Ok(without_front_matter(source));
+            };
+            let body_start = line_start + line.len();
+            return Ok(SplitDocument {
+                body: &source[body_start..],
+                body_start_line: line_index + 3,
+                front_matter: Some(FrontMatter {
+                    raw: raw.to_string(),
+                    properties,
+                }),
+            });
+        }
+        line_start += line.len();
+    }
+
+    Ok(without_front_matter(source))
+}
+
+fn without_front_matter(source: &str) -> SplitDocument<'_> {
+    SplitDocument {
+        body: source,
+        body_start_line: 1,
+        front_matter: None,
+    }
+}
+
+fn line_content(line: &str) -> &str {
+    let line = line.strip_suffix('\n').unwrap_or(line);
+    line.strip_suffix('\r').unwrap_or(line)
+}
+
+fn front_matter_error(error: serde_yaml::Error) -> MdvError {
+    let message = match error.location() {
+        Some(location) => format!(
+            "invalid YAML front matter at document line {}, column {}: {error}",
+            location.line() + 1,
+            location.column()
+        ),
+        None => format!("invalid YAML front matter: {error}"),
+    };
+    MdvError::MarkdownError(message)
 }

@@ -15,7 +15,7 @@ use syntect::parsing::SyntaxSet;
 
 /// Terminal renderer for markdown content
 pub struct TerminalRenderer {
-    config: Config,
+    pub(super) config: Config,
     theme: Theme,
     syntax_set: Arc<SyntaxSet>,
     code_theme: CodeHighlightTheme,

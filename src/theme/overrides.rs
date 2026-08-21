@@ -99,6 +99,18 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         }
         "background" | "bg" => theme.background = parse_optional_color_spec(value)?,
         "border" => theme.border = parse_color_spec(value)?,
+        "front_matter_title" | "frontmattertitle" => {
+            theme.front_matter_title = parse_optional_color_spec(value)?
+        }
+        "front_matter_key" | "frontmatterkey" => {
+            theme.front_matter_key = parse_optional_color_spec(value)?
+        }
+        "front_matter_value" | "frontmattervalue" => {
+            theme.front_matter_value = parse_optional_color_spec(value)?
+        }
+        "front_matter_border" | "frontmatterborder" => {
+            theme.front_matter_border = parse_optional_color_spec(value)?
+        }
         "list_marker" | "listmarker" => theme.list_marker = parse_color_spec(value)?,
         "table_header" | "tableheader" => theme.table_header = parse_color_spec(value)?,
         "table_border" | "tableborder" => theme.table_border = parse_color_spec(value)?,

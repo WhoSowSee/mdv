@@ -50,6 +50,14 @@ pub struct Theme {
     pub strikethrough_background: Option<Color>,
     pub background: Option<Color>,
     pub border: Color,
+    #[serde(default)]
+    pub front_matter_title: Option<Color>,
+    #[serde(default)]
+    pub front_matter_key: Option<Color>,
+    #[serde(default)]
+    pub front_matter_value: Option<Color>,
+    #[serde(default)]
+    pub front_matter_border: Option<Color>,
 
     #[serde(default)]
     pub inline_style: InlineStyleSet,
@@ -95,6 +103,22 @@ impl Default for SyntaxTheme {
 }
 
 impl Theme {
+    pub(crate) fn front_matter_title_color(&self) -> &Color {
+        self.front_matter_title.as_ref().unwrap_or(&self.border)
+    }
+
+    pub(crate) fn front_matter_key_color(&self) -> &Color {
+        self.front_matter_key.as_ref().unwrap_or(&self.text_light)
+    }
+
+    pub(crate) fn front_matter_value_color(&self) -> &Color {
+        self.front_matter_value.as_ref().unwrap_or(&self.text)
+    }
+
+    pub(crate) fn front_matter_border_color(&self) -> &Color {
+        self.front_matter_border.as_ref().unwrap_or(&self.border)
+    }
+
     pub(crate) fn inline_foreground(&self, kind: InlineStyleKind) -> Option<&Color> {
         match kind {
             InlineStyleKind::Emphasis => Some(&self.emphasis),

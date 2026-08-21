@@ -2,8 +2,9 @@ use crate::block_spacing::BlockSpacingOverrides;
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
-    HeadingLayout, HorizontalMargins, LineNumberOptions, LineNumberTarget, LinkStyle,
-    LinkTruncationStyle, MissingFootnoteStyle, PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
+    FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions, LineNumberTarget,
+    LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, PrettyDefinitionStyle, TableWrapMode,
+    TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -144,6 +145,7 @@ pub struct Config {
     pub table_smart_indent: bool,
     pub block_spacing: BlockSpacingOverrides,
     pub hide_comments: bool,
+    pub front_matter: FrontMatterMode,
     pub render_html: bool,
     #[serde(
         default,
@@ -231,6 +233,7 @@ impl Default for Config {
             table_smart_indent: false,
             block_spacing: BlockSpacingOverrides::default(),
             hide_comments: false,
+            front_matter: FrontMatterMode::Hidden,
             render_html: false,
             line_numbers: None,
             code_line_numbers: None,

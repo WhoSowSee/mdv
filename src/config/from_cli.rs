@@ -161,6 +161,12 @@ impl Config {
             config.hide_comments = true;
         }
 
+        if let Some(mode) = cli.front_matter
+            && arg_has_user_value(matches, "front_matter")
+        {
+            config.front_matter = mode;
+        }
+
         if cli.render_html {
             config.render_html = true;
         }

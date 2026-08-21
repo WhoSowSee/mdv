@@ -47,6 +47,7 @@ Unit tests cover parsers, semantic defaults, width helpers, state transitions, a
 | `tests/layout*` | Headings, blockquotes, margins, blank lines, reflow, and block spacing. |
 | `tests/links_tables*` | Link styles, truncation, references, smart indentation, and code-block interaction. |
 | `tests/footnotes*` | Attached/endnote modes, ordering, placement, and invalid or missing definitions. |
+| `tests/front_matter.rs` | Strict first-line YAML recognition, display modes, HTML, line numbers, and reverse mode. |
 | `tests/definition_lists.rs` | Markdown definition-list rendering. |
 | `tests/html_table_content.rs` | Block and inline content inside HTML table cells. |
 | `tests/inline_styles.rs` | Semantic attributes and theme overrides. |

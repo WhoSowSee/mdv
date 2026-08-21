@@ -40,7 +40,7 @@ A complete theme contains:
 - `h1` through `h6`;
 - code, quote, link, and inline semantic colors;
 - optional foreground and background for combined inline styles;
-- document background and border colors;
+- document background and border colors plus optional front matter title, key, value, and border colors;
 - list, table, error, and warning colors;
 - `SyntaxTheme` for code highlighting;
 - `pager_status_bar_transparent`.

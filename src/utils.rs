@@ -20,6 +20,21 @@ pub fn strip_ansi(s: &str) -> String {
         .to_string()
 }
 
+pub(crate) fn escape_html_text(text: &str) -> String {
+    let mut escaped = String::with_capacity(text.len());
+    for ch in text.chars() {
+        match ch {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&#39;"),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
+}
+
 /// Text wrapping mode
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WrapMode {
@@ -125,6 +140,7 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
     let mut current_line = String::new();
     let mut current_width = 0;
     let mut ansi_stack = String::new(); // Track active ANSI codes
+    let mut pending_escape_start = None;
 
     let mut chars = line.chars().peekable();
 
@@ -132,6 +148,7 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
         if ch == '\x1b' {
             // Start of ANSI/OSC escape sequence
             let sequence = consume_escape_sequence(&mut chars);
+            pending_escape_start.get_or_insert(current_line.len());
             current_line.push_str(&sequence);
 
             if is_sgr_sequence(&sequence) {
@@ -147,26 +164,44 @@ fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
 
             if current_width + char_width > width && !is_visually_blank(&current_line) {
                 // Need to wrap before this whitespace
+                let pending = pending_escape_start
+                    .take()
+                    .map(|start| current_line.split_off(start))
+                    .unwrap_or_default();
                 result.push(current_line.trim_end().to_string());
-                current_line = ansi_stack.clone(); // Start new line with active ANSI codes
+                current_line = if pending.is_empty() {
+                    ansi_stack.clone()
+                } else {
+                    pending
+                };
                 current_width = 0;
             } else {
                 current_line.push(ch);
                 current_width += char_width;
             }
+            pending_escape_start = None;
         } else {
             // Regular character
             let char_width = UnicodeWidthStr::width(ch.to_string().as_str());
 
             if current_width + char_width > width && !is_visually_blank(&current_line) {
                 // Character-based wrapping: force break at current position
+                let pending = pending_escape_start
+                    .take()
+                    .map(|start| current_line.split_off(start))
+                    .unwrap_or_default();
                 result.push(current_line);
-                current_line = ansi_stack.clone();
+                current_line = if pending.is_empty() {
+                    ansi_stack.clone()
+                } else {
+                    pending
+                };
                 current_width = 0;
             }
 
             current_line.push(ch);
             current_width += char_width;
+            pending_escape_start = None;
         }
     }
 
@@ -255,18 +290,21 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
 fn split_line_into_words_with_ansi(line: &str) -> Vec<(String, bool)> {
     let mut result = Vec::new();
     let mut current_word = String::new();
+    let mut pending_ansi = String::new();
     let mut in_whitespace = false;
     let mut chars = line.chars().peekable();
 
     while let Some(ch) = chars.next() {
         if ch == '\x1b' {
             let sequence = consume_escape_sequence(&mut chars);
-            current_word.push_str(&sequence);
+            pending_ansi.push_str(&sequence);
         } else if ch.is_whitespace() {
             if !in_whitespace && !current_word.is_empty() {
                 result.push((current_word.clone(), false));
                 current_word.clear();
             }
+            current_word.push_str(&pending_ansi);
+            pending_ansi.clear();
             current_word.push(ch);
             in_whitespace = true;
         } else {
@@ -274,11 +312,14 @@ fn split_line_into_words_with_ansi(line: &str) -> Vec<(String, bool)> {
                 result.push((current_word.clone(), true));
                 current_word.clear();
             }
+            current_word.push_str(&pending_ansi);
+            pending_ansi.clear();
             current_word.push(ch);
             in_whitespace = false;
         }
     }
 
+    current_word.push_str(&pending_ansi);
     if !current_word.is_empty() {
         result.push((current_word, in_whitespace));
     }

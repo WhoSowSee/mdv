@@ -115,16 +115,16 @@ impl<'a> EventRenderer<'a> {
             return line;
         }
 
-        line.push_str(&self.callout_pretty_accent("╭"));
+        line.push_str(&self.callout_pretty_accent("╭", kind));
 
         if inner_box_width == 1 {
-            line.push_str(&self.callout_pretty_accent("╮"));
+            line.push_str(&self.callout_pretty_accent("╮", kind));
             return line;
         }
 
         let mut middle_width = inner_box_width.saturating_sub(2);
         if middle_width > 0 {
-            line.push_str(&self.callout_pretty_accent("─"));
+            line.push_str(&self.callout_pretty_accent("─", kind));
             middle_width = middle_width.saturating_sub(1);
         }
 
@@ -139,44 +139,45 @@ impl<'a> EventRenderer<'a> {
 
                 let label_width = display_width(&label_text);
                 if label_width > 0 {
-                    line.push_str(&self.callout_pretty_accent(" "));
+                    line.push_str(&self.callout_pretty_accent(" ", kind));
                     let styled_label = self
                         .callout_label_style(kind, label_key)
                         .apply(&label_text, self.config.no_colors);
                     line.push_str(&styled_label);
-                    line.push_str(&self.callout_pretty_accent(" "));
+                    line.push_str(&self.callout_pretty_accent(" ", kind));
                     middle_width = middle_width.saturating_sub(label_width + 2);
                 }
             }
         }
 
         while middle_width > 0 {
-            line.push_str(&self.callout_pretty_accent("─"));
+            line.push_str(&self.callout_pretty_accent("─", kind));
             middle_width = middle_width.saturating_sub(1);
         }
 
-        line.push_str(&self.callout_pretty_accent("╮"));
+        line.push_str(&self.callout_pretty_accent("╮", kind));
         line
     }
 
     pub(in crate::renderer::event) fn render_callout_pretty_bottom_border(
         &self,
         inner_box_width: usize,
+        kind: CalloutKind,
     ) -> String {
         let mut line = String::new();
         if inner_box_width == 0 {
             return line;
         }
 
-        line.push_str(&self.callout_pretty_accent("╰"));
+        line.push_str(&self.callout_pretty_accent("╰", kind));
         if inner_box_width > 1 {
             let repeat = inner_box_width.saturating_sub(2);
             if repeat > 0 {
-                line.push_str(&self.callout_pretty_accent(&"─".repeat(repeat)));
+                line.push_str(&self.callout_pretty_accent(&"─".repeat(repeat), kind));
             }
-            line.push_str(&self.callout_pretty_accent("╯"));
+            line.push_str(&self.callout_pretty_accent("╯", kind));
         } else {
-            line.push_str(&self.callout_pretty_accent("╯"));
+            line.push_str(&self.callout_pretty_accent("╯", kind));
         }
         line
     }
@@ -187,6 +188,7 @@ impl<'a> EventRenderer<'a> {
         part: &str,
         left_padding: usize,
         right_padding: usize,
+        kind: CalloutKind,
     ) -> String {
         let content_width = display_width(&strip_ansi(part));
         let base_width = left_padding + content_width + right_padding;
@@ -194,7 +196,7 @@ impl<'a> EventRenderer<'a> {
         let trailing_pad = line_width.saturating_sub(base_width);
 
         let mut line = String::new();
-        line.push_str(&self.callout_pretty_accent("│"));
+        line.push_str(&self.callout_pretty_accent("│", kind));
         if left_padding > 0 {
             line.push_str(&" ".repeat(left_padding));
         }
@@ -205,17 +207,24 @@ impl<'a> EventRenderer<'a> {
         if trailing_pad > 0 {
             line.push_str(&" ".repeat(trailing_pad));
         }
-        line.push_str(&self.callout_pretty_accent("│"));
+        line.push_str(&self.callout_pretty_accent("│", kind));
         line
     }
 
-    pub(in crate::renderer::event) fn callout_pretty_accent(&self, text: &str) -> String {
+    pub(in crate::renderer::event) fn callout_pretty_accent(
+        &self,
+        text: &str,
+        kind: CalloutKind,
+    ) -> String {
         if self.config.no_colors {
             text.to_string()
         } else {
-            AnsiStyle::new()
-                .fg(PRETTY_ACCENT_COLOR)
-                .apply(text, self.config.no_colors)
+            let style = if kind == CalloutKind::Properties {
+                AnsiStyle::new().fg(self.theme.front_matter_border_color().clone().into())
+            } else {
+                AnsiStyle::new().fg(PRETTY_ACCENT_COLOR)
+            };
+            style.apply(text, self.config.no_colors)
         }
     }
 

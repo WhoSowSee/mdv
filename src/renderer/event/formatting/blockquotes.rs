@@ -35,7 +35,13 @@ impl<'a> EventRenderer<'a> {
         if self.config.no_colors {
             prefix
         } else {
-            let style = create_style(self.theme, ThemeElement::Quote);
+            let element = match self.callout_stack.get(level.saturating_sub(1)) {
+                Some(CalloutState::Active(info)) if info.kind == CalloutKind::Properties => {
+                    ThemeElement::FrontMatterBorder
+                }
+                _ => ThemeElement::Quote,
+            };
+            let style = create_style(self.theme, element);
             style.apply(&prefix, self.config.no_colors)
         }
     }

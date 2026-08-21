@@ -47,6 +47,7 @@ table_wrap: wrap
 tab_length: 2
 heading_layout: flat
 table_smart_indent: true
+front_matter: panel
 link_style: inline
 link_truncation: cut
 "#,
@@ -58,6 +59,7 @@ link_truncation: cut
     assert_eq!(config.tab_length, 2);
     assert!(matches!(config.heading_layout, HeadingLayout::Flat));
     assert!(config.table_smart_indent);
+    assert_eq!(config.front_matter, FrontMatterMode::Panel);
     assert!(matches!(config.link_style, LinkStyle::Inline));
     assert!(matches!(config.link_truncation, LinkTruncationStyle::Cut));
 }

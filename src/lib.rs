@@ -189,13 +189,13 @@ fn render_document(
     add_leading_blank: bool,
 ) -> Result<RenderedOutput> {
     let processor = MarkdownProcessor::new(config);
-    let events = processor.parse(content)?;
+    let document = processor.parse_document(content)?;
     let renderer = TerminalRenderer::new(config)?;
     let pager_status_bar_transparent = renderer.pager_status_bar_transparent();
 
     if do_html {
         return Ok(RenderedOutput {
-            output: renderer.to_html(events)?,
+            output: renderer.to_html_document(document)?,
             pager_status_bar_transparent,
         });
     }
@@ -213,7 +213,7 @@ fn render_document(
     if add_leading_blank {
         output.push('\n');
     }
-    output.push_str(&renderer.render(events)?);
+    output.push_str(&renderer.render_document(document)?);
     Ok(RenderedOutput {
         output,
         pager_status_bar_transparent,

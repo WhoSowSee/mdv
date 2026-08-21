@@ -178,6 +178,13 @@ impl<'a> EventRenderer<'a> {
             .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
     }
 
+    pub(in crate::renderer::event) fn in_properties_callout(&self) -> bool {
+        matches!(
+            self.callout_stack.last(),
+            Some(CalloutState::Active(info)) if info.kind == CalloutKind::Properties
+        )
+    }
+
     pub(super) fn resolve_callout_kind(raw: &str) -> (CalloutKind, String) {
         let lower = raw.trim().to_ascii_lowercase();
         let kind = match lower.as_str() {
@@ -194,6 +201,7 @@ impl<'a> EventRenderer<'a> {
             "bug" => CalloutKind::Bug,
             "example" => CalloutKind::Example,
             "quote" | "cite" => CalloutKind::Quote,
+            "properties" => CalloutKind::Properties,
             _ => CalloutKind::Tip,
         };
 
