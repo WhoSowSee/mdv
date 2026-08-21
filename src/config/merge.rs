@@ -63,6 +63,9 @@ impl Config {
         if other.line_numbers.is_some() {
             self.line_numbers = other.line_numbers;
         }
+        if other.code_line_numbers.is_some() {
+            self.code_line_numbers = other.code_line_numbers;
+        }
         if other.show_empty_elements {
             self.show_empty_elements = true;
         }

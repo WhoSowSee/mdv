@@ -43,7 +43,7 @@ Unit tests cover parsers, semantic defaults, width helpers, state transitions, a
 | `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, and pager routing. |
 | `tests/callouts*` | Syntax, custom styles, wrapping, frames, headings, tables, and links. |
 | `tests/checkboxes*` | Shapes, custom states/colors, lists, and nested indentation. |
-| `tests/code_blocks*` | Styles, labels/icons, blockquotes, spacing, wrapping, and tab-indented fences. |
+| `tests/code_blocks*` | Styles, labels/icons, line-number gutters, blockquotes, spacing, wrapping, and tab-indented fences. |
 | `tests/layout*` | Headings, blockquotes, margins, blank lines, reflow, and block spacing. |
 | `tests/links_tables*` | Link styles, truncation, references, smart indentation, and code-block interaction. |
 | `tests/footnotes*` | Attached/endnote modes, ordering, placement, and invalid or missing definitions. |

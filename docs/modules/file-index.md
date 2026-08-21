@@ -191,6 +191,7 @@ Facade: [code.rs](../../src/renderer/event/code.rs).
 | [hint.rs](../../src/renderer/event/code/hint.rs) | Language-hint tokens. |
 | [inline.rs](../../src/renderer/event/code/inline.rs) | Inline code. |
 | [labels.rs](../../src/renderer/event/code/labels.rs) | Labels, icons, and custom definitions. |
+| [line_numbers.rs](../../src/renderer/event/code/line_numbers.rs) | Per-block source and rendered line-number gutters. |
 | [plaintext.rs](../../src/renderer/event/code/plaintext.rs) | Plain and Markdown code path. |
 | [pretty.rs](../../src/renderer/event/code/pretty.rs) | Pretty layout. |
 | [rendering.rs](../../src/renderer/event/code/rendering.rs) | Basic and simple layouts. |
@@ -251,7 +252,7 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Callout tables and links: [inline_links.rs](../../tests/callouts/tables_links/inline_links.rs), [references.rs](../../tests/callouts/tables_links/references.rs), and [tables.rs](../../tests/callouts/tables_links/tables.rs).
 - Checkboxes: [basic.rs](../../tests/checkboxes/basic.rs), [colors.rs](../../tests/checkboxes/colors.rs), [custom_states.rs](../../tests/checkboxes/custom_states.rs), and [layout_and_lists.rs](../../tests/checkboxes/layout_and_lists.rs).
 - CLI: [general.rs](../../tests/cli_basic/general.rs), [config_and_pager.rs](../../tests/cli_basic/config_and_pager.rs), [html_content.rs](../../tests/cli_basic/html_content.rs), [html_lists_tables.rs](../../tests/cli_basic/html_lists_tables.rs), [html_semantics.rs](../../tests/cli_basic/html_semantics.rs), and [rendering_options.rs](../../tests/cli_basic/rendering_options.rs).
-- Code blocks: [basic.rs](../../tests/code_blocks/basic.rs), [blockquotes.rs](../../tests/code_blocks/blockquotes.rs), [icons.rs](../../tests/code_blocks/icons.rs), [pretty.rs](../../tests/code_blocks/pretty.rs), [spacing.rs](../../tests/code_blocks/spacing.rs), [tab_indent.rs](../../tests/code_blocks/tab_indent.rs), and [wrap_indent.rs](../../tests/code_blocks/wrap_indent.rs).
+- Code blocks: [basic.rs](../../tests/code_blocks/basic.rs), [blockquotes.rs](../../tests/code_blocks/blockquotes.rs), [icons.rs](../../tests/code_blocks/icons.rs), [line_numbers.rs](../../tests/code_blocks/line_numbers.rs), [pretty.rs](../../tests/code_blocks/pretty.rs), [spacing.rs](../../tests/code_blocks/spacing.rs), [tab_indent.rs](../../tests/code_blocks/tab_indent.rs), and [wrap_indent.rs](../../tests/code_blocks/wrap_indent.rs).
 - Tab-indented code blocks: [deep_indent.rs](../../tests/code_blocks/tab_indent/deep_indent.rs), [fences.rs](../../tests/code_blocks/tab_indent/fences.rs), and [paragraphs.rs](../../tests/code_blocks/tab_indent/paragraphs.rs).
 - Footnotes: [attached.rs](../../tests/footnotes/attached.rs), [ordering.rs](../../tests/footnotes/ordering.rs), [placement.rs](../../tests/footnotes/placement.rs), and [validation.rs](../../tests/footnotes/validation.rs).
 - Layout: [blockquotes.rs](../../tests/layout/blockquotes.rs), [headings.rs](../../tests/layout/headings.rs), [margins.rs](../../tests/layout/margins.rs), and [spacing.rs](../../tests/layout/spacing.rs).

@@ -20,78 +20,28 @@ impl<'a> EventRenderer<'a> {
             return self.render_code_block_simple(input);
         }
 
-        let highlight_lines: Vec<&str> = input.highlighted.lines().collect();
-        let raw_code_lines: Vec<&str> = input.raw_code.lines().collect();
-        let mut max_line_width = 0usize;
-        for line in &highlight_lines {
-            max_line_width = max_line_width.max(display_width(&strip_ansi(line)));
-        }
-
         let wrap_width_allowed =
             max_text_width_allowed.saturating_sub(left_padding + right_padding);
-        let needs_wrap = input.should_wrap
-            && max_line_width + left_padding + right_padding > max_text_width_allowed;
-
-        let mut rendered_lines: Vec<String> = Vec::new();
-        let mut max_part_width = 0usize;
-
-        if needs_wrap {
-            if wrap_width_allowed == 0 {
-                return self.render_code_block_simple(input);
-            }
-
-            for (idx, line) in highlight_lines.iter().enumerate() {
-                let raw_line = raw_code_lines.get(idx).copied();
-                let segments = self.wrap_code_line_segments_pretty(
-                    line,
-                    raw_line,
-                    wrap_width_allowed,
-                    input.should_wrap,
-                    input.wrap_mode,
-                );
-
-                for segment in segments {
-                    max_part_width = max_part_width.max(segment.visible_width);
-                    rendered_lines.push(segment.text);
-                }
-            }
-
-            if max_part_width > wrap_width_allowed {
-                return self.render_code_block_simple(input);
-            }
-        } else {
-            if highlight_lines.is_empty() {
-                rendered_lines.push(String::new());
-            } else {
-                for (idx, line) in highlight_lines.iter().enumerate() {
-                    let raw_line = raw_code_lines.get(idx).copied();
-                    let segments = self.wrap_code_line_segments_pretty(
-                        line,
-                        raw_line,
-                        wrap_width_allowed,
-                        false,
-                        input.wrap_mode,
-                    );
-
-                    for segment in segments {
-                        max_part_width = max_part_width.max(segment.visible_width);
-                        rendered_lines.push(segment.text);
-                    }
-                }
-            }
-
-            if max_part_width + left_padding + right_padding > max_text_width_allowed {
-                return self.render_code_block_simple(input);
-            }
+        if wrap_width_allowed == 0 {
+            return self.render_code_block_simple(input);
         }
 
-        if rendered_lines.is_empty() {
-            rendered_lines.push(String::new());
-        }
-
-        let block_is_empty = rendered_lines
+        let layout = self.layout_code_lines(input, wrap_width_allowed, true);
+        let max_part_width = layout
+            .lines
             .iter()
-            .all(|line| strip_ansi(line).trim().is_empty());
+            .map(|line| line.visible_width)
+            .max()
+            .unwrap_or(0);
+        if max_part_width > wrap_width_allowed {
+            return self.render_code_block_simple(input);
+        }
+        self.record_code_line_number_width(&layout);
+
+        let block_is_empty = layout
+            .lines
+            .iter()
+            .all(|line| strip_ansi(&line.text).trim().is_empty());
 
         let mut text_width = left_padding + max_part_width + right_padding;
         let mut inner_box_width = text_width + 2;
@@ -122,10 +72,11 @@ impl<'a> EventRenderer<'a> {
         self.output.push_str(&top_line);
         self.output.push('\n');
 
-        for part in rendered_lines {
+        for line in &layout.lines {
             self.push_code_block_indent_for_line_start();
-            let decorated = self.highlight_footnote_markers_in_ansi(&part);
-            let content_line = self.render_pretty_content_line(text_width, &decorated);
+            let decorated = self.highlight_footnote_markers_in_ansi(&line.text);
+            let numbered = self.format_code_line(&layout, line, &decorated);
+            let content_line = self.render_pretty_content_line(text_width, &numbered);
             self.output.push_str(&content_line);
             self.output.push('\n');
         }

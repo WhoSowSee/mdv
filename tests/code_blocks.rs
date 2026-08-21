@@ -4,6 +4,8 @@ mod basic;
 mod blockquotes;
 #[path = "code_blocks/icons.rs"]
 mod icons;
+#[path = "code_blocks/line_numbers.rs"]
+mod line_numbers;
 #[path = "code_blocks/pretty.rs"]
 mod pretty;
 #[path = "code_blocks/spacing.rs"]

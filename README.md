@@ -116,6 +116,7 @@ cat <FILE> | mdv
 - `-T, --code-theme <NAME>` — sets the syntax highlight palette (default `terminal`).
 - `--syntaxes-dir <DIR>` — recursively loads custom `.sublime-syntax` files on top of the embedded syntax set. Custom entries take precedence over matching built-in syntaxes.
 - `-b, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` — selects an indented borderless block, a single gutter, or a boxed frame. Labels are hidden by default; `show-name` displays the language name, `show-icon` displays its icon, and both options may be combined (default `basic`).
+- `-K, --code-line-numbers [<MODE>]` — numbers rows inside each code block. Without a mode, every wrapped terminal row is numbered; `source` numbers physical code lines and leaves wrapped continuations unnumbered, `separator` adds a separator, and `"source;separator"` combines both modes.
 - `--custom-theme <key=value;...>` — overrides UI colors on top of the selected theme.
 - `--inline-style <STYLES>` — overrides decorations for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Use `element:property=true,property=false` entries separated by `;`; properties are `backticks`, `bold`, `italic`, `underline`, and `strikethrough` (for example `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
 - `--custom-code-theme <key=value;...>` — overrides syntax colors using the same format as `--custom-theme`.

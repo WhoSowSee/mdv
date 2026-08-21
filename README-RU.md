@@ -116,6 +116,7 @@ cat <FILE> | mdv
 - `-T, --code-theme <NAME>` — выбор палитры подсветки кода (по умолчанию `terminal`).
 - `--syntaxes-dir <DIR>` — рекурсивная загрузка пользовательских `.sublime-syntax` поверх встроенного набора. Пользовательские определения имеют приоритет при совпадении со встроенными.
 - `-b, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` — стиль оформления блоков кода: безрамочный блок с отступом, одинарная граница или полная рамка. По умолчанию подпись скрыта; `show-name` показывает название языка, `show-icon` — его иконку, обе опции можно комбинировать (по умолчанию `basic`).
+- `-K, --code-line-numbers [<MODE>]` — нумерация строк внутри каждого блока кода. Без режима нумеруется каждая перенесённая терминальная строка; `source` нумерует физические строки кода и оставляет продолжения без номера, `separator` добавляет разделитель, а `"source;separator"` сочетает оба режима.
 - `--custom-theme <key=value;...>` — переопределение цветов интерфейса поверх выбранной темы.
 - `--inline-style <STYLES>` — переопределение оформления `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough` и `highlight`. Записи формата `element:property=true,property=false` разделяются `;`; доступны свойства `backticks`, `bold`, `italic`, `underline` и `strikethrough` (например, `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
 - `--custom-code-theme <key=value;...>` — переопределение цветов подсветки кода в том же формате, что и `--custom-theme`.

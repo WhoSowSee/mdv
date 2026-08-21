@@ -38,6 +38,7 @@ block_spacing: null        # Per-block blank lines, e.g. "paragraph:top=0,bottom
 hide_comments: false       # Hide Markdown comments from the rendered output
 render_html: false         # Render raw HTML fragments as terminal-formatted content
 line_numbers: false        # false | true | "source" | "separator" | "source;separator"
+code_line_numbers: false   # false | true | "source" | "separator" | "source;separator"; resets for each code block
 show_empty_elements: false # Show otherwise hidden empty lists, block quotes, tables, and code blocks
 code_guessing: true        # Disable to keep unknown code blocks as plain text
 code_block_style: "basic"  # Styles: "basic" | "simple" | "pretty"; options: "show-name" | "show-icon"

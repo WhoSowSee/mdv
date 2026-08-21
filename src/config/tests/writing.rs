@@ -20,6 +20,7 @@ fn default_config_template_matches_default_settings() {
     assert!(!config.smart_indent);
     assert!(!config.render_html);
     assert!(config.line_numbers.is_none());
+    assert!(config.code_line_numbers.is_none());
     assert!(matches!(config.link_style, LinkStyle::Clickable));
 }
 

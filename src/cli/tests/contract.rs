@@ -17,6 +17,7 @@ fn short_flags_match_public_cli_contract() {
     let mut expected = vec![
         ("callout-style", 'C'),
         ("code-block-style", 'b'),
+        ("code-line-numbers", 'K'),
         ("code-theme", 'T'),
         ("cols", 'c'),
         ("config-file", 'F'),
@@ -93,6 +94,7 @@ fn help_groups_options_in_task_oriented_order() {
         "--custom-code-theme",
         "--inline-style",
         "--code-block-style",
+        "--code-line-numbers",
         "--custom-code-block",
         "--code-wrap-indent",
         "--syntaxes-dir",

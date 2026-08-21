@@ -74,10 +74,35 @@ impl TerminalRenderer {
     }
 
     fn render_events(&self, config: &Config, events: Vec<Event<'static>>) -> Result<String> {
+        if config.code_line_numbers.is_none() {
+            return self
+                .render_events_once(config, events)
+                .map(|(output, _)| output);
+        }
+
+        let mut number_width = config.code_line_number_width.max(1);
+        loop {
+            let mut render_config = config.clone();
+            render_config.code_line_number_width = number_width;
+            let (output, required_width) =
+                self.render_events_once(&render_config, events.clone())?;
+            if required_width <= number_width {
+                return Ok(output);
+            }
+            number_width = required_width;
+        }
+    }
+
+    fn render_events_once(
+        &self,
+        config: &Config,
+        events: Vec<Event<'static>>,
+    ) -> Result<(String, usize)> {
         config.validate_horizontal_margins()?;
         let mut renderer =
             EventRenderer::new(config, &self.theme, &self.syntax_set, &self.code_theme);
-        renderer.render_events(events)
+        let output = renderer.render_events(events)?;
+        Ok((output, renderer.max_code_line_number_width))
     }
 
     fn render_with_source_line_numbers(

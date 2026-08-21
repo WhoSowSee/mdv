@@ -70,6 +70,7 @@ mod highlighting;
 mod hint;
 mod inline;
 mod labels;
+mod line_numbers;
 mod plaintext;
 mod pretty;
 mod rendering;

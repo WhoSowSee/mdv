@@ -1,5 +1,7 @@
 pub(super) const LINE_NUMBERS_LONG_HELP: &str = "Show row numbers in terminal and pager output\nWithout a value, number every rendered row without a separator\n\nPossible values:\n- source:    Number physical Markdown source lines instead of rendered rows\n- separator: Display a separator after each rendered row number\n\nExamples:\n  --line-numbers separator\n  --line-numbers source\n  --line-numbers \"source;separator\"";
 
+pub(super) const CODE_LINE_NUMBERS_LONG_HELP: &str = "Number rows inside code blocks\nWithout a value, number every wrapped terminal row without a separator\n\nPossible values:\n- source:    Number physical code lines instead of wrapped terminal rows\n- separator: Display a separator after each code line number\n\nExamples:\n  --code-line-numbers separator\n  --code-line-numbers source\n  --code-line-numbers \"source;separator\"";
+
 pub(super) const SYNTAXES_DIR_LONG_HELP: &str = "Directory containing custom .sublime-syntax files\nFiles are loaded recursively on top of the embedded syntax set\nCustom entries take precedence";
 
 pub(super) const CODE_BLOCK_STYLE_LONG_HELP: &str = "Configure visual style for code blocks\nStyles: basic, simple, pretty\nOptions: show-name, show-icon\nCombine options with ';', for example pretty:show-name;show-icon\nIcons require a Nerd Font in the terminal to display correctly";

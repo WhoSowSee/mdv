@@ -14,6 +14,7 @@ Code rendering combines a language hint, optional heuristic detection, `syntect`
 | [event/code/syntax.rs](../../src/renderer/event/code/syntax.rs) | Find a `SyntaxReference` in the loaded `SyntaxSet`. |
 | [event/code/labels.rs](../../src/renderer/event/code/labels.rs) | Human-readable labels, custom icons/labels/aliases, and icon width. |
 | [event/code/highlighting.rs](../../src/renderer/event/code/highlighting.rs) | Run `syntect`, emit terminal escapes, and highlight footnote markers specially. |
+| [event/code/line_numbers.rs](../../src/renderer/event/code/line_numbers.rs) | Build per-block source/rendered gutters and reserve their width before wrapping. |
 | [event/code/plaintext.rs](../../src/renderer/event/code/plaintext.rs) | Markdown/plaintext blocks, embedded link-reference blocks, and width estimation. |
 | [event/code/rendering.rs](../../src/renderer/event/code/rendering.rs) | `basic` and `simple` layouts. |
 | [event/code/pretty.rs](../../src/renderer/event/code/pretty.rs) | Pretty frames, labels, segment wrapping, and border rendering. |
@@ -47,7 +48,14 @@ Code wraps as highlighted segments, preserving color on continuation lines. `Cod
 - document margins;
 - blockquote and list context;
 - code borders and inner padding;
-- the line-number gutter.
+- the document line-number gutter;
+- the optional code-block line-number gutter.
+
+## Code line numbers
+
+`--code-line-numbers` and the `code_line_numbers` YAML key reset numbering for each block and apply to `basic`, `simple`, and `pretty` layouts. The default rendered target numbers every wrapped terminal row. The `source` target numbers the first segment of each physical code line and leaves wrapped continuations blank. The `separator` modifier uses the same independently themed number and separator colors as document line numbers.
+
+The gutter width participates in wrapping before content is laid out. The renderer repeats layout until every block uses the document-wide maximum digit width and the wrapped-row counts are stable. Pretty frames include the shared gutter inside their aligned content width.
 
 ## Syntax resources
 

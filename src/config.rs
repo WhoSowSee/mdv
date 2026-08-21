@@ -151,6 +151,14 @@ pub struct Config {
         serialize_with = "serialize_line_numbers"
     )]
     pub line_numbers: Option<LineNumberOptions>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_line_numbers",
+        serialize_with = "serialize_line_numbers"
+    )]
+    pub code_line_numbers: Option<LineNumberOptions>,
+    #[serde(skip)]
+    pub(crate) code_line_number_width: usize,
     #[serde(skip)]
     pub(crate) line_number_gutter_width: usize,
     pub show_empty_elements: bool,
@@ -225,6 +233,8 @@ impl Default for Config {
             hide_comments: false,
             render_html: false,
             line_numbers: None,
+            code_line_numbers: None,
+            code_line_number_width: 0,
             line_number_gutter_width: 0,
             show_empty_elements: false,
             code_guessing: true,

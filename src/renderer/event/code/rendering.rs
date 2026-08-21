@@ -10,7 +10,6 @@ impl<'a> EventRenderer<'a> {
         let available = input
             .terminal_width
             .saturating_sub(context_width + BASIC_CODE_BLOCK_INDENT);
-        let raw_lines: Vec<&str> = input.raw_code.lines().collect();
 
         if let Some(label) = input.language_label {
             let base_label = if label.trim().is_empty() {
@@ -38,23 +37,15 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        for (idx, line) in input.highlighted.lines().enumerate() {
-            let raw_line = raw_lines.get(idx).copied();
-            let segments = self.wrap_code_line_segments(
-                line,
-                raw_line,
-                available,
-                input.should_wrap,
-                input.wrap_mode,
-            );
-
-            for segment in segments {
-                self.push_code_block_indent_for_line_start();
-                self.output.push_str(&indent);
-                let decorated = self.highlight_footnote_markers_in_ansi(&segment.text);
-                self.output.push_str(&decorated);
-                self.output.push('\n');
-            }
+        let layout = self.layout_code_lines(input, available, false);
+        self.record_code_line_number_width(&layout);
+        for line in &layout.lines {
+            self.push_code_block_indent_for_line_start();
+            self.output.push_str(&indent);
+            let decorated = self.highlight_footnote_markers_in_ansi(&line.text);
+            let rendered = self.format_code_line(&layout, line, &decorated);
+            self.output.push_str(&rendered);
+            self.output.push('\n');
         }
 
         Ok(())
@@ -65,7 +56,6 @@ impl<'a> EventRenderer<'a> {
         input: CodeBlockRenderInput<'_>,
     ) -> Result<()> {
         let prefix = self.render_code_block_border();
-        let raw_lines: Vec<&str> = input.raw_code.lines().collect();
         if let Some(label) = input.language_label {
             let base_label = if label.trim().is_empty() {
                 "Text"
@@ -99,30 +89,21 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        for (idx, line) in input.highlighted.lines().enumerate() {
-            let context_width = self.compute_code_block_context_width();
-            let border_visible_width = 2usize;
-            let available = input
-                .terminal_width
-                .saturating_sub(context_width + border_visible_width);
+        let context_width = self.compute_code_block_context_width();
+        let border_visible_width = 2usize;
+        let available = input
+            .terminal_width
+            .saturating_sub(context_width + border_visible_width);
+        let layout = self.layout_code_lines(input, available, false);
+        self.record_code_line_number_width(&layout);
 
-            let raw_line = raw_lines.get(idx).copied();
-
-            let segments = self.wrap_code_line_segments(
-                line,
-                raw_line,
-                available,
-                input.should_wrap,
-                input.wrap_mode,
-            );
-
-            for segment in segments {
-                self.push_code_block_indent_for_line_start();
-                self.output.push_str(&prefix);
-                let decorated = self.highlight_footnote_markers_in_ansi(&segment.text);
-                self.output.push_str(&decorated);
-                self.output.push('\n');
-            }
+        for line in &layout.lines {
+            self.push_code_block_indent_for_line_start();
+            self.output.push_str(&prefix);
+            let decorated = self.highlight_footnote_markers_in_ansi(&line.text);
+            let rendered = self.format_code_line(&layout, line, &decorated);
+            self.output.push_str(&rendered);
+            self.output.push('\n');
         }
 
         Ok(())

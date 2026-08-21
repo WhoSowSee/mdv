@@ -58,6 +58,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) in_code_block: bool,
     pub(crate) code_block_content: String,
     pub(crate) code_block_language: Option<String>,
+    pub(crate) max_code_line_number_width: usize,
     pub(crate) plaintext_code_block_depth: usize,
     pub(crate) captured_reference_blocks: Vec<CapturedReferenceBlock>,
     pub(crate) deferred_reference_blocks: Vec<DeferredLinkReferenceBlock>,

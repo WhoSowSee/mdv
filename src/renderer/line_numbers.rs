@@ -86,20 +86,39 @@ pub(super) fn apply_line_numbers(
             LineNumberTarget::Rendered => Some(rendered_index + 1),
             LineNumberTarget::Source => source_line,
         };
-        let number = match line_number {
-            Some(line) => format!("{line:>number_width$}"),
-            None => format!("{:number_width$}", ""),
-        };
-        numbered.push_str(&number_style.apply(&number, no_colors));
-        if options.separator {
-            numbered.push_str(&separator_style.apply(" │ ", no_colors));
-        } else {
-            numbered.push(' ');
-        }
+        numbered.push_str(&format_gutter(
+            line_number,
+            number_width,
+            number_style,
+            separator_style,
+            options,
+            no_colors,
+        ));
         numbered.push_str(&content);
         numbered.push_str(newline);
     }
     numbered
+}
+
+pub(super) fn format_gutter(
+    line_number: Option<usize>,
+    number_width: usize,
+    number_style: &AnsiStyle,
+    separator_style: &AnsiStyle,
+    options: LineNumberOptions,
+    no_colors: bool,
+) -> String {
+    let number = match line_number {
+        Some(line) => format!("{line:>number_width$}"),
+        None => format!("{:number_width$}", ""),
+    };
+    let mut gutter = number_style.apply(&number, no_colors);
+    if options.separator {
+        gutter.push_str(&separator_style.apply(" │ ", no_colors));
+    } else {
+        gutter.push(' ');
+    }
+    gutter
 }
 
 pub(super) fn strip_internal_markers(line: &str) -> (String, Option<usize>) {

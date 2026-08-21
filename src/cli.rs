@@ -82,49 +82,53 @@ pub struct Cli {
     pub show_empty_elements: bool,
 
     /// Disable heuristic language detection for code blocks
-    #[arg(long = "no-code-guessing", help_heading = "Themes and code", display_order = 33)]
+    #[arg(long = "no-code-guessing", help_heading = "Themes and code", display_order = 34)]
     pub no_code_guessing: bool,
 
     /// Directory containing custom .sublime-syntax files
-    #[arg(long = "syntaxes-dir", value_name = "DIR", help_heading = "Themes and code", display_order = 32, long_help = SYNTAXES_DIR_LONG_HELP,)]
+    #[arg(long = "syntaxes-dir", value_name = "DIR", help_heading = "Themes and code", display_order = 33, long_help = SYNTAXES_DIR_LONG_HELP,)]
     pub syntaxes_dir: Option<PathBuf>,
 
     /// Configure visual style for code blocks
     #[arg(short = 'b', long = "code-block-style", value_name = "CODE_STYLE", default_value = "basic", value_parser = parse_code_block_style_config, help_heading = "Themes and code", display_order = 29, long_help = CODE_BLOCK_STYLE_LONG_HELP,)]
     pub code_block_style: Option<CodeBlockStyleConfig>,
 
+    /// Show row numbers inside code blocks with optional source and separator modes
+    #[arg(short = 'K', long = "code-line-numbers", num_args = 0..=1, value_name = "MODE", value_enum, hide_possible_values = true, help_heading = "Themes and code", display_order = 30, long_help = CODE_LINE_NUMBERS_LONG_HELP,)]
+    pub code_line_numbers: Option<Option<LineNumberOptions>>,
+
     /// Override code block icon/label/aliases.
-    #[arg(long = "custom-code-block", value_name = "BLOCKS", help_heading = "Themes and code", display_order = 30, long_help = CUSTOM_CODE_BLOCK_LONG_HELP,)]
+    #[arg(long = "custom-code-block", value_name = "BLOCKS", help_heading = "Themes and code", display_order = 31, long_help = CUSTOM_CODE_BLOCK_LONG_HELP,)]
     pub custom_code_block: Option<String>,
 
-    #[arg(short = 'C', long = "callout-style", value_name = "CALLOUT_STYLE", default_value = "pretty", value_parser = parse_callout_style_config, help_heading = "Callouts and lists", display_order = 34, long_help = STYLE_CALLOUT_LONG_HELP,)]
+    #[arg(short = 'C', long = "callout-style", value_name = "CALLOUT_STYLE", default_value = "pretty", value_parser = parse_callout_style_config, help_heading = "Callouts and lists", display_order = 35, long_help = STYLE_CALLOUT_LONG_HELP,)]
     pub style_callout: Option<CalloutStyleConfig>,
 
     /// Render task-list checkboxes as Nerd Font icons (requires a Nerd Font terminal)
-    #[arg(short = 'x', long = "pretty-checkbox", value_enum, value_name = "SHAPE", help_heading = "Callouts and lists", display_order = 36, long_help = PRETTY_CHECKBOX_LONG_HELP,)]
+    #[arg(short = 'x', long = "pretty-checkbox", value_enum, value_name = "SHAPE", help_heading = "Callouts and lists", display_order = 37, long_help = PRETTY_CHECKBOX_LONG_HELP,)]
     pub pretty_checkbox: Option<CheckboxShape>,
 
     /// Override or add checkbox icons with optional color (e.g. ` :󰀦:yellow`). Requires --pretty-checkbox
-    #[arg(long = "custom-checkbox", value_name = "PAIRS", help_heading = "Callouts and lists", display_order = 37, long_help = CUSTOM_CHECKBOX_LONG_HELP,)]
+    #[arg(long = "custom-checkbox", value_name = "PAIRS", help_heading = "Callouts and lists", display_order = 38, long_help = CUSTOM_CHECKBOX_LONG_HELP,)]
     pub custom_checkbox: Option<String>,
 
     /// Render unordered list markers with Nerd Font or Unicode icons
-    #[arg(short = 'L', long = "pretty-list", value_name = "LIST_STYLE", value_parser = PrettyListStyle::parse, help_heading = "Callouts and lists", display_order = 38, long_help = PRETTY_LIST_LONG_HELP,)]
+    #[arg(short = 'L', long = "pretty-list", value_name = "LIST_STYLE", value_parser = PrettyListStyle::parse, help_heading = "Callouts and lists", display_order = 39, long_help = PRETTY_LIST_LONG_HELP,)]
     pub pretty_list: Option<PrettyListStyle>,
 
     /// Render definition descriptions with a Unicode or Nerd Font marker
-    #[arg(short = 'D', long = "pretty-definition", value_enum, value_name = "STYLE", help_heading = "Callouts and lists", display_order = 41, long_help = PRETTY_DEFINITION_LONG_HELP,)]
+    #[arg(short = 'D', long = "pretty-definition", value_enum, value_name = "STYLE", help_heading = "Callouts and lists", display_order = 42, long_help = PRETTY_DEFINITION_LONG_HELP,)]
     pub pretty_definition: Option<PrettyDefinitionStyle>,
 
     /// Use one list marker for every nesting level. Requires --pretty-list
-    #[arg(long = "uniform-list-marker", value_name = "MARKER", value_parser = UniformListMarker::parse, help_heading = "Callouts and lists", display_order = 39, long_help = UNIFORM_LIST_MARKER_LONG_HELP,)]
+    #[arg(long = "uniform-list-marker", value_name = "MARKER", value_parser = UniformListMarker::parse, help_heading = "Callouts and lists", display_order = 40, long_help = UNIFORM_LIST_MARKER_LONG_HELP,)]
     pub uniform_list_marker: Option<UniformListMarker>,
 
     /// Override list marker icon and/or color per nesting level. Requires --pretty-list
-    #[arg(long = "custom-list", value_name = "PAIRS", help_heading = "Callouts and lists", display_order = 40, long_help = CUSTOM_LIST_LONG_HELP,)]
+    #[arg(long = "custom-list", value_name = "PAIRS", help_heading = "Callouts and lists", display_order = 41, long_help = CUSTOM_LIST_LONG_HELP,)]
     pub custom_list: Option<String>,
     /// Set hanging indent style for wrapped code block lines
-    #[arg(long = "code-wrap-indent", value_enum, value_name = "MODE", default_value = "double", help_heading = "Themes and code", display_order = 31)]
+    #[arg(long = "code-wrap-indent", value_enum, value_name = "MODE", default_value = "double", help_heading = "Themes and code", display_order = 32)]
     pub code_wrap_indent: Option<CodeWrapIndent>,
 
     /// Show current theme and optionally display the contents of FILE when provided
@@ -180,43 +184,43 @@ pub struct Cli {
     pub custom_code_theme: Option<String>,
 
     /// Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
-    #[arg(long = "custom-callout", value_name = "CALLOUTS", help_heading = "Callouts and lists", display_order = 35)]
+    #[arg(long = "custom-callout", value_name = "CALLOUTS", help_heading = "Callouts and lists", display_order = 36)]
     pub custom_callout: Option<String>,
 
     /// Set link style
-    #[arg(short = 'u', long = "link-style", value_enum, default_value = "clickable", help_heading = "Links and footnotes", display_order = 42)]
+    #[arg(short = 'u', long = "link-style", value_enum, default_value = "clickable", help_heading = "Links and footnotes", display_order = 43)]
     pub link_style: Option<LinkStyle>,
 
     /// Set link truncation style
-    #[arg(short = 'l', long = "link-truncation", value_enum, default_value = "wrap", help_heading = "Links and footnotes", display_order = 43)]
+    #[arg(short = 'l', long = "link-truncation", value_enum, default_value = "wrap", help_heading = "Links and footnotes", display_order = 44)]
     pub link_truncation: Option<LinkTruncationStyle>,
 
     /// Configure footnote rendering style
-    #[arg(long = "footnote-style", value_enum, value_name = "STYLE", default_value = "endnotes", help_heading = "Links and footnotes", display_order = 44)]
+    #[arg(long = "footnote-style", value_enum, value_name = "STYLE", default_value = "endnotes", help_heading = "Links and footnotes", display_order = 45)]
     pub footnote_style: Option<FootnoteStyle>,
 
     /// Configure handling of missing footnote definitions
-    #[arg(long = "missing-footnote-style", value_enum, value_name = "STYLE", default_value = "show", help_heading = "Links and footnotes", display_order = 45)]
+    #[arg(long = "missing-footnote-style", value_enum, value_name = "STYLE", default_value = "show", help_heading = "Links and footnotes", display_order = 46)]
     pub missing_footnote_style: Option<MissingFootnoteStyle>,
 
     /// Directory containing the configuration file.
-    #[arg(short = 'F', long = "config-file", value_name = "CONFIG_DIR", help_heading = "Configuration", display_order = 46, long_help = CONFIG_FILE_LONG_HELP,)]
+    #[arg(short = 'F', long = "config-file", value_name = "CONFIG_DIR", help_heading = "Configuration", display_order = 47, long_help = CONFIG_FILE_LONG_HELP,)]
     pub config_file: Option<PathBuf>,
 
     /// Skip loading configuration files
-    #[arg(short = 'n', long = "no-config", help_heading = "Configuration", display_order = 47)]
+    #[arg(short = 'n', long = "no-config", help_heading = "Configuration", display_order = 48)]
     pub no_config: bool,
 
     /// Apply a named built-in or user preset
-    #[arg(short = 'P', long = "preset", value_name = "NAME", help_heading = "Configuration", display_order = 48)]
+    #[arg(short = 'P', long = "preset", value_name = "NAME", help_heading = "Configuration", display_order = 49)]
     pub preset: Option<String>,
 
     /// List presets, or show the active preset while rendering a file
-    #[arg(long = "preset-info", help_heading = "Configuration", display_order = 49)]
+    #[arg(long = "preset-info", help_heading = "Configuration", display_order = 50)]
     pub preset_info: bool,
 
     /// Create the default configuration file
-    #[arg(long = "init-config", num_args = 0..=1, value_name = "CONFIG_DIR", help_heading = "Configuration", display_order = 50)]
+    #[arg(long = "init-config", num_args = 0..=1, value_name = "CONFIG_DIR", help_heading = "Configuration", display_order = 51)]
     pub init_config: Option<Option<PathBuf>>,
 
     /// Set heading layout
@@ -257,5 +261,6 @@ pub use margins::HorizontalMargins;
 use callouts::parse_callout_style_config;
 use code_blocks::parse_code_block_style_config;
 use margins::parse_horizontal_margins;
+
 #[cfg(test)]
 mod tests;

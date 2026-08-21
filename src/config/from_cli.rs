@@ -169,6 +169,10 @@ impl Config {
             config.line_numbers = Some(options.unwrap_or_default());
         }
 
+        if let Some(options) = cli.code_line_numbers {
+            config.code_line_numbers = Some(options.unwrap_or_default());
+        }
+
         if cli.show_empty_elements {
             config.show_empty_elements = true;
         }

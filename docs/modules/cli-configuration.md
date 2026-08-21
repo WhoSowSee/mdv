@@ -10,7 +10,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 | [src/cli/commands.rs](../../src/cli/commands.rs) | `CliCommand`, including full-format help. |
 | [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, and `HeadingLayout`. |
 | [src/cli/links.rs](../../src/cli/links.rs) | `LinkStyle`, `LinkTruncationStyle`, `FootnoteStyle`, and `MissingFootnoteStyle`. |
-| [src/cli/line_numbers.rs](../../src/cli/line_numbers.rs) | `LineNumberOptions` and `LineNumberTarget`, including custom `ValueEnum` behavior. |
+| [src/cli/line_numbers.rs](../../src/cli/line_numbers.rs) | Shared `LineNumberOptions` and `LineNumberTarget` values for document and code-block gutters. |
 | [src/cli/margins.rs](../../src/cli/margins.rs) | Parsing, serde support, and total width for `HorizontalMargins`. |
 | [src/cli/callouts.rs](../../src/cli/callouts.rs) | Callout, checkbox, definition-list styles, and `CalloutStyleConfig`. |
 | [src/cli/code_blocks.rs](../../src/cli/code_blocks.rs) | `CodeBlockStyleConfig`, `CodeBlockStyle`, and `CodeWrapIndent`. |
@@ -24,13 +24,17 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 |---|---|---|
 | Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
 | Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing` | Runtime layout and the event renderer. |
-| Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--syntaxes-dir` | Theme and syntax initialization. |
+| Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, and code-block rendering. |
 | Callouts and lists | `--callout-style`, `--pretty-checkbox`, `--pretty-list`, custom overrides | Normalized maps and settings in `Config`. |
 | Links and footnotes | `--link-style`, `--link-truncation`, footnote options | Link and footnote event handlers. |
 | Configuration | `--config-file`, `--no-config`, `--preset`, `--init-config` | Configuration and preset loading. |
 
 `--wrap` selects breakpoints for prose, code, callouts, and table cells. `--table-wrap` is
 orthogonal: it controls whether table columns are fitted, split into blocks, or left unconstrained.
+
+`--code-line-numbers` uses the same separated optional-mode syntax as `--line-numbers`.
+Before Clap parsing, only `source`, `separator`, and their combination are treated as `MODE`;
+any other following token remains the positional `FILE` for a bare flag.
 
 ## Configuration files
 
@@ -68,8 +72,8 @@ CLI candidates precede environment candidates when both are present. The first e
 
 ## `Config` field groups
 
-- Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, and line numbers.
-- Code, callouts, and lists: language guessing, custom syntaxes, styles, and compiled override maps.
+- Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, and document line numbers.
+- Code, callouts, and lists: language guessing, custom syntaxes, styles, code-block line numbers, and compiled override maps.
 - Themes: terminal theme, code theme, inline styles, and custom palette strings.
 - Links and footnotes: link presentation plus footnote placement and missing-definition behavior.
 - Content filtering: `from_text` and reverse output.

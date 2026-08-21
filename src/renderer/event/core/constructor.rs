@@ -34,6 +34,7 @@ impl<'a> EventRenderer<'a> {
             in_code_block: false,
             code_block_content: String::new(),
             code_block_language: None,
+            max_code_line_number_width: 0,
             plaintext_code_block_depth: 0,
             captured_reference_blocks: Vec::new(),
             deferred_reference_blocks: Vec::new(),

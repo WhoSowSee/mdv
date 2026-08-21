@@ -84,6 +84,16 @@ fn line_numbers_flags_parse() {
 }
 
 #[test]
+fn code_line_numbers_flags_parse() {
+    let options = Cli::parse_from(["mdv", "-K", "separator;source", "README.md"])
+        .code_line_numbers
+        .flatten()
+        .expect("code line-number options");
+    assert_eq!(options.target, LineNumberTarget::Source);
+    assert!(options.separator);
+}
+
+#[test]
 fn link_truncation_accepts_only_canonical_tablecut() {
     assert!(matches!(
         parse_link_truncation("tablecut"),
