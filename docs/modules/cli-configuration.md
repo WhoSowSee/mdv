@@ -32,9 +32,9 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 `--wrap` selects breakpoints for prose, code, callouts, and table cells. `--table-wrap` is
 orthogonal: it controls whether table columns are fitted, split into blocks, or left unconstrained.
 
-`--code-line-numbers` uses the same separated optional-mode syntax as `--line-numbers`.
-Before Clap parsing, only `source`, `separator`, and their combination are treated as `MODE`;
-any other following token remains the positional `FILE` for a bare flag.
+`--line-numbers` and `--code-line-numbers` share the same optional modes. Startup normalizes a
+bare flag to rendered numbering unless it is followed by an explicit mode, keeping the following
+Markdown path positional.
 
 ## Configuration files
 

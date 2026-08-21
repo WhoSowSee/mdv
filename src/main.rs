@@ -4,52 +4,33 @@ use mdv::{
     cli::{Cli, LineNumberOptions},
     run,
 };
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
 
 fn main() -> Result<()> {
     env_logger::init();
 
-    let matches =
-        Cli::command().get_matches_from(normalize_code_line_number_args(std::env::args_os()));
+    let matches = Cli::command().get_matches_from(normalize_line_number_args(std::env::args_os()));
     let cli = Cli::from_arg_matches(&matches)?;
     run(cli, &matches)
 }
 
-fn normalize_code_line_number_args(args: impl IntoIterator<Item = OsString>) -> Vec<OsString> {
+fn normalize_line_number_args(args: impl IntoIterator<Item = OsString>) -> Vec<OsString> {
     let mut args = args.into_iter().peekable();
     let mut normalized = Vec::new();
-    let mut deferred_flags = Vec::new();
 
-    while let Some(argument) = args.next() {
-        let is_bare_flag = argument == "--code-line-numbers" || argument == "-K";
-        if is_bare_flag
-            && args
-                .peek()
-                .is_some_and(|next| code_line_number_token_is_file(next))
-        {
-            deferred_flags.push(argument);
-        } else {
-            normalized.push(argument);
+    while let Some(mut argument) = args.next() {
+        let has_explicit_mode = args
+            .peek()
+            .and_then(|value| value.to_str())
+            .is_some_and(|value| LineNumberOptions::from_str(value, false).is_ok());
+        if !has_explicit_mode {
+            if argument == "--line-numbers" || argument == "-N" {
+                argument = "--line-numbers=rendered".into();
+            } else if argument == "--code-line-numbers" || argument == "-K" {
+                argument = "--code-line-numbers=rendered".into();
+            }
         }
+        normalized.push(argument);
     }
-
-    let insert_at = normalized
-        .iter()
-        .position(|argument| argument == "--")
-        .unwrap_or(normalized.len());
-    normalized.splice(insert_at..insert_at, deferred_flags);
     normalized
-}
-
-fn code_line_number_token_is_file(argument: &OsStr) -> bool {
-    let Some(argument) = argument.to_str() else {
-        return true;
-    };
-    if argument == "-" {
-        return true;
-    }
-    if argument == "--" || argument.starts_with('-') {
-        return false;
-    }
-    LineNumberOptions::from_str(argument, false).is_err()
 }

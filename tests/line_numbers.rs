@@ -13,8 +13,8 @@ fn render(markdown: &str, args: &[&str]) -> String {
     let output = mdv_cmd()
         .arg("--no-config")
         .arg("--no-colors")
-        .arg(file.path())
         .args(args)
+        .arg(file.path())
         .output()
         .unwrap();
     assert!(

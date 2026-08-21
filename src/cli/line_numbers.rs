@@ -23,6 +23,10 @@ impl ValueEnum for LineNumberOptions {
     fn value_variants<'a>() -> &'a [Self] {
         const VARIANTS: &[LineNumberOptions] = &[
             LineNumberOptions {
+                target: LineNumberTarget::Rendered,
+                separator: false,
+            },
+            LineNumberOptions {
                 target: LineNumberTarget::Source,
                 separator: false,
             },
@@ -40,7 +44,7 @@ impl ValueEnum for LineNumberOptions {
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         match (self.target, self.separator) {
-            (LineNumberTarget::Rendered, false) => None,
+            (LineNumberTarget::Rendered, false) => Some(PossibleValue::new("rendered").hide(true)),
             (LineNumberTarget::Source, false) => Some(
                 PossibleValue::new("source")
                     .help("Number physical Markdown source lines instead of rendered rows"),
