@@ -12,7 +12,7 @@ use regex::Regex;
 use std::{borrow::Cow, fmt};
 
 #[cfg(feature = "search")]
-use {crate::search, std::collections::BTreeSet};
+use crate::search::{self, SearchMatch, SearchRange};
 
 pub type Row = String;
 pub type Rows = Vec<String>;
@@ -62,34 +62,6 @@ impl fmt::Display for FormattedRow<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.fmt_prefix(f)?;
         f.write_str(self.raw_row())
-    }
-}
-
-#[cfg(feature = "search")]
-pub(crate) struct SearchFormattedRow<'a, 'b> {
-    row: FormattedRow<'a>,
-    search_term: Option<&'b Regex>,
-    is_match: bool,
-}
-
-#[cfg(feature = "search")]
-impl fmt::Display for SearchFormattedRow<'_, '_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.row.fmt_prefix(f)?;
-
-        if self.is_match {
-            write!(
-                f,
-                "{}",
-                search::highlight_matches_args(
-                    self.row.raw_row(),
-                    self.search_term.unwrap(),
-                    false
-                )
-            )
-        } else {
-            f.write_str(self.row.raw_row())
-        }
     }
 }
 
@@ -280,7 +252,7 @@ pub(crate) struct FormatResult {
     pub rows_formatted: usize,
     pub num_unterminated: usize,
     #[cfg(feature = "search")]
-    pub append_search_idx: BTreeSet<usize>,
+    pub search_matches: Vec<SearchMatch>,
     pub lines_to_row_map: LinesRowMap,
     pub max_line_length: usize,
     pub clean_append: bool,
@@ -318,7 +290,7 @@ where
         rows_formatted: 0,
         num_unterminated: opts.prev_unterminated,
         #[cfg(feature = "search")]
-        append_search_idx: BTreeSet::new(),
+        search_matches: Vec::new(),
         lines_to_row_map: LinesRowMap::new(),
         max_line_length: 0,
         clean_append: opts.attachment.is_none(),
@@ -347,7 +319,7 @@ where
         );
 
         #[cfg(feature = "search")]
-        let rows = format_search_rows(rows, opts.search_term);
+        let rows = rows_with_search_ranges(rows, opts.search_term);
 
         #[cfg(feature = "search")]
         {
@@ -355,7 +327,7 @@ where
                 &mut opts.buffer,
                 rows,
                 formatted_row_count,
-                &mut fr.append_search_idx,
+                &mut fr.search_matches,
             );
         }
 
@@ -374,7 +346,7 @@ where
         opts.line_wrapping,
     );
     #[cfg(feature = "search")]
-    let last_line = format_search_rows(last_line, opts.search_term);
+    let last_line = rows_with_search_ranges(last_line, opts.search_term);
 
     let last_line_rows = last_line.size_hint().1.unwrap();
 
@@ -387,7 +359,7 @@ where
             &mut opts.buffer,
             last_line,
             formatted_row_count,
-            &mut fr.append_search_idx,
+            &mut fr.search_matches,
         );
     }
 
@@ -497,20 +469,14 @@ fn next_visible_char(text: &str, cursor: &mut usize) -> Option<(usize, char)> {
 }
 
 #[cfg(feature = "search")]
-pub(crate) fn format_search_rows<'a>(
+pub(crate) fn rows_with_search_ranges<'a>(
     rows: impl Iterator<Item = FormattedRow<'a>> + 'a,
     search_term: Option<&'a Regex>,
-) -> impl Iterator<Item = (SearchFormattedRow<'a, 'a>, bool)> + 'a {
+) -> impl Iterator<Item = (FormattedRow<'a>, Vec<SearchRange>)> + 'a {
     rows.map(move |row| {
-        let is_match = search_term.is_some_and(|st| st.is_match(row.raw_row()));
-        (
-            SearchFormattedRow {
-                row,
-                search_term,
-                is_match,
-            },
-            is_match,
-        )
+        let ranges =
+            search_term.map_or_else(Vec::new, |term| search::search_ranges(row.raw_row(), term));
+        (row, ranges)
     })
 }
 
@@ -519,17 +485,20 @@ fn collect_rows<B, I, D>(
     buffer: &mut B,
     rows: I,
     formatted_idx: usize,
-    search_idx: &mut BTreeSet<usize>,
+    search_matches: &mut Vec<SearchMatch>,
 ) -> usize
 where
     B: AppendableBuffer,
-    I: IntoIterator<Item = (D, bool)>,
+    I: IntoIterator<Item = (D, Vec<SearchRange>)>,
     D: fmt::Display,
 {
     let mut row_count = 0;
-    for (wrap_idx, (row, is_match)) in rows.into_iter().enumerate() {
-        if is_match {
-            search_idx.insert(formatted_idx + wrap_idx);
+    for (wrap_idx, (row, ranges)) in rows.into_iter().enumerate() {
+        for range in ranges {
+            search_matches.push(SearchMatch {
+                row: formatted_idx + wrap_idx,
+                range,
+            });
         }
         buffer.push_fmt(row);
         row_count = wrap_idx + 1;

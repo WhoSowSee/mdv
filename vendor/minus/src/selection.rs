@@ -4,7 +4,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 const RESET: &str = "\x1b[0m";
-const SELECTION_STYLE: &str = "\x1b[0;38;2;143;147;162;48;2;31;34;51m";
+const SELECTION_STYLE: &str = "\x1b[48;2;46;49;59m";
 
 pub fn char_index_at_display_column(line: &str, target_column: usize) -> usize {
     let mut display_column: usize = 0;

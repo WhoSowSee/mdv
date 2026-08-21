@@ -57,11 +57,6 @@ pub fn handle_event(
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
         }
         Command::UserInput(InputEvent::StartSelection { x, y }) => {
-            #[cfg(feature = "search")]
-            if p.search_state.search_term.is_some() {
-                return Ok(());
-            }
-
             if let Some(selection) = p.selection_from_coordinates(x, y) {
                 let previous_span = p.selection_row_span();
                 p.selection_anchor = Some(selection);
@@ -70,11 +65,6 @@ pub fn handle_event(
             }
         }
         Command::UserInput(InputEvent::UpdateSelection { x, y }) => {
-            #[cfg(feature = "search")]
-            if p.search_state.search_term.is_some() {
-                return Ok(());
-            }
-
             if p.selection_anchor.is_none() {
                 return Ok(());
             }
@@ -183,89 +173,25 @@ pub fn handle_event(
         Command::UserInput(InputEvent::NextMatch | InputEvent::MoveToNextMatch(1))
             if p.search_state.search_term.is_some() =>
         {
-            let position_of_next_match =
-                search::next_nth_match(&p.search_state.search_idx, p.upper_mark, 1);
-            if let Some(pnm) = position_of_next_match {
-                p.search_state.search_mark = pnm;
-                let upper_mark = *p
-                    .search_state
-                    .search_idx
-                    .iter()
-                    .nth(p.search_state.search_mark)
-                    .unwrap();
-                command_queue.push_back(Command::Io(IoCommand::SetUpperMark(upper_mark)));
-                queue_prompt_redraw(p, command_queue)?;
-            }
+            move_to_next_search_match(p, command_queue, 1)?;
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::PrevMatch | InputEvent::MoveToPrevMatch(1))
             if p.search_state.search_term.is_some() =>
         {
-            if p.search_state.search_idx.is_empty() {
-                return Ok(());
-            }
-            p.search_state.search_mark = p.search_state.search_mark.saturating_sub(1);
-            if let Some(y) = p
-                .search_state
-                .search_idx
-                .iter()
-                .nth(p.search_state.search_mark)
-                && *y < p.upper_mark
-            {
-                command_queue.push_back(Command::UserInput(InputEvent::UpdateUpperMark(*y)));
-                queue_prompt_redraw(p, command_queue)?;
-            }
+            move_to_previous_search_match(p, command_queue, 1)?;
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::MoveToNextMatch(n))
             if p.search_state.search_term.is_some() =>
         {
-            let position_of_next_match =
-                search::next_nth_match(&p.search_state.search_idx, p.upper_mark, n);
-            if let Some(pnm) = position_of_next_match {
-                p.search_state.search_mark = pnm;
-                let mut upper_mark = *p
-                    .search_state
-                    .search_idx
-                    .iter()
-                    .nth(p.search_state.search_mark)
-                    .unwrap();
-
-                // Walk backward until the match leaves a full viewport; +1 makes the bound inclusive.
-                while p.upper_mark.saturating_add(p.rows)
-                    > p.screen.formatted_lines_count().saturating_add(1)
-                {
-                    p.search_state.search_mark = p.search_state.search_mark.saturating_sub(1);
-                    upper_mark = *p
-                        .search_state
-                        .search_idx
-                        .iter()
-                        .nth(p.search_state.search_mark)
-                        .unwrap();
-                }
-                command_queue
-                    .push_back(Command::UserInput(InputEvent::UpdateUpperMark(upper_mark)));
-                queue_prompt_redraw(p, command_queue)?;
-            }
+            move_to_next_search_match(p, command_queue, n)?;
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::MoveToPrevMatch(n))
             if p.search_state.search_term.is_some() =>
         {
-            if p.search_state.search_idx.is_empty() {
-                return Ok(());
-            }
-            p.search_state.search_mark = p.search_state.search_mark.saturating_sub(n);
-            if let Some(y) = p
-                .search_state
-                .search_idx
-                .iter()
-                .nth(p.search_state.search_mark)
-                && *y < p.upper_mark
-            {
-                command_queue.push_back(Command::Io(IoCommand::SetUpperMark(*y)));
-                queue_prompt_redraw(p, command_queue)?;
-            }
+            move_to_previous_search_match(p, command_queue, n)?;
         }
 
         Command::UserInput(InputEvent::HorizontalScroll(val)) => {
@@ -391,6 +317,65 @@ fn queue_prompt_redraw(
     Ok(())
 }
 
+#[cfg(feature = "search")]
+fn queue_current_search_match(
+    p: &mut PagerState,
+    command_queue: &mut CommandQueue,
+) -> Result<(), PromptError> {
+    let Some(search_match) = p
+        .search_state
+        .search_matches
+        .get(p.search_state.search_mark)
+    else {
+        return Ok(());
+    };
+    let viewport_rows = p.content_rows().max(1);
+    let viewport_end = p.upper_mark.saturating_add(viewport_rows);
+    let next_upper_mark = if search_match.row < p.upper_mark {
+        search_match.row
+    } else if search_match.row >= viewport_end {
+        search_match
+            .row
+            .saturating_add(1)
+            .saturating_sub(viewport_rows)
+    } else {
+        p.upper_mark
+    };
+    if next_upper_mark == p.upper_mark {
+        command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+    } else {
+        command_queue.push_back(Command::Io(IoCommand::SetUpperMark(next_upper_mark)));
+    }
+    queue_prompt_redraw(p, command_queue)
+}
+
+#[cfg(feature = "search")]
+fn move_to_next_search_match(
+    p: &mut PagerState,
+    command_queue: &mut CommandQueue,
+    count: usize,
+) -> Result<(), PromptError> {
+    let total = p.search_state.search_matches.len();
+    if total == 0 {
+        return Ok(());
+    }
+    p.search_state.search_mark = (p.search_state.search_mark + count % total) % total;
+    queue_current_search_match(p, command_queue)
+}
+
+#[cfg(feature = "search")]
+fn move_to_previous_search_match(
+    p: &mut PagerState,
+    command_queue: &mut CommandQueue,
+    count: usize,
+) -> Result<(), PromptError> {
+    if p.search_state.search_matches.is_empty() {
+        return Ok(());
+    }
+    p.search_state.search_mark = p.search_state.search_mark.saturating_sub(count);
+    queue_current_search_match(p, command_queue)
+}
+
 fn queue_selection_redraw(
     command_queue: &mut CommandQueue,
     previous: Option<(usize, usize)>,
@@ -421,10 +406,9 @@ fn copy_selection(p: &PagerState) {
 fn set_search_position(p: &mut PagerState, pager: &Pager) -> Result<(), MinusError> {
     let Some(upper_mark) = p
         .search_state
-        .search_idx
-        .iter()
-        .nth(p.search_state.search_mark)
-        .copied()
+        .search_matches
+        .get(p.search_state.search_mark)
+        .map(|search_match| search_match.row)
     else {
         pager.send_message_for(NO_SEARCH_MATCH_MESSAGE, NO_SEARCH_MATCH_DURATION)?;
         return Ok(());
@@ -588,7 +572,7 @@ mod tests {
         let mut ps = pager_with_active_search();
         let mut command_queue = CommandQueue::new_zero();
         let is_exited = Arc::new(AtomicBool::new(false));
-        assert!(!ps.search_state.search_idx.is_empty());
+        assert!(!ps.search_state.search_matches.is_empty());
 
         handle_event(
             Command::UserInput(InputEvent::CancelSearch),
@@ -599,7 +583,7 @@ mod tests {
         .unwrap();
 
         assert!(ps.search_state.search_term.is_none());
-        assert!(ps.search_state.search_idx.is_empty());
+        assert!(ps.search_state.search_matches.is_empty());
         assert_eq!(ps.search_mode, crate::search::SearchMode::Unknown);
         assert_eq!(
             ps.search_state.search_mode,
@@ -644,7 +628,7 @@ mod tests {
 
         assert!(ps.search_state.last_search_query.is_empty());
         assert!(ps.search_state.search_term.is_none());
-        assert!(ps.search_state.search_idx.is_empty());
+        assert!(ps.search_state.search_matches.is_empty());
         assert_eq!(ps.search_mode, crate::search::SearchMode::Unknown);
         assert_eq!(
             command_queue.pop_front(),
@@ -696,7 +680,7 @@ mod tests {
         ps.reformat_display().unwrap();
         ps.upper_mark = 3;
 
-        assert!(ps.search_state.search_idx.is_empty());
+        assert!(ps.search_state.search_matches.is_empty());
         super::set_search_position(&mut ps, &pager).unwrap();
         assert_eq!(ps.upper_mark, 3);
         assert_eq!(
@@ -1172,3 +1156,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(all(test, feature = "search"))]
+#[path = "ev_handler/search_tests.rs"]
+mod search_tests;

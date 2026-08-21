@@ -33,7 +33,7 @@ pub fn draw_for_change(
     *new_upper_mark = (*new_upper_mark).min(ps.max_upper_mark());
     let new_lower_bound = new_upper_mark.saturating_add(writable_rows).min(line_count);
 
-    if ps.prompt_panel_rows() > 0 {
+    if ps.prompt_panel_rows() > 0 || ps.search_is_active() {
         if *new_upper_mark == ps.upper_mark {
             return Ok(());
         }

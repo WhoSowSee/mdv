@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 #[cfg(feature = "search")]
-use crate::search::{SearchMode, SearchOpts, next_nth_match};
+use crate::search::{SearchMatch, SearchMode, SearchOpts, highlight_search_matches};
 
 use crate::{
     LineNumbers, PromptContext, PromptError, PromptRenderer,
@@ -20,8 +20,6 @@ use crate::{
 };
 use crossterm::{terminal, tty::IsTty};
 use parking_lot::Mutex;
-#[cfg(feature = "search")]
-use std::collections::BTreeSet;
 use std::{
     borrow::Cow,
     collections::hash_map::RandomState,
@@ -47,7 +45,7 @@ pub struct SearchState {
     pub search_mode: SearchMode,
     pub(crate) search_term: Option<regex::Regex>,
     pub(crate) last_search_query: String,
-    pub(crate) search_idx: BTreeSet<usize>,
+    pub(crate) search_matches: Vec<SearchMatch>,
     pub(crate) search_mark: usize,
     pub(crate) incremental_search_condition:
         Box<dyn Fn(&SearchOpts) -> bool + Send + Sync + 'static>,
@@ -70,7 +68,7 @@ impl Default for SearchState {
             search_mode: SearchMode::Unknown,
             search_term: None,
             last_search_query: String::new(),
-            search_idx: BTreeSet::new(),
+            search_matches: Vec::new(),
             search_mark: 0,
             incremental_search_condition,
         }
@@ -224,9 +222,17 @@ impl PagerState {
 
         #[cfg(feature = "search")]
         {
-            self.search_state.search_idx = format_result.append_search_idx;
-            self.search_state.search_mark =
-                next_nth_match(&self.search_state.search_idx, self.upper_mark, 0).unwrap_or(0);
+            self.search_state.search_matches = format_result.search_matches;
+            let first_match = self
+                .search_state
+                .search_matches
+                .partition_point(|search_match| search_match.row < self.upper_mark);
+            self.search_state.search_mark = if first_match == self.search_state.search_matches.len()
+            {
+                0
+            } else {
+                first_match
+            };
         }
         self.lines_to_row_map = format_result.lines_to_row_map;
         self.screen.max_line_length = format_result.max_line_length;
@@ -268,10 +274,16 @@ impl PagerState {
     }
 
     /// Returns whether search highlights are currently active.
-    #[cfg(feature = "search")]
     #[must_use]
     pub const fn search_is_active(&self) -> bool {
-        self.search_state.search_term.is_some()
+        #[cfg(feature = "search")]
+        {
+            self.search_state.search_term.is_some()
+        }
+        #[cfg(not(feature = "search"))]
+        {
+            false
+        }
     }
 
     #[must_use]
@@ -306,11 +318,11 @@ impl PagerState {
         #[cfg(feature = "search")]
         let mut search_str = String::new();
         #[cfg(feature = "search")]
-        if !self.search_state.search_idx.is_empty() {
+        if !self.search_state.search_matches.is_empty() {
             search_str.push(' ');
             search_str.push_str(&(self.search_state.search_mark + 1).to_string());
             search_str.push('/');
-            search_str.push_str(&self.search_state.search_idx.len().to_string());
+            search_str.push_str(&self.search_state.search_matches.len().to_string());
             search_str.push(' ');
         }
 
@@ -462,34 +474,83 @@ impl PagerState {
     }
 
     pub(crate) fn render_rows_for_display(&self, start: usize, end: usize) -> Vec<Cow<'_, str>> {
+        #[cfg(feature = "search")]
+        let current_search_match = self
+            .search_state
+            .search_matches
+            .get(self.search_state.search_mark)
+            .map(|search_match| {
+                (
+                    search_match.row,
+                    search_match.range.start,
+                    search_match.range.end,
+                )
+            });
+        #[cfg(not(feature = "search"))]
+        let current_search_match = None;
+
         (start..end)
-            .filter_map(|absolute_row| self.render_row_for_display(absolute_row))
+            .filter_map(|absolute_row| {
+                self.render_row_for_display(absolute_row, current_search_match)
+            })
             .collect()
     }
 
-    fn render_row_for_display(&self, absolute_row: usize) -> Option<Cow<'_, str>> {
+    fn render_row_for_display(
+        &self,
+        absolute_row: usize,
+        current_search_match: Option<(usize, usize, usize)>,
+    ) -> Option<Cow<'_, str>> {
+        #[cfg(not(feature = "search"))]
+        let _ = current_search_match;
         let raw_row = self.screen.formatted_lines.get(absolute_row)?;
-        let Some((start_col, end_col)) = self.selection_bounds_for_row(absolute_row) else {
-            return Some(if self.screen.line_wrapping {
-                raw_row.into()
-            } else {
-                self.horizontal_scroll_view(raw_row).0
-            });
-        };
-
         let prefix_width = self.line_number_padding();
         let (row, skipped_chars) = if self.screen.line_wrapping {
             (Cow::Borrowed(raw_row.as_str()), 0)
         } else {
             self.horizontal_scroll_view(raw_row)
         };
-        let visible_start = start_col.saturating_sub(skipped_chars);
-        let visible_end = end_col.saturating_sub(skipped_chars);
-        Some(highlight_visible_range(
-            row,
-            prefix_width.saturating_add(visible_start),
-            prefix_width.saturating_add(visible_end),
-        ))
+        let row = if let Some((start_col, end_col)) = self.selection_bounds_for_row(absolute_row) {
+            let visible_start = start_col.saturating_sub(skipped_chars);
+            let visible_end = end_col.saturating_sub(skipped_chars);
+            highlight_visible_range(
+                row,
+                prefix_width.saturating_add(visible_start),
+                prefix_width.saturating_add(visible_end),
+            )
+        } else {
+            row
+        };
+
+        #[cfg(feature = "search")]
+        let first_match_on_row = self
+            .search_state
+            .search_matches
+            .partition_point(|search_match| search_match.row < absolute_row);
+        #[cfg(feature = "search")]
+        let row = if self
+            .search_state
+            .search_matches
+            .get(first_match_on_row)
+            .is_some_and(|search_match| search_match.row == absolute_row)
+        {
+            let search_term = self.search_state.search_term.as_ref()?;
+            let current_range = current_search_match
+                .filter(|(row, _, _)| *row == absolute_row)
+                .and_then(|(_, start, end)| {
+                    crate::search::SearchRange { start, end }.after_skipping(skipped_chars)
+                });
+            Cow::Owned(highlight_search_matches(
+                &row,
+                search_term,
+                current_range,
+                prefix_width,
+            ))
+        } else {
+            row
+        };
+
+        Some(row)
     }
 
     fn horizontal_scroll_view<'a>(&self, row: &'a str) -> (Cow<'a, str>, usize) {
@@ -612,10 +673,18 @@ impl PagerState {
         );
         let new_lc = self.screen.line_count();
         let new_lc_dgts = minus_core::utils::digits(new_lc);
+        let total_rows = self.screen.formatted_lines_count();
         #[cfg(feature = "search")]
         {
-            let mut append_search_idx = append_result.append_search_idx;
-            self.search_state.search_idx.append(&mut append_search_idx);
+            let first_reformatted_row = total_rows.saturating_sub(append_result.rows_formatted);
+            if !append_result.clean_append {
+                self.search_state
+                    .search_matches
+                    .retain(|search_match| search_match.row < first_reformatted_row);
+            }
+            self.search_state
+                .search_matches
+                .extend(append_result.search_matches);
         }
         self.lines_to_row_map.append(
             &mut append_result.lines_to_row_map,
@@ -627,7 +696,6 @@ impl PagerState {
             return Ok(AppendStyle::FullRedraw);
         }
 
-        let total_rows = self.screen.formatted_lines_count();
         self.format_prompt()?;
         Ok(AppendStyle::PartialUpdate((
             total_rows - append_result.rows_formatted,
@@ -765,24 +833,26 @@ mod tests {
         ps.selection = ps.selection_anchor;
 
         assert_eq!(ps.selected_text().as_deref(), Some("e\u{301}"));
-        assert!(
-            ps.render_rows_for_display(0, 1)[0]
-                .contains("\x1b[0;38;2;143;147;162;48;2;31;34;51me\u{301}\x1b[0m")
-        );
+        assert!(ps.render_rows_for_display(0, 1)[0].contains("\x1b[48;2;46;49;59me\u{301}\x1b[0m"));
     }
 
     #[test]
-    fn selection_highlight_overrides_and_restores_sgr_styles() {
+    fn selection_highlight_preserves_and_restores_sgr_styles() {
+        const SELECTION_BACKGROUND: &str = "\x1b[48;2;46;49;59m";
         let rendered = highlight_visible_range(
             Cow::Borrowed("\x1b[31mred\x1b[0m plain"),
             0,
             "red plain".chars().count(),
         );
 
-        assert!(rendered.contains("\x1b[0m\x1b[0;38;2;143;147;162;48;2;31;34;51m plain"));
+        assert!(rendered.contains(&format!("\x1b[31m{SELECTION_BACKGROUND}red")));
         assert!(!rendered.contains("\x1b[7m"));
 
         let rendered = highlight_visible_range(Cow::Borrowed("\x1b[31mred plain\x1b[0m"), 0, 3);
         assert!(rendered.contains("red\x1b[0m\x1b[31m plain"));
     }
 }
+
+#[cfg(all(test, feature = "search"))]
+#[path = "state/search_tests.rs"]
+mod search_tests;

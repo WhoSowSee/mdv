@@ -58,7 +58,7 @@ fn selection_redraw_updates_rows_without_clearing_the_screen() {
 
     let rendered = String::from_utf8(out).unwrap();
     assert!(rendered.contains(&MoveTo(0, 1).to_string()));
-    assert!(rendered.contains("\x1b[0;38;2;143;147;162;48;2;31;34;51mone\x1b[0m"));
+    assert!(rendered.contains("\x1b[48;2;46;49;59mone\x1b[0m"));
     assert!(
         !rendered
             .contains(&crossterm::terminal::Clear(crossterm::terminal::ClearType::All).to_string())
@@ -569,6 +569,21 @@ mod draw_for_change_tests {
         assert!(status < first_help && first_help < second_help);
         assert_eq!(written.matches("help one").count(), 1);
         assert_eq!(written.matches("help two").count(), 1);
+    }
+
+    #[cfg(feature = "search")]
+    #[test]
+    #[allow(clippy::trivial_regex)]
+    fn scrolling_with_active_search_uses_a_full_redraw() {
+        let mut pager = create_pager_state();
+        pager.search_state.search_term = Some(regex::Regex::new("L").unwrap());
+        let mut out = Vec::new();
+        let mut upper_mark = 3;
+
+        draw_for_change(&mut out, &mut pager, &mut upper_mark).unwrap();
+
+        assert!(out.windows(4).any(|window| window == b"\x1b[2J"));
+        assert!(!out.windows(4).any(|window| window == b"\x1b[3S"));
     }
 
     #[test]

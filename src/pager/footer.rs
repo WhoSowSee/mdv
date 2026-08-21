@@ -47,23 +47,45 @@ impl PagerFooter {
 
     pub(super) fn render(&self, context: &PromptContext<'_>) -> Result<PromptLine, PromptError> {
         let content = context.message().unwrap_or(&self.title);
-        build_footer(content, context.scroll_percentage(), self.transparent)
+        build_footer(
+            content,
+            context.scroll_percentage(),
+            context.search_position(),
+            self.transparent,
+        )
     }
 }
 
 fn build_footer(
     content: &str,
     percentage: u8,
+    search_position: Option<(usize, usize)>,
     transparent: bool,
 ) -> Result<PromptLine, PromptError> {
     if transparent {
-        build_transparent_footer(content, percentage)
+        build_transparent_footer(content, percentage, search_position)
     } else {
-        build_opaque_footer(content, percentage)
+        build_opaque_footer(content, percentage, search_position)
     }
 }
 
-fn build_opaque_footer(content: &str, percentage: u8) -> Result<PromptLine, PromptError> {
+fn add_progress(
+    mut footer: PromptLine,
+    percentage: u8,
+    search_position: Option<(usize, usize)>,
+    style: PromptStyle,
+) -> Result<PromptLine, PromptError> {
+    if let Some((current, total)) = search_position {
+        footer = footer.right(PromptSpan::new(format!(" {current}/{total}"), style)?);
+    }
+    Ok(footer.right(PromptSpan::new(format!(" {percentage:>3}% "), style)?))
+}
+
+fn build_opaque_footer(
+    content: &str,
+    percentage: u8,
+    search_position: Option<(usize, usize)>,
+) -> Result<PromptLine, PromptError> {
     let brand_style = PromptStyle::default()
         .foreground(MAIN_FOREGROUND)
         .background(ACCENT_BACKGROUND);
@@ -73,30 +95,32 @@ fn build_opaque_footer(content: &str, percentage: u8) -> Result<PromptLine, Prom
     let progress_style = main_style.foreground(PROGRESS_FOREGROUND);
     let help_style = main_style.background(ACCENT_BACKGROUND);
 
-    Ok(PromptLine::new()
+    let footer = PromptLine::new()
         .left(PromptSpan::new(BRAND_TEXT, brand_style)?)
-        .left(PromptSpan::new(format!(" {content}"), main_style)?)
-        .right(PromptSpan::new(
-            format!(" {percentage:>3}% "),
-            progress_style,
-        )?)
+        .left(PromptSpan::new(format!(" {content}"), main_style)?);
+    let footer = add_progress(footer, percentage, search_position, progress_style)?;
+
+    Ok(footer
         .right(PromptSpan::new(HELP_TEXT, help_style)?)
         .fill_style(main_style)
         .truncation_indicator(PromptSpan::new("…", main_style)?))
 }
 
-fn build_transparent_footer(content: &str, percentage: u8) -> Result<PromptLine, PromptError> {
+fn build_transparent_footer(
+    content: &str,
+    percentage: u8,
+    search_position: Option<(usize, usize)>,
+) -> Result<PromptLine, PromptError> {
     let main_style = PromptStyle::default().foreground(MAIN_FOREGROUND);
     let progress_style = main_style.foreground(PROGRESS_FOREGROUND);
 
-    Ok(PromptLine::new()
+    let footer = PromptLine::new()
         .left(PromptSpan::new(BRAND_TEXT, main_style)?)
         .left(PromptSpan::new("|", main_style)?)
-        .left(PromptSpan::new(format!(" {content}"), main_style)?)
-        .right(PromptSpan::new(
-            format!(" {percentage:>3}% "),
-            progress_style,
-        )?)
+        .left(PromptSpan::new(format!(" {content}"), main_style)?);
+    let footer = add_progress(footer, percentage, search_position, progress_style)?;
+
+    Ok(footer
         .right(PromptSpan::new("| ? Help ", main_style)?)
         .fill_style(main_style)
         .truncation_indicator(PromptSpan::new("…", main_style)?))
@@ -109,13 +133,31 @@ mod tests {
 
     #[test]
     fn footer_layout_contains_all_sections() {
-        let plain = build_footer("AGENTS.md", 22, false)
+        let plain = build_footer("AGENTS.md", 22, None, false)
             .unwrap()
             .render_plain(80);
 
         assert_eq!(plain.width(), 80);
         assert!(plain.starts_with(" MDV  AGENTS.md"));
         assert!(plain.ends_with("  22%  ? Help "));
+    }
+
+    #[test]
+    fn search_position_appears_before_document_progress() {
+        let footer = build_footer("AGENTS.md", 22, Some((2, 5)), false).unwrap();
+        let plain = footer.render_plain(80);
+        let rendered = footer.render(80);
+        let transparent = build_footer("AGENTS.md", 22, Some((2, 5)), true)
+            .unwrap()
+            .render_plain(80);
+
+        assert!(plain.ends_with(" 2/5  22%  ? Help "));
+        assert!(transparent.ends_with(" 2/5  22% | ? Help "));
+        assert!(
+            rendered.matches("38;2;90;90;90").count() >= 2,
+            "{}",
+            rendered.escape_debug()
+        );
     }
 
     #[test]
@@ -127,7 +169,9 @@ mod tests {
 
     #[test]
     fn footer_uses_expected_colors() {
-        let rendered = build_footer("AGENTS.md", 22, false).unwrap().render(80);
+        let rendered = build_footer("AGENTS.md", 22, None, false)
+            .unwrap()
+            .render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));
         assert!(rendered.contains("38;2;90;90;90"));
@@ -138,7 +182,7 @@ mod tests {
 
     #[test]
     fn transparent_footer_uses_separators_without_background() {
-        let footer = build_footer("AGENTS.md", 22, true).unwrap();
+        let footer = build_footer("AGENTS.md", 22, None, true).unwrap();
         let plain = footer.render_plain(80);
 
         assert!(plain.starts_with(" MDV | AGENTS.md"));
@@ -150,7 +194,7 @@ mod tests {
 
     #[test]
     fn long_unicode_file_name_is_truncated_to_terminal_width() {
-        let plain = build_footer("очень-длинный-файл-📚.md", 7, false)
+        let plain = build_footer("очень-длинный-файл-📚.md", 7, None, false)
             .unwrap()
             .render_plain(32);
 
@@ -160,7 +204,7 @@ mod tests {
 
     #[test]
     fn narrow_footer_never_exceeds_terminal_width() {
-        let footer = build_footer("README.md", 100, false).unwrap();
+        let footer = build_footer("README.md", 100, None, false).unwrap();
         for columns in 0..20 {
             assert_eq!(footer.render_plain(columns).width(), columns);
         }

@@ -17,7 +17,6 @@ use crossterm::{
 };
 use regex::Regex;
 use std::borrow::Cow;
-use std::collections::BTreeSet;
 use std::{
     convert::{TryFrom, TryInto},
     fmt,
@@ -27,6 +26,9 @@ use std::{
 };
 
 use std::collections::hash_map::RandomState;
+
+mod highlight;
+pub(crate) use highlight::highlight_search_matches;
 
 static INVERT: LazyLock<String> = LazyLock::new(|| Attribute::Reverse.to_string());
 static NORMAL: LazyLock<String> = LazyLock::new(|| Attribute::NoReverse.to_string());
@@ -57,6 +59,30 @@ impl PartialEq for SearchMode {
     fn eq(&self, other: &Self) -> bool {
         core::mem::discriminant(self) == core::mem::discriminant(other)
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct SearchRange {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl SearchRange {
+    pub(crate) const fn after_skipping(self, skipped_chars: usize) -> Option<Self> {
+        if self.end <= skipped_chars {
+            return None;
+        }
+        Some(Self {
+            start: self.start.saturating_sub(skipped_chars),
+            end: self.end.saturating_sub(skipped_chars),
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct SearchMatch {
+    pub row: usize,
+    pub range: SearchRange,
 }
 
 /// State supplied to the incremental-search activation predicate.
@@ -119,6 +145,14 @@ impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
 impl IncrementalSearchOpts<'_> {
     const fn line_number_digits(&self) -> usize {
         utils::digits(self.screen.line_count())
+    }
+
+    const fn content_start_chars(&self) -> usize {
+        if self.line_numbers.is_on() {
+            self.line_number_digits() + LineNumbers::EXTRA_PADDING + 2
+        } else {
+            0
+        }
     }
 }
 
@@ -227,9 +261,16 @@ pub(crate) struct FetchInputResult {
     pub(crate) input_status: InputStatus,
 }
 
-fn line_matches_query(line: &str, query: &Regex) -> bool {
+pub(crate) fn search_ranges(line: &str, query: &Regex) -> Vec<SearchRange> {
     let stripped = ANSI_REGEX.replace_all(line, "");
-    query.is_match(stripped.as_ref())
+    query
+        .find_iter(&stripped)
+        .map(|matched| {
+            let start = stripped[..matched.start()].chars().count();
+            let end = start + stripped[matched.start()..matched.end()].chars().count();
+            SearchRange { start, end }
+        })
+        .collect()
 }
 
 fn preview_line<'a>(
@@ -241,10 +282,11 @@ fn preview_line<'a>(
     upper_mark: &mut Option<usize>,
     wrapped: bool,
 ) {
-    if upper_mark.is_none() && !line_matches_query(line, query) {
+    if upper_mark.is_none() && !query.is_match(&ANSI_REGEX.replace_all(line, "")) {
         return;
     }
 
+    let selecting_current = upper_mark.is_none();
     let row_start = *iso.lines_to_row_map.get(line_idx).unwrap_or(&0);
     let mut match_row_idx = None;
     let formatted_rows = screen::format_line(
@@ -256,22 +298,47 @@ fn preview_line<'a>(
         iso.screen.line_wrapping,
     );
 
-    let mut formatted_rows = screen::format_search_rows(formatted_rows, Some(query))
+    let formatted_rows = screen::rows_with_search_ranges(formatted_rows, Some(query))
         .enumerate()
-        .map(|(i, (sfr, is_match))| {
-            if is_match {
-                if wrapped || row_start + i >= iso.initial_upper_mark {
-                    match_row_idx = Some(row_start + i);
-                }
-                Cow::Owned(sfr.to_string())
-            } else {
-                iso.screen.formatted_lines.get(row_start + i).map_or_else(
-                    || Cow::Owned(sfr.to_string()),
-                    |s| Cow::Borrowed(s.as_str()),
+        .map(|(i, (sfr, ranges))| {
+            let absolute_row = row_start + i;
+            if ranges.is_empty() {
+                (
+                    iso.screen.formatted_lines.get(absolute_row).map_or_else(
+                        || Cow::Owned(sfr.to_string()),
+                        |s| Cow::Borrowed(s.as_str()),
+                    ),
+                    ranges,
+                    absolute_row,
                 )
+            } else {
+                if wrapped || absolute_row >= iso.initial_upper_mark {
+                    match_row_idx = Some(absolute_row);
+                }
+                (Cow::Owned(sfr.to_string()), ranges, absolute_row)
             }
         })
-        .collect::<Vec<Cow<str>>>();
+        .collect::<Vec<_>>();
+
+    let mut formatted_rows = formatted_rows
+        .into_iter()
+        .map(|(row, ranges, absolute_row)| {
+            if ranges.is_empty() {
+                return row;
+            }
+            let current_range = if selecting_current && match_row_idx == Some(absolute_row) {
+                ranges.first().copied()
+            } else {
+                None
+            };
+            Cow::Owned(highlight_search_matches(
+                &row,
+                query,
+                current_range,
+                iso.content_start_chars(),
+            ))
+        })
+        .collect::<Vec<_>>();
 
     if upper_mark.is_none() {
         if match_row_idx.is_none() {
@@ -835,35 +902,6 @@ impl fmt::Display for HighlightMatchesArgs<'_, '_> {
     }
 }
 
-// jump == 0 includes upper_mark; larger jumps start after it and wrap at the end.
-#[must_use]
-pub(crate) fn next_nth_match(
-    search_idx: &BTreeSet<usize>,
-    upper_mark: usize,
-    jump: usize,
-) -> Option<usize> {
-    if search_idx.is_empty() {
-        return None;
-    }
-
-    let nearest_idx = search_idx.iter().position(|i| {
-        if jump == 0 {
-            *i >= upper_mark
-        } else {
-            *i > upper_mark
-        }
-    });
-
-    let start_idx = nearest_idx.unwrap_or(0);
-    let position_of_next_match = if jump == 0 {
-        start_idx
-    } else {
-        start_idx.saturating_add(jump - 1) % search_idx.len()
-    };
-
-    Some(position_of_next_match)
-}
-
 #[cfg(test)]
 mod tests {
     mod input_handling {
@@ -1245,26 +1283,9 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_next_match() {
-        let search_idx = std::collections::BTreeSet::from([2, 10, 15, 17, 50]);
-        let mut upper_mark = 0;
-        let mut search_mark;
-        for (i, v) in search_idx.iter().enumerate() {
-            search_mark = super::next_nth_match(&search_idx, upper_mark, 1);
-            assert_eq!(search_mark, Some(i));
-            let next_upper_mark = *search_idx.iter().nth(search_mark.unwrap()).unwrap();
-            assert_eq!(next_upper_mark, *v);
-            upper_mark = next_upper_mark;
-        }
-    }
-
     #[allow(clippy::trivial_regex)]
     mod highlighting {
-        use std::collections::BTreeSet;
-
-        use crate::PagerState;
-        use crate::search::{INVERT, NORMAL, highlight_line_matches, next_nth_match};
+        use crate::search::{INVERT, NORMAL, highlight_line_matches};
         use crossterm::style::Attribute;
         use regex::Regex;
 
@@ -1478,3 +1499,7 @@ eros.",
         }
     }
 }
+
+#[cfg(test)]
+#[path = "search/incremental_tests.rs"]
+mod incremental_tests;
