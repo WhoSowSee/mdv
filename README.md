@@ -124,11 +124,11 @@ cat <FILE> | mdv
 
 ### Callouts
 
-- `-C, --callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` — sets the callout layout and label behavior.
+- `-C, --callout-style <pretty|simple>[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]` — sets the callout layout and label behavior. `show-icons` uses Nerd Font glyphs; `show-simple-icons` uses portable ASCII markers such as `[i]`, `[*]`, `[!]`, and `[x]`. The two icon options cannot be combined.
   `label-inside` is only supported with `pretty`, `fold-icons` requires `show-icons`.
 - `--custom-callout <name:icon=...,color=...;...>` — overrides or adds callout labels.
   `icon` and `color` are optional; color formats match `--custom-theme`.
-- Icons require Nerd Fonts in the terminal to render correctly.
+- A Nerd Font is required in the terminal for icons enabled by `show-icons` and `fold-icons` to render correctly. `show-simple-icons` does not require a Nerd Font.
 
 ### Checkboxes
 

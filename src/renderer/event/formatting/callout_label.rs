@@ -46,7 +46,7 @@ impl<'a> EventRenderer<'a> {
         icon_spacing: usize,
     ) -> String {
         let base = self.callout_display_label(label, label_override);
-        if !self.config.callout_style.show_icons {
+        if !self.config.callout_style.icons_enabled() {
             return base;
         }
 
@@ -119,8 +119,12 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(in crate::renderer::event) fn callout_icon_spacing(&self, label_inside: bool) -> usize {
-        if !self.config.callout_style.show_icons {
+        if !self.config.callout_style.icons_enabled() {
             return 0;
+        }
+
+        if self.config.callout_style.show_simple_icons {
+            return 1;
         }
 
         if matches!(
@@ -143,7 +147,28 @@ impl<'a> EventRenderer<'a> {
             return icon;
         }
 
+        if self.config.callout_style.show_simple_icons {
+            return Self::default_simple_callout_icon_for_label(label)
+                .unwrap_or(DEFAULT_UNKNOWN_SIMPLE_CALLOUT_ICON);
+        }
+
         Self::default_callout_icon_for_label(label).unwrap_or(DEFAULT_UNKNOWN_CALLOUT_ICON)
+    }
+
+    pub(in crate::renderer::event) fn default_simple_callout_icon_for_label(
+        label: &str,
+    ) -> Option<&'static str> {
+        match label {
+            "note" | "seealso" | "abstract" | "summary" | "tldr" | "info" => Some("[i]"),
+            "todo" => Some("[ ]"),
+            "tip" | "hint" | "example" => Some("[*]"),
+            "important" | "warning" | "attention" | "danger" => Some("[!]"),
+            "success" | "check" | "done" => Some("[+]"),
+            "question" | "help" | "faq" => Some("[?]"),
+            "caution" | "failure" | "fail" | "missing" | "error" | "bug" => Some("[x]"),
+            "quote" | "cite" => Some("[>]"),
+            _ => None,
+        }
     }
 
     pub(in crate::renderer::event) fn default_callout_icon_for_label(
@@ -192,7 +217,7 @@ impl<'a> EventRenderer<'a> {
         let display_label = if matches!(
             self.config.callout_style.style,
             crate::cli::CalloutStyle::Simple
-        ) && self.config.callout_style.show_icons
+        ) && self.config.callout_style.icons_enabled()
         {
             label_text
         } else {

@@ -41,6 +41,7 @@ impl PrettyDefinitionStyle {
 pub struct CalloutStyleConfig {
     pub style: CalloutStyle,
     pub show_icons: bool,
+    pub show_simple_icons: bool,
     pub show_fold_icons: bool,
     pub label_inside: bool,
     pub uppercase: bool,
@@ -51,6 +52,7 @@ impl Default for CalloutStyleConfig {
         Self {
             style: CalloutStyle::Pretty,
             show_icons: false,
+            show_simple_icons: false,
             show_fold_icons: false,
             label_inside: false,
             uppercase: false,
@@ -99,6 +101,7 @@ impl CalloutStyleConfig {
 
                 match option.to_ascii_lowercase().as_str() {
                     "show-icons" => config.show_icons = true,
+                    "show-simple-icons" => config.show_simple_icons = true,
                     "fold-icons" => config.show_fold_icons = true,
                     "label-inside" => config.label_inside = true,
                     "uppercase" => config.uppercase = true,
@@ -113,7 +116,17 @@ impl CalloutStyleConfig {
             );
         }
 
+        if config.show_icons && config.show_simple_icons {
+            return Err(
+                "Options 'show-icons' and 'show-simple-icons' cannot be combined.".to_string(),
+            );
+        }
+
         Ok(config)
+    }
+
+    pub(crate) fn icons_enabled(&self) -> bool {
+        self.show_icons || self.show_simple_icons
     }
 }
 
@@ -127,6 +140,9 @@ impl fmt::Display for CalloutStyleConfig {
         let mut options = Vec::new();
         if self.show_icons {
             options.push("show-icons");
+        }
+        if self.show_simple_icons {
+            options.push("show-simple-icons");
         }
         if self.show_fold_icons {
             options.push("fold-icons");

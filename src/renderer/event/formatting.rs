@@ -16,6 +16,7 @@ fn strip_layout_metadata(line: &str) -> String {
 }
 
 const DEFAULT_UNKNOWN_CALLOUT_ICON: &str = "";
+const DEFAULT_UNKNOWN_SIMPLE_CALLOUT_ICON: &str = "[?]";
 
 mod blockquotes;
 mod borders;

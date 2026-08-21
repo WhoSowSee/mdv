@@ -43,7 +43,7 @@ A callout passes through several stages:
 1. `markdown/admonitions.rs` converts alternative syntax into a blockquote marker.
 2. `text/callouts.rs` buffers initial characters and parses marker, type, fold state, and title.
 3. `core/callouts.rs` selects the semantic kind and color.
-4. `formatting/callout_label.rs` builds the label and icon and applies case options.
+4. `formatting/callout_label.rs` builds the label and selected Nerd Font or portable ASCII icon and applies case options.
 5. Ordinary text renders inside callout state.
 6. On close, pretty style passes through `callout_render.rs` and `callout_frame.rs`.
 
@@ -54,6 +54,8 @@ A callout passes through several stages:
 | [formatting/callout_frame.rs](../../src/renderer/event/formatting/callout_frame.rs) | Frame, padding, in-frame wrapping, and single-character-tail normalization. |
 
 A pretty callout first accumulates logical content and is framed afterward. Handlers must not print border segments directly in the middle of the block.
+
+`show-icons` selects the Nerd Font icon map, while `show-simple-icons` selects bracketed ASCII markers. The options are mutually exclusive; custom callout icons continue to take precedence over either built-in map.
 
 ## Headings and spacing
 

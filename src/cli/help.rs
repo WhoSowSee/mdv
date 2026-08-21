@@ -8,7 +8,7 @@ pub(super) const CODE_BLOCK_STYLE_LONG_HELP: &str = "Configure visual style for 
 
 pub(super) const CUSTOM_CODE_BLOCK_LONG_HELP: &str = "Override code block icon/label/aliases.\nEntries are separated by ';', options by ',', aliases by '|'.\nAt least one of 'icon' or 'label' is required; 'aliases' is optional.\n\nExample: rust:icon=*,label=russst;py:icon=?,aliases=py|py3";
 
-pub(super) const STYLE_CALLOUT_LONG_HELP: &str = "Configure visual style for callouts\n(pretty:show-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;uppercase;fold-icons)\nOption fold-icons requires show-icons\nIcons require a Nerd Font in the terminal to display correctly";
+pub(super) const STYLE_CALLOUT_LONG_HELP: &str = "Configure visual style for callouts\n(pretty:show-icons;show-simple-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;show-simple-icons;uppercase;fold-icons)\nOptions show-icons and show-simple-icons cannot be combined\nOption fold-icons requires show-icons\nshow-icons and fold-icons require a Nerd Font; show-simple-icons uses portable ASCII markers";
 
 pub(super) const PRETTY_CHECKBOX_LONG_HELP: &str = "Render task-list checkboxes as Nerd Font icons\nChoose 'square' or 'circle' icon set\nDisabled by default; requires a Nerd Font to display correctly";
 

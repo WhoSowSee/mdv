@@ -31,6 +31,87 @@ fn test_callout_renders_label_and_body() {
 }
 
 #[test]
+fn test_callout_simple_icons_render_portable_alert_markers() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "> [!note]\n> Note body\n\n> [!tip]\n> Tip body\n\n> [!important]\n> Important body\n\n> [!warning]\n> Warning body\n\n> [!caution]\n> Caution body\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("--no-colors")
+        .arg("-w")
+        .arg("none")
+        .arg("--callout-style")
+        .arg("simple:show-simple-icons")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs with portable callout icons");
+
+    assert!(
+        output.status.success(),
+        "expected show-simple-icons to be accepted, stderr:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+
+    for expected in [
+        "┃ [i] Note",
+        "┃ [*] Tip",
+        "┃ [!] Important",
+        "┃ [!] Warning",
+        "┃ [x] Caution",
+    ] {
+        assert!(
+            stdout.contains(expected),
+            "expected portable callout header {expected:?}, stdout:\n{stdout}"
+        );
+    }
+}
+
+#[test]
+fn test_callout_simple_icons_cover_all_builtin_categories() {
+    let temp_file = NamedTempFile::new().unwrap();
+    fs::write(
+        &temp_file,
+        "> [!abstract]\n> Body\n\n> [!info]\n> Body\n\n> [!todo]\n> Body\n\n> [!success]\n> Body\n\n> [!question]\n> Body\n\n> [!failure]\n> Body\n\n> [!danger]\n> Body\n\n> [!bug]\n> Body\n\n> [!example]\n> Body\n\n> [!quote]\n> Body\n",
+    )
+    .unwrap();
+
+    let output = mdv_cmd()
+        .arg("--no-colors")
+        .arg("-w")
+        .arg("none")
+        .arg("--callout-style")
+        .arg("simple:show-simple-icons")
+        .arg(temp_file.path())
+        .output()
+        .expect("mdv runs with portable callout icons");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+
+    for expected in [
+        "┃ [i] Abstract",
+        "┃ [i] Info",
+        "┃ [ ] Todo",
+        "┃ [+] Success",
+        "┃ [?] Question",
+        "┃ [x] Failure",
+        "┃ [!] Danger",
+        "┃ [x] Bug",
+        "┃ [*] Example",
+        "┃ [>] Quote",
+    ] {
+        assert!(
+            stdout.contains(expected),
+            "expected portable callout header {expected:?}, stdout:\n{stdout}"
+        );
+    }
+}
+
+#[test]
 fn test_callout_backslash_keeps_blockquote_context() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "> [!important]\n> Арбуз\\\n> Арбуз\n").unwrap();

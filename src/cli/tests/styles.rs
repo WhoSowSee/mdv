@@ -57,6 +57,33 @@ fn code_block_style_rejects_removed_options() {
 }
 
 #[test]
+fn callout_style_parses_simple_icons() {
+    let cli = Cli::parse_from([
+        "mdv",
+        "--callout-style",
+        "simple:show-simple-icons;uppercase",
+    ]);
+    let style = cli.style_callout.expect("callout style parsed");
+
+    assert!(matches!(style.style, CalloutStyle::Simple));
+    assert!(!style.show_icons);
+    assert!(style.show_simple_icons);
+    assert!(style.uppercase);
+    assert_eq!(style.to_string(), "simple:show-simple-icons;uppercase");
+}
+
+#[test]
+fn callout_style_rejects_multiple_icon_sets() {
+    let result = Cli::try_parse_from([
+        "mdv",
+        "--callout-style",
+        "simple:show-icons;show-simple-icons",
+    ]);
+
+    assert!(result.is_err());
+}
+
+#[test]
 fn custom_code_block_flag_parses() {
     let cli = Cli::parse_from(["mdv", "--custom-code-block", "rust:icon=;python:icon="]);
     assert_eq!(

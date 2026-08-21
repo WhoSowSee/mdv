@@ -124,10 +124,11 @@ cat <FILE> | mdv
 
 ### Callout-блоки
 
-- `-C, --callout-style <pretty|simple>[:show-icons;fold-icons;label-inside;uppercase]` — стиль callout-блоков и правила отображения подписи. Для корректного отображения иконок нужны шрифты Nerd Fonts в терминале.
+- `-C, --callout-style <pretty|simple>[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]` — стиль callout-блоков и правила отображения подписи. `show-icons` использует глифы Nerd Font, а `show-simple-icons` — переносимые ASCII-маркеры вроде `[i]`, `[*]`, `[!]` и `[x]`. Эти два параметра нельзя комбинировать.
   `label-inside` поддерживается только с `pretty`, `fold-icons` требует `show-icons`.
 - `--custom-callout <name:icon=...,color=...;...>` — переопределение или добавление подписей callout.
   `icon` и `color` можно указывать по отдельности; формат цвета как в `--custom-theme`.
+- Для корректного отображения иконок, включённых через `show-icons` и `fold-icons`, нужны шрифты Nerd Fonts в терминале. Для `show-simple-icons` они не требуются.
 
 ### Чекбоксы
 
