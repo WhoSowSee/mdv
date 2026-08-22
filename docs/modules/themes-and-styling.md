@@ -73,6 +73,8 @@ Unlike the partial user schema, an embedded theme must define every required col
 
 Terminal and code themes may be different.
 
+In `config.yaml` and preset files, `custom_theme` and `custom_code_theme` accept either their legacy `key=value` strings or flat YAML mappings. Mapping values may use the same named, hexadecimal, RGB, ANSI, boolean, and optional `null` forms as the corresponding string overrides. This changes only deserialization; application order remains the same.
+
 ## Color formats
 
 `parse_color_value` accepts:
@@ -114,6 +116,8 @@ Visual extensions are parsed before rendering:
 - [src/checkbox.rs](../../src/checkbox.rs) — standard square and circle icons;
 - [src/checkbox_override.rs](../../src/checkbox_override.rs) — custom checkbox states;
 - [src/custom_code_block.rs](../../src/custom_code_block.rs) — code label, icon, and aliases.
+
+The main configuration and presets may express custom callouts, code blocks, checkbox states, and list levels as nested YAML mappings. CLI arguments retain their compact string syntax, and an explicitly supplied higher-priority setting still replaces the complete lower-priority setting.
 
 The renderer receives compiled maps in `Config` and never repeats string parsing.
 

@@ -20,7 +20,7 @@ After large source files were split, large inline `mod tests` blocks moved into 
 | Implementation | Tests |
 |---|---|
 | `src/cli.rs` | `src/cli/tests.rs` and `src/cli/tests/{contract,parsing,styles}.rs` |
-| `src/config.rs` | `src/config/tests.rs` and `src/config/tests/{loading,environment,writing}.rs` |
+| `src/config.rs` | `src/config/tests.rs` and `src/config/tests/{loading,environment,structured,writing}.rs` |
 | `src/markdown.rs` | `src/markdown/tests.rs`, with additional tests in `raw_html.rs` and `source_lines.rs` |
 | `src/table.rs` | `src/table/tests.rs` and `src/table/tests/{rendering,styles,links}.rs` |
 | `src/theme.rs` | `src/theme/tests.rs` |

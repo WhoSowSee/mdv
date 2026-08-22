@@ -103,7 +103,8 @@ pub(crate) struct BlockSpacing {
     pub(crate) bottom: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct PartialBlockSpacing {
     top: Option<usize>,
     bottom: Option<usize>,
@@ -229,9 +230,33 @@ impl<'de> Deserialize<'de> for BlockSpacingOverrides {
     where
         D: Deserializer<'de>,
     {
-        match Option::<String>::deserialize(deserializer)? {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Input {
+            String(String),
+            Mapping(BTreeMap<String, PartialBlockSpacing>),
+        }
+
+        match Option::<Input>::deserialize(deserializer)? {
             None => Ok(Self::default()),
-            Some(value) => value.parse().map_err(de::Error::custom),
+            Some(Input::String(value)) => value.parse().map_err(de::Error::custom),
+            Some(Input::Mapping(values)) => {
+                let mut entries = BTreeMap::new();
+                for (name, spacing) in values {
+                    let element = name.parse::<BlockElement>().map_err(de::Error::custom)?;
+                    if spacing.top.is_none() && spacing.bottom.is_none() {
+                        return Err(de::Error::custom(format!(
+                            "block spacing element '{element}' has no options"
+                        )));
+                    }
+                    if entries.insert(element, spacing).is_some() {
+                        return Err(de::Error::custom(format!(
+                            "duplicate block spacing element '{element}'"
+                        )));
+                    }
+                }
+                Ok(Self { entries })
+            }
         }
     }
 }

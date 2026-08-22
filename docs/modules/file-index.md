@@ -55,8 +55,9 @@ Unit tests: [tests.rs](../../src/cli/tests.rs), [contract.rs](../../src/cli/test
 | [from_cli.rs](../../src/config/from_cli.rs) | Assemble the effective `Config`. |
 | [merge.rs](../../src/config/merge.rs) | Field-aware merging. |
 | [runtime.rs](../../src/config/runtime.rs) | Derived widths and compiled overrides. |
+| [structured.rs](../../src/config/structured.rs) | Structured YAML forms for complex configuration values. |
 
-Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/config/tests/environment.rs), [loading.rs](../../src/config/tests/loading.rs), and [writing.rs](../../src/config/tests/writing.rs).
+Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/config/tests/environment.rs), [loading.rs](../../src/config/tests/loading.rs), [structured.rs](../../src/config/tests/structured.rs), and [writing.rs](../../src/config/tests/writing.rs).
 
 ## `src/markdown/`
 

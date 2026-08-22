@@ -169,12 +169,14 @@ pub struct Config {
     pub code_block_style: CodeBlockStyleConfig,
     pub callout_style: CalloutStyleConfig,
     pub pretty_checkbox: Option<CheckboxShape>,
+    #[serde(default, deserialize_with = "structured::deserialize_custom_checkbox")]
     pub custom_checkbox: Option<String>,
     #[serde(skip)]
     pub(crate) checkbox_overrides: HashMap<char, crate::checkbox_override::CheckboxOverride>,
     pub pretty_list: Option<PrettyListStyle>,
     pub pretty_definition: Option<PrettyDefinitionStyle>,
     pub uniform_list_marker: Option<UniformListMarker>,
+    #[serde(default, deserialize_with = "structured::deserialize_custom_list")]
     pub custom_list: Option<String>,
     #[serde(skip)]
     pub(crate) list_marker: ListMarkerConfig,
@@ -184,12 +186,19 @@ pub struct Config {
     // Theme configuration
     pub theme: String,
     pub code_theme: Option<String>,
+    #[serde(default, deserialize_with = "structured::deserialize_theme_overrides")]
     pub custom_theme: Option<String>,
     pub inline_style: InlineStyleOverrides,
+    #[serde(default, deserialize_with = "structured::deserialize_theme_overrides")]
     pub custom_code_theme: Option<String>,
+    #[serde(default, deserialize_with = "structured::deserialize_custom_callout")]
     pub custom_callout: Option<String>,
     #[serde(skip)]
     pub(crate) custom_callouts: HashMap<String, CustomCalloutStyle>,
+    #[serde(
+        default,
+        deserialize_with = "structured::deserialize_custom_code_block"
+    )]
     pub custom_code_block: Option<String>,
     #[serde(skip)]
     pub(crate) custom_code_blocks: HashMap<String, CustomCodeBlock>,
@@ -279,6 +288,7 @@ mod files;
 mod from_cli;
 mod merge;
 mod runtime;
+mod structured;
 pub(crate) fn mdv_no_color_override() -> Option<bool> {
     let raw_value = std::env::var_os(NO_COLOR_ENV)?;
     let value = raw_value.to_string_lossy();

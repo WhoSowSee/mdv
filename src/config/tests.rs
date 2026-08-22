@@ -87,4 +87,5 @@ fn write_preset(config_dir: &std::path::Path, filename: &str, contents: &str) {
 
 mod environment;
 mod loading;
+mod structured;
 mod writing;

@@ -222,6 +222,12 @@ link_truncation: "wrap"
 
 `inline_style` is merged per element and property instead of replacing the whole mapping. Its effective order is semantic defaults, user theme, main config, preset, then `--inline-style`.
 
+### Structured complex settings
+
+The configuration file and user presets accept YAML mappings for `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list`, and `callout_style`. Their legacy one-line values remain supported and continue to be used by the corresponding CLI options.
+
+The structured form changes only how a value is written. A setting present in a preset replaces the same top-level setting from the main config, and an explicit CLI value replaces the preset value. `inline_style` retains its property-level merge behavior; explicit `--block-spacing` entries merge their specified elements and sides into the effective spacing configuration. See [`docs/examples/config.yaml`](docs/examples/config.yaml) for all structured examples.
+
 ## Presets
 
 mdv ships with three presets:

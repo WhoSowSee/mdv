@@ -36,8 +36,8 @@ impl PrettyDefinitionStyle {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(try_from = "String", into = "String")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(into = "String")]
 pub struct CalloutStyleConfig {
     pub style: CalloutStyle,
     pub show_icons: bool,
@@ -110,19 +110,23 @@ impl CalloutStyleConfig {
             }
         }
 
-        if matches!(config.style, CalloutStyle::Simple) && config.label_inside {
+        config.validate()
+    }
+
+    fn validate(self) -> Result<Self, String> {
+        if matches!(self.style, CalloutStyle::Simple) && self.label_inside {
             return Err(
                 "Option 'label-inside' is only supported with 'pretty' callout style.".to_string(),
             );
         }
 
-        if config.show_icons && config.show_simple_icons {
+        if self.show_icons && self.show_simple_icons {
             return Err(
                 "Options 'show-icons' and 'show-simple-icons' cannot be combined.".to_string(),
             );
         }
 
-        Ok(config)
+        Ok(self)
     }
 
     pub(crate) fn icons_enabled(&self) -> bool {
@@ -173,6 +177,49 @@ impl TryFrom<String> for CalloutStyleConfig {
 impl From<CalloutStyleConfig> for String {
     fn from(value: CalloutStyleConfig) -> Self {
         value.to_string()
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for CalloutStyleConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Mapping {
+            style: CalloutStyle,
+            #[serde(default)]
+            show_icons: bool,
+            #[serde(default)]
+            show_simple_icons: bool,
+            #[serde(default)]
+            fold_icons: bool,
+            #[serde(default)]
+            label_inside: bool,
+            #[serde(default)]
+            uppercase: bool,
+        }
+
+        #[derive(serde::Deserialize)]
+        #[serde(untagged)]
+        enum Input {
+            String(String),
+            Mapping(Mapping),
+        }
+
+        let config = match Input::deserialize(deserializer)? {
+            Input::String(value) => return Self::parse(&value).map_err(serde::de::Error::custom),
+            Input::Mapping(value) => Self {
+                style: value.style,
+                show_icons: value.show_icons,
+                show_simple_icons: value.show_simple_icons,
+                show_fold_icons: value.fold_icons,
+                label_inside: value.label_inside,
+                uppercase: value.uppercase,
+            },
+        };
+        config.validate().map_err(serde::de::Error::custom)
     }
 }
 

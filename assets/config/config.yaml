@@ -4,21 +4,42 @@
 # and use --config-file ~/.config/mdv or MDV_CONFIG_PATH=~/.config/mdv to load it.
 
 # Theme settings
+# Complex settings accept both YAML mappings and their legacy one-line CLI syntax.
 theme: "terminal"          # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "material-ocean" | "catppuccin"
 code_theme: null           # Use null to follow theme; accepts the same values as theme
 syntaxes_dir: null         # Directory with custom .sublime-syntax files; relative paths start from the config directory
 theme_info: false          # Print palette information alongside rendered output
-custom_theme: null         # Override individual UI theme values (see formats below)
+custom_theme: null         # Flat YAML mapping of UI values, or a legacy key=value string
+# Example:
+# custom_theme:
+#   text: "#cdd6f4"
+#   h1: "#89b4fa"
+#   background: null
 inline_style: {}           # Per-element backticks/bold/italic/underline/strikethrough overrides
-custom_code_theme: null    # Override syntax colors (same format as custom_theme)
-custom_callout: null       # Override or create callout styles (e.g. tip:icon=*,color=red;custom:color=#ffffff)
-                           # icon/color are optional
-                           # Color values use the same formats as custom_theme/custom_code_theme.
-custom_code_block: null      # Override code block icon/label/aliases (e.g. rust:icon=*,label=russst,aliases=rs|rst)
-                              # Languages are separated by ';', options by ',', aliases by '|'.
-                              # Works for any language hint, even if it is not in the built-in icon mapping.
-                              # Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic.
-                              # Use 'default:icon=...' to set the fallback icon for unknown languages.
+custom_code_theme: null    # Flat YAML mapping of syntax colors, or a legacy key=value string
+# Example:
+# custom_code_theme:
+#   keyword: "#cba6f7"
+#   string: "#a6e3a1"
+custom_callout: null       # Mapping of callout names to icon/color, or a legacy definition string
+# Example:
+# custom_callout:
+#   tip:
+#     icon: "*"
+#     color: green
+#   important:
+#     color: "#ff5555"
+custom_code_block: null    # Mapping of language names to icon/label/aliases, or a legacy definition string
+# Example:
+# custom_code_block:
+#   default:
+#     icon: "?"
+#   rust:
+#     icon: "R"
+#     label: Rust
+#     aliases: [rs, rustlang]
+# Works for any language hint, even if it is not in the built-in icon mapping.
+# Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic.
 
 # Display behaviour
 # Keys must use snake_case (e.g. no_colors, tab_length).
@@ -34,7 +55,14 @@ heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 show_heading_markers: false # Prefix headings with markdown-style markers matching their level
 smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
 table_smart_indent: false  # Automatically adjusts table indentation based on available width
-block_spacing: null        # Per-block blank lines, e.g. "paragraph:top=0,bottom=1;callout:top=1"
+block_spacing: null        # Mapping of block elements to top/bottom blank lines, or a legacy string
+# Example:
+# block_spacing:
+#   paragraph:
+#     top: 0
+#     bottom: 1
+#   callout:
+#     top: 1
 hide_comments: false       # Hide Markdown comments from the rendered output
 front_matter: "hidden"     # hidden | panel | table | plain | inline | blocks | code | source
 render_html: false         # Render raw HTML fragments as terminal-formatted content
@@ -48,17 +76,38 @@ callout_style: "pretty"    # Options: "simple:show-icons;show-simple-icons;fold-
                            # label-inside is supported only with "pretty"; show-icons and show-simple-icons cannot be combined.
                            # fold-icons requires show-icons.
                            # show-simple-icons uses ASCII markers; show-icons and fold-icons require Nerd Fonts.
+# Structured alternative:
+# callout_style:
+#   style: pretty
+#   show_icons: true
+#   show_simple_icons: false
+#   fold_icons: true
+#   label_inside: true
+#   uppercase: true
 code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hanging indent inside code blocks
 reverse: false             # Render document starting from the end while preserving layout
 pretty_checkbox: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
-custom_checkbox: null      # Override icons or add states with optional color, only with pretty_checkbox (e.g. " :󰀦:yellow;*:󰞋:#ff0000")
+custom_checkbox: null      # Mapping of checkbox states to icon/color, or a legacy string; requires pretty_checkbox
+# Example:
+# custom_checkbox:
+#   " ":
+#     icon: "U"
+#     color: yellow
+#   x:
+#     color: green
 pretty_list: null          # null | "type:nerd-font;size:small" | "type:unicode;size:large"; booleans are not accepted
                            # size only changes Nerd Font icons; Unicode accepts both sizes and uses the same glyphs.
                            # Unicode spacing depends on the font; verified especially with JetBrainsMono Nerd Font.
 pretty_definition: null    # null | "unicode" | "nerd-font"; null renders definitions with a two-space indent
 uniform_list_marker: null  # Use one icon at every level: "level:1".."level:4" or a custom "icon:*"
-custom_list: null          # Override list marker icon and/or color per level, only with pretty_list (e.g. "1:*:yellow;2:>:red;3:blue")
-                           # Icon is optional: "1:red" keeps the built-in icon and switches to red.
+custom_list: null          # Mapping of nesting levels to icon/color, or a legacy string; requires pretty_list
+# Example:
+# custom_list:
+#   1:
+#     icon: "*"
+#     color: yellow
+#   2:
+#     color: red
 # Link handling
 link_style: "clickable"    # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
 link_truncation: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"
