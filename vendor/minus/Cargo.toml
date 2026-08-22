@@ -12,7 +12,7 @@
 [package]
 edition = "2024"
 name = "mdv-minus"
-version = "5.7.2"
+version = "5.7.3"
 authors = ["Arijit Dey <arijid79@gmail.com>", "WhoSowSee"]
 build = false
 autolib = false

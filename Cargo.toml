@@ -58,7 +58,7 @@ unicode-segmentation = { version = "1.13.3", default-features = false }
 log = "0.4.33"
 env_logger = "0.11.11"
 comfy-table = { version = "8.0.0", default-features = false, features = ["custom_styling"] }
-minus = { package = "mdv-minus", path = "vendor/minus", version = "5.7.2", features = ["dynamic_output", "search"] }
+minus = { package = "mdv-minus", path = "vendor/minus", version = "5.7.3", features = ["dynamic_output", "search"] }
 arboard = { version = "3.6.1", default-features = false }
 scraper = { version = "0.27.0", default-features = false }
 ego-tree = "0.11.0"

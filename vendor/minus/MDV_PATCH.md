@@ -1,11 +1,11 @@
 # mdv-minus
 
-`mdv-minus` 5.7.2 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name.
+`mdv-minus` 5.7.3 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name.
 
 Depend on the fork under that library name:
 
 ```toml
-minus = { package = "mdv-minus", version = "5.7.2" }
+minus = { package = "mdv-minus", version = "5.7.3" }
 ```
 
 mdv adds a typed prompt-rendering API:
