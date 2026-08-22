@@ -1,5 +1,35 @@
 # Changelog
 
+## [5.1.0] - 2026-08-22
+
+### Features
+
+- Added: structured YAML support for complex configuration settings
+- Added: YAML front matter support with display modes
+- Added: simple icon mode for callouts
+- Added: configurable line numbers to code blocks
+- Added: incremental discovery and loading indicator to interactive mode
+
+### Bug Fixes
+
+- Fixed: pager position after cancelling search
+- Fixed: file path parsing after line number flags
+- Fixed: width recalculation for character wrapping in tables
+- Fixed: link reference wrapping in inline tables
+
+### Changes
+
+- Improved: pager search and text selection
+- Applied: text wrapping mode to table cells
+
+### Internal
+
+- Added: buffered rendering to interactive mode
+
+### Maintenance
+
+- Updated: mdv-minus to v5.7.3
+
 ## [5.0.0] - 2026-08-16
 
 ### Breaking Changes
