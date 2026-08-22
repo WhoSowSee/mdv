@@ -109,6 +109,7 @@ pub struct SearchOpts<'a> {
     /// Incremental-search state, when available.
     pub incremental_search_options: Option<IncrementalSearchOpts<'a>>,
     compiled_regex: Option<Regex>,
+    preview_upper_mark: Option<usize>,
     query_selected: bool,
 }
 
@@ -189,6 +190,7 @@ impl<'a> From<&'a PagerState> for SearchOpts<'a> {
             cols: ps.cols.try_into().unwrap(),
             incremental_search_options: Some(incremental_search_options),
             compiled_regex: None,
+            preview_upper_mark: None,
             query_selected,
             search_mode: ps.search_state.search_mode,
         }
@@ -259,6 +261,12 @@ pub(crate) struct FetchInputResult {
     pub(crate) string: String,
     pub(crate) compiled_regex: Option<Regex>,
     pub(crate) input_status: InputStatus,
+    pub(crate) preview_upper_mark: Option<usize>,
+}
+
+struct IncrementalPreview<'a> {
+    rows: Vec<Cow<'a, str>>,
+    upper_mark: usize,
 }
 
 pub(crate) fn search_ranges(line: &str, query: &Regex) -> Vec<SearchRange> {
@@ -360,7 +368,7 @@ fn preview_line<'a>(
 fn incremental_preview<'a>(
     iso: &IncrementalSearchOpts<'a>,
     query: &'a Regex,
-) -> Option<Vec<Cow<'a, str>>> {
+) -> Option<IncrementalPreview<'a>> {
     if iso.writable_rows == 0 {
         return None;
     }
@@ -372,6 +380,7 @@ fn incremental_preview<'a>(
 
     let mut visible_lines: Vec<Cow<str>> = Vec::with_capacity(iso.writable_rows);
     let mut upper_mark = None;
+    let mut viewport_upper_mark = None;
 
     for (line_idx, line) in iso
         .screen
@@ -414,6 +423,7 @@ fn incremental_preview<'a>(
                 .map(Into::into),
         );
         visible_lines.rotate_left(shift);
+        viewport_upper_mark = Some(start);
     }
 
     if upper_mark.is_none() {
@@ -439,24 +449,23 @@ fn incremental_preview<'a>(
         }
     }
 
-    if upper_mark.is_some() {
-        Some(visible_lines)
-    } else {
-        None
-    }
+    Some(IncrementalPreview {
+        rows: visible_lines,
+        upper_mark: viewport_upper_mark.or(upper_mark)?,
+    })
 }
 
 fn run_incremental_search<'a, F, O>(
     out: &mut O,
     so: &'a SearchOpts<'a>,
     incremental_search_condition: F,
-) -> crate::Result<()>
+) -> crate::Result<Option<usize>>
 where
     O: Write,
     F: Fn(&'a SearchOpts) -> bool,
 {
     let Some(iso) = so.incremental_search_options.as_ref() else {
-        return Ok(());
+        return Ok(None);
     };
     let screen = iso.screen;
     let line_numbers = iso.line_numbers;
@@ -483,19 +492,19 @@ where
 
     if !should_proceed {
         reset_screen(out, so)?;
-        return Ok(());
+        return Ok(None);
     }
 
     let query = so.compiled_regex.as_ref().unwrap();
 
-    let Some(visible_lines) = incremental_preview(iso, query) else {
+    let Some(preview) = incremental_preview(iso, query) else {
         reset_screen(out, so)?;
-        return Ok(());
+        return Ok(None);
     };
 
     display::write_text_checked(
         out,
-        &visible_lines,
+        &preview.rows,
         0,
         so.rows.into(),
         so.cols.into(),
@@ -505,7 +514,7 @@ where
         iso.screen.line_count(),
     )?;
 
-    Ok(())
+    Ok(Some(preview.upper_mark))
 }
 
 #[allow(clippy::too_many_lines)]
@@ -532,7 +541,7 @@ where
             Regex::new(&so.string).ok()
         };
 
-        run_incremental_search(out, so, incremental_search_condition)?;
+        so.preview_upper_mark = run_incremental_search(out, so, incremental_search_condition)?;
 
         term::move_cursor(out, 0, so.rows, false)?;
         write!(out, "\r{}{}", Clear(ClearType::CurrentLine), so.prompt)?;
@@ -781,6 +790,7 @@ pub(crate) fn fetch_input(
         string: search_opts.string,
         compiled_regex: search_opts.compiled_regex,
         input_status: search_opts.input_status,
+        preview_upper_mark: search_opts.preview_upper_mark,
     })
 }
 
@@ -936,6 +946,7 @@ mod tests {
                 cols: 100,
                 incremental_search_options: None,
                 compiled_regex: None,
+                preview_upper_mark: None,
                 query_selected: false,
                 search_mode: sm,
             }

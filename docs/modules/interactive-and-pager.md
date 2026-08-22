@@ -103,6 +103,8 @@ The custom classifier extends the default `minus` classifier with:
 
 When an active search has matches, the footer shows the current and total occurrences immediately before document progress. Both status values use the muted `#5a5a5a` foreground. Incremental search updates the matching viewport and highlights after every query edit, before confirmation. Search navigation and counting operate on individual occurrences, including multiple matches in one row, and only the exact current range receives the stronger tint. The viewport stays fixed while the next occurrence is visible; the first result below it is revealed on the bottom row instead of being moved to the top. Match highlighting preserves syntax foreground colors and derives each background tint from the active text color. Mouse selection remains available during search, preserves syntax colors over a neutral `#2e313b` background, and produces a lighter combined tint where selection overlaps a match.
 
+`Esc` closes the search prompt without restoring the pre-search viewport. If incremental search displayed a match, the pager remains at that displayed position while retaining the query for reuse.
+
 Long clipboard and reload operations run on separate threads so pager input remains responsive. `reload_in_progress` prevents concurrent refreshes of one page.
 
 ## Watcher

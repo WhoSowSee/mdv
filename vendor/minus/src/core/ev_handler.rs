@@ -438,6 +438,7 @@ fn apply_search_result(
         string,
         compiled_regex,
         input_status,
+        preview_upper_mark,
     } = search_result;
 
     if string.is_empty() {
@@ -449,6 +450,9 @@ fn apply_search_result(
 
     if input_status == search::InputStatus::Cancelled {
         p.search_state.last_search_query = string;
+        if let Some(upper_mark) = preview_upper_mark {
+            p.upper_mark = upper_mark;
+        }
         command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
         return Ok(());
     }
@@ -622,6 +626,7 @@ mod tests {
                 string: String::new(),
                 compiled_regex: None,
                 input_status: crate::search::InputStatus::Cancelled,
+                preview_upper_mark: None,
             },
         )
         .unwrap();
@@ -654,6 +659,7 @@ mod tests {
                 string: "[draft".to_string(),
                 compiled_regex: None,
                 input_status: crate::search::InputStatus::Cancelled,
+                preview_upper_mark: None,
             },
         )
         .unwrap();
@@ -666,6 +672,33 @@ mod tests {
             Some("pager")
         );
         assert_eq!(crate::search::SearchOpts::from(&ps).string, "[draft");
+    }
+
+    #[cfg(feature = "search")]
+    #[test]
+    fn cancelled_search_input_keeps_incremental_preview_position() {
+        let mut ps = pager_with_active_search();
+        let pager = Pager::new();
+        let mut command_queue = CommandQueue::new_zero();
+
+        super::apply_search_result(
+            &mut ps,
+            &pager,
+            &mut command_queue,
+            crate::search::FetchInputResult {
+                string: "pager".to_string(),
+                compiled_regex: None,
+                input_status: crate::search::InputStatus::Cancelled,
+                preview_upper_mark: Some(1),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(ps.upper_mark, 1);
+        assert_eq!(
+            command_queue.pop_front(),
+            Some(Command::Io(IoCommand::RedrawDisplay))
+        );
     }
 
     #[cfg(feature = "search")]

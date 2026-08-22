@@ -21,6 +21,7 @@ fn preview_highlights_matches_before_confirmation() {
 
     let preview = incremental_preview(&options, &query).unwrap();
     let matching_rows = preview
+        .rows
         .iter()
         .filter(|row| row.contains("match"))
         .collect::<Vec<_>>();
@@ -41,4 +42,26 @@ fn preview_highlights_matches_before_confirmation() {
             .sum::<usize>(),
         2
     );
+}
+
+#[test]
+fn preview_reports_backfilled_viewport_position() {
+    let mut state = PagerState::new().unwrap();
+    state.cols = 80;
+    state.rows = 4;
+    state.screen.orig_text = "zero\none\ntwo\nthree\nfour\nfive\ntarget\n".to_string();
+    state.reformat_display().unwrap();
+    let options = IncrementalSearchOpts::from(&state);
+    let query = regex::Regex::new("target").unwrap();
+
+    let preview = incremental_preview(&options, &query).unwrap();
+
+    assert_eq!(
+        preview.upper_mark,
+        state
+            .screen
+            .formatted_lines_count()
+            .saturating_sub(state.content_rows())
+    );
+    assert!(preview.rows.last().unwrap().contains("target"));
 }
