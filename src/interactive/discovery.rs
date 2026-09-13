@@ -62,10 +62,15 @@ pub(crate) enum DiscoveryEvent {
     Finished,
 }
 
-pub(crate) fn start_discovery(root: PathBuf) -> Receiver<DiscoveryEvent> {
+pub(crate) fn start_discovery(
+    root: PathBuf,
+    include_git_ignored: bool,
+) -> Receiver<DiscoveryEvent> {
     let (sender, receiver) = mpsc::sync_channel(DISCOVERY_CHANNEL_CAPACITY);
     std::thread::spawn(move || {
-        let completed = walk_paths(&root, |event| sender.send(event).is_ok());
+        let completed = walk_paths(&root, include_git_ignored, |event| {
+            sender.send(event).is_ok()
+        });
         if completed {
             let _ = sender.send(DiscoveryEvent::Finished);
         }
@@ -74,9 +79,9 @@ pub(crate) fn start_discovery(root: PathBuf) -> Receiver<DiscoveryEvent> {
 }
 
 #[cfg(test)]
-pub(crate) fn discover_paths(root: &Path) -> DiscoveryResult {
+pub(crate) fn discover_paths(root: &Path, include_git_ignored: bool) -> DiscoveryResult {
     let mut result = DiscoveryResult::default();
-    walk_paths(root, |event| {
+    walk_paths(root, include_git_ignored, |event| {
         match event {
             DiscoveryEvent::Document(document) => result.documents.push(document),
             DiscoveryEvent::Error(error) => result.errors.push(error),
@@ -90,13 +95,18 @@ pub(crate) fn discover_paths(root: &Path) -> DiscoveryResult {
     result
 }
 
-fn walk_paths(root: &Path, mut emit: impl FnMut(DiscoveryEvent) -> bool) -> bool {
+fn walk_paths(
+    root: &Path,
+    include_git_ignored: bool,
+    mut emit: impl FnMut(DiscoveryEvent) -> bool,
+) -> bool {
     let mut builder = WalkBuilder::new(root);
+    let respect_git_ignores = !include_git_ignored;
     builder
         .hidden(true)
-        .git_ignore(true)
-        .git_global(true)
-        .git_exclude(true)
+        .git_ignore(respect_git_ignores)
+        .git_global(respect_git_ignores)
+        .git_exclude(respect_git_ignores)
         .require_git(false)
         .follow_links(false)
         .filter_entry(|entry| entry.file_name() != "node_modules");

@@ -114,6 +114,7 @@ impl App {
             KeyCode::Char('q') => return AppAction::Quit,
             KeyCode::Esc => self.browser.cancel_filter(),
             KeyCode::Char('r') => self.browser.refresh(),
+            KeyCode::Char('.') => self.browser.toggle_ignored_files(),
             KeyCode::Up | KeyCode::Char('k') => self.browser.move_up(),
             KeyCode::Down | KeyCode::Char('j') => self.browser.move_down(),
             KeyCode::Home | KeyCode::Char('g') => self.browser.go_top(),
@@ -241,5 +242,22 @@ mod tests {
         assert!(!app.browser.show_full_help());
         assert_eq!(app.browser.filter_state(), FilterState::Applied);
         assert_eq!(app.browser.query(), "readme");
+    }
+
+    #[test]
+    fn period_toggles_git_ignored_files() {
+        let browser = BrowserState::for_test(Vec::new(), 24);
+        let mut app = App {
+            config: Config::default(),
+            browser,
+            width: 80,
+            height: 24,
+        };
+
+        app.handle_key(KeyEvent::new(KeyCode::Char('.'), KeyModifiers::NONE));
+        assert!(app.browser.show_ignored_files());
+
+        app.handle_key(KeyEvent::new(KeyCode::Char('.'), KeyModifiers::NONE));
+        assert!(!app.browser.show_ignored_files());
     }
 }

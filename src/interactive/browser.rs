@@ -37,8 +37,11 @@ pub(crate) struct BrowserState {
     show_full_help: bool,
     show_error: bool,
     errors: Vec<String>,
+    show_ignored_files: bool,
     loaded: bool,
     receiver: Option<Receiver<DiscoveryEvent>>,
+    replacement_documents: Option<Vec<DocumentEntry>>,
+    discovery_starts_at: Option<Instant>,
     loading_started: Instant,
 }
 
@@ -59,8 +62,11 @@ impl BrowserState {
             show_full_help: false,
             show_error: false,
             errors: Vec::new(),
+            show_ignored_files: false,
             loaded: true,
             receiver: None,
+            replacement_documents: None,
+            discovery_starts_at: None,
             loading_started: Instant::now(),
         }
     }
@@ -109,6 +115,10 @@ impl BrowserState {
 
     pub(super) fn errors(&self) -> &[String] {
         &self.errors
+    }
+
+    pub(super) fn show_ignored_files(&self) -> bool {
+        self.show_ignored_files
     }
 
     pub(super) fn add_error(&mut self, error: impl Into<String>) {

@@ -34,3 +34,35 @@ fn discovery_updates_the_browser_before_the_scan_finishes() {
 
     assert!(browser.is_loaded());
 }
+
+#[test]
+fn rediscovery_replaces_documents_only_after_it_finishes() {
+    let (sender, receiver) = mpsc::channel();
+    let mut browser = BrowserState::for_test(vec![DocumentEntry::for_test("old.md")], 20);
+    browser.loaded = false;
+    browser.receiver = Some(receiver);
+    browser.replacement_documents = Some(Vec::new());
+
+    sender
+        .send(DiscoveryEvent::Document(DocumentEntry::for_test("new.md")))
+        .unwrap();
+    browser.poll_discovery();
+
+    assert_eq!(browser.selected_path(), Some("old.md"));
+
+    sender.send(DiscoveryEvent::Finished).unwrap();
+    browser.poll_discovery();
+
+    assert_eq!(browser.selected_path(), Some("new.md"));
+}
+
+#[test]
+fn rapid_ignore_toggles_defer_discovery() {
+    let mut browser = BrowserState::for_test(Vec::new(), 20);
+
+    browser.toggle_ignored_files();
+    browser.toggle_ignored_files();
+
+    assert!(browser.receiver.is_none());
+    assert!(browser.discovery_starts_at.is_some());
+}

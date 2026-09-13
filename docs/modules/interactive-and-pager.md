@@ -48,8 +48,11 @@ With no filename and terminal standard input, the current directory opens automa
 - filtered indices and selection;
 - page size and count;
 - help and error overlays.
+- whether files excluded by Git ignore rules are visible.
 
 Discovery runs independently and publishes each document or error through a bounded channel. `poll_discovery` consumes a limited number of events on every UI tick, inserts newly found documents into the sorted list, refreshes an active filter, and preserves the selected path while the list grows. The line spinner beside the logo appears only after a 16 ms grace period and starts from its first frame; a final event stops it. Fuzzy matching normalizes Unicode but returns indices into the original string so highlighting remains correct.
+
+Pressing `.` toggles files excluded by `.gitignore`, the global Git ignore file, and `.git/info/exclude`, then restarts discovery. Rediscovery is double-buffered, so the current list remains visible until its replacement is complete. Rapid toggles are debounced and only the final mode is scanned. Hidden paths, `.ignore` rules, and the dedicated `node_modules` exclusion remain active in both modes.
 
 ## Event loop
 

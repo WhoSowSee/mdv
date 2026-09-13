@@ -54,6 +54,7 @@ const BROWSER_HELP_SEPARATOR: Color = Color::Rgb {
 const BROWSER_MINI_HELP: &[(&str, &str)] = &[
     ("h/l ←/→", "page"),
     ("/", "find"),
+    (".", "show ignored"),
     ("r", "refresh"),
     ("e", "edit"),
     ("q", "quit"),
@@ -63,6 +64,7 @@ const BROWSER_FILTERED_MINI_HELP: &[(&str, &str)] = &[
     ("tab", "section"),
     ("/", "edit search"),
     ("esc", "clear filter"),
+    (".", "show ignored"),
     ("r", "refresh"),
     ("e", "edit"),
     ("q", "quit"),
@@ -90,7 +92,7 @@ const BROWSER_FULL_HELP_ROWS: [[Option<(&str, &str)>; 4]; 4] = [
     [
         Some(("g/home", "first")),
         Some(("G/end", "last")),
-        None,
+        Some((".", "show ignored")),
         None,
     ],
 ];

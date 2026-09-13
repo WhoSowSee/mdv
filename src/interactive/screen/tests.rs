@@ -98,7 +98,7 @@ fn first_frame_is_a_full_synchronized_redraw() {
 fn mini_help_matches_the_navigation_status() {
     assert_eq!(
         browser_mini_help(&BrowserState::for_test(Vec::new(), 24), 120, true),
-        "   h/l ←/→ page • / find • r refresh • e edit • q quit • ? more"
+        "   h/l ←/→ page • / find • . show ignored • r refresh • e edit • q quit • ? more"
     );
 }
 
@@ -183,7 +183,7 @@ fn applied_filter_omits_page_navigation_from_mini_help() {
     assert!(browser.page_count() > 1);
     assert_eq!(
         browser_mini_help(&browser, 120, true),
-        "   tab section • / edit search • esc clear filter • r refresh • e edit • q quit • ? more"
+        "   tab section • / edit search • esc clear filter • . show ignored • r refresh • e edit • q quit • ? more"
     );
 }
 
@@ -252,7 +252,8 @@ fn filter_editing_never_marks_a_result_as_selected() {
 
 #[test]
 fn full_help_uses_aligned_columns_from_browser_column_three() {
-    let rows = browser_full_help(true);
+    let browser = BrowserState::for_test(Vec::new(), 24);
+    let rows = browser_full_help(&browser, true);
     let visual_column = |row: &str, text: &str| {
         let byte_index = row.find(text).unwrap();
         display_width(&row[..byte_index])
@@ -282,16 +283,26 @@ fn full_help_uses_aligned_columns_from_browser_column_three() {
             visual_column(&rows[0], "e  edit"),
             visual_column(&rows[1], "!  errors"),
             visual_column(&rows[2], "?  close help"),
+            visual_column(&rows[3], ".  show ignored"),
         ],
-        [40; 3]
+        [40; 4]
     );
     assert_eq!(
         [
             visual_column(&rows[0], "r  refresh"),
             visual_column(&rows[1], "q  quit"),
         ],
-        [57; 2]
+        [59; 2]
     );
+}
+
+#[test]
+fn mini_help_reflects_the_ignored_file_mode() {
+    let mut browser = BrowserState::for_test(Vec::new(), 24);
+
+    browser.toggle_ignored_files();
+
+    assert!(browser_mini_help(&browser, 120, true).contains(". hide ignored"));
 }
 
 #[test]

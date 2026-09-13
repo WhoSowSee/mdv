@@ -47,10 +47,11 @@ fn pager_mode_never_selects_an_interactive_target() {
 }
 
 #[test]
-fn discovery_respects_hidden_files_gitignore_and_supported_extensions() {
+fn discovery_toggles_git_ignored_files_and_respects_other_filters() {
     let directory = TempDir::new().unwrap();
     fs::create_dir(directory.path().join("notes")).unwrap();
     fs::create_dir(directory.path().join("node_modules")).unwrap();
+    fs::create_dir_all(directory.path().join(".git").join("info")).unwrap();
     fs::write(directory.path().join("README.md"), "# Visible").unwrap();
     fs::write(
         directory.path().join("notes").join("guide.markdown"),
@@ -58,6 +59,11 @@ fn discovery_respects_hidden_files_gitignore_and_supported_extensions() {
     )
     .unwrap();
     fs::write(directory.path().join("ignored.md"), "# Ignored").unwrap();
+    fs::write(
+        directory.path().join("locally-ignored.md"),
+        "# Locally ignored",
+    )
+    .unwrap();
     fs::write(directory.path().join(".hidden.md"), "# Hidden").unwrap();
     fs::write(
         directory.path().join("node_modules").join("package.md"),
@@ -65,16 +71,32 @@ fn discovery_respects_hidden_files_gitignore_and_supported_extensions() {
     )
     .unwrap();
     fs::write(directory.path().join(".gitignore"), "ignored.md\n").unwrap();
+    fs::write(
+        directory.path().join(".git").join("info").join("exclude"),
+        "locally-ignored.md\n",
+    )
+    .unwrap();
 
-    let result = discover_paths(directory.path());
-    let relative_paths: Vec<_> = result
-        .documents
-        .iter()
-        .map(|document| document.relative_path.as_str())
-        .collect();
+    let discover = |include_git_ignored| {
+        let result = discover_paths(directory.path(), include_git_ignored);
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        result
+            .documents
+            .into_iter()
+            .map(|document| document.relative_path)
+            .collect::<Vec<_>>()
+    };
 
-    assert_eq!(relative_paths, ["README.md", "notes/guide.markdown"]);
-    assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+    assert_eq!(discover(false), ["README.md", "notes/guide.markdown"]);
+    assert_eq!(
+        discover(true),
+        [
+            "README.md",
+            "ignored.md",
+            "locally-ignored.md",
+            "notes/guide.markdown",
+        ]
+    );
 }
 
 #[test]
