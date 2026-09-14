@@ -34,7 +34,7 @@
 
 > [!IMPORTANT]
 >
-> ## Required dependencies:
+> ### Required dependencies:
 >
 > - Rust toolchain
 > - Terminal with ANSI color support for the best experience

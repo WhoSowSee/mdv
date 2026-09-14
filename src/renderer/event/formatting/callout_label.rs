@@ -205,6 +205,20 @@ impl<'a> EventRenderer<'a> {
         label_override: Option<&str>,
         fold: Option<CalloutFold>,
     ) {
+        let current_line_start = self
+            .output
+            .rfind('\n')
+            .map_or(0, |index| index.saturating_add(1));
+        let (current_line, source_line) = crate::renderer::line_numbers::strip_internal_markers(
+            &self.output[current_line_start..],
+        );
+        let source_marker = source_line
+            .filter(|_| strip_ansi(&current_line).trim().is_empty())
+            .map(crate::renderer::line_numbers::encode_internal_marker);
+        if source_marker.is_some() {
+            self.output.truncate(current_line_start);
+        }
+
         let outer_level = self.blockquote_level.saturating_sub(1);
         self.ensure_contextual_blank_line_for_blockquote_level(outer_level);
 
@@ -213,6 +227,9 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.push_indent_for_line_start();
+        if let Some(source_marker) = source_marker {
+            self.output.push_str(&source_marker);
+        }
 
         let icon_spacing = self.callout_icon_spacing(false);
         let label_text = self.callout_label_text(label, label_override, fold, icon_spacing);

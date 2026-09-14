@@ -27,7 +27,7 @@ impl<'a> EventRenderer<'a> {
         while start_idx < lines.len() {
             let stripped =
                 self.strip_callout_prefix_from_line(lines[start_idx], callout_level, list_indent);
-            if strip_ansi(&stripped).trim().is_empty() {
+            if strip_layout_metadata(&stripped).trim().is_empty() {
                 leading_blank_lines.push(stripped);
                 start_idx += 1;
             } else {
@@ -35,6 +35,11 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
+        let header_source_marker = lines
+            .get(start_idx)
+            .and_then(|line| crate::renderer::line_numbers::strip_internal_markers(line).1)
+            .map(crate::renderer::line_numbers::encode_internal_marker)
+            .unwrap_or_default();
         if start_idx < lines.len() {
             start_idx = start_idx.saturating_add(1);
         }
@@ -42,7 +47,7 @@ impl<'a> EventRenderer<'a> {
         if start_idx < lines.len() {
             let stripped =
                 self.strip_callout_prefix_from_line(lines[start_idx], callout_level, list_indent);
-            if strip_ansi(&stripped).trim().is_empty() {
+            if strip_layout_metadata(&stripped).trim().is_empty() {
                 start_idx += 1;
             }
         }
@@ -52,32 +57,30 @@ impl<'a> EventRenderer<'a> {
             .map(|line| self.strip_callout_prefix_from_line(line, callout_level, list_indent))
             .collect();
 
-        while matches!(content_lines.first(), Some(line) if strip_ansi(line).trim().is_empty()) {
+        while matches!(content_lines.first(), Some(line) if strip_layout_metadata(line).trim().is_empty())
+        {
             content_lines.remove(0);
         }
-        while matches!(content_lines.last(), Some(line) if strip_ansi(line).trim().is_empty()) {
+        while matches!(content_lines.last(), Some(line) if strip_layout_metadata(line).trim().is_empty())
+        {
             content_lines.pop();
         }
 
         let label_inside = self.config.callout_style.label_inside;
-        if label_inside {
-            while matches!(content_lines.first(), Some(line) if strip_ansi(line).trim().is_empty())
-            {
-                content_lines.remove(0);
-            }
-        } else if content_lines.is_empty() {
+        if !label_inside && content_lines.is_empty() {
             content_lines.push(String::new());
         }
 
         if label_inside {
             let icon_spacing = self.callout_icon_spacing(true);
             let label_text = self.callout_label_text(label, label_override, fold, icon_spacing);
-            let styled_label = if label_text.is_empty() {
+            let mut styled_label = if label_text.is_empty() {
                 String::new()
             } else {
                 self.callout_label_style(kind, label)
                     .apply(&label_text, self.config.no_colors)
             };
+            styled_label.insert_str(0, &header_source_marker);
 
             let mut lines_with_label = Vec::with_capacity(content_lines.len() + 2);
             if !label_text.is_empty() {
@@ -86,8 +89,6 @@ impl<'a> EventRenderer<'a> {
             lines_with_label.push(String::new());
             lines_with_label.extend(content_lines);
             content_lines = lines_with_label;
-        } else if content_lines.is_empty() {
-            content_lines.push(String::new());
         }
 
         let terminal_width = self.config.get_content_width();
@@ -102,9 +103,6 @@ impl<'a> EventRenderer<'a> {
         let available_content_width = available_frame_width
             .saturating_sub(2 + left_padding + right_padding)
             .max(1);
-        if available_content_width == 0 {
-            return false;
-        }
 
         let mut max_content_width = 0usize;
         for line in &content_lines {
@@ -151,9 +149,6 @@ impl<'a> EventRenderer<'a> {
         let label_width = display_width(label_text.trim());
 
         let mut text_width = left_padding + max_content_width + right_padding;
-        if text_width == 0 {
-            text_width = 1;
-        }
         let mut inner_box_width = text_width + 2;
 
         if label_width > 0 {
@@ -188,6 +183,9 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.push_indent_for_line_start();
+        if !label_inside {
+            self.output.push_str(&header_source_marker);
+        }
         let top_line =
             self.render_callout_pretty_top_border(inner_box_width, kind, &label_text, label);
         self.output.push_str(&top_line);

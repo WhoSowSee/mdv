@@ -79,3 +79,47 @@ fn pager_render_builds_all_line_number_modes_from_each_starting_mode() {
         assert_eq!(pager_render.source.output.contains(" │ "), separator);
     }
 }
+
+#[test]
+fn pager_render_preserves_callout_layout_with_source_metadata() {
+    for style in [
+        crate::cli::CalloutStyle::Pretty,
+        crate::cli::CalloutStyle::Simple,
+    ] {
+        let mut config = Config {
+            cols: Some(80),
+            no_colors: true,
+            ..Config::default()
+        };
+        config.callout_style.style = style;
+        let mut processor_config = config.clone();
+        processor_config.line_numbers = Some(LineNumberOptions {
+            target: LineNumberTarget::Source,
+            separator: false,
+        });
+        let document = MarkdownProcessor::new(&processor_config)
+            .parse_document("> [!IMPORTANT]\n>\n> Body\n")
+            .unwrap();
+        let pager_render = TerminalRenderer::new(&config)
+            .unwrap()
+            .render_document_for_pager(document)
+            .unwrap();
+        let (header, body, marker_count) = match style {
+            crate::cli::CalloutStyle::Pretty => ("╭─ Important ", "│ Body", 0),
+            crate::cli::CalloutStyle::Simple => ("┃ [Important]", "┃ Body", 1),
+        };
+
+        for view in [
+            &pager_render.unnumbered,
+            &pager_render.rendered,
+            &pager_render.source,
+        ] {
+            assert_eq!(view.output.lines().count(), 3, "{}", view.output);
+            assert_eq!(view.output.matches("[Important]").count(), marker_count);
+            assert!(view.output.contains(body), "{}", view.output);
+        }
+        assert!(pager_render.unnumbered.output.starts_with(header));
+        assert!(pager_render.source.source_lines.contains(&Some(1)));
+        assert!(pager_render.source.source_lines.contains(&Some(3)));
+    }
+}
