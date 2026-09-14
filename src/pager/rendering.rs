@@ -1,55 +1,70 @@
-use super::PagerDocument;
+use super::{PagerContent, PagerDisplay, PagerDocument, PagerLineNumberMode, PagerLineNumberViews};
+use crate::cli::LineNumberTarget;
 use crate::markdown::ParsedDocument;
 use crate::renderer::TerminalRenderer;
-use crate::renderer::terminal::SourceNumberedView;
+use crate::renderer::terminal::PagerRenderView;
 use anyhow::Result;
-use minus::LineNavigation;
 
 pub(crate) struct RenderedOutput {
-    pub(crate) output: String,
-    pub(crate) line_navigation: Option<LineNavigation>,
-    pub(crate) status_bar_transparent: bool,
+    content: PagerContent,
+    status_bar_transparent: bool,
 }
 
 impl RenderedOutput {
+    pub(crate) fn new(output: String, status_bar_transparent: bool) -> Self {
+        Self {
+            content: PagerContent::Static(output),
+            status_bar_transparent,
+        }
+    }
+
+    fn for_pager(views: PagerLineNumberViews, status_bar_transparent: bool) -> Self {
+        Self {
+            content: PagerContent::LineNumbers(views),
+            status_bar_transparent,
+        }
+    }
+
+    pub(crate) fn output(&self) -> &str {
+        self.content.output()
+    }
+
     pub(crate) fn into_pager_document(self, source: String) -> PagerDocument {
-        let mut document = PagerDocument::new(self.output, source)
-            .with_status_bar_transparent(self.status_bar_transparent);
-        document.line_navigation = self.line_navigation;
-        document
+        PagerDocument::from_content(self.content, source)
+            .with_status_bar_transparent(self.status_bar_transparent)
     }
 }
 
 pub(crate) fn render_terminal_document(
     renderer: &TerminalRenderer,
     document: ParsedDocument,
-    mut prefix: String,
-) -> Result<(String, Option<LineNavigation>)> {
+    prefix: String,
+    status_bar_transparent: bool,
+) -> Result<RenderedOutput> {
     let prefix_lines = prefix.lines().count();
     let rendered = renderer.render_document_for_pager(document)?;
-    let display_source_lines = with_unmapped_prefix(prefix_lines, rendered.source_lines);
-
-    let navigation = if display_source_lines.iter().any(Option::is_some) {
-        Some(match rendered.source_view {
-            SourceNumberedView::Current => LineNavigation::from_current(display_source_lines),
-            SourceNumberedView::Alternate {
-                output,
-                source_lines,
-            } => {
-                let mut navigation_text = prefix.clone();
-                navigation_text.push_str(&output);
-                LineNavigation::new(
-                    navigation_text,
-                    display_source_lines,
-                    with_unmapped_prefix(prefix_lines, source_lines),
-                )
-            }
-        })
-    } else {
-        None
+    let mode = match rendered.initial_target {
+        None => PagerLineNumberMode::Off,
+        Some(LineNumberTarget::Rendered) => PagerLineNumberMode::Rendered,
+        Some(LineNumberTarget::Source) => PagerLineNumberMode::Source,
     };
-    prefix.push_str(&rendered.output);
-    Ok((prefix, navigation))
+    let views = PagerLineNumberViews::new(
+        mode,
+        prefixed_display(&prefix, prefix_lines, rendered.unnumbered),
+        prefixed_display(&prefix, prefix_lines, rendered.rendered),
+        prefixed_display(&prefix, prefix_lines, rendered.source),
+    );
+    Ok(RenderedOutput::for_pager(views, status_bar_transparent))
+}
+
+fn prefixed_display(prefix: &str, prefix_lines: usize, rendered: PagerRenderView) -> PagerDisplay {
+    let mut output = String::with_capacity(prefix.len() + rendered.output.len());
+    output.push_str(prefix);
+    output.push_str(&rendered.output);
+    PagerDisplay::new(
+        output,
+        with_unmapped_prefix(prefix_lines, rendered.source_lines),
+    )
 }
 
 fn with_unmapped_prefix(

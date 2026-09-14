@@ -66,7 +66,7 @@ The application accepts three input sources:
 
 Input is converted to one UTF-8 `String` before the Markdown pipeline starts, so files and pipes receive identical preprocessing.
 
-Pager rendering also retains source-line metadata and prepares the source-numbered view used while `:` navigation is active. Ordinary output still renders only the configured line-number mode.
+Pager rendering retains source-line metadata and prepares unnumbered, rendered-numbered, and source-numbered views. The configured mode selects the initial view; ordinary output still renders only that one configured line-number mode.
 
 ## ANSI output and HTML
 

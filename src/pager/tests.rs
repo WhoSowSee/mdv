@@ -98,6 +98,81 @@ fn reload_key_accepts_only_unmodified_r() {
 }
 
 #[test]
+fn line_number_modes_advance_from_the_active_starting_mode() {
+    let cases = [
+        (PagerLineNumberMode::Off, PagerLineNumberMode::Rendered),
+        (PagerLineNumberMode::Rendered, PagerLineNumberMode::Source),
+        (PagerLineNumberMode::Source, PagerLineNumberMode::Off),
+    ];
+
+    for (initial, expected) in cases {
+        let mut document = numbered_document(initial, "initial");
+
+        assert!(document.cycle_line_number_mode().is_some());
+        assert_eq!(document.line_number_mode(), Some(expected));
+    }
+}
+
+#[test]
+fn line_navigation_uses_the_mdv_source_view_for_each_active_mode() {
+    let cases = [
+        (
+            PagerLineNumberMode::Source,
+            "1 current source\n",
+            LineNavigation::from_current(vec![Some(1)]),
+        ),
+        (
+            PagerLineNumberMode::Rendered,
+            "1 current rendered\n",
+            LineNavigation::new("1 current source\n", vec![Some(1)], vec![Some(1)]),
+        ),
+        (
+            PagerLineNumberMode::Off,
+            "current off\n",
+            LineNavigation::new("1 current source\n", vec![Some(1)], vec![Some(1)]),
+        ),
+    ];
+
+    for (mode, expected_output, expected_navigation) in cases {
+        let document = numbered_document(mode, "current");
+        let (output, navigation) = document.display_snapshot();
+
+        assert_eq!(output, expected_output);
+        assert_eq!(navigation, Some(expected_navigation));
+    }
+}
+
+#[test]
+fn replacing_a_document_preserves_the_selected_line_number_mode() {
+    let document = RwLock::new(numbered_document(PagerLineNumberMode::Source, "current"));
+
+    replace_document(
+        &document,
+        numbered_document(PagerLineNumberMode::Off, "refreshed"),
+    )
+    .unwrap();
+
+    let document = document.read().unwrap();
+    assert_eq!(
+        document.line_number_mode(),
+        Some(PagerLineNumberMode::Source)
+    );
+    assert_eq!(document.display_snapshot().0, "1 refreshed source\n");
+}
+
+fn numbered_document(mode: PagerLineNumberMode, label: &str) -> PagerDocument {
+    PagerDocument::from_content(
+        PagerContent::LineNumbers(PagerLineNumberViews::new(
+            mode,
+            PagerDisplay::new(format!("{label} off\n"), vec![Some(1)]),
+            PagerDisplay::new(format!("1 {label} rendered\n"), vec![Some(1)]),
+            PagerDisplay::new(format!("1 {label} source\n"), vec![Some(1)]),
+        )),
+        format!("# {label}"),
+    )
+}
+
+#[test]
 fn watcher_event_must_target_the_current_file() {
     let temp_dir = TempDir::new().unwrap();
     let current_file = temp_dir.path().join("current.md");

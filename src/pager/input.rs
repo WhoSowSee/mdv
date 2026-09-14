@@ -5,6 +5,7 @@ pub(super) struct PagerInputClassifier {
     pub(super) editor_requested: Arc<AtomicBool>,
     pub(super) editor_enabled: bool,
     pub(super) help_panel: Vec<PromptLine>,
+    pub(super) help_transparent: bool,
     pub(super) pager: Pager,
     pub(super) document: Arc<RwLock<PagerDocument>>,
     pub(super) refresh: Option<RefreshCallback>,
@@ -12,9 +13,11 @@ pub(super) struct PagerInputClassifier {
 }
 
 impl PagerInputClassifier {
-    fn set_help_visible(&self, visible: bool) {
+    fn set_help_visible(&self, visible: bool, width: usize) {
         let result = if visible {
-            self.pager.set_prompt_panel(self.help_panel.clone())
+            super::help::fit_help_panel(&self.help_panel, width, self.help_transparent)
+                .map_err(minus::error::MinusError::from)
+                .and_then(|lines| self.pager.set_prompt_panel(lines))
         } else {
             self.pager.clear_prompt_panel()
         };
@@ -25,8 +28,8 @@ impl PagerInputClassifier {
         }
     }
 
-    fn toggle_help(&self, visible: bool) {
-        self.set_help_visible(!visible);
+    fn toggle_help(&self, visible: bool, width: usize) {
+        self.set_help_visible(!visible, width);
     }
 
     fn copy_contents(&self, selected_text: Option<String>) {
@@ -64,6 +67,18 @@ impl PagerInputClassifier {
             report_operation_result(&pager, result, "Reloaded document", "Failed to reload file");
         });
     }
+
+    fn cycle_line_numbers(&self) -> bool {
+        match cycle_line_number_mode(&self.pager, &self.document) {
+            Ok(changed) => changed,
+            Err(error) => {
+                let _ = self.pager.send_message(single_line_message(&format!(
+                    "Failed to change line-number mode: {error}"
+                )));
+                true
+            }
+        }
+    }
 }
 
 impl InputClassifier for PagerInputClassifier {
@@ -73,6 +88,9 @@ impl InputClassifier for PagerInputClassifier {
         state: &PagerState,
     ) -> Option<InputEvent> {
         let help_visible = state.prompt_panel_rows() > 0;
+        if help_visible && let minus::input::crossterm_event::Event::Resize(width, _) = &event {
+            self.set_help_visible(true, usize::from(*width));
+        }
         let default_action = self.default.classify_input(event.clone(), state);
         let opens_input_prompt = matches!(
             default_action,
@@ -85,18 +103,20 @@ impl InputClassifier for PagerInputClassifier {
             opens_input_prompt,
         ) {
             HelpInputAction::Toggle => {
-                self.toggle_help(help_visible);
+                self.toggle_help(help_visible, state.cols);
                 return None;
             }
             HelpInputAction::Dismiss => {
-                self.set_help_visible(false);
+                self.set_help_visible(false, state.cols);
                 return None;
             }
-            HelpInputAction::DismissAndForward => self.set_help_visible(false),
+            HelpInputAction::DismissAndForward => self.set_help_visible(false, state.cols),
             HelpInputAction::Forward => {}
         }
 
-        if is_copy_key(&event) {
+        if is_line_number_key(&event) && self.cycle_line_numbers() {
+            None
+        } else if is_copy_key(&event) {
             self.copy_contents(state.selected_text());
             None
         } else if self.refresh.is_some() && is_reload_key(&event) {
@@ -178,6 +198,10 @@ pub(super) fn is_copy_key(event: &minus::input::crossterm_event::Event) -> bool 
 
 pub(super) fn is_reload_key(event: &minus::input::crossterm_event::Event) -> bool {
     is_plain_character_key(event, 'r')
+}
+
+pub(super) fn is_line_number_key(event: &minus::input::crossterm_event::Event) -> bool {
+    is_plain_character_key(event, 'l')
 }
 
 pub(super) fn is_plain_character_key(

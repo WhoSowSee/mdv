@@ -127,7 +127,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             pager::PagerScreen::Alternate,
         )?;
     } else {
-        print!("{}", rendered.output);
+        print!("{}", rendered.output());
     }
 
     if cli.monitor_file
@@ -199,11 +199,10 @@ fn render_document(
     let pager_status_bar_transparent = renderer.pager_status_bar_transparent();
 
     if do_html {
-        return Ok(pager::RenderedOutput {
-            output: renderer.to_html_document(document)?,
-            line_navigation: None,
-            status_bar_transparent: pager_status_bar_transparent,
-        });
+        return Ok(pager::RenderedOutput::new(
+            renderer.to_html_document(document)?,
+            pager_status_bar_transparent,
+        ));
     }
 
     let mut output = String::new();
@@ -219,17 +218,20 @@ fn render_document(
     if add_leading_blank {
         output.push('\n');
     }
-    let (output, line_navigation) = if for_pager {
-        pager::render_terminal_document(&renderer, document, output)?
-    } else {
-        output.push_str(&renderer.render_document(document)?);
-        (output, None)
-    };
-    Ok(pager::RenderedOutput {
+    if for_pager {
+        return pager::render_terminal_document(
+            &renderer,
+            document,
+            output,
+            pager_status_bar_transparent,
+        );
+    }
+
+    output.push_str(&renderer.render_document(document)?);
+    Ok(pager::RenderedOutput::new(
         output,
-        line_navigation,
-        status_bar_transparent: pager_status_bar_transparent,
-    })
+        pager_status_bar_transparent,
+    ))
 }
 
 fn render_document_file(

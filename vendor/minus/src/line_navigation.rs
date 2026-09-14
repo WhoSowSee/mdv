@@ -68,6 +68,44 @@ pub enum LineInputResult {
 }
 
 impl PagerState {
+    pub(crate) fn replace_mapped_text(
+        &mut self,
+        text: String,
+        navigation: Option<LineNavigation>,
+    ) -> Result<(), crate::PromptError> {
+        let navigation_view = self.line_navigation_session.is_some();
+        let anchor = self.source_line_map(navigation_view).and_then(|map| {
+            let index = self.lines_to_row_map.row_to_line(self.upper_mark)?;
+            (0..=index).rev().find_map(|i| {
+                Some((
+                    map.get(i).copied().flatten()?,
+                    self.upper_mark
+                        .saturating_sub(*self.lines_to_row_map.get(i)?),
+                ))
+            })
+        });
+        self.line_navigation_session = None;
+        self.line_navigation = navigation;
+        self.screen.orig_text = text;
+        self.screen.line_count = self.screen.orig_text.lines().count();
+        self.clear_selection();
+        self.left_mark = 0;
+        self.reformat_display()?;
+        if let Some((source, offset)) = anchor
+            && let Some(row) = self.row_for_source_line(source, false)
+        {
+            let next = (row + 1..self.screen.formatted_lines.len())
+                .find(|&i| {
+                    self.source_line_at_row(i, false)
+                        .is_some_and(|line| line != source)
+                })
+                .unwrap_or(self.screen.formatted_lines.len());
+            self.upper_mark = row.saturating_add(offset.min(next.saturating_sub(row + 1)));
+        }
+        self.upper_mark = self.upper_mark.min(self.max_upper_mark());
+        self.format_prompt()
+    }
+
     /// Returns whether source-line navigation is configured.
     #[must_use]
     pub(crate) const fn line_navigation_available(&self) -> bool {

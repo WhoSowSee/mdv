@@ -5,11 +5,12 @@ pub(super) fn apply_refreshed_document(
     document: &RwLock<PagerDocument>,
     refreshed: PagerDocument,
 ) -> Result<()> {
-    let output = refreshed.output.clone();
-    let line_navigation = refreshed.line_navigation.clone();
-    replace_document(document, refreshed)?;
-    pager.set_text(output)?;
-    pager.set_line_navigation(line_navigation)?;
+    let mut current = document
+        .write()
+        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+    replace_preserving_line_number_mode(&mut current, refreshed);
+    let (output, line_navigation) = current.display_snapshot();
+    pager.set_mapped_text(output, line_navigation)?;
     Ok(())
 }
 
@@ -17,10 +18,30 @@ pub(super) fn replace_document(
     document: &RwLock<PagerDocument>,
     refreshed: PagerDocument,
 ) -> Result<()> {
-    *document
+    let mut current = document
         .write()
-        .map_err(|_| anyhow!("Pager document lock poisoned"))? = refreshed;
+        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+    replace_preserving_line_number_mode(&mut current, refreshed);
     Ok(())
+}
+
+fn replace_preserving_line_number_mode(current: &mut PagerDocument, mut refreshed: PagerDocument) {
+    refreshed.preserve_line_number_mode_from(current);
+    *current = refreshed;
+}
+
+pub(super) fn cycle_line_number_mode(
+    pager: &Pager,
+    document: &RwLock<PagerDocument>,
+) -> Result<bool> {
+    let mut document = document
+        .write()
+        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+    let Some((output, line_navigation)) = document.cycle_line_number_mode() else {
+        return Ok(false);
+    };
+    pager.set_mapped_text(output, line_navigation)?;
+    Ok(true)
 }
 
 pub(super) fn copy_document_contents(

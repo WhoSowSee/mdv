@@ -111,9 +111,9 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 
 | File | Responsibility |
 |---|---|
-| [document.rs](../../src/pager/document.rs) | Pager document, screen, and callback types. |
+| [document.rs](../../src/pager/document.rs) | Pager document, line-number views, screen, and callback types. |
 | [page.rs](../../src/pager/page.rs) | `minus` pager setup and event loop. |
-| [rendering.rs](../../src/pager/rendering.rs) | Pager-specific dual rendering and source-line maps. |
+| [rendering.rs](../../src/pager/rendering.rs) | Pager-specific three-mode rendering and source-line maps. |
 | [input.rs](../../src/pager/input.rs) | Custom keys and classifier. |
 | [operations.rs](../../src/pager/operations.rs) | Refresh, clipboard, and messages. |
 | [watcher.rs](../../src/pager/watcher.rs) | Targeted file watcher. |
@@ -157,7 +157,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 |---|---|
 | [mod.rs](../../src/renderer/mod.rs) | Renderer module facade. |
 | [terminal.rs](../../src/renderer/terminal.rs) | Event-stream renderer and prepared theme/syntax resources. |
-| [terminal/pager.rs](../../src/renderer/terminal/pager.rs) | Pager-specific normal/source rendering variants. |
+| [terminal/pager.rs](../../src/renderer/terminal/pager.rs) | Pager-specific off/rendered/source line-number variants. |
 | [terminal/tests.rs](../../src/renderer/terminal/tests.rs) | Pager-rendering and terminal-renderer tests. |
 | [front_matter.rs](../../src/renderer/front_matter.rs) | Terminal and HTML front matter presentation. |
 | [line_numbers.rs](../../src/renderer/line_numbers.rs) | Number gutters and internal markers. |

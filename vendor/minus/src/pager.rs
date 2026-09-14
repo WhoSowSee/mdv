@@ -50,6 +50,17 @@ impl Pager {
         Ok(self.tx.send(Command::SetData(s.into()))?)
     }
 
+    /// Replaces text and its source map atomically, preserving the source position
+    /// and clearing selection and line-navigation highlights.
+    #[cfg(feature = "search")]
+    pub fn set_mapped_text(
+        &self,
+        text: String,
+        navigation: Option<LineNavigation>,
+    ) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::SetMappedData(text, navigation))?)
+    }
+
     /// Appends content without requiring a mutable handle.
     pub fn push_str(&self, s: impl Into<String>) -> Result<(), MinusError> {
         Ok(self.tx.send(Command::AppendData(s.into()))?)

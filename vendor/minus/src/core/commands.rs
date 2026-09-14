@@ -43,6 +43,8 @@ pub enum Command {
     SetSearchPrompt(Option<String>),
     #[cfg(feature = "search")]
     SetLineNavigation(Option<LineNavigation>),
+    #[cfg(feature = "search")]
+    SetMappedData(String, Option<LineNavigation>),
 
     LineWrapping(bool),
     SetLineNumbers(LineNumbers),
@@ -83,6 +85,8 @@ impl PartialEq for Command {
             (Self::SetSearchPrompt(left), Self::SetSearchPrompt(right)) => left == right,
             #[cfg(feature = "search")]
             (Self::SetLineNavigation(left), Self::SetLineNavigation(right)) => left == right,
+            #[cfg(feature = "search")]
+            (Self::SetMappedData(a, am), Self::SetMappedData(b, bm)) => a == b && am == bm,
             (Self::LineWrapping(d1), Self::LineWrapping(d2)) => d1 == d2,
             (Self::SetLineNumbers(d1), Self::SetLineNumbers(d2)) => d1 == d2,
             (Self::ShowPrompt(d1), Self::ShowPrompt(d2)) => d1 == d2,
@@ -109,6 +113,8 @@ impl Debug for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SetData(text) => write!(f, "SetData({text:?})"),
+            #[cfg(feature = "search")]
+            Self::SetMappedData(_, _) => write!(f, "SetMappedData"),
             Self::AppendData(text) => write!(f, "AppendData({text:?})"),
             Self::SetPrompt(text) => write!(f, "SetPrompt({text:?})"),
             Self::SetPromptRenderer(renderer) => {

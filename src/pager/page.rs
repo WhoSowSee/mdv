@@ -14,26 +14,38 @@ pub(crate) fn page(
     loop {
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
-        let (output, title, line_navigation, status_bar_transparent) = {
+        let (
+            output,
+            title,
+            line_navigation,
+            line_navigation_enabled,
+            line_number_toggle_enabled,
+            status_bar_transparent,
+        ) = {
             let document = document
                 .read()
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+            let (output, line_navigation) = document.display_snapshot();
+            let line_navigation_enabled = line_navigation.is_some();
             (
-                document.output.clone(),
+                output,
                 document.title.clone(),
-                document.line_navigation.clone(),
+                line_navigation,
+                line_navigation_enabled,
+                document.line_number_mode().is_some(),
                 document.status_bar_transparent(),
             )
         };
         let help_panel = build_help_panel(
             editor_enabled,
             refresh.is_some(),
-            line_navigation.is_some(),
+            line_navigation_enabled,
+            line_number_toggle_enabled,
             status_bar_transparent,
         )?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
-        pager.set_text(output)?;
-        pager.set_line_navigation(line_navigation)?;
+        pager.set_line_numbers(LineNumbers::AlwaysOff)?;
+        pager.set_mapped_text(output, line_navigation)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;
         pager.set_search_prompt("Find: ")?;
         pager.remove_hook(Hook::PostPagerExit, 1)?;
@@ -42,6 +54,7 @@ pub(crate) fn page(
             editor_requested: editor_requested.clone(),
             editor_enabled,
             help_panel: help_panel.clone(),
+            help_transparent: status_bar_transparent,
             pager: pager.clone(),
             document: document.clone(),
             refresh: refresh.clone(),

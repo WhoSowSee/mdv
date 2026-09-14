@@ -74,9 +74,9 @@ Pressing `.` toggles files excluded by `.gitignore`, the global Git ignore file,
 | File | Responsibility |
 |---|---|
 | [src/pager.rs](../../src/pager.rs) | Module facade and internal re-exports. |
-| [pager/document.rs](../../src/pager/document.rs) | `PagerDocument`, `RefreshCallback`, and `PagerScreen`. |
+| [pager/document.rs](../../src/pager/document.rs) | `PagerDocument`, line-number view state, `RefreshCallback`, and `PagerScreen`. |
 | [pager/page.rs](../../src/pager/page.rs) | Configure `minus::Pager` and run the pager/editor loop. |
-| [pager/rendering.rs](../../src/pager/rendering.rs) | Build the normal and line-navigation source-numbered pager views and their line maps. |
+| [pager/rendering.rs](../../src/pager/rendering.rs) | Build the three pager line-number views, prefixes, and source-line maps. |
 | [pager/input.rs](../../src/pager/input.rs) | Custom input classifier for help, copy, reload, and editor actions. |
 | [pager/footer.rs](../../src/pager/footer.rs) | Opaque/transparent footer, title, progress, and width clamping. |
 | [pager/help.rs](../../src/pager/help.rs) | Prompt panel listing available shortcuts. |
@@ -87,13 +87,13 @@ Pressing `.` toggles files excluded by `.gitignore`, the global Git ignore file,
 
 The document stores these values separately:
 
-- `output`: rendered ANSI text;
+- unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
+- the active line-number mode;
 - `source`: original Markdown for the clipboard;
 - optional `title`;
-- optional source-line navigation data;
 - `status_bar_transparent` from the selected theme.
 
-This separation is required: copying without a selection uses Markdown, while `pager.set_text` receives rendered output.
+This separation is required: copying without a selection uses Markdown, while `pager.set_text` receives the active rendered view. Source-line navigation data is derived from that view and the prepared source-numbered view.
 
 ## Input classifier
 
@@ -104,10 +104,15 @@ The custom classifier extends the default `minus` classifier with:
 - `/` or `Ctrl+F` to search;
 - `c` to copy a selection or the complete source;
 - `r` to refresh when a callback exists;
+- `l` to cycle the mdv line-number views;
 - `:` to open the source-line navigation prompt when source metadata is available;
 - `e` to open the file in an editor when available.
 
-The `:` prompt swaps in a source-numbered rendering and accepts a one-based Markdown source line. After a successful jump, that rendering and a fixed muted highlight remain active, while the footer shows `:N` immediately before document progress. `Esc` leaves line-navigation mode and restores the caller's original rendering and line-number mode. A missing line uses the same two-second status-message timeout as a search with no matches.
+The help panel uses three columns in wide terminals, two below 78 columns, and one below 52 columns; resizing an open panel recomputes its layout. Entries are ordered by the visible width of the key combination; descriptions do not affect ordering. Optional entries are removed when line navigation, line-number switching, reload, or editor integration is unavailable.
+
+`l` cycles `off → rendered → source → off`. The initial position comes from the effective `line_numbers` setting, so the first transition depends on how mdv was launched. When line-number switching is available, this mdv binding takes precedence over the default `minus` horizontal-scroll binding for `l`; the right arrow remains available for horizontal scrolling. The built-in `minus` gutter remains disabled; every numbered view is produced by `TerminalRenderer` and therefore uses the configured mdv colors, separator, margins, and wrapping.
+
+The `:` prompt accepts a one-based Markdown source line. It swaps in the prepared source-numbered rendering when another line-number mode is active and reuses the current rendering in source mode. After a successful jump, that rendering and a fixed muted highlight remain active, while the footer shows `:N` immediately before document progress. `Esc` leaves line-navigation mode and restores the view selected by `l`. A missing line uses the same two-second status-message timeout as a search with no matches.
 
 When an active search has matches, the footer shows the current and total occurrences immediately before document progress. Both status values use the muted `#5a5a5a` foreground. Incremental search updates the matching viewport and highlights after every query edit, before confirmation. Search navigation and counting operate on individual occurrences, including multiple matches in one row, and only the exact current range receives the stronger tint. The viewport stays fixed while the next occurrence is visible; the first result below it is revealed on the bottom row instead of being moved to the top. Match highlighting preserves syntax foreground colors and derives each background tint from the active text color. Mouse selection remains available during search, preserves syntax colors over a neutral `#2e313b` background, and produces a lighter combined tint where selection overlaps a match.
 
@@ -119,7 +124,7 @@ Long clipboard and reload operations run on separate threads so pager input rema
 
 `ActiveWatcher` watches the parent directory but compares the canonical or normalized event path with one target. `Modify` and `Create` events use a 100 ms debounce interval. Dropping the watcher sets a stop flag and joins its thread.
 
-The refresh callback re-reads and re-renders the document, atomically replaces `RwLock<PagerDocument>`, and updates both pager text and source-line navigation data.
+The refresh callback re-reads and re-renders all three views and preserves the selected line-number mode. Refresh and numbering changes use `Pager::set_mapped_text` to replace text and navigation in one command, preserve the source position, and clear obsolete selection and navigation highlights.
 
 ## Editor
 

@@ -14,7 +14,7 @@ use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
 
 mod pager;
-pub(crate) use pager::{PagerRender, SourceNumberedView};
+pub(crate) use pager::{PagerRender, PagerRenderView};
 
 /// Terminal renderer for markdown content
 pub struct TerminalRenderer {

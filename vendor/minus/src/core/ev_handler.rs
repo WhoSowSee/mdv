@@ -32,6 +32,11 @@ pub fn handle_event(
     is_exited: &Arc<AtomicBool>,
 ) -> Result<(), PromptError> {
     match ev {
+        #[cfg(feature = "search")]
+        Command::SetMappedData(text, navigation) => {
+            p.replace_mapped_text(text, navigation)?;
+            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        }
         Command::SetData(text) => {
             #[cfg(feature = "search")]
             p.configure_line_navigation(None)?;
