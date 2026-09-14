@@ -54,7 +54,7 @@ This ordering prevents metadata and setup commands from opening input or initial
 | `format_current_themes` | Formats the active terminal and code themes. |
 | `get_input_content` | Selects a file, `-`, piped standard input, or `--from` and returns its text. |
 | `strip_leading_bom` | Removes a UTF-8 BOM only when it occurs at the beginning of input. |
-| `RenderedOutput` | Carries rendered text and pager status-bar transparency. |
+| `RenderedOutput` | Carries rendered text, optional line-navigation data, and pager status-bar transparency. |
 
 ## Input handling
 
@@ -65,6 +65,8 @@ The application accepts three input sources:
 - a Markdown file selected by the interactive browser.
 
 Input is converted to one UTF-8 `String` before the Markdown pipeline starts, so files and pipes receive identical preprocessing.
+
+Pager rendering also retains source-line metadata and prepares the source-numbered view used while `:` navigation is active. Ordinary output still renders only the configured line-number mode.
 
 ## ANSI output and HTML
 

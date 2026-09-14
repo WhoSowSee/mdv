@@ -8,6 +8,7 @@ Rendering is split between an outer document facade and one stateful `EventRende
 |---|---|
 | [src/renderer/mod.rs](../../src/renderer/mod.rs) | Declares the terminal renderer, event handlers, line numbering, and syntax resources. |
 | [src/renderer/terminal.rs](../../src/renderer/terminal.rs) | `TerminalRenderer`: themes, syntax set, code theme, and event-stream ANSI/HTML entry points. |
+| [src/renderer/terminal/pager.rs](../../src/renderer/terminal/pager.rs) | Builds normal and source-numbered render variants for pager navigation without duplicating an already-source-numbered document. |
 | [src/renderer/front_matter.rs](../../src/renderer/front_matter.rs) | Front matter panel, table, normalized text, blocks, YAML source, and HTML event formatting. |
 | [src/renderer/line_numbers.rs](../../src/renderer/line_numbers.rs) | Source and rendered gutters plus removal of internal line markers. |
 | [src/renderer/syntax_set.rs](../../src/renderer/syntax_set.rs) | Cached embedded `SyntaxSet` with optional user `.sublime-syntax` files. |
@@ -40,6 +41,8 @@ Rendering is split between an outer document facade and one stateful `EventRende
 - no line numbers: call `render_events` directly;
 - rendered line numbers: render first, then number visual rows;
 - source line numbers: decode markers emitted by the Markdown pipeline.
+
+Pager rendering keeps the source-line map alongside the configured output. It also prepares a source-numbered variant for active `:` navigation; when source numbering is already configured, the same rendered text is reused.
 
 Only the left margin is added to output lines at the end. The right margin reduces available width but does not append spaces.
 

@@ -30,7 +30,7 @@ After large source files were split, large inline `mod tests` blocks moved into 
 | `src/editor.rs` | `src/editor/tests.rs` |
 | `src/list_marker.rs` | `src/list_marker/tests.rs` |
 | `src/utils.rs` | `src/utils/tests.rs` |
-| Renderer | `renderer/tests.rs`, `event/code/tests.rs`, `syntax_theme/tests.rs`, and local modules |
+| Renderer | `renderer/tests.rs`, `renderer/terminal/tests.rs`, `event/code/tests.rs`, `syntax_theme/tests.rs`, and local modules |
 
 Unit tests cover parsers, semantic defaults, width helpers, state transitions, and internal invariants that are difficult to observe through the CLI alone.
 

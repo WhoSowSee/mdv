@@ -29,7 +29,7 @@ pub use list_marker::{PrettyListStyle, UniformListMarker};
 
 use anyhow::Result;
 use clap::{ArgMatches, CommandFactory};
-use cli::{Cli, CliCommand};
+use cli::{Cli, CliCommand, LineNumberOptions, LineNumberTarget};
 use config::Config;
 use markdown::MarkdownProcessor;
 use renderer::TerminalRenderer;
@@ -88,6 +88,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
 
     let content = get_input_content(&cli)?;
     let stdout_is_terminal = std::io::stdout().is_terminal();
+    let pager_active = cli.pager && stdout_is_terminal;
     let rendered = render_document(
         &content,
         &config,
@@ -95,9 +96,9 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         show_current_theme,
         current_preset,
         stdout_is_terminal,
+        pager_active,
     )?;
 
-    let pager_active = cli.pager && stdout_is_terminal;
     if pager_active {
         let pager_file = cli
             .filename
@@ -120,8 +121,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             }) as pager::RefreshCallback
         });
         pager::page(
-            pager::PagerDocument::new(rendered.output, content)
-                .with_status_bar_transparent(rendered.pager_status_bar_transparent),
+            rendered.into_pager_document(content),
             pager_file,
             refresh,
             pager::PagerScreen::Alternate,
@@ -175,11 +175,6 @@ fn build_help_document(
         .with_status_bar_transparent(status_bar_transparent))
 }
 
-struct RenderedOutput {
-    output: String,
-    pager_status_bar_transparent: bool,
-}
-
 fn render_document(
     content: &str,
     config: &Config,
@@ -187,16 +182,27 @@ fn render_document(
     show_current_theme: bool,
     current_preset: Option<&str>,
     add_leading_blank: bool,
-) -> Result<RenderedOutput> {
-    let processor = MarkdownProcessor::new(config);
+    for_pager: bool,
+) -> Result<pager::RenderedOutput> {
+    let processor_config =
+        (for_pager && !do_html && !config.source_line_numbers_enabled()).then(|| {
+            let mut config = config.clone();
+            config.line_numbers = Some(LineNumberOptions {
+                target: LineNumberTarget::Source,
+                separator: false,
+            });
+            config
+        });
+    let processor = MarkdownProcessor::new(processor_config.as_ref().unwrap_or(config));
     let document = processor.parse_document(content)?;
     let renderer = TerminalRenderer::new(config)?;
     let pager_status_bar_transparent = renderer.pager_status_bar_transparent();
 
     if do_html {
-        return Ok(RenderedOutput {
+        return Ok(pager::RenderedOutput {
             output: renderer.to_html_document(document)?,
-            pager_status_bar_transparent,
+            line_navigation: None,
+            status_bar_transparent: pager_status_bar_transparent,
         });
     }
 
@@ -213,10 +219,16 @@ fn render_document(
     if add_leading_blank {
         output.push('\n');
     }
-    output.push_str(&renderer.render_document(document)?);
-    Ok(RenderedOutput {
+    let (output, line_navigation) = if for_pager {
+        pager::render_terminal_document(&renderer, document, output)?
+    } else {
+        output.push_str(&renderer.render_document(document)?);
+        (output, None)
+    };
+    Ok(pager::RenderedOutput {
         output,
-        pager_status_bar_transparent,
+        line_navigation,
+        status_bar_transparent: pager_status_bar_transparent,
     })
 }
 
@@ -236,9 +248,9 @@ fn render_document_file(
         show_current_theme,
         current_preset,
         true,
+        true,
     )?;
-    Ok(pager::PagerDocument::new(rendered.output, content)
-        .with_status_bar_transparent(rendered.pager_status_bar_transparent))
+    Ok(rendered.into_pager_document(content))
 }
 
 fn format_current_themes(config: &Config) -> String {

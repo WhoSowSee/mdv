@@ -128,6 +128,13 @@ impl<'a> PromptContext<'a> {
         let total = self.state.search_state.search_matches.len();
         (total > 0).then_some((self.state.search_state.search_mark + 1, total))
     }
+
+    /// Returns the selected source line while line-navigation mode is active.
+    #[must_use]
+    #[cfg(feature = "search")]
+    pub const fn line_navigation_position(&self) -> Option<usize> {
+        self.state.line_navigation_position()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

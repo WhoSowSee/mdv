@@ -76,6 +76,7 @@ Pressing `.` toggles files excluded by `.gitignore`, the global Git ignore file,
 | [src/pager.rs](../../src/pager.rs) | Module facade and internal re-exports. |
 | [pager/document.rs](../../src/pager/document.rs) | `PagerDocument`, `RefreshCallback`, and `PagerScreen`. |
 | [pager/page.rs](../../src/pager/page.rs) | Configure `minus::Pager` and run the pager/editor loop. |
+| [pager/rendering.rs](../../src/pager/rendering.rs) | Build the normal and line-navigation source-numbered pager views and their line maps. |
 | [pager/input.rs](../../src/pager/input.rs) | Custom input classifier for help, copy, reload, and editor actions. |
 | [pager/footer.rs](../../src/pager/footer.rs) | Opaque/transparent footer, title, progress, and width clamping. |
 | [pager/help.rs](../../src/pager/help.rs) | Prompt panel listing available shortcuts. |
@@ -89,6 +90,7 @@ The document stores these values separately:
 - `output`: rendered ANSI text;
 - `source`: original Markdown for the clipboard;
 - optional `title`;
+- optional source-line navigation data;
 - `status_bar_transparent` from the selected theme.
 
 This separation is required: copying without a selection uses Markdown, while `pager.set_text` receives rendered output.
@@ -102,7 +104,10 @@ The custom classifier extends the default `minus` classifier with:
 - `/` or `Ctrl+F` to search;
 - `c` to copy a selection or the complete source;
 - `r` to refresh when a callback exists;
+- `:` to open the source-line navigation prompt when source metadata is available;
 - `e` to open the file in an editor when available.
+
+The `:` prompt swaps in a source-numbered rendering and accepts a one-based Markdown source line. After a successful jump, that rendering and a fixed muted highlight remain active, while the footer shows `:N` immediately before document progress. `Esc` leaves line-navigation mode and restores the caller's original rendering and line-number mode. A missing line uses the same two-second status-message timeout as a search with no matches.
 
 When an active search has matches, the footer shows the current and total occurrences immediately before document progress. Both status values use the muted `#5a5a5a` foreground. Incremental search updates the matching viewport and highlights after every query edit, before confirmation. Search navigation and counting operate on individual occurrences, including multiple matches in one row, and only the exact current range receives the stronger tint. The viewport stays fixed while the next occurrence is visible; the first result below it is revealed on the bottom row instead of being moved to the top. Match highlighting preserves syntax foreground colors and derives each background tint from the active text color. Mouse selection remains available during search, preserves syntax colors over a neutral `#2e313b` background, and produces a lighter combined tint where selection overlaps a match.
 
@@ -114,7 +119,7 @@ Long clipboard and reload operations run on separate threads so pager input rema
 
 `ActiveWatcher` watches the parent directory but compares the canonical or normalized event path with one target. `Modify` and `Create` events use a 100 ms debounce interval. Dropping the watcher sets a stop flag and joins its thread.
 
-The refresh callback re-reads and re-renders the document, atomically replaces `RwLock<PagerDocument>`, and calls `pager.set_text`.
+The refresh callback re-reads and re-renders the document, atomically replaces `RwLock<PagerDocument>`, and updates both pager text and source-line navigation data.
 
 ## Editor
 

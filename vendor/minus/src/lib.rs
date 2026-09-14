@@ -19,6 +19,8 @@ mod dynamic_pager;
 pub mod error;
 pub mod hooks;
 pub mod input;
+#[cfg(feature = "search")]
+mod line_navigation;
 #[path = "core/mod.rs"]
 mod minus_core;
 mod pager;
@@ -42,6 +44,8 @@ pub use minus_core::RunMode;
 pub use search::SearchMode;
 
 pub use error::MinusError;
+#[cfg(feature = "search")]
+pub use line_navigation::LineNavigation;
 pub use pager::Pager;
 pub use prompt::{
     PromptAttribute, PromptColor, PromptContext, PromptError, PromptLine, PromptRenderer,

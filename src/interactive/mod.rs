@@ -5,7 +5,7 @@ pub(crate) mod screen;
 
 use crate::config::Config;
 use crate::editor::EditorCommand;
-use crate::pager::{self, PagerDocument, PagerScreen, RefreshCallback};
+use crate::pager::{self, PagerScreen, RefreshCallback};
 use anyhow::{Result, anyhow, ensure};
 use app::{App, AppAction};
 use crossterm::event::{self, Event};
@@ -154,10 +154,9 @@ fn open_file_in_pager(path: PathBuf, config: &Config, screen: PagerScreen) -> Re
 }
 
 fn open_source_in_pager(source: String, config: &Config) -> Result<()> {
-    let rendered = crate::render_document(&source, config, false, false, None, true)?;
+    let rendered = crate::render_document(&source, config, false, false, None, true, true)?;
     pager::page(
-        PagerDocument::new(rendered.output, source)
-            .with_status_bar_transparent(rendered.pager_status_bar_transparent),
+        rendered.into_pager_document(source),
         None,
         None,
         PagerScreen::Alternate,

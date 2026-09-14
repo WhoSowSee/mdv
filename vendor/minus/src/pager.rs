@@ -20,7 +20,7 @@ use std::{
 };
 
 #[cfg(feature = "search")]
-use crate::search::SearchOpts;
+use crate::{LineNavigation, search::SearchOpts};
 
 /// Sends content and configuration commands to a running pager.
 ///
@@ -108,6 +108,16 @@ impl Pager {
     /// Restores the default search prefixes.
     pub fn clear_search_prompt(&self) -> Result<(), MinusError> {
         Ok(self.tx.send(Command::SetSearchPrompt(None))?)
+    }
+
+    /// Configures source-numbered content used by `:` line-navigation mode.
+    #[cfg(feature = "search")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "search")))]
+    pub fn set_line_navigation(
+        &self,
+        navigation: Option<LineNavigation>,
+    ) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::SetLineNavigation(navigation))?)
     }
 
     /// Displays a single-line message until the next input event.

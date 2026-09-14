@@ -309,6 +309,8 @@ fn dispatch_input_event(
 ) -> Result<bool, MinusError> {
     let mut guard = ps.lock();
     let input = guard.input_classifier.classify_input(ev, &guard);
+    #[cfg(feature = "search")]
+    let line_navigation_available = guard.line_navigation_available();
     if !matches!(&input, Some(InputEvent::Number(_))) {
         guard.prefix_num.clear();
         guard.format_prompt()?;
@@ -317,7 +319,9 @@ fn dispatch_input_event(
 
     if let Some(input) = input {
         #[cfg(feature = "search")]
-        if matches!(&input, InputEvent::Search(_)) {
+        if matches!(&input, InputEvent::Search(_))
+            || matches!(&input, InputEvent::GoToLine) && line_navigation_available
+        {
             *user_input_active.0.lock() = false;
         }
         if let Err(TrySendError::Disconnected(_)) = evtx.try_send(Command::UserInput(input)) {
@@ -330,14 +334,16 @@ fn dispatch_input_event(
 #[cfg(all(test, feature = "search"))]
 mod tests {
     use super::dispatch_input_event;
-    use crate::{PagerState, SearchMode, input::InputEvent, minus_core::commands::Command};
+    use crate::{
+        LineNavigation, PagerState, SearchMode, input::InputEvent, minus_core::commands::Command,
+    };
     use crossbeam_channel::unbounded;
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
     use parking_lot::{Condvar, Mutex};
     use std::sync::Arc;
 
     #[test]
-    fn search_pauses_the_general_event_reader_before_queueing() {
+    fn input_prompts_pause_the_general_event_reader_before_queueing() {
         let (tx, rx) = unbounded();
         let state = Arc::new(Mutex::new(PagerState::new().unwrap()));
         let input_active = Arc::new((Mutex::new(true), Condvar::new()));
@@ -355,6 +361,24 @@ mod tests {
         assert!(matches!(
             rx.try_recv(),
             Ok(Command::UserInput(InputEvent::Search(SearchMode::Forward)))
+        ));
+
+        state.lock().line_navigation =
+            Some(LineNavigation::new("1 text", vec![Some(1)], vec![Some(1)]));
+        *input_active.0.lock() = true;
+        let connected = dispatch_input_event(
+            Event::Key(KeyEvent::new(KeyCode::Char(':'), KeyModifiers::NONE)),
+            &tx,
+            &state,
+            &input_active,
+        )
+        .unwrap();
+
+        assert!(connected);
+        assert!(!*input_active.0.lock());
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(Command::UserInput(InputEvent::GoToLine))
         ));
     }
 }

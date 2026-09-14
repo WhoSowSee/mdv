@@ -6,8 +6,10 @@ pub(super) fn apply_refreshed_document(
     refreshed: PagerDocument,
 ) -> Result<()> {
     let output = refreshed.output.clone();
+    let line_navigation = refreshed.line_navigation.clone();
     replace_document(document, refreshed)?;
     pager.set_text(output)?;
+    pager.set_line_navigation(line_navigation)?;
     Ok(())
 }
 

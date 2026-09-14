@@ -28,7 +28,7 @@ use std::{
 use std::collections::hash_map::RandomState;
 
 mod highlight;
-pub(crate) use highlight::highlight_search_matches;
+pub(crate) use highlight::{highlight_line_navigation_target, highlight_search_matches};
 
 static INVERT: LazyLock<String> = LazyLock::new(|| Attribute::Reverse.to_string());
 static NORMAL: LazyLock<String> = LazyLock::new(|| Attribute::NoReverse.to_string());

@@ -4,6 +4,8 @@
 #[cfg(feature = "search")]
 use crate::search::{SearchMatch, SearchMode, SearchOpts, highlight_search_matches};
 
+#[cfg(feature = "search")]
+use crate::LineNavigation;
 use crate::{
     LineNumbers, PromptContext, PromptError, PromptRenderer,
     error::{MinusError, TermError},
@@ -110,6 +112,10 @@ pub struct PagerState {
     pub search_state: SearchState,
     #[cfg(feature = "search")]
     pub(crate) search_prompt: Option<String>,
+    #[cfg(feature = "search")]
+    pub(crate) line_navigation: Option<LineNavigation>,
+    #[cfg(feature = "search")]
+    pub(crate) line_navigation_session: Option<crate::line_navigation::LineNavigationSession>,
     pub screen: Screen,
     pub selection: Option<Selection>,
     pub(crate) prompt: String,
@@ -175,6 +181,10 @@ impl PagerState {
             search_state: SearchState::default(),
             #[cfg(feature = "search")]
             search_prompt: None,
+            #[cfg(feature = "search")]
+            line_navigation: None,
+            #[cfg(feature = "search")]
+            line_navigation_session: None,
             cols,
             rows,
             prefix_num: String::new(),
@@ -509,6 +519,15 @@ impl PagerState {
             (Cow::Borrowed(raw_row.as_str()), 0)
         } else {
             self.horizontal_scroll_view(raw_row)
+        };
+        #[cfg(feature = "search")]
+        let row = if self.source_line_is_highlighted(absolute_row) {
+            Cow::Owned(crate::search::highlight_line_navigation_target(
+                &row,
+                prefix_width,
+            ))
+        } else {
+            row
         };
         let row = if let Some((start_col, end_col)) = self.selection_bounds_for_row(absolute_row) {
             let visible_start = start_col.saturating_sub(skipped_chars);

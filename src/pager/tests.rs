@@ -38,43 +38,29 @@ fn escape_routing_respects_help_and_search_state() {
     let event = Event::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
     assert_eq!(
-        help_input_action(&event, true, false),
+        help_input_action(&event, true, false, false),
         HelpInputAction::Dismiss
     );
     assert_eq!(
-        help_input_action(&event, false, false),
+        help_input_action(&event, false, false, false),
         HelpInputAction::Forward
     );
     assert_eq!(
-        help_input_action(&event, true, true),
+        help_input_action(&event, true, true, false),
         HelpInputAction::Forward
     );
 }
 
 #[test]
-fn search_closes_visible_help_before_reaching_minus() {
+fn input_prompts_close_visible_help_before_reaching_minus() {
     let event = Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
 
     assert_eq!(
-        help_input_action(&event, true, false),
+        help_input_action(&event, true, false, true),
         HelpInputAction::DismissAndForward
     );
     assert_eq!(
-        help_input_action(&event, false, false),
-        HelpInputAction::Forward
-    );
-}
-
-#[test]
-fn control_f_closes_visible_help_before_reaching_minus() {
-    let event = Event::Key(KeyEvent::new(KeyCode::Char('f'), KeyModifiers::CONTROL));
-
-    assert_eq!(
-        help_input_action(&event, true, false),
-        HelpInputAction::DismissAndForward
-    );
-    assert_eq!(
-        help_input_action(&event, false, false),
+        help_input_action(&event, false, false, false),
         HelpInputAction::Forward
     );
 }
@@ -84,11 +70,11 @@ fn question_mark_always_toggles_help() {
     let event = Event::Key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::SHIFT));
 
     assert_eq!(
-        help_input_action(&event, false, false),
+        help_input_action(&event, false, false, false),
         HelpInputAction::Toggle
     );
     assert_eq!(
-        help_input_action(&event, true, false),
+        help_input_action(&event, true, false, false),
         HelpInputAction::Toggle
     );
 }

@@ -73,7 +73,17 @@ impl InputClassifier for PagerInputClassifier {
         state: &PagerState,
     ) -> Option<InputEvent> {
         let help_visible = state.prompt_panel_rows() > 0;
-        match help_input_action(&event, help_visible, state.search_is_active()) {
+        let default_action = self.default.classify_input(event.clone(), state);
+        let opens_input_prompt = matches!(
+            default_action,
+            Some(InputEvent::Search(_) | InputEvent::GoToLine)
+        );
+        match help_input_action(
+            &event,
+            help_visible,
+            state.search_is_active(),
+            opens_input_prompt,
+        ) {
             HelpInputAction::Toggle => {
                 self.toggle_help(help_visible);
                 return None;
@@ -96,7 +106,7 @@ impl InputClassifier for PagerInputClassifier {
             self.editor_requested.store(true, Ordering::SeqCst);
             Some(InputEvent::Exit)
         } else {
-            self.default.classify_input(event, state)
+            default_action
         }
     }
 }
@@ -137,12 +147,13 @@ pub(super) fn help_input_action(
     event: &minus::input::crossterm_event::Event,
     help_visible: bool,
     search_active: bool,
+    opens_input_prompt: bool,
 ) -> HelpInputAction {
     if is_help_key(event) {
         HelpInputAction::Toggle
     } else if help_visible && is_escape_key(event) && !search_active {
         HelpInputAction::Dismiss
-    } else if help_visible && is_search_key(event) {
+    } else if help_visible && opens_input_prompt {
         HelpInputAction::DismissAndForward
     } else {
         HelpInputAction::Forward
@@ -159,19 +170,6 @@ pub(super) fn is_escape_key(event: &minus::input::crossterm_event::Event) -> boo
                 && key.modifiers == KeyModifiers::NONE
                 && key.code == KeyCode::Esc
     )
-}
-
-pub(super) fn is_search_key(event: &minus::input::crossterm_event::Event) -> bool {
-    use minus::input::crossterm_event::{Event, KeyCode, KeyEventKind, KeyModifiers};
-
-    is_plain_character_key(event, '/')
-        || matches!(
-            event,
-            Event::Key(key)
-                if key.kind == KeyEventKind::Press
-                    && key.modifiers == KeyModifiers::CONTROL
-                    && key.code == KeyCode::Char('f')
-        )
 }
 
 pub(super) fn is_copy_key(event: &minus::input::crossterm_event::Event) -> bool {

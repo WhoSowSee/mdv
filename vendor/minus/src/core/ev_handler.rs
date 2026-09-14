@@ -11,13 +11,15 @@ use super::commands::{Command, IoCommand};
 use super::utils::display::{self, AppendStyle};
 use crate::ExitStrategy;
 #[cfg(feature = "search")]
-use crate::{Pager, search};
+use crate::{Pager, line_navigation, search};
 use crate::{PagerState, PromptError, error::MinusError, hooks::Hook, input::InputEvent};
 
 #[cfg(feature = "search")]
 const NO_SEARCH_MATCH_MESSAGE: &str = "No matches found";
 #[cfg(feature = "search")]
-const NO_SEARCH_MATCH_DURATION: Duration = Duration::from_secs(2);
+const LINE_NOT_FOUND_MESSAGE: &str = "Line not found";
+#[cfg(feature = "search")]
+const NOT_FOUND_MESSAGE_DURATION: Duration = Duration::from_secs(2);
 
 #[cfg_attr(not(feature = "search"), allow(unused_mut))]
 #[allow(clippy::too_many_lines)]
@@ -31,6 +33,8 @@ pub fn handle_event(
 ) -> Result<(), PromptError> {
     match ev {
         Command::SetData(text) => {
+            #[cfg(feature = "search")]
+            p.configure_line_navigation(None)?;
             p.screen.orig_text = text;
             p.screen.line_count = p.screen.orig_text.lines().count();
             p.reformat_display()?;
@@ -155,14 +159,25 @@ pub fn handle_event(
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::Search(m)) => {
-            if p.message_id.take().is_some() {
-                p.message = None;
-                queue_prompt_redraw(p, command_queue)?;
-            }
+            dismiss_timed_message(p);
             p.search_mode = m;
             p.search_state.search_mode = m;
             p.search_state.search_mark = 0;
             command_queue.push_back(Command::Io(IoCommand::FetchSearchQuery));
+        }
+        #[cfg(feature = "search")]
+        Command::UserInput(InputEvent::GoToLine) => {
+            if p.begin_line_navigation()? {
+                dismiss_timed_message(p);
+                command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+                command_queue.push_back(Command::Io(IoCommand::FetchLineNumber));
+            }
+        }
+        #[cfg(feature = "search")]
+        Command::UserInput(InputEvent::ExitLineNavigation) => {
+            if p.exit_line_navigation()? {
+                command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+            }
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::CancelSearch) => {
@@ -201,6 +216,8 @@ pub fn handle_event(
         }
 
         Command::AppendData(text) => {
+            #[cfg(feature = "search")]
+            p.configure_line_navigation(None)?;
             let prev_unterminated = p.screen.unterminated;
             let prev_fmt_lines_count = p.screen.formatted_lines_count();
             let append_style = p.append_str(text.as_str())?;
@@ -259,6 +276,8 @@ pub fn handle_event(
         }
         #[cfg(feature = "search")]
         Command::SetSearchPrompt(prompt) => p.search_prompt = prompt,
+        #[cfg(feature = "search")]
+        Command::SetLineNavigation(navigation) => p.configure_line_navigation(navigation)?,
         Command::SetLineNumbers(ln) => {
             p.line_numbers = ln;
             p.reformat_display()?;
@@ -315,6 +334,13 @@ fn queue_prompt_redraw(
     p.format_prompt()?;
     command_queue.push_back(Command::Io(IoCommand::RedrawPrompt));
     Ok(())
+}
+
+#[cfg(feature = "search")]
+fn dismiss_timed_message(p: &mut PagerState) {
+    if p.message_id.take().is_some() {
+        p.message = None;
+    }
 }
 
 #[cfg(feature = "search")]
@@ -410,7 +436,7 @@ fn set_search_position(p: &mut PagerState, pager: &Pager) -> Result<(), MinusErr
         .get(p.search_state.search_mark)
         .map(|search_match| search_match.row)
     else {
-        pager.send_message_for(NO_SEARCH_MATCH_MESSAGE, NO_SEARCH_MATCH_DURATION)?;
+        pager.send_message_for(NO_SEARCH_MATCH_MESSAGE, NOT_FOUND_MESSAGE_DURATION)?;
         return Ok(());
     };
     p.upper_mark = upper_mark;
@@ -474,6 +500,38 @@ fn apply_search_result(
     Ok(())
 }
 
+#[cfg(feature = "search")]
+fn apply_line_navigation_result(
+    p: &mut PagerState,
+    pager: &Pager,
+    command_queue: &mut CommandQueue,
+    input: line_navigation::LineInputResult,
+) -> Result<(), MinusError> {
+    let (requested, notify_not_found) = match input {
+        line_navigation::LineInputResult::Cancelled => (None, false),
+        line_navigation::LineInputResult::Confirmed(line) => (line, true),
+    };
+    let found = p.finish_line_navigation(requested)?;
+    command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+    if notify_not_found && !found {
+        pager.send_message_for(LINE_NOT_FOUND_MESSAGE, NOT_FOUND_MESSAGE_DURATION)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "search")]
+fn with_general_input_paused<T>(
+    user_input_active: &Arc<(Mutex<bool>, Condvar)>,
+    read: impl FnOnce() -> Result<T, MinusError>,
+) -> Result<T, MinusError> {
+    *user_input_active.0.lock() = false;
+    user_input_active.1.notify_one();
+    let result = read();
+    *user_input_active.0.lock() = true;
+    user_input_active.1.notify_one();
+    result
+}
+
 #[cfg_attr(
     not(feature = "search"),
     allow(unused_variables),
@@ -526,19 +584,18 @@ pub fn handle_io_command(
         }
         #[cfg(feature = "search")]
         IoCommand::FetchSearchQuery => {
-            // Suspend the general reader while the search loop owns terminal input.
-            let (lock, cvar) = (&user_input_active.0, &user_input_active.1);
-            let mut active = lock.lock();
-            *active = false;
-            drop(active);
-            cvar.notify_one();
-            let search_result = search::fetch_input(&mut out, p)?;
-            let mut active = lock.lock();
-            *active = true;
-            drop(active);
-            cvar.notify_one();
+            let search_result =
+                with_general_input_paused(user_input_active, || search::fetch_input(&mut out, p))?;
 
             apply_search_result(p, pager, command_queue, search_result)?;
+        }
+        #[cfg(feature = "search")]
+        IoCommand::FetchLineNumber => {
+            let input = with_general_input_paused(user_input_active, || {
+                line_navigation::fetch_line_number(&mut out, p)
+            })?;
+
+            apply_line_navigation_result(p, pager, command_queue, input)?;
         }
     }
     Ok(())
@@ -554,6 +611,9 @@ mod tests {
     };
     use std::fmt::Write;
     use std::sync::{Arc, atomic::AtomicBool};
+
+    #[cfg(feature = "search")]
+    use crate::LineNavigation;
 
     const TEST_STR: &str = "This is some sample text";
 
@@ -717,7 +777,7 @@ mod tests {
         super::set_search_position(&mut ps, &pager).unwrap();
         assert_eq!(ps.upper_mark, 3);
         assert_eq!(
-            super::NO_SEARCH_MATCH_DURATION,
+            super::NOT_FOUND_MESSAGE_DURATION,
             std::time::Duration::from_secs(2)
         );
         let notification = pager.rx.try_recv().unwrap();
@@ -749,11 +809,46 @@ mod tests {
         assert_eq!(ps.message_id, None);
         assert_eq!(
             command_queue.pop_front(),
-            Some(Command::Io(IoCommand::RedrawPrompt))
+            Some(Command::Io(IoCommand::FetchSearchQuery))
         );
+    }
+
+    #[cfg(feature = "search")]
+    #[test]
+    fn missing_source_line_uses_the_standard_timed_notification() {
+        let mut ps = PagerState::new().unwrap();
+        let pager = Pager::new();
+        let mut command_queue = CommandQueue::new_zero();
+        ps.screen.orig_text = "first\nsecond".to_string();
+        ps.screen.line_count = 2;
+        ps.reformat_display().unwrap();
+        ps.line_navigation = Some(LineNavigation::new(
+            "1 first\n2 second",
+            vec![Some(1), Some(2)],
+            vec![Some(1), Some(2)],
+        ));
+        assert!(ps.begin_line_navigation().unwrap());
+
+        super::apply_line_navigation_result(
+            &mut ps,
+            &pager,
+            &mut command_queue,
+            crate::line_navigation::LineInputResult::Confirmed(Some(99)),
+        )
+        .unwrap();
+
+        assert!(!ps.line_navigation_is_active());
+        assert_eq!(ps.screen.orig_text, "first\nsecond");
         assert_eq!(
             command_queue.pop_front(),
-            Some(Command::Io(IoCommand::FetchSearchQuery))
+            Some(Command::Io(IoCommand::RedrawDisplay))
+        );
+        assert_eq!(
+            pager.rx.try_recv().unwrap(),
+            Command::SetTimedMessage {
+                text: "Line not found".to_string(),
+                id: 1,
+            }
         );
     }
 

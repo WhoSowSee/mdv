@@ -1,4 +1,6 @@
 #[cfg(feature = "search")]
+use crate::LineNavigation;
+#[cfg(feature = "search")]
 use crate::SearchMode;
 use crate::{
     LineNumbers, PagerState,
@@ -439,7 +441,7 @@ fn test_misc_events() {
 #[test]
 #[cfg(feature = "search")]
 #[allow(clippy::trivial_regex)]
-fn escape_does_not_exit_while_search_highlights_are_active() {
+fn escape_closes_active_modes_before_exiting_the_pager() {
     let mut pager = PagerState::new().unwrap();
     pager.search_state.search_mode = SearchMode::Forward;
     pager.search_state.search_term = Some(regex::Regex::new("pager").unwrap());
@@ -455,15 +457,31 @@ fn escape_does_not_exit_while_search_highlights_are_active() {
         Some(InputEvent::CancelSearch)
     );
     assert_eq!(
-        DefaultInputClassifier.classify_input(event, &pager),
+        DefaultInputClassifier.classify_input(event.clone(), &pager),
         Some(InputEvent::CancelSearch)
+    );
+
+    pager.screen.orig_text = "pager".to_string();
+    pager.screen.line_count = 1;
+    pager.reformat_display().unwrap();
+    pager.line_navigation = Some(LineNavigation::new("1 pager", vec![Some(1)], vec![Some(1)]));
+    assert!(pager.begin_line_navigation().unwrap());
+    assert!(pager.finish_line_navigation(Some(1)).unwrap());
+
+    assert_eq!(
+        handle_input(event.clone(), &pager),
+        Some(InputEvent::ExitLineNavigation)
+    );
+    assert_eq!(
+        DefaultInputClassifier.classify_input(event, &pager),
+        Some(InputEvent::ExitLineNavigation)
     );
 }
 
 #[test]
 #[allow(clippy::too_many_lines)]
 #[cfg(feature = "search")]
-fn test_search_bindings() {
+fn test_search_and_line_navigation_bindings() {
     let mut pager = PagerState::new().unwrap();
     pager.upper_mark = 12;
     pager.line_numbers = LineNumbers::Enabled;
@@ -560,4 +578,19 @@ fn test_search_bindings() {
             Some(InputEvent::MoveToNextMatch(1))
         );
     }
+
+    let line_event = Event::Key(KeyEvent::new(KeyCode::Char(':'), KeyModifiers::SHIFT));
+    assert_eq!(
+        handle_input(line_event.clone(), &pager),
+        Some(InputEvent::Ignore)
+    );
+    pager.line_navigation = Some(LineNavigation::new("1 text", vec![Some(1)], vec![Some(1)]));
+    assert_eq!(
+        handle_input(line_event.clone(), &pager),
+        Some(InputEvent::GoToLine)
+    );
+    assert_eq!(
+        DefaultInputClassifier.classify_input(line_event, &pager),
+        Some(InputEvent::GoToLine)
+    );
 }

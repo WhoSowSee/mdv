@@ -11,6 +11,12 @@ const INTERNAL_MARKER_ONE: char = '\u{200d}';
 const PLAIN_GUTTER_SUFFIX_WIDTH: usize = 1;
 const SEPARATOR_GUTTER_SUFFIX_WIDTH: usize = 3;
 
+#[derive(Default)]
+pub(super) struct SourceMappedOutput {
+    pub(super) output: String,
+    pub(super) source_lines: Vec<Option<usize>>,
+}
+
 pub(super) fn max_source_line(events: &[Event<'_>]) -> Option<usize> {
     events
         .iter()
@@ -68,36 +74,67 @@ pub(super) fn apply_line_numbers(
     separator_style: &AnsiStyle,
     options: LineNumberOptions,
     no_colors: bool,
-) -> String {
+    collect_source_lines: bool,
+) -> SourceMappedOutput {
+    let number_width = max_line.to_string().len();
+    map_output_lines(
+        output,
+        gutter_width(max_line, options),
+        collect_source_lines,
+        |numbered, rendered_index, source_line| {
+            let line_number = match options.target {
+                LineNumberTarget::Rendered => Some(rendered_index + 1),
+                LineNumberTarget::Source => source_line,
+            };
+            numbered.push_str(&format_gutter(
+                line_number,
+                number_width,
+                number_style,
+                separator_style,
+                options,
+                no_colors,
+            ));
+        },
+    )
+}
+
+pub(super) fn strip_metadata(output: &str) -> SourceMappedOutput {
+    map_output_lines(output, 0, true, |_, _, _| {})
+}
+
+fn map_output_lines(
+    output: &str,
+    extra_capacity_per_line: usize,
+    collect_source_lines: bool,
+    mut write_prefix: impl FnMut(&mut String, usize, Option<usize>),
+) -> SourceMappedOutput {
     if output.is_empty() {
-        return String::new();
+        return SourceMappedOutput::default();
     }
 
-    let number_width = max_line.to_string().len();
-    let mut numbered = String::with_capacity(
-        output.len() + rendered_line_count(output) * gutter_width(max_line, options),
-    );
+    let line_count = rendered_line_count(output);
+    let mut mapped = String::with_capacity(output.len() + line_count * extra_capacity_per_line);
+    let mut source_lines = if collect_source_lines {
+        Vec::with_capacity(line_count)
+    } else {
+        Vec::new()
+    };
     for (rendered_index, rendered_line) in output.split_inclusive('\n').enumerate() {
         let (content, newline) = rendered_line
             .strip_suffix('\n')
             .map_or((rendered_line, ""), |content| (content, "\n"));
         let (content, source_line) = strip_internal_markers(content);
-        let line_number = match options.target {
-            LineNumberTarget::Rendered => Some(rendered_index + 1),
-            LineNumberTarget::Source => source_line,
-        };
-        numbered.push_str(&format_gutter(
-            line_number,
-            number_width,
-            number_style,
-            separator_style,
-            options,
-            no_colors,
-        ));
-        numbered.push_str(&content);
-        numbered.push_str(newline);
+        if collect_source_lines {
+            source_lines.push(source_line);
+        }
+        write_prefix(&mut mapped, rendered_index, source_line);
+        mapped.push_str(&content);
+        mapped.push_str(newline);
     }
-    numbered
+    SourceMappedOutput {
+        output: mapped,
+        source_lines,
+    }
 }
 
 pub(super) fn format_gutter(
@@ -200,19 +237,23 @@ mod tests {
         let number_style = AnsiStyle::new().fg(Color::Rgb { r: 1, g: 2, b: 3 });
         let separator_style = AnsiStyle::new().fg(Color::Rgb { r: 4, g: 5, b: 6 });
 
+        let numbered = apply_line_numbers(
+            &output,
+            1,
+            &number_style,
+            &separator_style,
+            LineNumberOptions {
+                target: LineNumberTarget::Source,
+                separator: true,
+            },
+            false,
+            true,
+        );
+
         assert_eq!(
-            apply_line_numbers(
-                &output,
-                1,
-                &number_style,
-                &separator_style,
-                LineNumberOptions {
-                    target: LineNumberTarget::Source,
-                    separator: true,
-                },
-                false,
-            ),
+            numbered.output,
             "\x1b[38;2;1;2;3m1\x1b[0m\x1b[38;2;4;5;6m │ \x1b[0mtext\n"
         );
+        assert_eq!(numbered.source_lines, [Some(1)]);
     }
 }

@@ -59,6 +59,12 @@ pub enum InputEvent {
     /// `/`, Searching for certain pattern of text
     #[cfg(feature = "search")]
     Search(SearchMode),
+    /// Opens the `:` source-line navigation prompt.
+    #[cfg(feature = "search")]
+    GoToLine,
+    /// Leaves the active source-line navigation mode without exiting the pager.
+    #[cfg(feature = "search")]
+    ExitLineNavigation,
     /// Clears the active search highlights without exiting the pager.
     #[cfg(feature = "search")]
     CancelSearch,
@@ -104,7 +110,9 @@ where
     map.add_key_events(&["q", "c-c"], |_, _| InputEvent::Exit);
     #[cfg(feature = "search")]
     map.add_key_events(&["esc"], |_, ps| {
-        if ps.search_is_active() {
+        if ps.line_navigation_is_active() {
+            InputEvent::ExitLineNavigation
+        } else if ps.search_is_active() {
             InputEvent::CancelSearch
         } else {
             InputEvent::Exit
@@ -170,6 +178,13 @@ where
     {
         map.add_key_events(&["/", "c-f"], |_, _| {
             InputEvent::Search(SearchMode::Forward)
+        });
+        map.add_key_events(&[":", "s-:"], |_, ps| {
+            if ps.line_navigation_available() {
+                InputEvent::GoToLine
+            } else {
+                InputEvent::Ignore
+            }
         });
         map.add_key_events(&["?"], |_, _| InputEvent::Search(SearchMode::Reverse));
         map.add_key_events(&["n"], |_, ps| {
@@ -404,6 +419,13 @@ impl InputClassifier for DefaultInputClassifier {
                 code: KeyCode::Esc,
                 modifiers: KeyModifiers::NONE,
                 ..
+            }) if ps.line_navigation_is_active() => Some(InputEvent::ExitLineNavigation),
+
+            #[cfg(feature = "search")]
+            Event::Key(KeyEvent {
+                code: KeyCode::Esc,
+                modifiers: KeyModifiers::NONE,
+                ..
             }) if ps.search_is_active() => Some(InputEvent::CancelSearch),
 
             Event::Key(KeyEvent {
@@ -469,6 +491,16 @@ impl InputClassifier for DefaultInputClassifier {
                 modifiers: KeyModifiers::NONE,
                 ..
             }) => Some(InputEvent::Search(SearchMode::Reverse)),
+            #[cfg(feature = "search")]
+            Event::Key(KeyEvent {
+                code: KeyCode::Char(':'),
+                modifiers,
+                ..
+            }) if !modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
+                && ps.line_navigation_available() =>
+            {
+                Some(InputEvent::GoToLine)
+            }
             #[cfg(feature = "search")]
             Event::Key(KeyEvent {
                 code: KeyCode::Char('n'),

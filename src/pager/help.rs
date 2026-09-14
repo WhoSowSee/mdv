@@ -15,6 +15,7 @@ const LEFT_COLUMN_WIDTH: usize = 30;
 pub(super) fn build_help_panel(
     editor_enabled: bool,
     reload_enabled: bool,
+    line_navigation_enabled: bool,
     transparent: bool,
 ) -> Result<Vec<PromptLine>, PromptError> {
     let style = PromptStyle::default().foreground(HELP_FOREGROUND);
@@ -26,7 +27,7 @@ pub(super) fn build_help_panel(
     let edit = editor_enabled.then_some("e/E     edit this document");
     let reload = reload_enabled.then_some("r       reload this document");
 
-    [
+    let mut rows = vec![
         None,
         Some(("k/↑      up", Some("g/home  go to top"))),
         Some(("j/↓      down", Some("G/end   go to bottom"))),
@@ -35,11 +36,14 @@ pub(super) fn build_help_panel(
         Some(("u        ½ page up", Some("c       copy contents"))),
         Some(("d        ½ page down", reload)),
         Some(("q        quit", Some("/       search"))),
-        None,
-    ]
-    .into_iter()
-    .map(|columns| help_line(columns, style))
-    .collect()
+    ];
+    if line_navigation_enabled {
+        rows.push(Some((":        go to source line", None)));
+    }
+    rows.push(None);
+    rows.into_iter()
+        .map(|columns| help_line(columns, style))
+        .collect()
 }
 
 fn help_line(
@@ -65,7 +69,7 @@ mod tests {
 
     #[test]
     fn help_panel_contains_expected_shortcuts() {
-        let lines = build_help_panel(true, true, false).unwrap();
+        let lines = build_help_panel(true, true, true, false).unwrap();
         let rendered_lines = lines
             .iter()
             .map(|line| line.render_plain(100))
@@ -87,6 +91,7 @@ mod tests {
             "/       search",
             "q        quit",
             "esc/?   close help",
+            ":        go to source line",
         ] {
             assert!(text.contains(shortcut), "missing shortcut: {shortcut}");
         }
@@ -103,15 +108,15 @@ mod tests {
 
     #[test]
     fn help_panel_has_symmetric_vertical_padding() {
-        let lines = build_help_panel(true, true, false).unwrap();
+        let lines = build_help_panel(true, true, true, false).unwrap();
 
         assert!(lines.first().unwrap().render_plain(80).trim().is_empty());
         assert!(lines.last().unwrap().render_plain(80).trim().is_empty());
     }
 
     #[test]
-    fn help_panel_omits_unavailable_file_actions() {
-        let lines = build_help_panel(false, false, false).unwrap();
+    fn help_panel_omits_unavailable_actions() {
+        let lines = build_help_panel(false, false, false, false).unwrap();
         let text = lines
             .iter()
             .map(|line| line.render_plain(100))
@@ -120,11 +125,12 @@ mod tests {
 
         assert!(!text.contains("edit this document"));
         assert!(!text.contains("reload this document"));
+        assert!(!text.contains("go to source line"));
     }
 
     #[test]
     fn help_panel_fills_the_terminal_width() {
-        let lines = build_help_panel(true, true, false).unwrap();
+        let lines = build_help_panel(true, true, true, false).unwrap();
 
         for columns in [20, 80, 120] {
             assert!(
@@ -137,7 +143,7 @@ mod tests {
 
     #[test]
     fn help_panel_uses_expected_colors() {
-        let rendered = build_help_panel(true, true, false).unwrap()[1].render(80);
+        let rendered = build_help_panel(true, true, true, false).unwrap()[1].render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));
         assert!(rendered.contains("48;2;27;27;27"));
@@ -146,7 +152,7 @@ mod tests {
 
     #[test]
     fn transparent_help_panel_does_not_set_a_background() {
-        let rendered = build_help_panel(true, true, true).unwrap()[1].render(80);
+        let rendered = build_help_panel(true, true, true, true).unwrap()[1].render(80);
 
         assert!(rendered.contains("38;2;125;125;125"));
         assert!(!rendered.contains("\x1b[48;"));

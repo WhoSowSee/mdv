@@ -13,6 +13,9 @@ use std::sync::Arc;
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
 
+mod pager;
+pub(crate) use pager::{PagerRender, SourceNumberedView};
+
 /// Terminal renderer for markdown content
 pub struct TerminalRenderer {
     pub(super) config: Config,
@@ -54,19 +57,33 @@ impl TerminalRenderer {
     }
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
-        let output = match self.config.line_numbers {
-            None => self.render_events(&self.config, events)?,
+        Ok(self
+            .render_with_options(events, self.config.line_numbers, false)?
+            .output)
+    }
+
+    fn render_with_options(
+        &self,
+        events: Vec<Event<'static>>,
+        line_numbers: Option<LineNumberOptions>,
+        collect_source_lines: bool,
+    ) -> Result<super::line_numbers::SourceMappedOutput> {
+        let mut output = match line_numbers {
+            None => {
+                let output = self.render_events(&self.config, events)?;
+                mapped_output(output, collect_source_lines)
+            }
             Some(options) => match options.target {
                 LineNumberTarget::Rendered => {
-                    self.render_with_rendered_line_numbers(events, options)?
+                    self.render_with_rendered_line_numbers(events, options, collect_source_lines)?
                 }
                 LineNumberTarget::Source => {
-                    self.render_with_source_line_numbers(events, options)?
+                    self.render_with_source_line_numbers(events, options, collect_source_lines)?
                 }
             },
         };
-
-        Ok(apply_left_margin(&output, self.config.margin.left))
+        output.output = apply_left_margin(&output.output, self.config.margin.left);
+        Ok(output)
     }
 
     pub(crate) const fn pager_status_bar_transparent(&self) -> bool {
@@ -109,39 +126,49 @@ impl TerminalRenderer {
         &self,
         events: Vec<Event<'static>>,
         options: LineNumberOptions,
-    ) -> Result<String> {
+        collect_source_lines: bool,
+    ) -> Result<super::line_numbers::SourceMappedOutput> {
         let Some(max_line) = super::line_numbers::max_source_line(&events) else {
-            return self.render_events(&self.config, events);
+            let output = self.render_events(&self.config, events)?;
+            return Ok(mapped_output(output, collect_source_lines));
         };
 
         let mut render_config = self.config.clone();
+        render_config.line_numbers = Some(options);
         render_config.line_number_gutter_width =
             super::line_numbers::gutter_width(max_line, options);
         let output = self.render_events(&render_config, events)?;
-        Ok(self.apply_line_numbers(&output, max_line, options))
+        Ok(self.apply_line_numbers(&output, max_line, options, collect_source_lines))
     }
 
     fn render_with_rendered_line_numbers(
         &self,
         events: Vec<Event<'static>>,
         options: LineNumberOptions,
-    ) -> Result<String> {
+        collect_source_lines: bool,
+    ) -> Result<super::line_numbers::SourceMappedOutput> {
         let mut number_width = 1;
 
         loop {
             let mut render_config = self.config.clone();
+            render_config.line_numbers = Some(options);
             render_config.line_number_gutter_width =
                 super::line_numbers::gutter_width_for_number_width(number_width, options);
             let output = self.render_events(&render_config, events.clone())?;
             let rendered_lines = super::line_numbers::rendered_line_count(&output);
 
             if rendered_lines == 0 {
-                return Ok(output);
+                return Ok(mapped_output(output, collect_source_lines));
             }
 
             let required_width = rendered_lines.to_string().len();
             if required_width <= number_width {
-                return Ok(self.apply_line_numbers(&output, rendered_lines, options));
+                return Ok(self.apply_line_numbers(
+                    &output,
+                    rendered_lines,
+                    options,
+                    collect_source_lines,
+                ));
             }
 
             number_width = required_width;
@@ -153,7 +180,8 @@ impl TerminalRenderer {
         output: &str,
         max_line: usize,
         options: LineNumberOptions,
-    ) -> String {
+        collect_source_lines: bool,
+    ) -> super::line_numbers::SourceMappedOutput {
         let number_style = create_style(&self.theme, ThemeElement::LineNumber);
         let separator_style = create_style(&self.theme, ThemeElement::LineNumberSeparator);
         super::line_numbers::apply_line_numbers(
@@ -163,6 +191,7 @@ impl TerminalRenderer {
             &separator_style,
             options,
             self.config.no_colors,
+            collect_source_lines,
         )
     }
 
@@ -228,6 +257,20 @@ fn resolve_theme(config: &Config, theme_manager: &ThemeManager) -> Result<Theme>
     Ok(theme)
 }
 
+fn mapped_output(
+    output: String,
+    collect_source_lines: bool,
+) -> super::line_numbers::SourceMappedOutput {
+    if collect_source_lines {
+        super::line_numbers::strip_metadata(&output)
+    } else {
+        super::line_numbers::SourceMappedOutput {
+            output,
+            source_lines: Vec::new(),
+        }
+    }
+}
+
 pub(crate) fn pager_status_bar_transparent(config: &Config) -> Result<bool> {
     let theme_manager = build_theme_manager(config);
     Ok(resolve_theme(config, &theme_manager)?.pager_status_bar_transparent)
@@ -290,18 +333,5 @@ pub(crate) fn build_theme_manager(config: &Config) -> ThemeManager {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn renderer_exposes_pager_status_bar_transparency() {
-        let config = Config {
-            custom_theme: Some("pager_status_bar_transparent=true".to_string()),
-            ..Config::default()
-        };
-
-        let renderer = TerminalRenderer::new(&config).unwrap();
-
-        assert!(renderer.pager_status_bar_transparent());
-    }
-}
+#[path = "terminal/tests.rs"]
+mod tests;

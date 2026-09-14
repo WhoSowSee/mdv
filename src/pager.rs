@@ -2,7 +2,7 @@ use crate::editor::EditorCommand;
 use anyhow::{Context, Result, anyhow};
 use minus::hooks::Hook;
 use minus::input::{HashedEventRegister, InputClassifier, InputEvent};
-use minus::{Pager, PagerState, PromptLine};
+use minus::{LineNavigation, Pager, PagerState, PromptLine};
 use notify::{EventKind, RecursiveMode, Watcher};
 use std::collections::hash_map::RandomState;
 use std::path::{Path, PathBuf};
@@ -17,10 +17,12 @@ mod help;
 mod input;
 mod operations;
 mod page;
+mod rendering;
 mod watcher;
 
 pub(super) use document::{PagerDocument, PagerScreen, RefreshCallback};
 pub(super) use page::page;
+pub(crate) use rendering::{RenderedOutput, render_terminal_document};
 
 use footer::PagerFooter;
 use help::build_help_panel;

@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(feature = "search")]
-use crate::search::SearchOpts;
+use crate::{LineNavigation, search::SearchOpts};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum IoCommand {
@@ -19,6 +19,8 @@ pub enum IoCommand {
     RedrawSelection(usize, usize),
     #[cfg(feature = "search")]
     FetchSearchQuery,
+    #[cfg(feature = "search")]
+    FetchLineNumber,
 }
 
 #[non_exhaustive]
@@ -39,6 +41,8 @@ pub enum Command {
     SetPromptPanel(Vec<PromptLine>),
     #[cfg(feature = "search")]
     SetSearchPrompt(Option<String>),
+    #[cfg(feature = "search")]
+    SetLineNavigation(Option<LineNavigation>),
 
     LineWrapping(bool),
     SetLineNumbers(LineNumbers),
@@ -77,6 +81,8 @@ impl PartialEq for Command {
             (Self::ClearMessage(left), Self::ClearMessage(right)) => left == right,
             #[cfg(feature = "search")]
             (Self::SetSearchPrompt(left), Self::SetSearchPrompt(right)) => left == right,
+            #[cfg(feature = "search")]
+            (Self::SetLineNavigation(left), Self::SetLineNavigation(right)) => left == right,
             (Self::LineWrapping(d1), Self::LineWrapping(d2)) => d1 == d2,
             (Self::SetLineNumbers(d1), Self::SetLineNumbers(d2)) => d1 == d2,
             (Self::ShowPrompt(d1), Self::ShowPrompt(d2)) => d1 == d2,
@@ -111,6 +117,10 @@ impl Debug for Command {
             Self::SetPromptPanel(lines) => write!(f, "SetPromptPanel({})", lines.len()),
             #[cfg(feature = "search")]
             Self::SetSearchPrompt(prompt) => write!(f, "SetSearchPrompt({prompt:?})"),
+            #[cfg(feature = "search")]
+            Self::SetLineNavigation(navigation) => {
+                write!(f, "SetLineNavigation({})", navigation.is_some())
+            }
             Self::SendMessage(text) => write!(f, "SendMessage({text:?})"),
             Self::SetTimedMessage { text, id } => {
                 write!(f, "SetTimedMessage({text:?}, {id})")

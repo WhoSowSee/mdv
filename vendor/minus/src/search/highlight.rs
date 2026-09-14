@@ -1,5 +1,6 @@
 use crossterm::style::{Color, SetBackgroundColor};
 use regex::Regex;
+use std::sync::LazyLock;
 
 use super::{ANSI_REGEX, SearchRange};
 
@@ -8,6 +9,8 @@ const DEFAULT_FOREGROUND: Rgb = Rgb::new(192, 192, 192);
 const DEFAULT_BACKGROUND: Rgb = Rgb::new(18, 20, 24);
 const CURRENT_MATCH_BLEND: u16 = 55;
 const OTHER_MATCH_BLEND: u16 = 22;
+const LINE_NAVIGATION_BACKGROUND: Rgb = Rgb::new(56, 58, 61);
+static WHOLE_LINE: LazyLock<Regex> = LazyLock::new(|| Regex::new(".+").unwrap());
 
 #[derive(Clone, Copy)]
 struct Rgb {
@@ -170,15 +173,21 @@ fn track_sgr(history: &mut String, state: &mut SgrState, escape: &str) {
     state.apply(&parameters);
 }
 
-fn search_background(state: SgrState, current: bool) -> String {
-    let foreground = state.foreground.unwrap_or(DEFAULT_FOREGROUND);
-    let background = state.background.unwrap_or(DEFAULT_BACKGROUND);
-    let blend = if current {
-        CURRENT_MATCH_BLEND
-    } else {
-        OTHER_MATCH_BLEND
-    };
-    let color = background.blend(foreground, blend);
+fn highlight_color(state: SgrState, current: bool, fixed: Option<Rgb>) -> Rgb {
+    fixed.unwrap_or_else(|| {
+        let foreground = state.foreground.unwrap_or(DEFAULT_FOREGROUND);
+        let background = state.background.unwrap_or(DEFAULT_BACKGROUND);
+        let blend = if current {
+            CURRENT_MATCH_BLEND
+        } else {
+            OTHER_MATCH_BLEND
+        };
+        background.blend(foreground, blend)
+    })
+}
+
+fn highlight_background(state: SgrState, current: bool, fixed: Option<Rgb>) -> String {
+    let color = highlight_color(state, current, fixed);
     SetBackgroundColor(Color::Rgb {
         r: color.r,
         g: color.g,
@@ -187,11 +196,12 @@ fn search_background(state: SgrState, current: bool) -> String {
     .to_string()
 }
 
-pub fn highlight_search_matches(
+fn highlight_matches(
     line: &str,
     query: &Regex,
     current_range: Option<SearchRange>,
     content_start_chars: usize,
+    fixed_background: Option<Rgb>,
 ) -> String {
     let stripped = ANSI_REGEX.replace_all(line, "");
     let content_start = stripped
@@ -261,9 +271,10 @@ pub fn highlight_search_matches(
         if let Some(index) = active_match
             && escape_index > first_escape
         {
-            output.push_str(&search_background(
+            output.push_str(&highlight_background(
                 sgr_state,
                 current_range == Some(matches[index].2),
+                fixed_background,
             ));
         }
 
@@ -272,9 +283,10 @@ pub fn highlight_search_matches(
                 .get(match_index)
                 .is_some_and(|(start, _, _)| *start == position)
         {
-            output.push_str(&search_background(
+            output.push_str(&highlight_background(
                 sgr_state,
                 current_range == Some(matches[match_index].2),
+                fixed_background,
             ));
             if matches[match_index].0 == matches[match_index].1 {
                 output.push_str(RESET_STYLE);
@@ -287,4 +299,41 @@ pub fn highlight_search_matches(
     }
     output.push_str(&stripped[cursor..]);
     output
+}
+
+pub fn highlight_search_matches(
+    line: &str,
+    query: &Regex,
+    current_range: Option<SearchRange>,
+    content_start_chars: usize,
+) -> String {
+    highlight_matches(line, query, current_range, content_start_chars, None)
+}
+
+pub fn highlight_line_navigation_target(line: &str, content_start_chars: usize) -> String {
+    highlight_matches(
+        line,
+        &WHOLE_LINE,
+        None,
+        content_start_chars,
+        Some(LINE_NAVIGATION_BACKGROUND),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn line_navigation_background_is_fixed() {
+        let default = highlight_color(SgrState::default(), false, None);
+        assert_eq!((default.r, default.g, default.b), (56, 58, 61));
+
+        let styled = SgrState {
+            foreground: Some(Rgb::new(206, 145, 120)),
+            background: Some(Rgb::new(10, 20, 30)),
+        };
+        let fixed = highlight_color(styled, false, Some(LINE_NAVIGATION_BACKGROUND));
+        assert_eq!((fixed.r, fixed.g, fixed.b), (56, 58, 61));
+    }
 }

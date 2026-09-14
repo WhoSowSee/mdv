@@ -4,6 +4,7 @@ pub(crate) struct PagerDocument {
     pub(in crate::pager) output: String,
     pub(in crate::pager) source: String,
     pub(in crate::pager) title: Option<String>,
+    pub(in crate::pager) line_navigation: Option<LineNavigation>,
     status_bar_transparent: bool,
 }
 
@@ -13,6 +14,7 @@ impl PagerDocument {
             output,
             source,
             title: None,
+            line_navigation: None,
             status_bar_transparent: false,
         }
     }

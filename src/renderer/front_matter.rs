@@ -1,4 +1,4 @@
-use super::terminal::TerminalRenderer;
+use super::terminal::{PagerRender, TerminalRenderer};
 use crate::cli::FrontMatterMode;
 use crate::config::Config;
 use crate::markdown::{FrontMatter, MarkdownProcessor, ParsedDocument};
@@ -10,6 +10,13 @@ use serde_yaml::{Mapping, Value};
 impl TerminalRenderer {
     pub(crate) fn render_document(&self, document: ParsedDocument) -> Result<String> {
         self.render(document_events(document, &self.config, false)?)
+    }
+
+    pub(crate) fn render_document_for_pager(
+        &self,
+        document: ParsedDocument,
+    ) -> Result<PagerRender> {
+        self.render_for_pager(document_events(document, &self.config, false)?)
     }
 
     pub(crate) fn to_html_document(&self, document: ParsedDocument) -> Result<String> {

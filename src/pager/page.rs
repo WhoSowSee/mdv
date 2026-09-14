@@ -14,20 +14,26 @@ pub(crate) fn page(
     loop {
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
-        let (output, title, status_bar_transparent) = {
+        let (output, title, line_navigation, status_bar_transparent) = {
             let document = document
                 .read()
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?;
             (
                 document.output.clone(),
                 document.title.clone(),
+                document.line_navigation.clone(),
                 document.status_bar_transparent(),
             )
         };
-        let help_panel =
-            build_help_panel(editor_enabled, refresh.is_some(), status_bar_transparent)?;
+        let help_panel = build_help_panel(
+            editor_enabled,
+            refresh.is_some(),
+            line_navigation.is_some(),
+            status_bar_transparent,
+        )?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
         pager.set_text(output)?;
+        pager.set_line_navigation(line_navigation)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;
         pager.set_search_prompt("Find: ")?;
         pager.remove_hook(Hook::PostPagerExit, 1)?;
