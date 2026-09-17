@@ -1,8 +1,5 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 use mdv::utils::display_width;
 use predicates::prelude::*;
 use std::fs;
@@ -16,7 +13,7 @@ fn test_code_language_pretty_style_named_block() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty:show-name")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");
@@ -91,7 +88,7 @@ fn test_pretty_style_without_options_hides_label() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -111,7 +108,7 @@ fn test_pretty_style_empty_code_block_has_right_padding() {
     cmd.arg("--code-block-style")
         .arg("pretty:show-name")
         .arg("--show-empty-elements")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");
@@ -143,7 +140,7 @@ fn test_pretty_style_empty_block_falls_back_when_too_narrow() {
         .arg("word")
         .arg("-c")
         .arg("9")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");
@@ -166,7 +163,7 @@ fn test_simple_language_label_wraps_under_char_width() {
         .arg("char")
         .arg("-c")
         .arg("6")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");

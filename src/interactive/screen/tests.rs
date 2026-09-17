@@ -1,5 +1,6 @@
 use super::super::discovery::DocumentEntry;
 use super::*;
+use crate::cli::OutputStyle;
 
 #[test]
 fn pagination_dots_are_adjacent() {
@@ -8,7 +9,7 @@ fn pagination_dots_are_adjacent() {
         .collect();
     let browser = BrowserState::for_test(documents, 14);
 
-    assert_eq!(pagination(&browser, 80, true), "•••");
+    assert_eq!(pagination(&browser, 80, OutputStyle::Disabled), "•••");
 }
 
 #[test]
@@ -32,27 +33,27 @@ fn week_old_documents_use_an_absolute_local_timestamp() {
 
 #[test]
 fn document_titles_align_with_the_header() {
-    assert_eq!(item_prefix(false, true), "   ");
-    assert_eq!(item_prefix(true, true), " │ ");
+    assert_eq!(item_prefix(false, OutputStyle::Disabled), "   ");
+    assert_eq!(item_prefix(true, OutputStyle::Disabled), " │ ");
 }
 
 #[test]
 fn logo_block_aligns_with_the_header_without_a_spinner() {
-    assert_eq!(browser_logo_line(None, true), "    MDV ");
+    assert_eq!(browser_logo_line(None, OutputStyle::Disabled), "    MDV ");
 }
 
 #[test]
 fn logo_block_delays_the_spinner_and_starts_from_the_first_frame() {
     assert_eq!(
-        browser_logo_line(Some(Duration::from_millis(15)), true),
+        browser_logo_line(Some(Duration::from_millis(15)), OutputStyle::Disabled),
         "    MDV "
     );
     assert_eq!(
-        browser_logo_line(Some(Duration::from_millis(16)), true),
+        browser_logo_line(Some(Duration::from_millis(16)), OutputStyle::Disabled),
         " |  MDV "
     );
     assert_eq!(
-        browser_logo_line(Some(Duration::from_millis(116)), true),
+        browser_logo_line(Some(Duration::from_millis(116)), OutputStyle::Disabled),
         " /  MDV "
     );
 }
@@ -97,7 +98,11 @@ fn first_frame_is_a_full_synchronized_redraw() {
 #[test]
 fn mini_help_matches_the_navigation_status() {
     assert_eq!(
-        browser_mini_help(&BrowserState::for_test(Vec::new(), 24), 120, true),
+        browser_mini_help(
+            &BrowserState::for_test(Vec::new(), 24),
+            120,
+            OutputStyle::Disabled,
+        ),
         "   h/l ←/→ page • / find • . show ignored • r refresh • e edit • q quit • ? more"
     );
 }
@@ -108,7 +113,7 @@ fn collapsed_help_draws_only_the_mini_help() {
     let mut frame = ScreenFrame::new(120, 24);
     let (_, help_y) = browser_footer_rows(24, &browser);
 
-    draw_browser_help(&mut frame, &browser, help_y, 120, true);
+    draw_browser_help(&mut frame, &browser, help_y, 120, OutputStyle::Disabled);
 
     let mut output = String::new();
     encode_synchronized_frame(&mut output, None, &frame).unwrap();
@@ -121,28 +126,37 @@ fn collapsed_help_draws_only_the_mini_help() {
 fn filter_prompt_aligns_with_browser_content_and_uses_the_blue_palette() {
     assert_eq!(browser_filter_cursor_x("Find: doc", 80), 12);
     assert_eq!(browser_filter_cursor_x("Find: document", 10), 9);
-    assert_eq!(browser_filter_prompt_text("Find:", true), "   Find:");
     assert_eq!(
-        browser_filter_prompt_text("Find: doc", true),
+        browser_filter_prompt_text("Find:", OutputStyle::Disabled),
+        "   Find:"
+    );
+    assert_eq!(
+        browser_filter_prompt_text("Find: doc", OutputStyle::Disabled),
         "   Find: doc"
     );
 
-    let prompt = browser_filter_prompt_text("Find: doc", false);
+    let prompt = browser_filter_prompt_text("Find: doc", OutputStyle::Enabled);
     assert!(prompt.starts_with("   "));
-    assert!(prompt.contains(&styled("Find:", Some(BROWSER_ACCENT), None, false, false)));
+    assert!(prompt.contains(&styled(
+        "Find:",
+        Some(BROWSER_ACCENT),
+        None,
+        false,
+        OutputStyle::Enabled
+    )));
     assert!(prompt.contains(&styled(
         "doc",
         Some(BROWSER_FILTER_INPUT),
         None,
         false,
-        false
+        OutputStyle::Enabled
     )));
 }
 
 #[test]
 fn filter_help_aligns_with_browser_content_and_has_compact_separators() {
     assert_eq!(
-        browser_filter_help(true),
+        browser_filter_help(OutputStyle::Disabled),
         "   enter confirm • esc cancel • ctrl+j/ctrl+k ↑/↓ choose"
     );
 }
@@ -150,7 +164,7 @@ fn filter_help_aligns_with_browser_content_and_has_compact_separators() {
 #[test]
 fn expanded_filter_help_uses_three_aligned_rows() {
     assert_eq!(
-        browser_filter_full_help(true),
+        browser_filter_full_help(OutputStyle::Disabled),
         [
             "   enter              confirm",
             "   esc                cancel",
@@ -182,7 +196,7 @@ fn applied_filter_omits_page_navigation_from_mini_help() {
 
     assert!(browser.page_count() > 1);
     assert_eq!(
-        browser_mini_help(&browser, 120, true),
+        browser_mini_help(&browser, 120, OutputStyle::Disabled),
         "   tab section • / edit search • esc clear filter • . show ignored • r refresh • e edit • q quit • ? more"
     );
 }
@@ -199,7 +213,7 @@ fn mini_help_truncates_at_a_segment_boundary() {
     browser.confirm_filter();
 
     assert_eq!(
-        browser_mini_help(&browser, 64, true),
+        browser_mini_help(&browser, 64, OutputStyle::Disabled),
         "   tab section • / edit search • esc clear filter • …"
     );
 }
@@ -212,7 +226,7 @@ fn filtering_underlines_only_the_fuzzy_match_characters() {
         &document.relative_path,
         "doc",
         rgb(221, 221, 221),
-        false,
+        OutputStyle::Enabled,
     );
 
     assert_eq!(title.matches("\x1b[4m").count(), 3);
@@ -227,7 +241,7 @@ fn filtering_without_colors_keeps_the_title_plain() {
             "docs/résumé.md",
             "RESUME",
             rgb(221, 221, 221),
-            true,
+            OutputStyle::Disabled,
         ),
         "docs/résumé.md"
     );
@@ -253,7 +267,7 @@ fn filter_editing_never_marks_a_result_as_selected() {
 #[test]
 fn full_help_uses_aligned_columns_from_browser_column_three() {
     let browser = BrowserState::for_test(Vec::new(), 24);
-    let rows = browser_full_help(&browser, true);
+    let rows = browser_full_help(&browser, OutputStyle::Disabled);
     let visual_column = |row: &str, text: &str| {
         let byte_index = row.find(text).unwrap();
         display_width(&row[..byte_index])
@@ -302,7 +316,7 @@ fn mini_help_reflects_the_ignored_file_mode() {
 
     browser.toggle_ignored_files();
 
-    assert!(browser_mini_help(&browser, 120, true).contains(". hide ignored"));
+    assert!(browser_mini_help(&browser, 120, OutputStyle::Disabled).contains(". hide ignored"));
 }
 
 #[test]

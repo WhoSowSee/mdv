@@ -113,7 +113,7 @@ impl<'a> EventRenderer<'a> {
         };
         let styled_rule = AnsiStyle::new()
             .fg(PRETTY_ACCENT_COLOR)
-            .apply(&rule, self.config.no_colors);
+            .apply(&rule, self.output_style);
         let spacing = self
             .config
             .block_spacing
@@ -141,7 +141,7 @@ impl<'a> EventRenderer<'a> {
         let should_highlight = self.should_highlight_footnote_reference(name.as_ref());
         let rendered_marker = if should_highlight {
             let style = create_style(self.theme, ThemeElement::Link);
-            style.apply(&marker, self.config.no_colors)
+            style.apply(&marker, self.output_style)
         } else {
             marker
         };
@@ -180,7 +180,7 @@ impl<'a> EventRenderer<'a> {
         if let Some(color) = color {
             style = style.fg(color.into());
         }
-        style.apply(&marker, self.config.no_colors)
+        style.apply(&marker, self.output_style)
     }
 
     pub(super) fn checkbox_marker(&self, checked: bool) -> String {
@@ -189,7 +189,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         let marker = if checked { "[✓]" } else { "[ ]" };
-        create_style(self.theme, ThemeElement::ListMarker).apply(marker, self.config.no_colors)
+        create_style(self.theme, ThemeElement::ListMarker).apply(marker, self.output_style)
     }
 
     /// Returns the checkbox icon. Callers add the separating space.
@@ -220,8 +220,8 @@ impl<'a> EventRenderer<'a> {
         };
 
         match icon {
-            Some(glyph) => style.apply(&glyph, self.config.no_colors),
-            None => style.apply(&format!("[{state}]"), self.config.no_colors),
+            Some(glyph) => style.apply(&glyph, self.output_style),
+            None => style.apply(&format!("[{state}]"), self.output_style),
         }
     }
 

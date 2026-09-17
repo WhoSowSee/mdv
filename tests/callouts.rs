@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use std::fs;
 use tempfile::NamedTempFile;
 
@@ -12,9 +12,6 @@ mod formatting;
 mod heading_layout;
 #[path = "callouts/tables_links.rs"]
 mod tables_links;
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 fn render_callout_table(callout_style: &str, table_smart_indent: bool) -> String {
     let temp_file = NamedTempFile::new().unwrap();
@@ -25,7 +22,7 @@ fn render_callout_table(callout_style: &str, table_smart_indent: bool) -> String
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")

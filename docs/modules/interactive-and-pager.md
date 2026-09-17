@@ -92,6 +92,7 @@ The document stores these values separately:
 - `source`: original Markdown for the clipboard;
 - optional `title`;
 - `status_bar_transparent` from the selected theme.
+- the resolved `OutputStyle` shared by document rendering and pager UI.
 
 This separation is required: copying without a selection uses Markdown, while `pager.set_text` receives the active rendered view. Source-line navigation data is derived from that view and the prepared source-numbered view.
 
@@ -135,6 +136,19 @@ The refresh callback re-reads and re-renders all three views and preserves the s
 - An unknown or invalid command is an error; no hidden editor is selected.
 
 ## Invariants
+
+`auto` resolves from stdout before entering TUI. In `never`, browser decoration,
+footer/help styling, query-selection inversion, search/selection backgrounds,
+and source-line highlights are disabled. Search, selection-aware copying,
+source navigation, numbering changes, and refresh remain functional. Cursor,
+screen-buffer, mouse, and terminal-cleanup commands remain active. The vendored
+pager receives this decision through `Pager::set_output_styling`; environment
+variables such as `NO_COLOR` cannot override enabled prompt/highlight rendering.
+
+Footer and help builders only construct `PromptLine` layout and style metadata.
+The pager applies the shared policy when rendering those lines, including narrow
+help panels and refresh. There is no separate plain-footer layout or repeated
+color flag in the builders and input classifier.
 
 - The browser and pager never own raw terminal mode simultaneously.
 - Every pause or suspension has a matching resume even after an operation fails.

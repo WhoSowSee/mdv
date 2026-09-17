@@ -1,12 +1,8 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use mdv::utils::{display_width, strip_ansi};
 use predicates::prelude::*;
 use std::fs;
 use tempfile::{NamedTempFile, TempDir};
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 fn markdown_file(contents: &str) -> NamedTempFile {
     let file = NamedTempFile::new().unwrap();
@@ -31,7 +27,7 @@ fn cli_backticks_cover_every_inline_style_element() {
     let output = mdv_cmd()
         .args([
             "--no-config",
-            "--no-colors",
+            "--color", "never",
             "--inline-style",
             "emphasis:backticks=true;strong:backticks=true;strong_emphasis:backticks=true;code:backticks=false;strikethrough:backticks=true;highlight:backticks=true",
         ])
@@ -50,7 +46,8 @@ fn backticks_are_counted_when_wrapping() {
     let output = mdv_cmd()
         .args([
             "--no-config",
-            "--no-colors",
+            "--color",
+            "never",
             "--cols",
             "10",
             "--wrap",
@@ -71,7 +68,7 @@ fn backticks_are_counted_when_wrapping() {
 fn cli_inline_style_controls_ansi_attributes() {
     let file = markdown_file("*styled*\n");
     let output = mdv_cmd()
-        .env("MDV_NO_COLOR", "false")
+        .env("MDV_COLOR", "always")
         .args([
             "--no-config",
             "--inline-style",
@@ -98,7 +95,7 @@ fn cli_inline_style_partially_overrides_config() {
     .unwrap();
     let file = markdown_file("`value`\n");
     let output = mdv_cmd()
-        .env("MDV_NO_COLOR", "false")
+        .env("MDV_COLOR", "always")
         .arg("--config-file")
         .arg(config_dir.path())
         .args(["--inline-style", "code:backticks=true"])
@@ -128,7 +125,7 @@ fn preset_inline_style_partially_overrides_config() {
     .unwrap();
     let file = markdown_file("`value`\n");
     let output = mdv_cmd()
-        .env("MDV_NO_COLOR", "false")
+        .env("MDV_COLOR", "always")
         .arg("--config-file")
         .arg(config_dir.path())
         .args(["--preset", "inline"])
@@ -146,7 +143,7 @@ fn preset_inline_style_partially_overrides_config() {
 fn strong_emphasis_uses_its_own_attributes() {
     let file = markdown_file("***combined***\n");
     let output = mdv_cmd()
-        .env("MDV_NO_COLOR", "false")
+        .env("MDV_COLOR", "always")
         .args([
             "--no-config",
             "--inline-style",
@@ -175,7 +172,7 @@ fn user_theme_can_set_inline_style_and_colors() {
     .unwrap();
     let file = markdown_file("`code` ==mark== ***combined***\n");
     let output = mdv_cmd()
-        .env("MDV_NO_COLOR", "false")
+        .env("MDV_COLOR", "always")
         .arg("--config-file")
         .arg(config_dir.path())
         .args(["--theme", "inline"])

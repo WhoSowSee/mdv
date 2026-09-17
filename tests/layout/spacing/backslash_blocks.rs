@@ -10,7 +10,7 @@ fn test_task_list_following_text_is_not_indented_without_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())
@@ -37,7 +37,7 @@ fn test_backslash_end_of_line_before_list_adds_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())
@@ -79,7 +79,7 @@ fn test_multiple_backslash_lines_create_multiple_blank_lines() {
     fs::write(&temp_file, "Alpha line\n\\\n\\\n\\\nBeta line\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())
@@ -116,7 +116,7 @@ fn test_backslash_end_of_line_before_code_block_adds_blank_line() {
     fs::write(&temp_file, "Status update\\\n```\nSample output\n```\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--code-block-style")

@@ -5,10 +5,11 @@ use super::{
     ThemeElement, create_style, wrap_text_with_mode,
 };
 use crate::block_spacing::BlockElement;
+use crate::cli::OutputStyle;
 use crate::table::TABLE_REFERENCE_WRAP_MARKER;
 
-fn style_underlined_table_link(link_text: &str, no_colors: bool) -> String {
-    if no_colors {
+fn style_underlined_table_link(link_text: &str, output_style: OutputStyle) -> String {
+    if output_style.is_disabled() {
         link_text.to_string()
     } else {
         format!("\x1b[4m{}\x1b[24m", link_text)
@@ -18,9 +19,9 @@ fn style_underlined_table_link(link_text: &str, no_colors: bool) -> String {
 fn build_clickable_underlined_table_link_replacement(
     link_text: &str,
     url: &str,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) -> Option<String> {
-    if no_colors || link_text.is_empty() {
+    if output_style.is_disabled() || link_text.is_empty() {
         None
     } else {
         Some(format!(
@@ -34,28 +35,28 @@ fn push_clickable_table_link(
     table: &mut TableState,
     link_text: &str,
     url: Option<&str>,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) {
     if link_text.is_empty() {
         return;
     }
 
     if let Some(styled) = url.and_then(|url| {
-        build_clickable_underlined_table_link_replacement(link_text, url, no_colors)
+        build_clickable_underlined_table_link_replacement(link_text, url, output_style)
     }) {
         table
             .clickable_link_replacements
             .push((link_text.to_string(), styled));
         table.current_cell.push_str(link_text);
     } else {
-        push_underlined_table_link(table, link_text, no_colors);
+        push_underlined_table_link(table, link_text, output_style);
     }
 }
 
-fn push_underlined_table_link(table: &mut TableState, link_text: &str, no_colors: bool) {
+fn push_underlined_table_link(table: &mut TableState, link_text: &str, output_style: OutputStyle) {
     table
         .current_cell
-        .push_str(&style_underlined_table_link(link_text, no_colors));
+        .push_str(&style_underlined_table_link(link_text, output_style));
 }
 
 fn push_wrappable_table_reference(cell: &mut String, rendered_reference: &str) {

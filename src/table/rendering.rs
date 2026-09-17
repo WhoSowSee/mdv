@@ -23,12 +23,8 @@ impl TableRenderer {
 
                 let full_separator_text = format!("{}", inner_separator);
 
-                let separator = if self.no_colors {
-                    full_separator_text
-                } else {
-                    let border_style = create_style(&self.theme, ThemeElement::TableBorder);
-                    border_style.apply(&full_separator_text, self.no_colors)
-                };
+                let border_style = create_style(&self.theme, ThemeElement::TableBorder);
+                let separator = border_style.apply(&full_separator_text, self.output_style);
                 result.push_str(&separator);
                 result.push('\n');
             }
@@ -37,7 +33,7 @@ impl TableRenderer {
             let block_style = create_style(&self.theme, ThemeElement::Quote);
             let block_info = block_style.apply(
                 &format!("Block {} of {}", block_idx + 1, blocks.len()),
-                self.no_colors,
+                self.output_style,
             );
             result.push_str(&block_info);
             result.push('\n');
@@ -65,7 +61,7 @@ impl TableRenderer {
 
         self.configure_table(&mut table);
 
-        if !self.no_colors {
+        if self.output_style.is_enabled() {
             table.enforce_styling();
         }
 
@@ -78,7 +74,7 @@ impl TableRenderer {
             .map(|(i, header)| {
                 let mut cell = self.create_cell(header, &reference_layout);
 
-                if !self.no_colors {
+                if self.output_style.is_enabled() {
                     if let Some(color) = theme_color_to_comfy(&self.theme.table_header) {
                         cell = cell.fg(color);
                     }
@@ -180,7 +176,7 @@ impl TableRenderer {
 
         self.configure_table(&mut table);
 
-        if !self.no_colors {
+        if self.output_style.is_enabled() {
             table.enforce_styling();
         }
 
@@ -196,7 +192,7 @@ impl TableRenderer {
             .map(|(i, header)| {
                 let mut cell = self.create_cell(header, &reference_layout);
 
-                if !self.no_colors {
+                if self.output_style.is_enabled() {
                     if let Some(color) = theme_color_to_comfy(&self.theme.table_header) {
                         cell = cell.fg(color);
                     }

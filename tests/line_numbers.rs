@@ -1,10 +1,6 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use std::fs;
 use tempfile::{NamedTempFile, TempDir};
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 fn render(markdown: &str, args: &[&str]) -> String {
     let file = NamedTempFile::new().unwrap();
@@ -12,7 +8,7 @@ fn render(markdown: &str, args: &[&str]) -> String {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .args(args)
         .arg(file.path())
         .output()
@@ -187,7 +183,7 @@ fn config_accepts_boolean_and_option_string() {
     ] {
         fs::write(
             config_dir.path().join("config.yaml"),
-            format!("line_numbers: {setting}\nno_colors: true\ncols: 40\n"),
+            format!("line_numbers: {setting}\ncolor: never\ncols: 40\n"),
         )
         .unwrap();
 

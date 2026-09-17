@@ -44,11 +44,11 @@ custom_code_block: null    # Mapping of language names to icon/label/aliases, or
 # Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic.
 
 # Display behaviour
-# Keys must use snake_case (e.g. no_colors, tab_length).
+# Keys must use snake_case (e.g. color, tab_length).
 cols: null                 # Use detected terminal width; fallback is 80 when detection fails
 margin: null              # null disables margins; otherwise use "left:N", "right:N", or both
 tab_length: 4              # Replace tab characters with this many spaces
-no_colors: false           # Strip all ANSI colors from output
+color: auto                # Terminal styling: auto | always | never
 wrap: "char"               # Text and table-cell breaks: "char" | "word" | "none"
 reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
 table_wrap: "fit"          # Table geometry: fit cells | wrap columns into blocks | allow overflow

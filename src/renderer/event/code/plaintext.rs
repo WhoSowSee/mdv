@@ -55,6 +55,7 @@ impl<'a> EventRenderer<'a> {
             self.theme,
             self.syntax_set,
             self.code_theme,
+            self.output_style,
             self.math_diagnostics.clone(),
         );
         nested_renderer.plaintext_code_block_depth = self.plaintext_code_block_depth + 1;

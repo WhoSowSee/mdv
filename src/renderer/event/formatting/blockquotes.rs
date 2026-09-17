@@ -32,18 +32,13 @@ impl<'a> EventRenderer<'a> {
         }
         prefix.push(' ');
 
-        if self.config.no_colors {
-            prefix
-        } else {
-            let element = match self.callout_stack.get(level.saturating_sub(1)) {
-                Some(CalloutState::Active(info)) if info.kind == CalloutKind::Properties => {
-                    ThemeElement::FrontMatterBorder
-                }
-                _ => ThemeElement::Quote,
-            };
-            let style = create_style(self.theme, element);
-            style.apply(&prefix, self.config.no_colors)
-        }
+        let element = match self.callout_stack.get(level.saturating_sub(1)) {
+            Some(CalloutState::Active(info)) if info.kind == CalloutKind::Properties => {
+                ThemeElement::FrontMatterBorder
+            }
+            _ => ThemeElement::Quote,
+        };
+        create_style(self.theme, element).apply(&prefix, self.output_style)
     }
 
     pub(in crate::renderer::event) fn should_indent_after_blockquote_prefix(

@@ -14,12 +14,14 @@ impl Config {
             ));
         }
 
-        if let Some(no_colors) = mdv_no_color_override() {
-            config.no_colors = no_colors;
+        if let Some(color) = mdv_color_override()? {
+            config.color = color;
         }
 
-        if cli.no_colors {
-            config.no_colors = true;
+        if let Some(color) = cli.color
+            && arg_has_user_value(matches, "color")
+        {
+            config.color = color;
         }
 
         if let Some(cols) = cli.cols

@@ -181,7 +181,7 @@ impl<'a> EventRenderer<'a> {
                         let rule = "─".repeat(width.saturating_sub(fixed_width).max(3));
                         let styled = AnsiStyle::new()
                             .fg(PRETTY_ACCENT_COLOR)
-                            .apply(&rule, self.config.no_colors);
+                            .apply(&rule, self.output_style);
                         format!("{before}{styled}{after}")
                     })
                     .collect::<Vec<_>>()
@@ -203,7 +203,7 @@ impl<'a> EventRenderer<'a> {
 
         let table_renderer = TableRenderer::new(
             self.theme,
-            self.config.no_colors,
+            self.output_style,
             available_width,
             self.config.table_wrap,
         )

@@ -177,7 +177,7 @@ impl<'a> EventRenderer<'a> {
                         self.styled_checkbox_marker(state)
                     } else {
                         let style = create_style(self.theme, ThemeElement::ListMarker);
-                        style.apply(marker, self.config.no_colors)
+                        style.apply(marker, self.output_style)
                     };
                     self.output.push_str(&rendered_marker);
                     if let Some(list_state) = self.list_stack.last_mut() {

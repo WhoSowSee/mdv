@@ -38,6 +38,7 @@ impl Config {
         Ok(path)
     }
     pub(super) fn load_config_files(cli: &Cli, matches: &ArgMatches) -> Result<Self> {
+        use anyhow::Context;
         let mut config = Self::default();
         let config_paths = Self::get_config_paths(cli, matches)?;
         if let Some(first_path) = config_paths.first()
@@ -51,21 +52,19 @@ impl Config {
         }
 
         for path in config_paths {
-            if path.exists() {
-                match Self::load_from_file(&path) {
-                    Ok(file_config) => {
-                        config.merge_with(file_config);
-                        config.config_file = Some(path.clone());
-                        if let Some(parent) = path.parent() {
-                            config.config_dir = Some(parent.to_path_buf());
-                        }
-                        break;
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to load config from {:?}: {}", path, e);
-                    }
-                }
+            if !path
+                .try_exists()
+                .with_context(|| format!("Failed to inspect config file: {}", path.display()))?
+            {
+                continue;
             }
+            let file_config = Self::load_from_file(&path)?;
+            config.merge_with(file_config);
+            config.config_file = Some(path.clone());
+            if let Some(parent) = path.parent() {
+                config.config_dir = Some(parent.to_path_buf());
+            }
+            break;
         }
 
         Ok(config)
@@ -101,11 +100,14 @@ impl Config {
     }
 
     pub(super) fn load_from_file(path: &Path) -> Result<Self> {
-        let content = std::fs::read_to_string(path)?;
+        use anyhow::Context;
 
-        serde_yaml::from_str::<Self>(&content).map_err(|_| {
+        let content = std::fs::read_to_string(path)
+            .with_context(|| format!("Failed to read config file: {}", path.display()))?;
+
+        serde_yaml::from_str::<Self>(&content).map_err(|error| {
             anyhow::Error::from(MdvError::ConfigParseError(format!(
-                "Failed to parse YAML config file: {}",
+                "Failed to parse YAML config file {}: {error}",
                 path.display()
             )))
         })

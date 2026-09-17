@@ -15,12 +15,9 @@ impl<'a> EventRenderer<'a> {
             return String::new();
         }
         let prefix = format!("{} ", "│".repeat(count));
-        if self.config.no_colors {
-            return prefix;
-        }
         if let Some(color) = color {
             let style = AnsiStyle::new().fg(color);
-            style.apply(&prefix, self.config.no_colors)
+            style.apply(&prefix, self.output_style)
         } else {
             prefix
         }

@@ -16,7 +16,7 @@ fn heading_before_tab_indented_code_does_not_insert_empty_first_line() {
         .arg("word")
         .arg("--cols")
         .arg("80")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -54,7 +54,7 @@ fn top_level_tab_indented_text_renders_as_paragraph() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -85,7 +85,7 @@ fn top_level_space_indented_text_renders_as_paragraph() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");

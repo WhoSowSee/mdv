@@ -3,6 +3,7 @@ pub(crate) mod browser;
 pub(crate) mod discovery;
 pub(crate) mod screen;
 
+use crate::cli::OutputStyle;
 use crate::config::Config;
 use crate::editor::EditorCommand;
 use crate::pager::{self, PagerScreen, RefreshCallback};
@@ -57,7 +58,11 @@ pub(crate) fn select_interactive_target(
     Ok(target)
 }
 
-pub(crate) fn run(target: InteractiveTarget, config: Config) -> Result<()> {
+pub(crate) fn run(
+    target: InteractiveTarget,
+    config: Config,
+    output_style: OutputStyle,
+) -> Result<()> {
     ensure!(
         std::io::stdout().is_terminal(),
         "interactive mode requires a terminal"
@@ -65,17 +70,17 @@ pub(crate) fn run(target: InteractiveTarget, config: Config) -> Result<()> {
     let root = match target {
         InteractiveTarget::Directory(root) => root,
         InteractiveTarget::File(path) => {
-            return open_file_in_pager(path, &config, PagerScreen::Alternate);
+            return open_file_in_pager(path, &config, output_style, PagerScreen::Alternate);
         }
         InteractiveTarget::Stdin => {
             let mut source = String::new();
             std::io::stdin().read_to_string(&mut source)?;
             crate::strip_leading_bom(&mut source);
-            return open_source_in_pager(source, &config);
+            return open_source_in_pager(source, &config, output_style);
         }
     };
     let (width, height) = crossterm::terminal::size()?;
-    let mut app = App::new(root, config.clone(), width, height);
+    let mut app = App::new(root, output_style, width, height);
     let mut terminal = TerminalSession::enter()?;
     let mut next_frame = Instant::now();
     let mut redraw_pending = true;
@@ -124,7 +129,7 @@ pub(crate) fn run(target: InteractiveTarget, config: Config) -> Result<()> {
             AppAction::Quit => return Ok(()),
             AppAction::OpenPager(path) => {
                 terminal.pause_for_pager()?;
-                let result = open_file_in_pager(path, &config, PagerScreen::InPlace);
+                let result = open_file_in_pager(path, &config, output_style, PagerScreen::InPlace);
                 terminal.resume_after_pager()?;
                 app.after_pager(result);
             }
@@ -143,18 +148,39 @@ pub(crate) fn run(target: InteractiveTarget, config: Config) -> Result<()> {
     }
 }
 
-fn open_file_in_pager(path: PathBuf, config: &Config, screen: PagerScreen) -> Result<()> {
-    let document = crate::render_document_file(&path, config, false, false, None)?;
+fn open_file_in_pager(
+    path: PathBuf,
+    config: &Config,
+    output_style: OutputStyle,
+    screen: PagerScreen,
+) -> Result<()> {
+    let document = crate::render_document_file(&path, config, false, false, None, output_style)?;
     let refresh_path = path.clone();
     let refresh_config = config.clone();
     let refresh = Arc::new(move || {
-        crate::render_document_file(&refresh_path, &refresh_config, false, false, None)
+        crate::render_document_file(
+            &refresh_path,
+            &refresh_config,
+            false,
+            false,
+            None,
+            output_style,
+        )
     }) as RefreshCallback;
     pager::page(document, Some(path), Some(refresh), screen)
 }
 
-fn open_source_in_pager(source: String, config: &Config) -> Result<()> {
-    let rendered = crate::render_document(&source, config, false, false, None, true, true)?;
+fn open_source_in_pager(source: String, config: &Config, output_style: OutputStyle) -> Result<()> {
+    let rendered = crate::render_document(
+        &source,
+        config,
+        output_style,
+        crate::RenderOptions {
+            add_leading_blank: true,
+            for_pager: true,
+            ..crate::RenderOptions::default()
+        },
+    )?;
     pager::page(
         rendered.into_pager_document(source),
         None,

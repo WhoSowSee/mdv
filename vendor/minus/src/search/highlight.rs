@@ -1,4 +1,3 @@
-use crossterm::style::{Color, SetBackgroundColor};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -188,12 +187,7 @@ fn highlight_color(state: SgrState, current: bool, fixed: Option<Rgb>) -> Rgb {
 
 fn highlight_background(state: SgrState, current: bool, fixed: Option<Rgb>) -> String {
     let color = highlight_color(state, current, fixed);
-    SetBackgroundColor(Color::Rgb {
-        r: color.r,
-        g: color.g,
-        b: color.b,
-    })
-    .to_string()
+    format!("\x1b[48;2;{};{};{}m", color.r, color.g, color.b)
 }
 
 fn highlight_matches(

@@ -231,7 +231,7 @@ impl<'a> EventRenderer<'a> {
             format!("[{}]", label_text)
         };
         let label_style = self.callout_label_style(kind, label);
-        let styled_label = label_style.apply(&display_label, self.config.no_colors);
+        let styled_label = label_style.apply(&display_label, self.output_style);
         self.output.push_str(&styled_label);
 
         self.output.push('\n');

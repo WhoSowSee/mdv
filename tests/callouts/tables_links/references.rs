@@ -10,7 +10,7 @@ fn test_callout_inline_table_references_increment_and_compact() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--link-style")
@@ -74,7 +74,7 @@ fn test_callout_table_inline_table_references_stay_inside_callout() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--link-style")
@@ -120,7 +120,7 @@ fn test_callout_pretty_table_reference_block_has_no_trailing_blank_when_last() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--link-style")

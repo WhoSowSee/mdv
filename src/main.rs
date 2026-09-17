@@ -7,7 +7,9 @@ use mdv::{
 use std::ffi::OsString;
 
 fn main() -> Result<()> {
-    env_logger::init();
+    env_logger::Builder::from_default_env()
+        .write_style(env_logger::WriteStyle::Never)
+        .init();
 
     let matches = Cli::command().get_matches_from(normalize_line_number_args(std::env::args_os()));
     let cli = Cli::from_arg_matches(&matches)?;

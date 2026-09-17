@@ -1,8 +1,4 @@
-use assert_cmd::Command;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
+use crate::support::mdv_cmd;
 
 use predicates::prelude::*;
 use std::fs;
@@ -14,7 +10,7 @@ fn test_show_empty_elements_flag() {
     fs::write(&temp_file, "> \n\n- \n\n```\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--code-block-style")
         .arg("simple")
         .arg(temp_file.path());
@@ -32,7 +28,7 @@ fn test_show_empty_elements_flag() {
     );
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--code-block-style")
         .arg("simple")
         .arg("--show-empty-elements")
@@ -73,13 +69,13 @@ fn test_empty_table_respects_show_empty_elements_flag() {
     fs::write(&temp_file, "| |\n|-|\n| |\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors").arg(temp_file.path());
+    cmd.args(["--color", "never"]).arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("───").not());
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--show-empty-elements")
         .arg(temp_file.path());
     cmd.assert()
@@ -93,7 +89,7 @@ fn test_empty_headings_respect_show_empty_elements_flag() {
     fs::write(&temp_file, "#\n\n##\n").unwrap();
 
     let output_without_flag = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv runs without flag");
@@ -110,7 +106,7 @@ fn test_empty_headings_respect_show_empty_elements_flag() {
     );
 
     let output_with_flag = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--show-empty-elements")
         .arg(temp_file.path())
         .output()
@@ -140,7 +136,7 @@ fn test_empty_heading_with_content_shows_placeholder_without_flag() {
     fs::write(&temp_file, "#\n\nParagraph\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv runs without flag");
@@ -169,7 +165,7 @@ fn test_empty_subheading_with_list_content_shows_placeholder() {
     fs::write(&temp_file, "##\n- item\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv runs for list content");

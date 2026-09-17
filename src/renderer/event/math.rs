@@ -101,11 +101,11 @@ impl<'a> EventRenderer<'a> {
 
         let style = create_style(self.theme, ThemeElement::Math);
         let styled_lines = if rendered.is_empty() {
-            vec![style.apply("", self.config.no_colors)]
+            vec![style.apply("", self.output_style)]
         } else {
             rendered
                 .lines()
-                .map(|line| style.apply(line, self.config.no_colors))
+                .map(|line| style.apply(line, self.output_style))
                 .collect()
         };
 
@@ -119,7 +119,7 @@ impl<'a> EventRenderer<'a> {
     fn append_math_to_table(&mut self, rendered: &str) {
         if !rendered.trim().is_empty() {
             let style = create_style(self.theme, ThemeElement::Math);
-            let styled = style.apply(rendered, self.config.no_colors);
+            let styled = style.apply(rendered, self.output_style);
             if let Some(table) = self.table_state.as_mut() {
                 table.current_cell.push_str(&styled);
             }

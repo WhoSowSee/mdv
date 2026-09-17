@@ -69,7 +69,7 @@ fn test_inline_table_reference_blocks_leave_one_blank_line_before_following_cont
 
         let mut cmd = mdv_cmd();
         cmd.arg("--no-config")
-            .arg("--no-colors")
+            .args(["--color", "never"])
             .arg("--link-style")
             .arg("inlinetable");
         if render_html {
@@ -115,7 +115,7 @@ fn test_inline_table_reference_marker_keeps_brackets_together_when_wrapped() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("52")
         .arg("--link-style")
@@ -209,7 +209,7 @@ fn test_inline_table_reference_constraints_do_not_overflow_narrow_table() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("30")
         .arg("--link-style")

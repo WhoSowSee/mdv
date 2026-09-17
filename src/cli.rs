@@ -2,11 +2,13 @@ use crate::block_spacing::BlockSpacingOverrides;
 use crate::inline_style::InlineStyleOverrides;
 use crate::list_marker::{PrettyListStyle, UniformListMarker};
 use clap::builder::PossibleValue;
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{ColorChoice, Parser, Subcommand, ValueEnum};
 use std::fmt;
 use std::path::PathBuf;
 
+mod color;
 mod help;
+pub use color::{ColorMode, OutputStyle};
 use help::*;
 
 #[derive(Parser, Debug)]
@@ -15,6 +17,7 @@ use help::*;
     version = env!("CARGO_PKG_VERSION"),
     about = "Terminal Markdown Viewer - A fast, feature-rich markdown viewer for the terminal",
     disable_help_subcommand = true,
+    color = ColorChoice::Never,
     long_about = r#"
 mdv is a terminal-based markdown viewer that renders markdown files with syntax highlighting, themes, and various formatting options. It supports monitoring files for changes, custom themes, and can output both formatted text and HTML.
 
@@ -37,9 +40,9 @@ pub struct Cli {
     #[arg(value_name = "FILE")]
     pub filename: Option<String>,
 
-    /// Strip all ANSI colors
-    #[arg(long = "no-colors", help_heading = "Output and flow", display_order = 8)]
-    pub no_colors: bool,
+    /// Control terminal styling based on stdout, always enable it, or always disable it
+    #[arg(long = "color", value_enum, value_name = "WHEN", default_value = "auto", help_heading = "Output and flow", display_order = 8)]
+    pub color: Option<ColorMode>,
 
     /// Hide Markdown comments from the rendered output
     #[arg(long = "hide-comments", help_heading = "Output and flow", display_order = 9)]

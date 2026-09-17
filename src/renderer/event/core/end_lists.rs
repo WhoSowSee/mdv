@@ -69,7 +69,7 @@ impl<'a> EventRenderer<'a> {
                 self.styled_checkbox_marker(state)
             } else {
                 let style = create_style(self.theme, ThemeElement::ListMarker);
-                style.apply(&format!("[{state}]"), self.config.no_colors)
+                style.apply(&format!("[{state}]"), self.output_style)
             };
             self.output.push_str(&marker);
             self.output.push(' ');

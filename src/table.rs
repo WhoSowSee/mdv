@@ -9,7 +9,7 @@ use comfy_table::{
 };
 use pulldown_cmark::Alignment;
 
-use crate::cli::{TableWrapMode, TextWrapMode};
+use crate::cli::{OutputStyle, TableWrapMode, TextWrapMode};
 
 pub(crate) const TABLE_REFERENCE_WRAP_MARKER: char = '\u{200B}';
 const TABLE_GRAPHEME_WRAP_DELIMITER: char = '\0';
@@ -34,7 +34,7 @@ pub use links::apply_clickable_link_replacements;
 
 pub struct TableRenderer {
     theme: Theme,
-    no_colors: bool,
+    output_style: OutputStyle,
     terminal_width: usize,
     table_wrap: TableWrapMode,
     text_wrap: TextWrapMode,

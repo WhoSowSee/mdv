@@ -253,7 +253,7 @@ impl<'a> EventRenderer<'a> {
         // If we are inside a table, write the marker into the current cell
         if let Some(ref mut table) = self.table_state {
             let style = create_style(self.theme, ThemeElement::Link);
-            let image_marker = style.apply(marker, self.config.no_colors);
+            let image_marker = style.apply(marker, self.output_style);
             let separator = media_marker_leading_separator(&table.current_cell);
             table.current_cell.push_str(separator);
             table.current_cell.push_str(&image_marker);
@@ -278,7 +278,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         let style = create_style(self.theme, ThemeElement::Link);
-        let image_marker = style.apply(marker, self.config.no_colors);
+        let image_marker = style.apply(marker, self.output_style);
         let separator = media_marker_leading_separator(&self.output);
         self.output.push_str(separator);
         self.output.push_str(&image_marker);

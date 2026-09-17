@@ -1,8 +1,5 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 use predicates::prelude::*;
 use std::fs;
 use tempfile::{NamedTempFile, TempDir};
@@ -28,7 +25,7 @@ fn test_default_code_block_style_has_no_frame_or_label() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -62,7 +59,7 @@ fn test_basic_code_block_label_options_are_independent() {
             .arg("--no-config")
             .arg("--code-block-style")
             .arg(style)
-            .arg("--no-colors")
+            .args(["--color", "never"])
             .arg(temp_file.path())
             .output()
             .expect("mdv executed");
@@ -87,7 +84,7 @@ fn test_basic_code_block_wrap_reserves_indent_width() {
         .arg("char")
         .arg("--cols")
         .arg("10")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -150,7 +147,7 @@ fn test_configured_custom_syntax_overrides_embedded_set() {
     .unwrap();
     fs::write(
         temp_dir.path().join("config.yaml"),
-        "syntaxes_dir: syntaxes\ncode_block_style: simple:show-name\nno_colors: true\ncode_guessing: false\n",
+        "syntaxes_dir: syntaxes\ncode_block_style: simple:show-name\ncolor: never\ncode_guessing: false\n",
     )
     .unwrap();
     let markdown_path = temp_dir.path().join("custom-syntax.md");
@@ -183,7 +180,7 @@ fn test_code_language_simple_style_named_block() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -200,7 +197,7 @@ fn test_code_language_simple_style_plain_block() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -216,7 +213,7 @@ fn test_markdown_code_block_setext_heading_renders_as_heading() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())

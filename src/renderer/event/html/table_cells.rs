@@ -94,6 +94,7 @@ impl<'a> EventRenderer<'a> {
             self.theme,
             self.syntax_set,
             self.code_theme,
+            self.output_style,
             self.math_diagnostics.clone(),
         );
         renderer.code_block_content = text;

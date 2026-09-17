@@ -1,8 +1,5 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -19,7 +16,7 @@ fn test_pretty_style_consecutive_code_blocks_have_single_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -36,7 +33,7 @@ fn test_code_block_followed_by_heading_has_single_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");
@@ -65,7 +62,7 @@ fn test_code_block_followed_by_rule_has_single_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--code-block-style")
         .arg("pretty")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     let output = cmd.output().expect("mdv executed");

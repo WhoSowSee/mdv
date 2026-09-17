@@ -1,3 +1,6 @@
+mod color;
+mod support;
+
 #[path = "callouts.rs"]
 mod callouts;
 #[path = "checkboxes.rs"]

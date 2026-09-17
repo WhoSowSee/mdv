@@ -1,5 +1,5 @@
 use super::browser::{BrowserState, FilterState};
-use crate::config::Config;
+use crate::cli::OutputStyle;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind};
 use std::path::PathBuf;
@@ -13,16 +13,16 @@ pub(super) enum AppAction {
 }
 
 pub(super) struct App {
-    pub(super) config: Config,
+    pub(super) output_style: OutputStyle,
     pub(super) browser: BrowserState,
     pub(super) width: u16,
     pub(super) height: u16,
 }
 
 impl App {
-    pub(super) fn new(root: PathBuf, config: Config, width: u16, height: u16) -> Self {
+    pub(super) fn new(root: PathBuf, output_style: OutputStyle, width: u16, height: u16) -> Self {
         Self {
-            config,
+            output_style,
             browser: BrowserState::new(root, height),
             width,
             height,
@@ -188,7 +188,7 @@ mod tests {
     fn enter_returns_the_selected_document_for_the_existing_pager() {
         let browser = BrowserState::for_test(vec![DocumentEntry::for_test("README.md")], 24);
         let mut app = App {
-            config: Config::default(),
+            output_style: OutputStyle::Disabled,
             browser,
             width: 80,
             height: 24,
@@ -203,7 +203,7 @@ mod tests {
     fn control_f_starts_filtering() {
         let browser = BrowserState::for_test(vec![DocumentEntry::for_test("README.md")], 24);
         let mut app = App {
-            config: Config::default(),
+            output_style: OutputStyle::Disabled,
             browser,
             width: 80,
             height: 24,
@@ -225,7 +225,7 @@ mod tests {
             24,
         );
         let mut app = App {
-            config: Config::default(),
+            output_style: OutputStyle::Disabled,
             browser,
             width: 80,
             height: 24,
@@ -248,7 +248,7 @@ mod tests {
     fn period_toggles_git_ignored_files() {
         let browser = BrowserState::for_test(Vec::new(), 24);
         let mut app = App {
-            config: Config::default(),
+            output_style: OutputStyle::Disabled,
             browser,
             width: 80,
             height: 24,

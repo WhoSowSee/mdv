@@ -71,6 +71,11 @@ impl Pager {
         Ok(self.tx.send(Command::SetLineNumbers(l))?)
     }
 
+    /// Enables or disables decorative ANSI styling in prompts and highlights.
+    pub fn set_output_styling(&self, enabled: bool) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::SetOutputStyling(enabled))?)
+    }
+
     /// Sets the single-line text displayed in the prompt.
     pub fn set_prompt(&self, text: impl Into<String>) -> Result<(), MinusError> {
         let text: String = text.into();

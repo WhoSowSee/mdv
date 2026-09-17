@@ -1,3 +1,4 @@
+use crate::cli::OutputStyle;
 use crossterm::style::Color;
 
 /// ANSI color and style utilities
@@ -46,8 +47,8 @@ impl AnsiStyle {
         self
     }
 
-    pub fn apply(&self, text: &str, no_colors: bool) -> String {
-        if no_colors {
+    pub fn apply(&self, text: &str, output_style: OutputStyle) -> String {
+        if output_style.is_disabled() {
             return text.to_string();
         }
 
@@ -175,15 +176,15 @@ mod tests {
     #[test]
     fn test_ansi_style() {
         let style = AnsiStyle::new().fg(Color::Red).bold();
-        let result = style.apply("test", false);
+        let result = style.apply("test", OutputStyle::Enabled);
         assert!(result.contains("test"));
         assert!(result.contains("\x1b["));
     }
 
     #[test]
-    fn test_no_colors() {
+    fn test_plain_style() {
         let style = AnsiStyle::new().fg(Color::Red).bold();
-        let result = style.apply("test", true);
+        let result = style.apply("test", OutputStyle::Disabled);
         assert_eq!(result, "test");
     }
 
@@ -201,7 +202,7 @@ mod tests {
             g: 20,
             b: 30,
         });
-        let applied = style.apply("demo", false);
+        let applied = style.apply("demo", OutputStyle::Enabled);
         assert!(applied.starts_with("\x1b[38;2;10;20;30m"));
         assert!(applied.ends_with("demo\x1b[0m"));
     }
@@ -209,7 +210,7 @@ mod tests {
     #[test]
     fn apply_emits_truecolor_background_sequence() {
         let style = AnsiStyle::new().bg(Color::Rgb { r: 1, g: 2, b: 3 });
-        let applied = style.apply("demo", false);
+        let applied = style.apply("demo", OutputStyle::Enabled);
         assert!(applied.starts_with("\x1b[48;2;1;2;3m"));
         assert!(applied.ends_with("demo\x1b[0m"));
     }
@@ -220,21 +221,21 @@ mod tests {
             AnsiStyle::new()
                 .fg(Color::DarkRed)
                 .bg(Color::Blue)
-                .apply("demo", false),
+                .apply("demo", OutputStyle::Enabled),
             "\x1b[31m\x1b[104mdemo\x1b[0m"
         );
         assert_eq!(
             AnsiStyle::new()
                 .fg(Color::AnsiValue(42))
                 .bg(Color::AnsiValue(84))
-                .apply("demo", false),
+                .apply("demo", OutputStyle::Enabled),
             "\x1b[38;5;42m\x1b[48;5;84mdemo\x1b[0m"
         );
         assert_eq!(
             AnsiStyle::new()
                 .fg(Color::Reset)
                 .bg(Color::Reset)
-                .apply("demo", false),
+                .apply("demo", OutputStyle::Enabled),
             "\x1b[39m\x1b[49mdemo\x1b[0m"
         );
     }

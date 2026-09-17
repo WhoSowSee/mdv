@@ -48,6 +48,7 @@ pub enum Command {
 
     LineWrapping(bool),
     SetLineNumbers(LineNumbers),
+    SetOutputStyling(bool),
     FollowOutput(bool),
 
     SetExitStrategy(ExitStrategy),
@@ -89,6 +90,7 @@ impl PartialEq for Command {
             (Self::SetMappedData(a, am), Self::SetMappedData(b, bm)) => a == b && am == bm,
             (Self::LineWrapping(d1), Self::LineWrapping(d2)) => d1 == d2,
             (Self::SetLineNumbers(d1), Self::SetLineNumbers(d2)) => d1 == d2,
+            (Self::SetOutputStyling(d1), Self::SetOutputStyling(d2)) => d1 == d2,
             (Self::ShowPrompt(d1), Self::ShowPrompt(d2)) => d1 == d2,
             (Self::SetExitStrategy(d1), Self::SetExitStrategy(d2)) => d1 == d2,
             #[cfg(feature = "static_output")]
@@ -133,6 +135,9 @@ impl Debug for Command {
             }
             Self::ClearMessage(id) => write!(f, "ClearMessage({id})"),
             Self::SetLineNumbers(ln) => write!(f, "SetLineNumbers({ln:?})"),
+            Self::SetOutputStyling(enabled) => {
+                write!(f, "SetOutputStyling({enabled:?})")
+            }
             Self::LineWrapping(lw) => write!(f, "LineWrapping({lw:?})"),
             Self::SetExitStrategy(es) => write!(f, "SetExitStrategy({es:?})"),
             Self::SetInputClassifier(_) => write!(f, "SetInputClassifier"),

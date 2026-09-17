@@ -6,7 +6,7 @@ impl<'a> EventRenderer<'a> {
         text: &str,
     ) -> Result<()> {
         self.process_wrapped_inline_fragments(text, |renderer, fragment| {
-            if renderer.config.no_colors {
+            if renderer.output_style.is_disabled() {
                 fragment.to_string()
             } else {
                 format!("\x1b[4m{}\x1b[0m", fragment)

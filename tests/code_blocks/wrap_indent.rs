@@ -1,8 +1,5 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 use std::fs;
 use tempfile::NamedTempFile;
 
@@ -15,7 +12,7 @@ fn capture_indent_spaces(mode: Option<&str>) -> (usize, usize) {
     .expect("write markdown");
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--code-block-style")
         .arg("simple")
         .arg("--wrap")

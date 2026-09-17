@@ -1,8 +1,5 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 use std::fs;
 use tempfile::NamedTempFile;
 

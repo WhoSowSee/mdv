@@ -6,6 +6,7 @@
 |---|---|
 | [src/main.rs](../../src/main.rs) | Minimal binary wrapper: logging, Clap parsing, and the call to `mdv::run`. |
 | [src/lib.rs](../../src/lib.rs) | Crate root, module declarations, and routing for every execution mode. |
+| [src/document.rs](../../src/document.rs) | Shared document rendering options, metadata prefixes, and refresh rendering. |
 | [src/error.rs](../../src/error.rs) | Typed `MdvError` variants for configuration, themes, Markdown, rendering, monitoring, I/O, and syntax highlighting. |
 | [src/monitor.rs](../../src/monitor.rs) | Standalone file-monitoring mode used after ordinary output. |
 
@@ -13,7 +14,7 @@
 
 `main` intentionally contains no application logic:
 
-1. Initialize `env_logger`.
+1. Initialize `env_logger` with plain diagnostics.
 2. Build `clap::ArgMatches` through `Cli::command()`.
 3. Construct `Cli` with `Cli::from_arg_matches`.
 4. Pass both values to `mdv::run`.
@@ -30,9 +31,9 @@ The crate publicly exposes reusable modules such as `cli`, `config`, `markdown`,
 
 `run(mut cli, matches)` evaluates branches in a fixed order:
 
-1. `mdv help` builds the extended help document.
-2. `--init-config` writes the reference configuration into the selected configuration directory.
-3. The effective `Config` is assembled.
+1. `--init-config` writes the reference configuration without loading color settings.
+2. The effective `Config` is assembled and `OutputStyle` is resolved from stdout TTY.
+3. `mdv help` builds the extended help document using the effective configuration and styling policy.
 4. `--preset-info` without a file prints the preset catalog.
 5. `--theme-info` without a file prints active theme information.
 6. `interactive::select_interactive_target` decides whether to open the document browser or page a specific file or standard input.
@@ -54,7 +55,11 @@ This ordering prevents metadata and setup commands from opening input or initial
 | `format_current_themes` | Formats the active terminal and code themes. |
 | `get_input_content` | Selects a file, `-`, piped standard input, or `--from` and returns its text. |
 | `strip_leading_bom` | Removes a UTF-8 BOM only when it occurs at the beginning of input. |
-| `RenderedOutput` | Carries rendered text, optional line-navigation data, and pager status-bar transparency. |
+| `RenderedOutput` | Carries rendered text, optional line-navigation data, styling policy, and pager status-bar transparency. |
+
+`render_document`, `render_document_file`, `RenderOptions`, and
+`format_current_themes` live in `document.rs`. Input selection and mode routing
+remain in `lib.rs`.
 
 ## Input handling
 
@@ -70,6 +75,16 @@ Pager rendering retains source-line metadata and prepares unnumbered, rendered-n
 
 ## ANSI output and HTML
 
+`--color` and `MDV_COLOR` choose `auto`, `always`, or `never`, with CLI precedence
+over environment, presets, and configuration. `auto` enables styling only when
+stdout is a terminal. Piped stdin does not disable styling in a terminal.
+The resolved `OutputStyle` is passed to document renderers, browser, pager,
+monitor, and refresh callbacks without mutating `Config.color`.
+
+Disabled styling suppresses generated SGR and OSC 8, preserving visible text
+and layout. Full-screen terminal-control commands remain necessary in `never`.
+Fast Clap help/version/errors and stderr diagnostics are always plain.
+
 `--html` selects `TerminalRenderer::to_html` and emits an HTML document. `--render-html` serves a different purpose: it allows HTML embedded in Markdown to become terminal elements. The options are not interchangeable.
 
 ## Ordinary monitor mode
@@ -80,6 +95,7 @@ Pager rendering retains source-line metadata and prepares unnumbered, rendered-n
 - Events use a 100 ms debounce interval.
 - A new `MarkdownProcessor` is created for each refresh.
 - The `TerminalRenderer` is reused because configuration and themes do not change.
+- Initial and repeated rendering share the same resolved `OutputStyle`.
 - An individual refresh error is written to standard error without terminating the watcher loop.
 
 The pager has a separate watcher in `src/pager/watcher.rs`. These mechanisms intentionally remain separate: ordinary monitor mode prints successive snapshots, while the pager replaces the current document in place.

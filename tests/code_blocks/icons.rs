@@ -1,8 +1,4 @@
-use assert_cmd::Command;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
+use crate::support::mdv_cmd;
 
 use std::fs;
 use tempfile::NamedTempFile;
@@ -15,7 +11,7 @@ fn test_pretty_code_block_with_icon() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("pretty:show-name;show-icon")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -56,7 +52,7 @@ fn test_simple_code_block_with_icon() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name;show-icon")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -80,7 +76,7 @@ fn test_unknown_language_uses_default_icon() {
         .arg("--code-block-style")
         .arg("simple:show-name;show-icon")
         .arg("--no-code-guessing")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -111,7 +107,7 @@ fn test_custom_default_icon_overrides_builtin_default() {
         .arg("--custom-code-block")
         .arg("default:icon=🚀")
         .arg("--no-code-guessing")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -134,7 +130,7 @@ fn test_pretty_code_block_with_icon_only() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("pretty:show-icon")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -169,7 +165,7 @@ fn test_simple_code_block_with_icon_only() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-icon")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -194,7 +190,7 @@ fn test_custom_code_block_icon_overrides_default() {
         .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("rust:icon=🦀")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -219,7 +215,7 @@ fn test_custom_code_block_label_override() {
         .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("rust:icon=🦀,label=russst")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");
@@ -244,7 +240,7 @@ fn test_custom_code_block_aliases_match_alternative_hints() {
         .arg("simple:show-name;show-icon")
         .arg("--custom-code-block")
         .arg("python:icon=*,label=kd,aliases=py|py3")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv executed");

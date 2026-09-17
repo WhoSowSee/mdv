@@ -4,12 +4,12 @@ use super::*;
 fn test_table_inline_wrapped_url_keeps_link_color() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 36, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 36, TableWrapMode::Fit);
 
     let link_text = "dash";
     let formatted_link_text = format!("\x1b[4m{}\x1b[24m", link_text);
     let url_part = "(https://example.com/dashboard/alpha)".to_string();
-    let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, false);
+    let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, OutputStyle::Enabled);
 
     let headers = vec!["Link".to_string()];
     let rows = vec![vec![format!("{}{}", formatted_link_text, styled_url)]];

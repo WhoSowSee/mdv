@@ -20,7 +20,7 @@ fn no_config_flag_skips_loading_files() {
     let _env_lock = env_lock();
     let temp_dir = TempDir::new().expect("create temp dir");
     let config_path = temp_dir.path().join("config.yaml");
-    std::fs::write(&config_path, "no_colors: true\n").expect("write config file");
+    std::fs::write(&config_path, "color: never\n").expect("write config file");
 
     let (cli, matches) = parse_cli_from(vec![
         OsString::from("mdv"),
@@ -30,10 +30,7 @@ fn no_config_flag_skips_loading_files() {
     ]);
 
     let config = Config::from_cli(&cli, &matches).expect("load config");
-    assert!(
-        !config.no_colors,
-        "config file should be ignored when --no-config is set"
-    );
+    assert_eq!(config.color, ColorMode::Auto);
 }
 
 #[test]
@@ -41,7 +38,7 @@ fn config_file_settings_survive_cli_defaults() {
     let _env_lock = env_lock();
     let config = parse_with_config(
         r#"
-no_colors: true
+color: never
 wrap: word
 table_wrap: wrap
 tab_length: 2
@@ -54,7 +51,7 @@ link_truncation: cut
 "#,
     );
 
-    assert!(config.no_colors);
+    assert_eq!(config.color, ColorMode::Never);
     assert!(matches!(config.wrap, TextWrapMode::Word));
     assert!(matches!(config.table_wrap, TableWrapMode::Wrap));
     assert_eq!(config.tab_length, 2);

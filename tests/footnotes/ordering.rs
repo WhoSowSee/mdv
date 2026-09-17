@@ -10,7 +10,7 @@ fn footnotes_with_duplicate_names_follow_reference_order() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg(temp_file.path());
@@ -43,7 +43,7 @@ fn footnotes_with_duplicate_names_preserve_bodies() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("120")
         .arg(temp_file.path());
@@ -78,7 +78,7 @@ fn footnotes_render_at_document_end_with_separator() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg(temp_file.path());

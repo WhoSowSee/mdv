@@ -9,7 +9,7 @@ fn horizontal_margins_indent_and_constrain_wrapped_output() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("12")
         .arg("-m")
@@ -51,7 +51,7 @@ fn horizontal_margin_accepts_left_only() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("10")
         .arg("--margin")
@@ -93,7 +93,7 @@ fn horizontal_margins_load_from_config() {
     let output = mdv_cmd()
         .arg("--config-file")
         .arg(config_dir.path())
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("10")
         .arg(temp_file.path())
@@ -130,7 +130,7 @@ fn horizontal_margins_bound_tables_code_and_callouts() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("28")
         .arg("--margin")

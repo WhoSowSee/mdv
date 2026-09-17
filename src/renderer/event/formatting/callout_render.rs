@@ -78,7 +78,7 @@ impl<'a> EventRenderer<'a> {
                 String::new()
             } else {
                 self.callout_label_style(kind, label)
-                    .apply(&label_text, self.config.no_colors)
+                    .apply(&label_text, self.output_style)
             };
             styled_label.insert_str(0, &header_source_marker);
 

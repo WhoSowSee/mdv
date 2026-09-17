@@ -288,6 +288,12 @@ pub fn handle_event(
             p.reformat_display()?;
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
         }
+        Command::SetOutputStyling(enabled) => {
+            p.output_styling = enabled;
+            p.format_prompt()?;
+            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+            queue_prompt_redraw(p, command_queue)?;
+        }
         Command::SetExitStrategy(es) => {
             p.hooks.remove_callback(Hook::PostPagerExit, 1);
             if es == ExitStrategy::ProcessQuit {

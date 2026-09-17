@@ -96,7 +96,7 @@ cat <FILE> | mdv
 - `--html` — prints HTML instead of terminal formatting.
 - `-E, --render-html` — renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally.
 - `-N, --line-numbers [<MODE>]` — prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
-- `--no-colors` — strips ANSI styling regardless of the selected theme.
+- `--color <auto|always|never>` — controls terminal styling. `auto` enables ANSI and OSC 8 only when stdout is a terminal, `always` preserves styling through pipes, and `never` emits plain rendered output.
 - `--hide-comments` — removes Markdown comments from the rendered output.
 - `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` — controls an exact `---`-delimited YAML property mapping beginning on the first line. `hidden` omits it; `panel` renders a property panel; `table` uses Property/Value columns; `plain` emits normalized key/value lines; `inline` joins properties into one flowing row; `blocks` places each value below its key; `code` renders highlighted YAML; and `source` parses the complete input as ordinary Markdown.
 - `--theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
@@ -261,7 +261,7 @@ Every preset accepts the same keys and values as [`docs/examples/config.yaml`](d
 - `MDV_CONFIG_PATH` — custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
 - `MDV_EDITOR` — editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors.
 - `MDV_EDITOR_MODE` — optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
-- `MDV_NO_COLOR` — accepts `True` or `False` and enforces color usage regardless of CLI arguments or theme settings.
+- `MDV_COLOR` — sets `auto`, `always`, or `never`; an explicit `--color` has higher priority.
 
 ## Themes
 

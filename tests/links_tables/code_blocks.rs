@@ -18,7 +18,7 @@ fn test_inline_table_link_style_inside_text_code_block_pretty() {
         .arg("none")
         .arg("--cols")
         .arg("80")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -50,7 +50,7 @@ fn test_inline_table_link_style_inside_text_code_block_simple() {
         .arg("none")
         .arg("--cols")
         .arg("80")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -82,7 +82,7 @@ fn test_inline_table_table_reference_stays_inside_markdown_code_block() {
         .arg("none")
         .arg("--cols")
         .arg("90")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -110,7 +110,7 @@ fn test_inline_table_mixed_references_split_between_code_body_and_nested_table()
         .arg("none")
         .arg("--cols")
         .arg("90")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv for mixed code block references");

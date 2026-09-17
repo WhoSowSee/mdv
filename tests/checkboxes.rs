@@ -1,10 +1,6 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use std::fs;
 use tempfile::NamedTempFile;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 /// Build the markdown checkbox demo used across tests.
 fn checkbox_markdown() -> String {
@@ -30,7 +26,7 @@ fn run(args: &[&str], markdown: &str) -> String {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, markdown).unwrap();
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors");
+    cmd.args(["--color", "never"]);
     for arg in args {
         cmd.arg(arg);
     }
@@ -44,6 +40,7 @@ fn run_with_colors(args: &[&str], markdown: &str) -> String {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, markdown).unwrap();
     let mut cmd = mdv_cmd();
+    cmd.args(["--color", "always"]);
     for arg in args {
         cmd.arg(arg);
     }

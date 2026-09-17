@@ -21,7 +21,7 @@ impl<'a> EventRenderer<'a> {
 
         // Table cells: let the table renderer decide about wrapping; just push styled.
         if let Some(ref mut table) = self.table_state {
-            let styled_code = style.apply(&raw_code, self.config.no_colors);
+            let styled_code = style.apply(&raw_code, self.output_style);
             table.current_cell.push_str(&styled_code);
             return Ok(());
         }

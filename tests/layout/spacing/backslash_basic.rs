@@ -10,7 +10,7 @@ fn test_backslash_line_creates_single_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())
@@ -57,7 +57,7 @@ fn test_backslash_after_paragraph_gap_keeps_single_blank_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())
@@ -104,7 +104,7 @@ fn test_backslash_after_code_block_does_not_stack_blank_lines() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--code-block-style")
@@ -153,7 +153,7 @@ fn test_backslash_after_task_list_resets_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg(temp_file.path())

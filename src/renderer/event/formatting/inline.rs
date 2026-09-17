@@ -8,8 +8,7 @@ impl<'a> EventRenderer<'a> {
         terminal_width: usize,
     ) {
         if !self.config.is_text_wrapping_enabled() {
-            self.output
-                .push_str(&style.apply(text, self.config.no_colors));
+            self.output.push_str(&style.apply(text, self.output_style));
             self.commit_pending_heading_placeholder_if_content();
             return;
         }
@@ -28,7 +27,7 @@ impl<'a> EventRenderer<'a> {
                     self.push_newline_with_context();
                     continue;
                 }
-                let style_text = style.apply(&remaining, self.config.no_colors);
+                let style_text = style.apply(&remaining, self.output_style);
                 self.output.push_str(&style_text);
                 break;
             }
@@ -47,13 +46,13 @@ impl<'a> EventRenderer<'a> {
 
             if display_width(&remaining) <= available {
                 self.output
-                    .push_str(&style.apply(&remaining, self.config.no_colors));
+                    .push_str(&style.apply(&remaining, self.output_style));
                 break;
             }
 
             let (chunk, rest) = self.take_prefix_by_width(&remaining, available);
             self.output
-                .push_str(&style.apply(&chunk, self.config.no_colors));
+                .push_str(&style.apply(&chunk, self.output_style));
             if rest.len() >= remaining.len() || rest.is_empty() {
                 break;
             }
@@ -228,7 +227,7 @@ impl<'a> EventRenderer<'a> {
         }
         style = attributes.apply_attributes(style);
 
-        style.apply(text, self.config.no_colors)
+        style.apply(text, self.output_style)
     }
 
     pub(in crate::renderer::event) fn sync_inline_backticks(&mut self, highlighted: bool) -> bool {

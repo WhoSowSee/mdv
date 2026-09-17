@@ -1,7 +1,7 @@
 use super::event::EventRenderer;
 use super::syntax_set::load_full_syntax_set;
 use super::syntax_theme::{CodeHighlightTheme, build_syntect_theme, default_theme_set};
-use crate::cli::{LineNumberOptions, LineNumberTarget};
+use crate::cli::{LineNumberOptions, LineNumberTarget, OutputStyle};
 use crate::config::Config;
 use crate::theme::{
     Theme, ThemeElement, ThemeManager, apply_custom_code_theme, apply_custom_theme, create_style,
@@ -23,10 +23,22 @@ pub struct TerminalRenderer {
     theme: Theme,
     syntax_set: Arc<SyntaxSet>,
     code_theme: CodeHighlightTheme,
+    output_style: OutputStyle,
 }
 
 impl TerminalRenderer {
-    pub fn new(config: &Config) -> Result<Self> {
+    /// Prepare a renderer with an explicitly resolved styling policy.
+    ///
+    /// The caller decides whether its destination is a terminal; construction
+    /// does not inspect process output or environment variables for color policy.
+    ///
+    /// ```rust
+    /// use mdv::{cli::OutputStyle, config::Config, renderer::TerminalRenderer};
+    /// let config = Config::default();
+    /// let renderer = TerminalRenderer::new(&config, OutputStyle::Disabled)?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    pub fn new(config: &Config, output_style: OutputStyle) -> Result<Self> {
         let theme_manager = build_theme_manager(config);
         let theme = resolve_theme(config, &theme_manager)?;
 
@@ -54,6 +66,7 @@ impl TerminalRenderer {
             theme,
             syntax_set,
             code_theme,
+            output_style,
         })
     }
 
@@ -98,6 +111,10 @@ impl TerminalRenderer {
         self.theme.pager_status_bar_transparent
     }
 
+    pub(crate) const fn output_style(&self) -> OutputStyle {
+        self.output_style
+    }
+
     fn render_events(
         &self,
         config: &Config,
@@ -135,6 +152,7 @@ impl TerminalRenderer {
             &self.theme,
             &self.syntax_set,
             &self.code_theme,
+            self.output_style,
             Rc::clone(math_diagnostics),
         );
         let output = renderer.render_events(events)?;
@@ -211,7 +229,7 @@ impl TerminalRenderer {
             &number_style,
             &separator_style,
             options,
-            self.config.no_colors,
+            self.output_style,
             collect_source_lines,
         )
     }

@@ -4,6 +4,7 @@ use super::{
     create_style, extract_code_language,
 };
 use crate::block_spacing::BlockElement;
+use crate::cli::OutputStyle;
 use crate::inline_style::InlineStyleKind;
 use crate::renderer::syntax_theme::CodeHighlightTheme;
 use crate::theme::Color;
@@ -37,6 +38,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) theme: &'a Theme,
     pub(crate) syntax_set: &'a SyntaxSet,
     pub(crate) code_theme: &'a CodeHighlightTheme,
+    pub(crate) output_style: OutputStyle,
     pub(crate) math_diagnostics: Rc<crate::math::MathDiagnostics>,
     pub(crate) output: String,
     pub(crate) current_indent: usize,

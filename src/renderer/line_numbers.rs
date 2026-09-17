@@ -1,3 +1,4 @@
+use crate::cli::OutputStyle;
 use crate::cli::{LineNumberOptions, LineNumberTarget};
 use crate::markdown::{SourceLineMarker, source_line_from_event};
 use crate::terminal::AnsiStyle;
@@ -73,7 +74,7 @@ pub(super) fn apply_line_numbers(
     number_style: &AnsiStyle,
     separator_style: &AnsiStyle,
     options: LineNumberOptions,
-    no_colors: bool,
+    output_style: OutputStyle,
     collect_source_lines: bool,
 ) -> SourceMappedOutput {
     let number_width = max_line.to_string().len();
@@ -92,7 +93,7 @@ pub(super) fn apply_line_numbers(
                 number_style,
                 separator_style,
                 options,
-                no_colors,
+                output_style,
             ));
         },
     )
@@ -143,15 +144,15 @@ pub(super) fn format_gutter(
     number_style: &AnsiStyle,
     separator_style: &AnsiStyle,
     options: LineNumberOptions,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) -> String {
     let number = match line_number {
         Some(line) => format!("{line:>number_width$}"),
         None => format!("{:number_width$}", ""),
     };
-    let mut gutter = number_style.apply(&number, no_colors);
+    let mut gutter = number_style.apply(&number, output_style);
     if options.separator {
-        gutter.push_str(&separator_style.apply(" │ ", no_colors));
+        gutter.push_str(&separator_style.apply(" │ ", output_style));
     } else {
         gutter.push(' ');
     }
@@ -212,7 +213,7 @@ pub(super) fn strip_internal_markers(line: &str) -> (String, Option<usize>) {
 #[cfg(test)]
 mod tests {
     use super::{apply_line_numbers, encode_internal_marker, strip_internal_markers};
-    use crate::cli::{LineNumberOptions, LineNumberTarget};
+    use crate::cli::{LineNumberOptions, LineNumberTarget, OutputStyle};
     use crate::terminal::AnsiStyle;
     use crate::utils::display_width;
     use crossterm::style::Color;
@@ -246,7 +247,7 @@ mod tests {
                 target: LineNumberTarget::Source,
                 separator: true,
             },
-            false,
+            OutputStyle::Enabled,
             true,
         );
 

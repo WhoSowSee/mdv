@@ -4,7 +4,7 @@ use std::fs;
 use tempfile::NamedTempFile;
 
 fn mdv_cmd() -> Command {
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
+    let mut command = crate::support::mdv_cmd();
     command.arg("--no-config");
     command
 }
@@ -13,7 +13,7 @@ fn render(markdown: &str, args: &[&str]) -> String {
     let file = NamedTempFile::new().unwrap();
     fs::write(&file, markdown).unwrap();
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .args(args)
         .arg(file.path())
         .output()
@@ -110,7 +110,8 @@ fn extended_terminal_math_renders_structured_layout() {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/files/math-layout.md");
     let output = mdv_cmd()
         .args([
-            "--no-colors",
+            "--color",
+            "never",
             "--math-block-style",
             "simple",
             "--line-numbers",

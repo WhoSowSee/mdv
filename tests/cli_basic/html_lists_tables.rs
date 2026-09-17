@@ -36,7 +36,7 @@ fn test_render_html_ordered_list_attributes() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -80,7 +80,7 @@ fn test_render_html_unordered_list_type_markers() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -125,7 +125,7 @@ fn test_render_html_option_formats_html_tables() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("80")
         .arg("--render-html")

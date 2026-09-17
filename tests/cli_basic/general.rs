@@ -139,17 +139,6 @@ fn test_html_output() {
 }
 
 #[test]
-fn test_no_colors_option() {
-    let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "# Test\n\n**Bold text**").unwrap();
-
-    let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors").arg(temp_file.path());
-    cmd.assert().success();
-    // Note: We can't easily test for absence of ANSI codes in integration tests
-}
-
-#[test]
 fn test_theme_option() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "# Theme Test\n\nTesting themes.").unwrap();
@@ -167,7 +156,7 @@ fn test_comments_rendered_by_default() {
     fs::write(&temp_file, "<!-- note -->\n\nVisible text\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors").arg(temp_file.path());
+    cmd.args(["--color", "never"]).arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("<!-- note -->"))
@@ -184,7 +173,7 @@ fn test_raw_html_rendered_as_literal_text() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors").arg(temp_file.path());
+    cmd.args(["--color", "never"]).arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains(

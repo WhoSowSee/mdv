@@ -6,7 +6,7 @@ impl<'a> EventRenderer<'a> {
         code: &str,
         language_hint: Option<&str>,
     ) -> Result<String> {
-        if self.config.no_colors {
+        if self.output_style.is_disabled() {
             return Ok(code.to_string());
         }
 
@@ -41,7 +41,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn highlight_footnote_markers_in_ansi(&self, line: &str) -> String {
-        if self.config.no_colors {
+        if self.output_style.is_disabled() {
             return line.to_string();
         }
 
@@ -105,7 +105,7 @@ impl<'a> EventRenderer<'a> {
 
             let marker = &line[start_byte..end_byte];
             if self.should_highlight_footnote_reference(name) {
-                let mut styled = style.apply(marker, self.config.no_colors);
+                let mut styled = style.apply(marker, self.output_style);
                 if let Some(sgr) = restore {
                     styled.push_str(&sgr);
                 }

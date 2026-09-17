@@ -114,7 +114,7 @@ fn inline_atoms_finish_with_impossible_widths() {
         ("\x60👨‍👩‍👧‍👦界\x60", "1", "char", "👨‍👩‍👧‍👦"),
     ] {
         let output = mdv_cmd()
-            .args(["--no-colors", "--cols", cols, "--wrap", mode])
+            .args(["--color", "never", "--cols", cols, "--wrap", mode])
             .write_stdin(source)
             .timeout(std::time::Duration::from_secs(5))
             .output()

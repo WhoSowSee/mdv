@@ -11,7 +11,7 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
 
     let cut_output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("46")
         .arg("--link-style")
@@ -26,7 +26,7 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
 
     let tablecut_output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("46")
         .arg("--link-style")
@@ -56,6 +56,7 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
     );
 
     let colored_output = mdv_cmd()
+        .args(["--color", "always"])
         .arg("--no-config")
         .arg("--cols")
         .arg("46")

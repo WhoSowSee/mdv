@@ -1,5 +1,6 @@
 use super::app::App;
 use super::browser::{BrowserSection, BrowserState, FilterState};
+use crate::cli::OutputStyle;
 use crate::terminal::AnsiStyle;
 use crate::utils::display_width;
 use anyhow::{Context, Result};

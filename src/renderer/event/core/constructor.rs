@@ -6,6 +6,7 @@ impl<'a> EventRenderer<'a> {
         theme: &'a Theme,
         syntax_set: &'a SyntaxSet,
         code_theme: &'a CodeHighlightTheme,
+        output_style: OutputStyle,
         math_diagnostics: Rc<crate::math::MathDiagnostics>,
     ) -> Self {
         Self {
@@ -13,6 +14,7 @@ impl<'a> EventRenderer<'a> {
             theme,
             syntax_set,
             code_theme,
+            output_style,
             math_diagnostics,
             output: String::new(),
             current_indent: 0,

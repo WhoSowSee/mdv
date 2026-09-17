@@ -22,7 +22,7 @@ impl<'a> EventRenderer<'a> {
         self.prepare_html_media_line(marker, &label);
 
         let style = create_style(self.theme, ThemeElement::Link);
-        let styled_marker = style.apply(marker, self.config.no_colors);
+        let styled_marker = style.apply(marker, self.output_style);
         let separator = media_marker_leading_separator(&self.output);
         self.output.push_str(separator);
         self.output.push_str(&styled_marker);

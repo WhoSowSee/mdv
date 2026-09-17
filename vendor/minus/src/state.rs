@@ -38,6 +38,10 @@ use crossbeam_channel::Receiver;
 
 const EOF_SCROLL_MARGIN_ROWS: usize = 1;
 
+#[cfg(test)]
+#[path = "state/styling_tests.rs"]
+mod styling_tests;
+
 #[cfg(feature = "search")]
 #[cfg_attr(docsrs, doc(cfg(feature = "search")))]
 #[allow(clippy::module_name_repetitions)]
@@ -131,6 +135,7 @@ pub struct PagerState {
     pub(crate) run_no_overflow: bool,
     pub(crate) lines_to_row_map: LinesRowMap,
     pub(crate) follow_output: bool,
+    pub(crate) output_styling: bool,
     pub(crate) selection_anchor: Option<Selection>,
 }
 
@@ -190,6 +195,7 @@ impl PagerState {
             prefix_num: String::new(),
             lines_to_row_map: LinesRowMap::new(),
             follow_output: false,
+            output_styling: true,
             selection_anchor: None,
         };
 
@@ -254,7 +260,11 @@ impl PagerState {
     pub(crate) fn format_prompt(&mut self) -> Result<(), PromptError> {
         if let Some(renderer) = &self.prompt_renderer {
             let prompt = renderer(&PromptContext::new(self))?;
-            self.displayed_prompt = prompt.render(self.cols);
+            self.displayed_prompt = if self.output_styling {
+                prompt.render(self.cols)
+            } else {
+                prompt.render_plain(self.cols)
+            };
         } else {
             self.format_default_prompt();
         }
@@ -262,7 +272,13 @@ impl PagerState {
         self.displayed_prompt_panel = self
             .prompt_panel
             .iter()
-            .map(|line| line.render(self.cols))
+            .map(|line| {
+                if self.output_styling {
+                    line.render(self.cols)
+                } else {
+                    line.render_plain(self.cols)
+                }
+            })
             .collect();
         Ok(())
     }
@@ -370,31 +386,39 @@ impl PagerState {
             prompt_str
         };
 
-        if self.message.is_some() {
+        if self.output_styling && self.message.is_some() {
             format_string.push_str(MSG_SPEC);
-        } else {
+        } else if self.output_styling {
             format_string.push_str(PROMPT_SPEC);
         }
         format_string.push_str(dsp_prompt);
         format_string.push_str(&" ".repeat(extra_space));
 
         if prefix_len > 0 {
-            format_string.push_str(INPUT_SPEC);
+            if self.output_styling {
+                format_string.push_str(INPUT_SPEC);
+            }
             format_string.push_str(&prefix_str);
         }
 
         #[cfg(feature = "search")]
         if search_len > 0 {
-            format_string.push_str(SEARCH_SPEC);
+            if self.output_styling {
+                format_string.push_str(SEARCH_SPEC);
+            }
             format_string.push_str(&search_str);
         }
 
         if !follow_mode_str.is_empty() {
-            format_string.push_str(FOLLOW_MODE_SPEC);
+            if self.output_styling {
+                format_string.push_str(FOLLOW_MODE_SPEC);
+            }
             format_string.push_str(follow_mode_str);
         }
 
-        format_string.push_str(RESET);
+        if self.output_styling {
+            format_string.push_str(RESET);
+        }
 
         self.displayed_prompt = format_string;
     }
@@ -521,7 +545,7 @@ impl PagerState {
             self.horizontal_scroll_view(raw_row)
         };
         #[cfg(feature = "search")]
-        let row = if self.source_line_is_highlighted(absolute_row) {
+        let row = if self.output_styling && self.source_line_is_highlighted(absolute_row) {
             Cow::Owned(crate::search::highlight_line_navigation_target(
                 &row,
                 prefix_width,
@@ -529,7 +553,9 @@ impl PagerState {
         } else {
             row
         };
-        let row = if let Some((start_col, end_col)) = self.selection_bounds_for_row(absolute_row) {
+        let row = if self.output_styling
+            && let Some((start_col, end_col)) = self.selection_bounds_for_row(absolute_row)
+        {
             let visible_start = start_col.saturating_sub(skipped_chars);
             let visible_end = end_col.saturating_sub(skipped_chars);
             highlight_visible_range(
@@ -547,11 +573,12 @@ impl PagerState {
             .search_matches
             .partition_point(|search_match| search_match.row < absolute_row);
         #[cfg(feature = "search")]
-        let row = if self
-            .search_state
-            .search_matches
-            .get(first_match_on_row)
-            .is_some_and(|search_match| search_match.row == absolute_row)
+        let row = if self.output_styling
+            && self
+                .search_state
+                .search_matches
+                .get(first_match_on_row)
+                .is_some_and(|search_match| search_match.row == absolute_row)
         {
             let search_term = self.search_state.search_term.as_ref()?;
             let current_range = current_search_match

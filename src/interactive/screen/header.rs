@@ -4,20 +4,20 @@ const BROWSER_SPINNER_FRAMES: &[&str] = &["|", "/", "-", "\\"];
 const BROWSER_SPINNER_DELAY: Duration = Duration::from_millis(16);
 const BROWSER_SPINNER_INTERVAL: Duration = Duration::from_millis(100);
 
-pub(super) fn browser_header(browser: &BrowserState, no_colors: bool) -> String {
+pub(super) fn browser_header(browser: &BrowserState, output_style: OutputStyle) -> String {
     if browser.filter_state() == FilterState::Editing {
         return styled(
             &format!("{} local", browser.documents().len()),
             Some(rgb(98, 98, 98)),
             None,
             false,
-            no_colors,
+            output_style,
         );
     }
 
     let documents = format!("{} documents", browser.documents().len());
     if browser.filter_state() != FilterState::Applied {
-        return styled(&documents, Some(rgb(98, 98, 98)), None, false, no_colors);
+        return styled(&documents, Some(rgb(98, 98, 98)), None, false, output_style);
     }
     let filtered = format!("{} “{}”", browser.filtered_count(), browser.query());
     let documents_color = if browser.section() == BrowserSection::Documents {
@@ -32,13 +32,17 @@ pub(super) fn browser_header(browser: &BrowserState, no_colors: bool) -> String 
     };
     format!(
         "{} {} {}",
-        styled(&documents, Some(documents_color), None, false, no_colors),
-        styled("│", Some(rgb(60, 60, 60)), None, false, no_colors),
-        styled(&filtered, Some(filtered_color), None, false, no_colors)
+        styled(&documents, Some(documents_color), None, false, output_style),
+        styled("│", Some(rgb(60, 60, 60)), None, false, output_style),
+        styled(&filtered, Some(filtered_color), None, false, output_style)
     )
 }
 
-pub(super) fn pagination(browser: &BrowserState, width: usize, no_colors: bool) -> String {
+pub(super) fn pagination(
+    browser: &BrowserState,
+    width: usize,
+    output_style: OutputStyle,
+) -> String {
     let pages = browser.page_count();
     let dots_width = pages;
     if dots_width + 6 > width {
@@ -47,7 +51,7 @@ pub(super) fn pagination(browser: &BrowserState, width: usize, no_colors: bool) 
             Some(rgb(92, 92, 92)),
             None,
             false,
-            no_colors,
+            output_style,
         );
     }
     (0..pages)
@@ -57,7 +61,7 @@ pub(super) fn pagination(browser: &BrowserState, width: usize, no_colors: bool) 
             } else {
                 rgb(60, 60, 60)
             };
-            styled("•", Some(color), None, false, no_colors)
+            styled("•", Some(color), None, false, output_style)
         })
         .collect::<Vec<_>>()
         .join("")
@@ -73,13 +77,13 @@ pub(super) fn browser_item_selected(browser: &BrowserState, row: usize) -> bool 
     browser.filter_state() != FilterState::Editing && row == browser.selected_index_on_page()
 }
 
-pub(super) fn browser_filter_prompt_text(text: &str, no_colors: bool) -> String {
+pub(super) fn browser_filter_prompt_text(text: &str, output_style: OutputStyle) -> String {
     let (label, query) = text
         .split_once(' ')
         .map_or((text, None), |(label, query)| (label, Some(query)));
     let mut prompt = format!(
         "   {}",
-        styled(label, Some(BROWSER_ACCENT), None, false, no_colors)
+        styled(label, Some(BROWSER_ACCENT), None, false, output_style)
     );
     if let Some(query) = query {
         prompt.push(' ');
@@ -88,7 +92,7 @@ pub(super) fn browser_filter_prompt_text(text: &str, no_colors: bool) -> String 
             Some(BROWSER_FILTER_INPUT),
             None,
             false,
-            no_colors,
+            output_style,
         ));
     }
     prompt
@@ -99,10 +103,10 @@ pub(super) fn filtered_title(
     title: &str,
     query: &str,
     color: Color,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) -> String {
-    if query.is_empty() || no_colors {
-        return styled(title, Some(color), None, false, no_colors);
+    if query.is_empty() || output_style.is_disabled() {
+        return styled(title, Some(color), None, false, output_style);
     }
 
     let indices = document.match_indices(query);
@@ -112,18 +116,21 @@ pub(super) fn filtered_title(
         if indices.binary_search(&index).is_ok() {
             style = style.underline();
         }
-        output.push_str(&style.apply(&character.to_string(), false));
+        output.push_str(&style.apply(&character.to_string(), OutputStyle::Enabled));
     }
     output
 }
 
-pub(super) fn browser_logo_line(loading_elapsed: Option<Duration>, no_colors: bool) -> String {
+pub(super) fn browser_logo_line(
+    loading_elapsed: Option<Duration>,
+    output_style: OutputStyle,
+) -> String {
     let logo = styled(
         " MDV ",
         Some(BROWSER_LOGO_FOREGROUND),
         Some(BROWSER_ACCENT),
         true,
-        no_colors,
+        output_style,
     );
     let spinner = loading_elapsed
         .and_then(|elapsed| elapsed.checked_sub(BROWSER_SPINNER_DELAY))
@@ -137,7 +144,7 @@ pub(super) fn browser_logo_line(loading_elapsed: Option<Duration>, no_colors: bo
                     Some(BROWSER_ACCENT),
                     None,
                     false,
-                    no_colors,
+                    output_style,
                 )
             },
         );

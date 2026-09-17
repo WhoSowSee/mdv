@@ -249,13 +249,13 @@ impl<'a> EventRenderer<'a> {
                                 } else {
                                     0
                                 };
-                                let styled = style.apply(line, self.config.no_colors);
+                                let styled = style.apply(line, self.output_style);
                                 format!("{}{}", " ".repeat(pad), styled)
                             })
                             .collect::<Vec<_>>()
                             .join("\n")
                     }
-                    _ => style.apply(&wrapped_header, self.config.no_colors),
+                    _ => style.apply(&wrapped_header, self.output_style),
                 };
 
                 let final_header = styled_header

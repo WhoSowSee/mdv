@@ -10,7 +10,7 @@ fn attached_footnotes_follow_paragraphs() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--footnote-style")
@@ -61,7 +61,7 @@ fn footnotes_have_single_blank_line_after_block_elements() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg(temp_file.path());
@@ -92,7 +92,7 @@ fn attached_footnotes_render_inside_list_items() {
     fs::write(&temp_file, "- item with note[^a]\n\n[^a]: one\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--footnote-style")
@@ -132,7 +132,7 @@ fn attached_footnotes_render_after_tables() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("40")
         .arg("--footnote-style")
@@ -165,7 +165,7 @@ fn footnotes_leave_single_blank_line_after_block() {
     fs::write(&temp_file, "Line with note[^a]\n\n[^a]: A\n\nNext block\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("40")
         .arg("--footnote-style")

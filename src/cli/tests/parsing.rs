@@ -1,5 +1,24 @@
 use super::*;
 
+#[test]
+fn color_values_and_removed_flags_follow_the_cli_contract() {
+    assert_eq!(
+        Cli::parse_from(["mdv", "--color=always"]).color,
+        Some(ColorMode::Always)
+    );
+    for value in ["", "AUTO", " always", "never ", "true"] {
+        assert!(Cli::try_parse_from(["mdv", "--color", value]).is_err());
+    }
+    for args in [
+        &["--no-colors"][..],
+        &["--colors", "always"][..],
+        &["--color"][..],
+        &["--color", "auto", "--color", "never"][..],
+    ] {
+        assert!(Cli::try_parse_from(std::iter::once("mdv").chain(args.iter().copied())).is_err());
+    }
+}
+
 fn parse_link_style(value: &str) -> LinkStyle {
     Cli::parse_from(["mdv", "-u", value])
         .link_style

@@ -11,7 +11,7 @@ fn test_inline_table_references_stay_inside_blockquote_table() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--link-style")
         .arg("inlinetable")
         .arg(temp_file.path())

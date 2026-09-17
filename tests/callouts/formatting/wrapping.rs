@@ -6,7 +6,7 @@ fn test_callout_pretty_style_renders_frame() {
     fs::write(&temp_file, "> [!info]\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -53,7 +53,7 @@ fn test_callout_pretty_style_keeps_padding_for_plain_text() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("40")
         .arg("-w")
@@ -103,7 +103,7 @@ fn test_callout_pretty_style_keeps_padding_when_wrapping_for_frame() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("30")
         .arg("-w")
@@ -153,7 +153,7 @@ fn test_callout_pretty_word_wrap_keeps_frame_for_long_unbroken_lines() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("60")
         .arg("-w")
@@ -199,7 +199,7 @@ fn test_callout_pretty_char_wrap_avoids_single_character_tail_line() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("101")
         .arg("--callout-style")
@@ -237,7 +237,7 @@ fn test_callout_pretty_char_wrap_avoids_single_character_tail_with_heading_inden
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("101")
         .arg("--callout-style")
@@ -276,7 +276,7 @@ fn test_callout_pretty_style_preserves_heading_content_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")

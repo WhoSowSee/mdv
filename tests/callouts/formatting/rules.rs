@@ -6,7 +6,7 @@ fn test_callout_simple_horizontal_rule_stays_inside() {
     fs::write(&temp_file, "> [!tip]\n> Before\n> ***\n> After\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("-c")
@@ -39,7 +39,7 @@ fn test_callout_pretty_horizontal_rule_keeps_padding() {
     fs::write(&temp_file, "> [!tip]\n> Before\n> ***\n> After\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("-c")
@@ -86,7 +86,7 @@ fn test_callout_rule_ignores_heading_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("-c")
@@ -120,7 +120,7 @@ fn test_callout_setext_heading_does_not_render_rule() {
     fs::write(&temp_file, "> [!note]\n> Title\n> ---\n> Body\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")

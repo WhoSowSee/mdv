@@ -1,10 +1,12 @@
 use super::*;
+use crate::cli::OutputStyle;
 
 pub(crate) struct PagerDocument {
     content: PagerContent,
     pub(in crate::pager) source: String,
     pub(in crate::pager) title: Option<String>,
     status_bar_transparent: bool,
+    output_style: OutputStyle,
 }
 
 pub(in crate::pager) enum PagerContent {
@@ -104,16 +106,21 @@ impl PagerContent {
 }
 
 impl PagerDocument {
-    pub(crate) fn new(output: String, source: String) -> Self {
-        Self::from_content(PagerContent::Static(output), source)
+    pub(crate) fn new(output: String, source: String, output_style: OutputStyle) -> Self {
+        Self::from_content(PagerContent::Static(output), source, output_style)
     }
 
-    pub(in crate::pager) fn from_content(content: PagerContent, source: String) -> Self {
+    pub(in crate::pager) fn from_content(
+        content: PagerContent,
+        source: String,
+        output_style: OutputStyle,
+    ) -> Self {
         Self {
             content,
             source,
             title: None,
             status_bar_transparent: false,
+            output_style,
         }
     }
 
@@ -129,6 +136,10 @@ impl PagerDocument {
 
     pub(crate) const fn status_bar_transparent(&self) -> bool {
         self.status_bar_transparent
+    }
+
+    pub(crate) const fn output_style(&self) -> OutputStyle {
+        self.output_style
     }
 
     pub(in crate::pager) fn display_snapshot(&self) -> (String, Option<LineNavigation>) {

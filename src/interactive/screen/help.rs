@@ -1,6 +1,10 @@
 use super::*;
 
-pub(super) fn browser_mini_help(browser: &BrowserState, width: usize, no_colors: bool) -> String {
+pub(super) fn browser_mini_help(
+    browser: &BrowserState,
+    width: usize,
+    output_style: OutputStyle,
+) -> String {
     let entries = if browser.filter_state() == FilterState::Applied {
         BROWSER_FILTERED_MINI_HELP
     } else {
@@ -26,20 +30,26 @@ pub(super) fn browser_mini_help(browser: &BrowserState, width: usize, no_colors:
                     Some(BROWSER_HELP_SEPARATOR),
                     None,
                     false,
-                    no_colors,
+                    output_style,
                 ));
             }
             break;
         }
 
-        help.push_str(&styled(key, Some(BROWSER_HELP_KEY), None, false, no_colors));
+        help.push_str(&styled(
+            key,
+            Some(BROWSER_HELP_KEY),
+            None,
+            false,
+            output_style,
+        ));
         help.push(' ');
         help.push_str(&styled(
             label,
             Some(BROWSER_HELP_LABEL),
             None,
             false,
-            no_colors,
+            output_style,
         ));
         if has_next {
             help.push(' ');
@@ -48,7 +58,7 @@ pub(super) fn browser_mini_help(browser: &BrowserState, width: usize, no_colors:
                 Some(BROWSER_HELP_SEPARATOR),
                 None,
                 false,
-                no_colors,
+                output_style,
             ));
             help.push(' ');
         }
@@ -57,7 +67,7 @@ pub(super) fn browser_mini_help(browser: &BrowserState, width: usize, no_colors:
     help
 }
 
-pub(super) fn browser_filter_help(no_colors: bool) -> String {
+pub(super) fn browser_filter_help(output_style: OutputStyle) -> String {
     let segments = [
         ("enter", BROWSER_HELP_KEY),
         ("confirm", BROWSER_HELP_LABEL),
@@ -73,12 +83,12 @@ pub(super) fn browser_filter_help(no_colors: bool) -> String {
         if index > 0 {
             help.push(' ');
         }
-        help.push_str(&styled(text, Some(color), None, false, no_colors));
+        help.push_str(&styled(text, Some(color), None, false, output_style));
     }
     help
 }
 
-pub(super) fn browser_filter_full_help(no_colors: bool) -> Vec<String> {
+pub(super) fn browser_filter_full_help(output_style: OutputStyle) -> Vec<String> {
     let entries = [
         ("enter", "confirm"),
         ("esc", "cancel"),
@@ -94,15 +104,15 @@ pub(super) fn browser_filter_full_help(no_colors: bool) -> Vec<String> {
         .map(|(key, label)| {
             format!(
                 "   {}{}{}",
-                styled(key, Some(BROWSER_HELP_KEY), None, false, no_colors),
+                styled(key, Some(BROWSER_HELP_KEY), None, false, output_style),
                 " ".repeat(key_width - display_width(key) + 2),
-                styled(label, Some(BROWSER_HELP_LABEL), None, false, no_colors)
+                styled(label, Some(BROWSER_HELP_LABEL), None, false, output_style)
             )
         })
         .collect()
 }
 
-pub(super) fn browser_full_help(browser: &BrowserState, no_colors: bool) -> Vec<String> {
+pub(super) fn browser_full_help(browser: &BrowserState, output_style: OutputStyle) -> Vec<String> {
     let column_widths: [(usize, usize); 4] = std::array::from_fn(|column| {
         BROWSER_FULL_HELP_ROWS
             .iter()
@@ -131,14 +141,20 @@ pub(super) fn browser_full_help(browser: &BrowserState, no_colors: bool) -> Vec<
                 match row[column] {
                     Some((key, default_label)) => {
                         let label = browser_help_label(browser, key, default_label);
-                        line.push_str(&styled(key, Some(BROWSER_HELP_KEY), None, false, no_colors));
+                        line.push_str(&styled(
+                            key,
+                            Some(BROWSER_HELP_KEY),
+                            None,
+                            false,
+                            output_style,
+                        ));
                         line.push_str(&" ".repeat(key_width - display_width(key) + 2));
                         line.push_str(&styled(
                             label,
                             Some(BROWSER_HELP_LABEL),
                             None,
                             false,
-                            no_colors,
+                            output_style,
                         ));
                         if column < last_column {
                             line.push_str(&" ".repeat(label_width - display_width(label)));
@@ -164,9 +180,9 @@ fn browser_help_label(
     }
 }
 
-pub(super) fn item_prefix(selected: bool, no_colors: bool) -> String {
+pub(super) fn item_prefix(selected: bool, output_style: OutputStyle) -> String {
     let gutter = if selected {
-        styled("│", Some(BROWSER_ACCENT), None, false, no_colors)
+        styled("│", Some(BROWSER_ACCENT), None, false, output_style)
     } else {
         " ".to_string()
     };
@@ -194,18 +210,18 @@ pub(super) fn draw_browser_help(
     browser: &BrowserState,
     start_y: u16,
     width: usize,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) {
     if browser.filter_state() != FilterState::Editing && !browser.show_full_help() {
-        frame.write_line(start_y, &browser_mini_help(browser, width, no_colors));
+        frame.write_line(start_y, &browser_mini_help(browser, width, output_style));
         return;
     }
 
     if browser.filter_state() == FilterState::Editing {
         let rows = if browser.show_full_help() {
-            browser_filter_full_help(no_colors)
+            browser_filter_full_help(output_style)
         } else {
-            vec![browser_filter_help(no_colors)]
+            vec![browser_filter_help(output_style)]
         };
         for (index, row) in rows.iter().enumerate() {
             frame.write_line(start_y + index as u16, row);
@@ -213,7 +229,7 @@ pub(super) fn draw_browser_help(
         return;
     }
 
-    for (index, row) in browser_full_help(browser, no_colors).iter().enumerate() {
+    for (index, row) in browser_full_help(browser, output_style).iter().enumerate() {
         frame.write_line(start_y + index as u16, row);
     }
 }

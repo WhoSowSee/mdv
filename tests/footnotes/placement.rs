@@ -6,7 +6,7 @@ fn footnote_references_stay_inside_table_cells() {
     fs::write(&temp_file, "| A |\n| - |\n| foo[^a] |\n\n[^a]: alpha\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("40")
         .arg(temp_file.path());
@@ -35,7 +35,8 @@ fn table_footnote_marker_does_not_tint_cell_text() {
     fs::write(&temp_file, "| A |\n| - |\n| foo[^a] |\n\n[^a]: alpha\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--cols").arg("40").arg(temp_file.path());
+    cmd.args(["--color", "always", "--cols", "40"])
+        .arg(temp_file.path());
 
     let output = cmd
         .output()
@@ -71,7 +72,7 @@ fn footnotes_render_inside_code_blocks() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("60")
         .arg(temp_file.path());

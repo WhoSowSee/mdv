@@ -39,14 +39,34 @@ impl EnvVarGuard {
         set_env_var(key, value);
         Self { key, original }
     }
+
+    fn unset_temp(key: &'static str) -> Self {
+        let original = std::env::var_os(key);
+        remove_env_var(key);
+        Self { key, original }
+    }
 }
 
-fn env_lock() -> std::sync::MutexGuard<'static, ()> {
+struct TestEnvironment {
+    _color: EnvVarGuard,
+    _config: EnvVarGuard,
+    _config_dir: TempDir,
+    _lock: std::sync::MutexGuard<'static, ()>,
+}
+
+fn env_lock() -> TestEnvironment {
     static ENV_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
-    ENV_MUTEX
+    let lock = ENV_MUTEX
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .expect("lock env mutex")
+        .expect("lock env mutex");
+    let config_dir = TempDir::new().expect("isolated config directory");
+    TestEnvironment {
+        _color: EnvVarGuard::unset_temp(COLOR_ENV),
+        _config: EnvVarGuard::set_temp(CONFIG_FILE_ENV, config_dir.path().as_os_str()),
+        _config_dir: config_dir,
+        _lock: lock,
+    }
 }
 
 impl Drop for EnvVarGuard {
@@ -85,6 +105,7 @@ fn write_preset(config_dir: &std::path::Path, filename: &str, contents: &str) {
     std::fs::write(presets_dir.join(filename), contents).expect("write preset file");
 }
 
+mod color;
 mod environment;
 mod loading;
 mod structured;

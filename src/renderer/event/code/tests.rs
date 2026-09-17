@@ -15,7 +15,14 @@ fn test_renderer<'a>(
     syntax_set: &'a SyntaxSet,
     code_theme: &'a CodeHighlightTheme,
 ) -> EventRenderer<'a> {
-    EventRenderer::new(config, theme, syntax_set, code_theme, Default::default())
+    EventRenderer::new(
+        config,
+        theme,
+        syntax_set,
+        code_theme,
+        crate::cli::OutputStyle::Enabled,
+        Default::default(),
+    )
 }
 
 #[test]

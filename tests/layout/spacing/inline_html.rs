@@ -11,7 +11,7 @@ fn test_inline_html_in_heading_indented_table_keeps_single_top_blank_line() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv runs for table inline HTML spacing");

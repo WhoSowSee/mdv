@@ -88,7 +88,7 @@ fn test_callout_inline_table_references_render_outside() {
     fs::write(&temp_file, "> [!tip]\n> See [README](README.md)\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--link-style")

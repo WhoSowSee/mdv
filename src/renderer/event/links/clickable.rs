@@ -11,7 +11,7 @@ impl<'a> EventRenderer<'a> {
             let formatted = renderer.apply_formatting(fragment);
             let clickable = renderer.make_clickable_link(&formatted, url);
 
-            if force_underline && !renderer.config.no_colors {
+            if force_underline && renderer.output_style.is_enabled() {
                 format!("\x1b[4m{}\x1b[0m", clickable)
             } else {
                 clickable
@@ -21,7 +21,7 @@ impl<'a> EventRenderer<'a> {
 
     /// Make a text line clickable by wrapping it in terminal hyperlink escape sequences
     pub(in crate::renderer::event) fn make_clickable_link(&self, text: &str, url: &str) -> String {
-        if self.config.no_colors {
+        if self.output_style.is_disabled() {
             // If colors are disabled, don't add hyperlink sequences
             return text.to_string();
         }
@@ -37,7 +37,7 @@ impl<'a> EventRenderer<'a> {
         original_url: &str,
         styled_wrapped_url: &str,
     ) -> String {
-        if self.config.no_colors {
+        if self.output_style.is_disabled() {
             return styled_wrapped_url.to_string();
         }
 
@@ -55,7 +55,7 @@ impl<'a> EventRenderer<'a> {
             if !clean_line.trim().is_empty() {
                 // Apply link styling to clean text first
                 let style = create_style(self.theme, crate::theme::ThemeElement::Link);
-                let styled_clean_line = style.apply(&clean_line, self.config.no_colors);
+                let styled_clean_line = style.apply(&clean_line, self.output_style);
                 // Then make the styled text clickable
                 let clickable_line = self.make_clickable_link(&styled_clean_line, original_url);
                 result.push_str(&clickable_line);

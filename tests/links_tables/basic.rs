@@ -1,4 +1,5 @@
 use super::*;
+use assert_cmd::Command;
 use mdv::utils::{display_width, strip_ansi};
 
 fn render_link_wrapping_case(
@@ -12,7 +13,7 @@ fn render_link_wrapping_case(
 
     let mut cmd = mdv_cmd();
     let output = cmd
-        .env("MDV_NO_COLOR", "false")
+        .env("MDV_COLOR", "always")
         .args([
             "--no-config",
             "--cols",

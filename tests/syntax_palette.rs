@@ -1,12 +1,8 @@
 //! End-to-end checks that the default terminal theme follows the terminal palette.
 
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use std::fs;
 use tempfile::NamedTempFile;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 const BASH_SAMPLE: &str =
     "```bash\nomarchy-theme-install https://github.com/example/light-theme.git\n```";
@@ -20,7 +16,9 @@ fn stdout(args: &[&str], content: &str) -> String {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, content).unwrap();
     let mut cmd = mdv_cmd();
-    cmd.args(args).arg(temp_file.path());
+    cmd.args(["--color", "always"])
+        .args(args)
+        .arg(temp_file.path());
     String::from_utf8_lossy(&cmd.assert().success().get_output().stdout).into_owned()
 }
 

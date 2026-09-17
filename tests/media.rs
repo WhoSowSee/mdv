@@ -1,10 +1,6 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use std::fs;
 use tempfile::NamedTempFile;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 #[test]
 fn test_media_markers_match_file_extensions() {
@@ -16,7 +12,7 @@ fn test_media_markers_match_file_extensions() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .unwrap();
@@ -37,7 +33,7 @@ fn test_indented_media_in_list_starts_on_next_line() {
     fs::write(&temp_file, "- Audio\n\n\t![track](animation.mp3)\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .unwrap();
@@ -66,7 +62,7 @@ fn test_data_uri_media_markers() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .unwrap();
@@ -98,7 +94,7 @@ fn test_render_html_adjacent_media_markers_use_contextual_spacing() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("120")
         .arg("--render-html")
@@ -136,7 +132,7 @@ fn test_render_html_centers_media_blocks_as_single_span() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("100")
         .arg("-E")
@@ -189,7 +185,7 @@ fn test_render_html_inline_table_references_for_html_links_and_media() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg("-u")
         .arg("inlinetable")
@@ -223,7 +219,7 @@ fn test_render_html_inline_table_references_for_split_inline_html_link() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg("-u")
         .arg("inlinetable")

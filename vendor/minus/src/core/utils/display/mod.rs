@@ -111,13 +111,11 @@ pub fn write_prompt_view(out: &mut impl Write, ps: &PagerState) -> Result<(), Mi
         .prompt_row()
         .try_into()
         .map_err(|_| MinusError::Conversion)?;
-    write!(
-        out,
-        "{}\r{}{}",
-        MoveTo(0, prompt_row),
-        crossterm::style::Attribute::Reset,
-        ps.displayed_prompt
-    )?;
+    write!(out, "{}\r", MoveTo(0, prompt_row))?;
+    if ps.output_styling {
+        write!(out, "{}", crossterm::style::Attribute::Reset)?;
+    }
+    write!(out, "{}", ps.displayed_prompt)?;
     for line in ps
         .displayed_prompt_panel
         .iter()

@@ -1,16 +1,14 @@
 use mdv::utils::strip_ansi;
-use std::{fs, process::Command};
+use std::fs;
 use tempfile::NamedTempFile;
 
-fn render_output(markdown: &str, extra_args: &[&str], no_colors: bool) -> String {
+fn render_output(markdown: &str, extra_args: &[&str], plain: bool) -> String {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, markdown).unwrap();
 
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
+    let mut command = crate::support::mdv_cmd();
     command.args(["--no-config", "-c", "120", "--render-html"]);
-    if no_colors {
-        command.arg("--no-colors");
-    }
+    command.args(["--color", if plain { "never" } else { "always" }]);
     let output = command
         .args(extra_args)
         .arg(temp_file.path())

@@ -180,6 +180,7 @@ impl<'a> EventRenderer<'a> {
             self.theme,
             self.syntax_set,
             self.code_theme,
+            self.output_style,
             self.math_diagnostics.clone(),
         );
         nested_renderer.suppress_footnote_output = true;
@@ -226,7 +227,7 @@ impl<'a> EventRenderer<'a> {
 
     pub(super) fn wrap_footnote_entry(&self, marker: &str, body: &str) -> Vec<String> {
         let marker_style = create_style(self.theme, ThemeElement::Link);
-        let styled_marker = marker_style.apply(marker, self.config.no_colors);
+        let styled_marker = marker_style.apply(marker, self.output_style);
         let marker_width = crate::utils::display_width(marker);
         let available_width = self.available_width_for_footnote(marker_width + 1);
         let wrap_mode = self.config.text_wrap_mode();
@@ -292,6 +293,6 @@ impl<'a> EventRenderer<'a> {
         let filler_width = available.saturating_sub(2).max(2);
         let line = format!("◇{}◇", "─".repeat(filler_width));
         let style = AnsiStyle::new().fg(PRETTY_ACCENT_COLOR);
-        style.apply(&line, self.config.no_colors)
+        style.apply(&line, self.output_style)
     }
 }

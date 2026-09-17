@@ -8,7 +8,7 @@ fn tab_indented_fence_after_heading_renders_as_fence() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -38,7 +38,7 @@ fn tab_indented_fence_after_list_is_not_nested_by_indent() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -73,7 +73,7 @@ fn space_indented_fence_inside_list_renders_without_list_offset() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple:show-name")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -103,7 +103,7 @@ fn tab_inside_regular_fence_stays_as_code_indentation() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -128,7 +128,7 @@ fn tab_inside_regular_fence_after_heading_stays_as_code_indentation() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -153,7 +153,7 @@ fn fully_tab_indented_fence_dedents_code_content() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");

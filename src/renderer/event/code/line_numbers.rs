@@ -113,7 +113,7 @@ impl<'a> EventRenderer<'a> {
             &number_style,
             &separator_style,
             options,
-            self.config.no_colors,
+            self.output_style,
         );
         rendered.push_str(content);
         rendered

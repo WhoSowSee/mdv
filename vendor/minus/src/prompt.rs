@@ -1,6 +1,8 @@
 use crate::{LineNumbers, PagerState};
-use crossterm::style::{Attribute, Color, ContentStyle};
-use std::{fmt::Write, sync::Arc};
+use std::sync::Arc;
+
+mod style;
+pub use style::{PromptAttribute, PromptColor, PromptStyle};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -137,135 +139,6 @@ impl<'a> PromptContext<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PromptColor {
-    Black,
-    DarkGrey,
-    Red,
-    DarkRed,
-    Green,
-    DarkGreen,
-    Yellow,
-    DarkYellow,
-    Blue,
-    DarkBlue,
-    Magenta,
-    DarkMagenta,
-    Cyan,
-    DarkCyan,
-    White,
-    Grey,
-    Rgb { r: u8, g: u8, b: u8 },
-    AnsiValue(u8),
-}
-
-impl From<PromptColor> for Color {
-    fn from(color: PromptColor) -> Self {
-        match color {
-            PromptColor::Black => Self::Black,
-            PromptColor::DarkGrey => Self::DarkGrey,
-            PromptColor::Red => Self::Red,
-            PromptColor::DarkRed => Self::DarkRed,
-            PromptColor::Green => Self::Green,
-            PromptColor::DarkGreen => Self::DarkGreen,
-            PromptColor::Yellow => Self::Yellow,
-            PromptColor::DarkYellow => Self::DarkYellow,
-            PromptColor::Blue => Self::Blue,
-            PromptColor::DarkBlue => Self::DarkBlue,
-            PromptColor::Magenta => Self::Magenta,
-            PromptColor::DarkMagenta => Self::DarkMagenta,
-            PromptColor::Cyan => Self::Cyan,
-            PromptColor::DarkCyan => Self::DarkCyan,
-            PromptColor::White => Self::White,
-            PromptColor::Grey => Self::Grey,
-            PromptColor::Rgb { r, g, b } => Self::Rgb { r, g, b },
-            PromptColor::AnsiValue(value) => Self::AnsiValue(value),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PromptAttribute {
-    Bold,
-    Dim,
-    Italic,
-    Underlined,
-    Reverse,
-    Hidden,
-    CrossedOut,
-}
-
-impl PromptAttribute {
-    const ALL: [Self; 7] = [
-        Self::Bold,
-        Self::Dim,
-        Self::Italic,
-        Self::Underlined,
-        Self::Reverse,
-        Self::Hidden,
-        Self::CrossedOut,
-    ];
-
-    const fn bit(self) -> u8 {
-        1 << self as u8
-    }
-}
-
-impl From<PromptAttribute> for Attribute {
-    fn from(attribute: PromptAttribute) -> Self {
-        match attribute {
-            PromptAttribute::Bold => Self::Bold,
-            PromptAttribute::Dim => Self::Dim,
-            PromptAttribute::Italic => Self::Italic,
-            PromptAttribute::Underlined => Self::Underlined,
-            PromptAttribute::Reverse => Self::Reverse,
-            PromptAttribute::Hidden => Self::Hidden,
-            PromptAttribute::CrossedOut => Self::CrossedOut,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct PromptStyle {
-    foreground: Option<PromptColor>,
-    background: Option<PromptColor>,
-    attributes: u8,
-}
-
-impl PromptStyle {
-    #[must_use]
-    pub const fn foreground(mut self, color: PromptColor) -> Self {
-        self.foreground = Some(color);
-        self
-    }
-
-    #[must_use]
-    pub const fn background(mut self, color: PromptColor) -> Self {
-        self.background = Some(color);
-        self
-    }
-
-    #[must_use]
-    pub const fn attribute(mut self, attribute: PromptAttribute) -> Self {
-        self.attributes |= attribute.bit();
-        self
-    }
-
-    fn content_style(self) -> ContentStyle {
-        let mut style = ContentStyle {
-            foreground_color: self.foreground.map(Into::into),
-            background_color: self.background.map(Into::into),
-            ..ContentStyle::default()
-        };
-        for attribute in PromptAttribute::ALL {
-            if self.attributes & attribute.bit() != 0 {
-                style.attributes.set(attribute.into());
-            }
-        }
-        style
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PromptSpan {
     text: String,
@@ -346,7 +219,7 @@ impl PromptLine {
         let spans = self.layout(columns);
         let mut output = String::with_capacity(columns.saturating_add(spans.len() * 16));
         for span in spans {
-            let _ = write!(output, "{}", span.style.content_style().apply(span.text));
+            span.style.write_styled(&mut output, &span.text);
         }
         output.push_str(RESET_STYLE);
         output
@@ -506,55 +379,4 @@ fn take_text_suffix(text: &str, width: usize) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{PromptAttribute, PromptColor, PromptError, PromptLine, PromptSpan, PromptStyle};
-
-    #[test]
-    fn prompt_span_rejects_multiline_and_control_text() {
-        let style = PromptStyle::default();
-
-        assert_eq!(
-            PromptSpan::new("first\nsecond", style),
-            Err(PromptError::MultilineText)
-        );
-        assert_eq!(
-            PromptSpan::new("unsafe\x1b[31m", style),
-            Err(PromptError::ControlCharacter('\x1b'))
-        );
-    }
-
-    #[test]
-    fn prompt_line_handles_unicode_width_and_right_alignment() {
-        let line = PromptLine::new()
-            .left(PromptSpan::new("界界界", PromptStyle::default()).unwrap())
-            .right(PromptSpan::new("XY", PromptStyle::default()).unwrap())
-            .truncation_indicator(PromptSpan::new("…", PromptStyle::default()).unwrap());
-
-        assert_eq!(line.render_plain(5), "界…XY");
-
-        let narrow =
-            PromptLine::new().right(PromptSpan::new("界", PromptStyle::default()).unwrap());
-        assert_eq!(narrow.render_plain(1), " ");
-    }
-
-    #[test]
-    fn prompt_line_pads_to_width_and_resets_styles() {
-        let fill = PromptStyle::default().background(PromptColor::Rgb {
-            r: 36,
-            g: 36,
-            b: 36,
-        });
-        let brand = PromptStyle::default()
-            .foreground(PromptColor::AnsiValue(154))
-            .attribute(PromptAttribute::Bold);
-        let line = PromptLine::new()
-            .left(PromptSpan::new("MDV", brand).unwrap())
-            .right(PromptSpan::new("HELP", fill).unwrap())
-            .fill_style(fill);
-
-        assert_eq!(line.render_plain(10), "MDV   HELP");
-        let rendered = line.render(10);
-        assert!(rendered.contains("\x1b["));
-        assert!(rendered.ends_with("\x1b[0m"));
-    }
-}
+mod tests;

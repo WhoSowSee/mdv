@@ -11,7 +11,7 @@ fn test_comments_wrap_to_column_width() {
         .unwrap();
 
         let output = mdv_cmd()
-            .arg("--no-colors")
+            .args(["--color", "never"])
             .arg("-c")
             .arg("40")
             .arg("-w")
@@ -39,7 +39,7 @@ fn test_hide_comments_option_hides_comments() {
 
     let mut cmd = mdv_cmd();
     cmd.arg("--hide-comments")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
     cmd.assert()
         .success()
@@ -66,7 +66,7 @@ fn test_word_wrap_splits_unbroken_text_to_column_width() {
     fs::write(&temp_file, &token).unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--wrap")
         .arg("word")
         .arg("--cols")
@@ -94,7 +94,7 @@ fn test_word_wrap_list_inline_code_does_not_hang() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--wrap")
         .arg("word")
         .arg("-c")
@@ -120,7 +120,7 @@ fn test_reverse_option_preserves_block_layout() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-r")
         .arg(temp_file.path())
         .output()

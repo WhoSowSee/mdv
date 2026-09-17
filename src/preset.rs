@@ -67,6 +67,9 @@ impl PresetFile {
         };
 
         for (key, value) in &self.settings {
+            if key.as_str() == Some("no_colors") {
+                bail!("{} in {source}", crate::config::REMOVED_COLOR_SETTING);
+            }
             if !merged.contains_key(key) {
                 bail!("Unknown preset setting {} in {source}", key_debug(key));
             }

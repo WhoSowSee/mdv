@@ -8,7 +8,7 @@ fn renderer_exposes_pager_status_bar_transparency() {
         ..Config::default()
     };
 
-    let renderer = TerminalRenderer::new(&config).unwrap();
+    let renderer = TerminalRenderer::new(&config, OutputStyle::Disabled).unwrap();
 
     assert!(renderer.pager_status_bar_transparent());
 }
@@ -35,7 +35,6 @@ fn pager_render_builds_all_line_number_modes_from_each_starting_mode() {
         let config = Config {
             cols: Some(80),
             line_numbers,
-            no_colors: true,
             ..Config::default()
         };
         let mut processor_config = config.clone();
@@ -46,7 +45,7 @@ fn pager_render_builds_all_line_number_modes_from_each_starting_mode() {
         let document = MarkdownProcessor::new(&processor_config)
             .parse_document("# Title\n\n> First\n>\n> Second")
             .unwrap();
-        let pager_render = TerminalRenderer::new(&config)
+        let pager_render = TerminalRenderer::new(&config, OutputStyle::Disabled)
             .unwrap()
             .render_document_for_pager(document)
             .unwrap();
@@ -88,7 +87,6 @@ fn pager_render_preserves_callout_layout_with_source_metadata() {
     ] {
         let mut config = Config {
             cols: Some(80),
-            no_colors: true,
             ..Config::default()
         };
         config.callout_style.style = style;
@@ -100,7 +98,7 @@ fn pager_render_preserves_callout_layout_with_source_metadata() {
         let document = MarkdownProcessor::new(&processor_config)
             .parse_document("> [!IMPORTANT]\n>\n> Body\n")
             .unwrap();
-        let pager_render = TerminalRenderer::new(&config)
+        let pager_render = TerminalRenderer::new(&config, OutputStyle::Disabled)
             .unwrap()
             .render_document_for_pager(document)
             .unwrap();
@@ -128,7 +126,6 @@ fn pager_render_preserves_callout_layout_with_source_metadata() {
 fn pager_render_preserves_display_math_geometry_and_source_line() {
     let mut config = Config {
         cols: Some(40),
-        no_colors: true,
         ..Config::default()
     };
     config.code_block_style.style = crate::cli::CodeBlockStyle::Simple;
@@ -142,7 +139,7 @@ fn pager_render_preserves_display_math_geometry_and_source_line() {
         .with_extended_math(true)
         .parse_document("\\[\n\\frac{a+b}{c+d}\n\\]\n")
         .unwrap();
-    let rendered = TerminalRenderer::new(&config)
+    let rendered = TerminalRenderer::new(&config, OutputStyle::Disabled)
         .unwrap()
         .render_document_for_pager(document)
         .unwrap();

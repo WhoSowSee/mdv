@@ -160,7 +160,7 @@ impl<'a> EventRenderer<'a> {
                     line.push_str(&self.callout_pretty_accent(" ", kind));
                     let styled_label = self
                         .callout_label_style(kind, label_key)
-                        .apply(&label_text, self.config.no_colors);
+                        .apply(&label_text, self.output_style);
                     line.push_str(&styled_label);
                     line.push_str(&self.callout_pretty_accent(" ", kind));
                     middle_width = middle_width.saturating_sub(label_width + 2);
@@ -234,16 +234,12 @@ impl<'a> EventRenderer<'a> {
         text: &str,
         kind: CalloutKind,
     ) -> String {
-        if self.config.no_colors {
-            text.to_string()
+        let style = if kind == CalloutKind::Properties {
+            AnsiStyle::new().fg(self.theme.front_matter_border_color().clone().into())
         } else {
-            let style = if kind == CalloutKind::Properties {
-                AnsiStyle::new().fg(self.theme.front_matter_border_color().clone().into())
-            } else {
-                AnsiStyle::new().fg(PRETTY_ACCENT_COLOR)
-            };
-            style.apply(text, self.config.no_colors)
-        }
+            AnsiStyle::new().fg(PRETTY_ACCENT_COLOR)
+        };
+        style.apply(text, self.output_style)
     }
 
     pub(in crate::renderer::event) fn wrap_callout_line_for_frame(

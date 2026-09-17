@@ -11,7 +11,7 @@ impl<'a> EventRenderer<'a> {
 
     fn render_math_simple(&mut self, lines: &[String], source_marker: Option<&str>) {
         let border = create_style(self.theme, ThemeElement::MathBorder);
-        let prefix = border.apply("│ ", self.config.no_colors);
+        let prefix = border.apply("│ ", self.output_style);
         self.render_prefixed_math_lines(lines, &prefix, source_marker);
     }
 
@@ -48,8 +48,7 @@ impl<'a> EventRenderer<'a> {
         let bottom = format!("╰{}╯", "─".repeat(inner_width.saturating_sub(2)));
 
         self.push_math_pretty_indent();
-        self.output
-            .push_str(&border.apply(&top, self.config.no_colors));
+        self.output.push_str(&border.apply(&top, self.output_style));
         self.output.push('\n');
 
         for (index, line) in lines.iter().enumerate() {
@@ -61,18 +60,16 @@ impl<'a> EventRenderer<'a> {
             {
                 self.output.push_str(marker);
             }
-            self.output
-                .push_str(&border.apply("│ ", self.config.no_colors));
+            self.output.push_str(&border.apply("│ ", self.output_style));
             self.output.push_str(line);
             self.output.push_str(&" ".repeat(padding));
-            self.output
-                .push_str(&border.apply(" │", self.config.no_colors));
+            self.output.push_str(&border.apply(" │", self.output_style));
             self.output.push('\n');
         }
 
         self.push_math_pretty_indent();
         self.output
-            .push_str(&border.apply(&bottom, self.config.no_colors));
+            .push_str(&border.apply(&bottom, self.output_style));
         self.output.push('\n');
     }
 

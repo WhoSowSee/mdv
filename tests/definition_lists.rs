@@ -1,4 +1,3 @@
-use assert_cmd::Command;
 use mdv::utils::{display_width, strip_ansi};
 use std::fs;
 use tempfile::NamedTempFile;
@@ -17,9 +16,10 @@ fn renders_definition_lists_in_plain_and_pretty_modes() {
         (Some("unicode"), "🠶 "),
         (Some("nerd-font"), "\u{f0315} "),
     ] {
-        let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
+        let mut command = crate::support::mdv_cmd();
         command.args([
-            "--no-colors",
+            "--color",
+            "never",
             "--no-config",
             "--cols",
             "44",

@@ -101,7 +101,8 @@ fn test_table_link_underlines_only_link_text_fragment() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-config")
+    cmd.args(["--color", "always"])
+        .arg("--no-config")
         .arg("--cols")
         .arg("80")
         .arg("--link-style")
@@ -159,7 +160,7 @@ fn test_table_fclickable_links_are_clickable() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.env("MDV_NO_COLOR", "false")
+    cmd.env("MDV_COLOR", "always")
         .arg("--no-config")
         .arg("--cols")
         .arg("80")

@@ -1,13 +1,10 @@
+use crate::support::mdv_cmd;
 use assert_cmd::Command;
 use mdv::utils::{display_width, strip_ansi};
 use predicates::prelude::*;
 use std::fs;
 use std::time::Duration;
 use tempfile::{NamedTempFile, TempDir};
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}
 
 fn mdv_cmd_with_config(config_dir: &TempDir) -> Command {
     let mut cmd = mdv_cmd();

@@ -6,6 +6,7 @@ fn test_text_highlight_background() {
     fs::write(&temp_file, "Normal ==highlighted text== end.").unwrap();
 
     let output = mdv_cmd()
+        .args(["--color", "always"])
         .arg("-c")
         .arg("80")
         .arg(temp_file.path())

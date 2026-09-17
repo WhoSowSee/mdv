@@ -1,5 +1,5 @@
 use super::{PagerContent, PagerDisplay, PagerDocument, PagerLineNumberMode, PagerLineNumberViews};
-use crate::cli::LineNumberTarget;
+use crate::cli::{LineNumberTarget, OutputStyle};
 use crate::markdown::ParsedDocument;
 use crate::renderer::TerminalRenderer;
 use crate::renderer::terminal::PagerRenderView;
@@ -8,20 +8,31 @@ use anyhow::Result;
 pub(crate) struct RenderedOutput {
     content: PagerContent,
     status_bar_transparent: bool,
+    output_style: OutputStyle,
 }
 
 impl RenderedOutput {
-    pub(crate) fn new(output: String, status_bar_transparent: bool) -> Self {
+    pub(crate) fn new(
+        output: String,
+        status_bar_transparent: bool,
+        output_style: OutputStyle,
+    ) -> Self {
         Self {
             content: PagerContent::Static(output),
             status_bar_transparent,
+            output_style,
         }
     }
 
-    fn for_pager(views: PagerLineNumberViews, status_bar_transparent: bool) -> Self {
+    fn for_pager(
+        views: PagerLineNumberViews,
+        status_bar_transparent: bool,
+        output_style: OutputStyle,
+    ) -> Self {
         Self {
             content: PagerContent::LineNumbers(views),
             status_bar_transparent,
+            output_style,
         }
     }
 
@@ -30,7 +41,7 @@ impl RenderedOutput {
     }
 
     pub(crate) fn into_pager_document(self, source: String) -> PagerDocument {
-        PagerDocument::from_content(self.content, source)
+        PagerDocument::from_content(self.content, source, self.output_style)
             .with_status_bar_transparent(self.status_bar_transparent)
     }
 }
@@ -54,7 +65,11 @@ pub(crate) fn render_terminal_document(
         prefixed_display(&prefix, prefix_lines, rendered.rendered),
         prefixed_display(&prefix, prefix_lines, rendered.source),
     );
-    Ok(RenderedOutput::for_pager(views, status_bar_transparent))
+    Ok(RenderedOutput::for_pager(
+        views,
+        status_bar_transparent,
+        renderer.output_style(),
+    ))
 }
 
 fn prefixed_display(prefix: &str, prefix_lines: usize, rendered: PagerRenderView) -> PagerDisplay {

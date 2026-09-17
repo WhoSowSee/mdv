@@ -11,7 +11,7 @@ fn test_paragraphs_preserve_source_lines_and_use_single_blank_line() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg(temp_file.path())
@@ -33,7 +33,7 @@ fn test_reflow_collapses_soft_break_that_would_otherwise_be_preserved() {
     fs::write(&temp_file, "Alpha beta\nGamma delta epsilon\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--reflow")
         .arg("-c")
         .arg("26")
@@ -62,7 +62,7 @@ fn test_reflow_preserves_hard_breaks() {
     fs::write(&temp_file, "Line one\\\nLine two\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--reflow")
         .arg("-c")
         .arg("40")
@@ -124,7 +124,7 @@ fn test_block_elements_have_one_blank_line_on_both_sides_without_stacking() {
 
         let output = mdv_cmd()
             .arg("--no-config")
-            .arg("--no-colors")
+            .args(["--color", "never"])
             .args(extra_args)
             .arg(temp_file.path())
             .output()
@@ -171,7 +171,7 @@ fn test_block_elements_have_one_blank_line_on_both_sides_without_stacking() {
     .unwrap();
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--heading-layout")
         .arg("center")
         .arg(temp_file.path())
@@ -192,7 +192,7 @@ fn test_hidden_empty_list_does_not_leave_block_spacing() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("mdv runs for hidden empty list");
@@ -218,7 +218,7 @@ fn test_lists_at_document_start_do_not_add_leading_blank_line() {
 
         let output = mdv_cmd()
             .arg("--no-config")
-            .arg("--no-colors")
+            .args(["--color", "never"])
             .arg(temp_file.path())
             .output()
             .expect("mdv runs for a list at document start");

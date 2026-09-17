@@ -1,3 +1,4 @@
+use crate::cli::OutputStyle;
 use crate::config::Config;
 use crate::error::MdvError;
 use crate::markdown::MarkdownProcessor;
@@ -9,7 +10,7 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 /// Watch a single file for changes and re-render on change
-pub fn watch_file(filename: &str, config: &Config) -> Result<()> {
+pub fn watch_file(filename: &str, config: &Config, output_style: OutputStyle) -> Result<()> {
     let path = PathBuf::from(filename);
     if !path.exists() {
         return Err(MdvError::MonitorError(format!("File not found: {}", filename)).into());
@@ -17,7 +18,7 @@ pub fn watch_file(filename: &str, config: &Config) -> Result<()> {
 
     println!("Monitoring file: {} (Press Ctrl+C to stop)", filename);
 
-    let renderer = TerminalRenderer::new(config)?;
+    let renderer = TerminalRenderer::new(config, output_style)?;
 
     let (tx, rx) = mpsc::channel();
     let mut watcher =

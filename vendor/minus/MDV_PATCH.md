@@ -11,6 +11,7 @@ minus = { package = "mdv-minus", version = "5.7.3" }
 mdv adds a typed prompt-rendering API:
 
 - `Pager::set_mapped_text` atomically replaces text and source navigation, anchors the viewport to the source position, and clears stale selection and navigation highlights.
+- `Pager::set_output_styling` disables decorative ANSI in custom/default prompts, prompt panels, search matches, selections, and source-line navigation while preserving pager terminal-control commands.
 
 - `Pager::set_prompt_renderer` installs a renderer receiving a stable, read-only `PromptContext`.
 - `Pager::clear_prompt_renderer` restores the built-in prompt without recreating the pager.

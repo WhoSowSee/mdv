@@ -30,7 +30,7 @@ After large source files were split, large inline `mod tests` blocks moved into 
 | `src/editor.rs` | `src/editor/tests.rs` |
 | `src/list_marker.rs` | `src/list_marker/tests.rs` |
 | `src/utils.rs` | `src/utils/tests.rs` |
-| Renderer | `renderer/tests.rs`, `renderer/terminal/tests.rs`, `event/code/tests.rs`, `syntax_theme/tests.rs`, and local modules |
+| Renderer | `renderer/terminal/tests.rs`, `event/code/tests.rs`, `syntax_theme/tests.rs`, and local modules |
 
 Unit tests cover parsers, semantic defaults, width helpers, state transitions, and internal invariants that are difficult to observe through the CLI alone.
 
@@ -41,6 +41,7 @@ Unit tests cover parsers, semantic defaults, width helpers, state transitions, a
 | Group | Primary coverage |
 |---|---|
 | `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, and pager routing. |
+| `tests/color.rs` | Color settings reaching the renderer, loader diagnostics, pipe/redirection, HTML, and fast commands. |
 | `tests/callouts*` | Syntax, custom styles, wrapping, frames, headings, tables, and links. |
 | `tests/checkboxes*` | Shapes, custom states/colors, lists, and nested indentation. |
 | `tests/code_blocks*` | Styles, labels/icons, line-number gutters, blockquotes, spacing, wrapping, and tab-indented fences. |
@@ -72,10 +73,30 @@ Large topic files act as facades with explicit `#[path = "..."]` declarations:
 
 Shared helpers remain in the facade module and are imported by child tests through `use super::*`.
 
+Integration modules import the shared `mdv_cmd` constructor directly instead of
+declaring identical forwarding functions. Color tests retain boundary regressions
+and reuse render/error helpers; parser failures use valid Markdown input so an
+unrelated missing file cannot satisfy the assertion.
+
+Color value/flag parsing is covered in CLI unit tests, and exact mode precedence
+in configuration unit tests. End-to-end tests cover their application to actual
+stdout and startup diagnostics rather than repeating those matrices. The mixed
+document output matrix also verifies that unrelated color environment variables
+have no effect. Pager unit regressions keep prompt, search-preview, selection,
+and source-navigation formatting paths covered independently.
+
+`tests/support.rs` isolates `MDV_COLOR` and uses an empty temporary configuration
+directory for child processes. Tests requesting real configuration override that
+directory explicitly. The common helper does not force a color mode: ANSI/OSC
+tests request `--color always`, plain-output tests request `--color never`, and
+default behavior is verified with captured non-TTY stdout. Unit environment
+tests use the existing mutex and restoring guards.
+
 ## Fixtures
 
 - `tests/files/` contains reusable Markdown fixtures.
 - `tests/files/math-layout.md` covers extended delimiters and structured math across ordinary text, callouts, and tables.
+- `tests/files/color-mode.md` compares visible mixed Markdown/HTML layout across color policies.
 - `tests/math.rs` verifies all three math containers and their independence from code-block options; theme tests cover the dedicated content and border colors.
 - A small, scenario-specific document is created with `NamedTempFile` directly in its test.
 - `docs/examples/config.yaml` is the reference for the complete configuration schema.
@@ -89,12 +110,13 @@ Shared helpers remain in the facade module and are imported by child tests throu
 | Markdown preprocessing | Unit event test plus an end-to-end rendering case. |
 | Wrapping or layout | Unicode width, ANSI-stripped width, and a narrow-terminal case. |
 | Links or tables | Plain text, ANSI colors, OSC 8, and fragmented wrapping. |
-| Themes | YAML parsing, overrides, and `--no-colors`. |
+| Themes | YAML parsing, overrides, and all `--color` modes. |
 | Pager or interactive mode | Pure key/action helpers; manually exercise terminal integration when necessary. |
 
 ## Test invariants
 
 - A test asserts a user-visible effect or a subtle internal contract rather than duplicating implementation.
 - ANSI assertions distinguish visible content from escape sequences.
+- TUI assertions distinguish decorative styling from necessary terminal-control sequences.
 - Temporary environment variables are protected by the shared mutex and restored by a guard.
 - Add a regression to an existing topic group unless a separate module materially improves navigation.

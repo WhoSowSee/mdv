@@ -19,7 +19,7 @@ fn test_table_rendering() {
 #[test]
 fn test_default_table_uses_compact_borders() {
     let stdout = render_basic_table(|cmd| {
-        cmd.args(["--no-config", "--no-colors", "--cols", "80"]);
+        cmd.args(["--no-config", "--color", "never", "--cols", "80"]);
     });
     assert!(
         !stdout
@@ -47,7 +47,8 @@ fn test_pretty_table_flag_restores_full_borders() {
     let stdout = render_basic_table(|cmd| {
         cmd.args([
             "--no-config",
-            "--no-colors",
+            "--color",
+            "never",
             "--pretty-table",
             "--cols",
             "80",
@@ -73,7 +74,7 @@ fn test_pretty_table_config_restores_full_borders() {
     let config_dir = tempfile::TempDir::new().unwrap();
     fs::write(
         config_dir.path().join("config.yaml"),
-        "pretty_table: true\nno_colors: true\ncols: 80\n",
+        "pretty_table: true\ncolor: never\ncols: 80\n",
     )
     .unwrap();
 
@@ -95,7 +96,7 @@ fn test_header_only_table_does_not_render_empty_body_separator() {
     fs::write(&temp_file, "| Col1 | Col2 |\n|------|------|\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors").arg(temp_file.path());
+    cmd.args(["--color", "never"]).arg(temp_file.path());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Col1"))
@@ -110,7 +111,8 @@ fn render_wrapped_table(content: &str, width: &str, text_wrap: &str, table_wrap:
     let output = mdv_cmd()
         .args([
             "--no-config",
-            "--no-colors",
+            "--color",
+            "never",
             "--pretty-table",
             "--cols",
             width,

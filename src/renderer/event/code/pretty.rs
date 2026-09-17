@@ -280,12 +280,8 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn style_pretty_accent(&self, text: &str) -> String {
-        if self.config.no_colors {
-            text.to_string()
-        } else {
-            AnsiStyle::new()
-                .fg(PRETTY_ACCENT_COLOR)
-                .apply(text, self.config.no_colors)
-        }
+        AnsiStyle::new()
+            .fg(PRETTY_ACCENT_COLOR)
+            .apply(text, self.output_style)
     }
 }

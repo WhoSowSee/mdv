@@ -22,17 +22,24 @@ Rendering is split between an outer document facade and one stateful `EventRende
 - a cloned `Config`;
 - the selected terminal `Theme`;
 - an `Arc<SyntaxSet>`;
-- a `CodeHighlightTheme`.
+- a `CodeHighlightTheme`;
+- a resolved `OutputStyle`, separate from the serialized `Config.color` mode.
 
 ### Construction
 
-`TerminalRenderer::new`:
+`TerminalRenderer::new(config, output_style)`:
 
 1. builds a `ThemeManager` from embedded and user themes;
 2. selects the terminal theme;
 3. applies `custom_theme` and inline-style overrides;
 4. loads the syntax set, including `syntaxes_dir`;
 5. selects or builds the code theme.
+
+Construction does not inspect process stdout or color environment variables.
+Library callers explicitly select `OutputStyle::Enabled`/`Disabled` or resolve
+`config.color` for their own destination. Nested renderers and table layouts
+inherit the same policy. Disabled styling prevents generation of SGR and OSC 8;
+it is not implemented by stripping all ANSI from the completed document.
 
 ### Rendering
 

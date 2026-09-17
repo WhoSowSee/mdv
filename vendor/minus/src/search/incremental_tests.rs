@@ -4,6 +4,26 @@ use super::{IncrementalSearchOpts, incremental_preview};
 use crate::PagerState;
 
 #[test]
+fn unstyled_preview_and_selected_query_keep_search_behavior() {
+    let mut state = PagerState::new().unwrap();
+    state.output_styling = false;
+    state.screen.orig_text = "before\nmatch here\nafter\n".to_string();
+    state.search_state.last_search_query = "match".to_string();
+    state.search_state.search_mode = super::SearchMode::Forward;
+    state.reformat_display().unwrap();
+    let options = IncrementalSearchOpts::from(&state);
+    let query = regex::Regex::new("match").unwrap();
+    let preview = incremental_preview(&options, &query).unwrap();
+    assert!(preview.rows.iter().any(|row| row.contains("match")));
+    assert!(preview.rows.iter().all(|row| !row.contains('\x1b')));
+    let search = super::SearchOpts::from(&state);
+    assert!(search.query_selected);
+    let mut output = Vec::new();
+    super::write_search_query(&mut output, &search).unwrap();
+    assert_eq!(output, b"match");
+}
+
+#[test]
 fn preview_highlights_matches_before_confirmation() {
     const FOREGROUND: &str = "\x1b[38;2;130;170;255m";
     const CURRENT_BACKGROUND: &str = "\x1b[48;2;80;103;151m";

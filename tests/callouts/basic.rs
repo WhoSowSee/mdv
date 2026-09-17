@@ -6,7 +6,7 @@ fn test_callout_renders_label_and_body() {
     fs::write(&temp_file, "> [!info]\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -40,7 +40,7 @@ fn test_callout_simple_icons_render_portable_alert_markers() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -80,7 +80,7 @@ fn test_callout_simple_icons_cover_all_builtin_categories() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -117,7 +117,7 @@ fn test_callout_backslash_keeps_blockquote_context() {
     fs::write(&temp_file, "> [!important]\n> Watermelon\\\n> Watermelon\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -163,7 +163,7 @@ fn test_callout_adds_blank_lines_around() {
     fs::write(&temp_file, "Alpha\n> [!info]\n> Example text\nOmega\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -218,7 +218,7 @@ fn test_callout_alias_uses_label() {
     fs::write(&temp_file, "> [!tldr]\n> Example text\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")
@@ -247,7 +247,7 @@ fn test_callout_admonition_syntaxes_render() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-w")
         .arg("none")
         .arg("--callout-style")

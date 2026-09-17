@@ -12,7 +12,7 @@ fn test_end_table_link_style_collects_references_at_document_end() {
     let mut cmd = mdv_cmd();
     cmd.arg("-u")
         .arg("et")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg(temp_file.path());
@@ -69,7 +69,7 @@ fn test_inline_table_nested_list_uses_single_reference_block_and_monotonic_indic
     let mut cmd = mdv_cmd();
     cmd.arg("-u")
         .arg("it")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("100")
         .arg(temp_file.path());

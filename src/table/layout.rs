@@ -3,13 +3,13 @@ use super::*;
 impl TableRenderer {
     pub fn new(
         theme: &Theme,
-        no_colors: bool,
+        output_style: OutputStyle,
         terminal_width: usize,
         table_wrap: TableWrapMode,
     ) -> Self {
         Self {
             theme: theme.clone(),
-            no_colors,
+            output_style,
             terminal_width,
             table_wrap,
             text_wrap: TextWrapMode::Word,
@@ -49,7 +49,7 @@ impl TableRenderer {
             Cow::Borrowed(content)
         };
 
-        let cell = if self.no_colors {
+        let cell = if self.output_style.is_disabled() {
             Cell::new(strip_ansi(layout_content.as_ref()))
         } else {
             Cell::new(layout_content.as_ref())

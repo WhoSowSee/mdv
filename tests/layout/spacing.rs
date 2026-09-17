@@ -6,7 +6,7 @@ fn render_with_block_spacing(markdown: &str, spacing: &str, extra_args: &[&str])
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .args(extra_args)
         .arg("--block-spacing")
         .arg(spacing)

@@ -1,4 +1,3 @@
-use assert_cmd::Command;
 use mdv::utils::strip_ansi;
 use std::{fs, process::Output};
 use tempfile::NamedTempFile;
@@ -6,7 +5,7 @@ use tempfile::NamedTempFile;
 fn render(markdown: &str, args: &[&str]) -> Output {
     let file = NamedTempFile::new().unwrap();
     fs::write(&file, markdown).unwrap();
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
+    let mut command = crate::support::mdv_cmd();
     command.args(args).arg(file.path());
     command.output().unwrap()
 }
@@ -66,11 +65,11 @@ const DOCUMENT: &str = "---\ntitle: Lua API\ntags: [yazi, lua]\nlast_update:\n  
 
 #[test]
 fn front_matter_modes_render_expected_content() {
-    let hidden = stdout(DOCUMENT, &["--no-colors"]);
+    let hidden = stdout(DOCUMENT, &["--color", "never"]);
     assert!(hidden.contains("Body"));
     assert!(!hidden.contains("Lua API"));
 
-    let panel = stdout(DOCUMENT, &["--no-colors", "--front-matter", "panel"]);
+    let panel = stdout(DOCUMENT, &["--color", "never", "--front-matter", "panel"]);
     for expected in [
         "Properties",
         "title: Lua API",
@@ -84,11 +83,11 @@ fn front_matter_modes_render_expected_content() {
         assert!(panel.contains(expected), "missing {expected:?}:\n{panel}");
     }
 
-    let source = stdout(DOCUMENT, &["--no-colors", "--front-matter", "source"]);
+    let source = stdout(DOCUMENT, &["--color", "never", "--front-matter", "source"]);
     assert!(source.contains("title: Lua API"));
     assert!(!source.contains("Properties"));
 
-    let code = stdout(DOCUMENT, &["--no-colors", "--front-matter", "code"]);
+    let code = stdout(DOCUMENT, &["--color", "never", "--front-matter", "code"]);
     assert!(code.contains("title: Lua API"));
     assert!(code.contains("last_update:"));
     assert!(!code.contains("Properties"));
@@ -98,7 +97,7 @@ fn front_matter_modes_render_expected_content() {
 fn table_mode_renders_properties_as_two_columns() {
     let terminal = stdout(
         DOCUMENT,
-        &["--no-config", "--no-colors", "--front-matter", "table"],
+        &["--no-config", "--color", "never", "--front-matter", "table"],
     );
     for expected in ["Property", "Value", "title", "Lua API", "Body"] {
         assert!(
@@ -129,7 +128,7 @@ fn plain_inline_and_blocks_modes_have_distinct_layouts() {
 
     let plain = stdout(
         markdown,
-        &["--no-config", "--no-colors", "--front-matter", "plain"],
+        &["--no-config", "--color", "never", "--front-matter", "plain"],
     );
     for expected in ["title: Lua API", "tags: yazi · lua", "author: Alice"] {
         assert!(
@@ -149,7 +148,8 @@ fn plain_inline_and_blocks_modes_have_distinct_layouts() {
         markdown,
         &[
             "--no-config",
-            "--no-colors",
+            "--color",
+            "never",
             "--front-matter",
             "inline",
             "--cols",
@@ -165,7 +165,13 @@ fn plain_inline_and_blocks_modes_have_distinct_layouts() {
 
     let blocks = stdout(
         markdown,
-        &["--no-config", "--no-colors", "--front-matter", "blocks"],
+        &[
+            "--no-config",
+            "--color",
+            "never",
+            "--front-matter",
+            "blocks",
+        ],
     );
     let lines: Vec<_> = blocks.lines().collect();
     let title = lines
@@ -194,7 +200,7 @@ fn front_matter_requires_an_exact_first_line_mapping() {
         "---\nOrdinary introduction.\n---\n# Body\n",
         "---\n- first item\n---\n# Body\n",
     ] {
-        let output = stdout(markdown, &["--no-colors"]);
+        let output = stdout(markdown, &["--color", "never"]);
         assert!(
             output.contains("property: value")
                 || output.contains("Ordinary introduction.")
@@ -215,7 +221,7 @@ fn invalid_yaml_reports_the_document_line() {
 fn front_matter_accepts_crlf_and_preserves_source_lines() {
     let output = stdout(
         "---\r\ntitle: Example\r\n---\r\n# Heading\r\n",
-        &["--no-colors", "--line-numbers", "source"],
+        &["--color", "never", "--line-numbers", "source"],
     );
     assert!(
         output
@@ -239,7 +245,7 @@ fn reverse_places_metadata_after_the_body() {
     ] {
         let output = stdout(
             markdown,
-            &["--no-colors", "--front-matter", mode, "--reverse"],
+            &["--color", "never", "--front-matter", mode, "--reverse"],
         );
         let second = output.find("Second").unwrap();
         let first = output.find("First").unwrap();
@@ -293,7 +299,14 @@ fn from_filter_keeps_panel_properties() {
     let markdown = "---\ntitle: Example\n---\n# Start\n\n## Target\n\nSelected body.\n";
     let output = stdout(
         markdown,
-        &["--no-colors", "--front-matter", "panel", "--from", "Target"],
+        &[
+            "--color",
+            "never",
+            "--front-matter",
+            "panel",
+            "--from",
+            "Target",
+        ],
     );
     assert!(output.contains("Properties"));
     assert!(output.contains("Target"));
@@ -308,6 +321,8 @@ fn panel_preserves_dedicated_colors_and_wraps_once() {
     let output = render(
         &markdown,
         &[
+            "--color",
+            "always",
             "--no-config",
             "--front-matter",
             "panel",

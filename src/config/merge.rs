@@ -2,9 +2,7 @@ use super::*;
 
 impl Config {
     pub(super) fn merge_with(&mut self, other: Self) {
-        if other.no_colors {
-            self.no_colors = other.no_colors;
-        }
+        self.color = other.color;
 
         if other.cols.is_some() {
             self.cols = other.cols;

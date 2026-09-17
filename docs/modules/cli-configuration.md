@@ -8,6 +8,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 |---|---|
 | [src/cli.rs](../../src/cli.rs) | `Cli`: arguments, aliases, conflicts, help groups, and Clap defaults. |
 | [src/cli/commands.rs](../../src/cli/commands.rs) | `CliCommand`, including full-format help. |
+| [src/cli/color.rs](../../src/cli/color.rs) | `ColorMode` settings and resolved `OutputStyle`. |
 | [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, `MathBlockStyle`, and `HeadingLayout`. |
 | [src/cli/links.rs](../../src/cli/links.rs) | `LinkStyle`, `LinkTruncationStyle`, `FootnoteStyle`, and `MissingFootnoteStyle`. |
 | [src/cli/line_numbers.rs](../../src/cli/line_numbers.rs) | Shared `LineNumberOptions` and `LineNumberTarget` values for document and code-block gutters. |
@@ -22,7 +23,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 
 | Group | Examples | Consumer |
 |---|---|---|
-| Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
+| Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--color`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
 | Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing` | Runtime layout and the event renderer. |
 | Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--math-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, code-block, and math-block rendering. |
 | Callouts and lists | `--callout-style`, `--pretty-checkbox`, `--pretty-list`, custom overrides | Normalized maps and settings in `Config`. |
@@ -44,6 +45,7 @@ Markdown path positional.
 |---|---|
 | [src/config.rs](../../src/config.rs) | `Config`, defaults, serde helpers, environment helpers, and the module facade. |
 | [src/config/files.rs](../../src/config/files.rs) | Discover, read, and create `config.yaml` or `config.yml`. |
+| [src/config/deserialization.rs](../../src/config/deserialization.rs) | Reject removed top-level settings while retaining typed serde errors. |
 | [src/config/from_cli.rs](../../src/config/from_cli.rs) | Assemble `Config` from files, presets, environment, and explicit CLI input. |
 | [src/config/merge.rs](../../src/config/merge.rs) | Overlay non-empty or non-default values from one configuration onto another. |
 | [src/config/runtime.rs](../../src/config/runtime.rs) | Derived widths, wrapping flags, margin validation, and compiled overrides. |
@@ -54,9 +56,9 @@ Markdown path positional.
 The effective configuration is assembled in this order:
 
 1. `Config::default()`.
-2. The first successfully loaded configuration file.
+2. The first existing configuration file, with errors propagated immediately.
 3. The named `--preset`.
-4. `MDV_NO_COLOR`, when recognized.
+4. `MDV_COLOR`, when present and valid.
 5. Explicit CLI arguments.
 6. Terminal-theme and code-theme normalization.
 7. Compilation of custom callouts, code blocks, checkboxes, and list markers.
@@ -71,7 +73,23 @@ Later sources take precedence at the top-level setting key. A setting omitted fr
 2. `MDV_CONFIG_PATH` → the same two names;
 3. the default configuration directory, only when neither a CLI nor environment path was supplied.
 
-CLI candidates precede environment candidates when both are present. The first existing file that parses successfully is loaded. `--no-config` skips file loading but retains the derived `config_dir`, allowing user presets to be discovered there.
+CLI candidates precede environment candidates when both are present. The first existing file is selected; read, YAML, and setting errors stop startup without trying another file or substituting defaults. Absent candidates allow discovery to continue. `--no-config` skips file loading but retains the derived `config_dir`, allowing user presets to be discovered there.
+
+## Color policy
+
+`Config.color` stores `ColorMode::{Auto, Always, Never}`. Clap exposes `auto` as
+the help default for `--color`; configuration assembly applies it only when
+`arg_has_user_value` confirms explicit input. Explicit `--color` overrides
+`MDV_COLOR`, presets, configuration, and default `auto`.
+Every loaded layer is validated before overrides are applied. Only exact lowercase
+values are accepted; empty, padded, non-Unicode environment values and YAML null,
+boolean, or numeric values are errors. An explicit `auto` replaces a lower mode.
+
+Application routing resolves `OutputStyle` once from stdout TTY and passes it
+separately to renderers and TUI. Configuration serialization retains the selected
+mode and does not include resolved styling. Removed `no_colors` YAML keys are
+errors in both configuration and presets; removed color environment variables are
+ignored. Generic variables such as `NO_COLOR` do not influence this policy.
 
 ## `Config` field groups
 
@@ -83,6 +101,10 @@ CLI candidates precede environment candidates when both are present. The first e
 - Runtime paths: the loaded `config_file` and its `config_dir`.
 
 Fields marked `#[serde(skip)]` are derived runtime data and must not appear in YAML.
+
+Configuration fields are declared once for the public `Config` and a private
+serde schema. The public `Deserialize` implementation validates removed keys
+before delegating to that schema, so direct decoder calls cannot bypass validation.
 
 ## Runtime helpers
 
@@ -139,4 +161,4 @@ The reference is [docs/examples/config.yaml](../examples/config.yaml). When `Con
 - preset and explicit CLI priority remains field-based for structured settings;
 - new runtime-only fields use `serde(skip)`;
 - a CLI override is not activated solely by a Clap default;
-- `MDV_NO_COLOR` retains its hard precedence over configuration files.
+- `MDV_COLOR` accepts exactly `auto`, `always`, or `never` and overrides configuration files and presets.

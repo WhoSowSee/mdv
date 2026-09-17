@@ -5,6 +5,7 @@ mod checkbox_override;
 pub mod cli;
 pub mod config;
 mod custom_code_block;
+mod document;
 mod editor;
 pub mod error;
 pub mod inline_style;
@@ -29,10 +30,9 @@ pub use list_marker::{PrettyListStyle, UniformListMarker};
 
 use anyhow::Result;
 use clap::{ArgMatches, CommandFactory};
-use cli::{Cli, CliCommand, LineNumberOptions, LineNumberTarget};
+use cli::{Cli, CliCommand, OutputStyle};
 use config::Config;
-use markdown::MarkdownProcessor;
-use renderer::TerminalRenderer;
+use document::{RenderOptions, format_current_themes, render_document, render_document_file};
 use std::io::IsTerminal;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -40,10 +40,6 @@ use std::sync::Arc;
 
 /// Main entry point for the mdv application
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
-    if matches!(cli.command, Some(CliCommand::Help)) {
-        return show_help(&cli, matches);
-    }
-
     if cli.init_config.is_some() {
         let path = Config::write_default_config(&cli, matches)?;
         println!("Created config file: {}", path.display());
@@ -51,6 +47,11 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     let config = Config::from_cli(&cli, matches)?;
+    let stdout_is_terminal = io::stdout().is_terminal();
+    let output_style = config.color.resolve(stdout_is_terminal);
+    if matches!(cli.command, Some(CliCommand::Help)) {
+        return show_help(&config, output_style);
+    }
     if let Some(Some(path)) = &cli.theme_info
         && cli.filename.is_none()
     {
@@ -83,20 +84,22 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         cli.pager,
         stdin_is_terminal,
     )? {
-        return interactive::run(target, config);
+        return interactive::run(target, config, output_style);
     }
 
     let content = get_input_content(&cli)?;
-    let stdout_is_terminal = std::io::stdout().is_terminal();
     let pager_active = cli.pager && stdout_is_terminal;
     let rendered = render_document(
         &content,
         &config,
-        cli.do_html,
-        show_current_theme,
-        current_preset,
-        stdout_is_terminal,
-        pager_active,
+        output_style,
+        RenderOptions {
+            do_html: cli.do_html,
+            show_current_theme,
+            current_preset,
+            add_leading_blank: stdout_is_terminal,
+            for_pager: pager_active,
+        },
     )?;
 
     if pager_active {
@@ -117,6 +120,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
                     do_html,
                     show_current_theme,
                     current_preset.as_deref(),
+                    output_style,
                 )
             }) as pager::RefreshCallback
         });
@@ -134,13 +138,13 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         && !pager_active
         && let Some(filename) = &cli.filename
     {
-        monitor::watch_file(filename, &config)?;
+        monitor::watch_file(filename, &config, output_style)?;
     }
 
     Ok(())
 }
 
-fn show_help(cli: &Cli, matches: &ArgMatches) -> Result<()> {
+fn show_help(config: &Config, output_style: OutputStyle) -> Result<()> {
     let mut command = Cli::command();
     if let Some(bin_name) = std::env::args_os()
         .next()
@@ -152,7 +156,7 @@ fn show_help(cli: &Cli, matches: &ArgMatches) -> Result<()> {
     let help = command.render_long_help().to_string();
     if io::stdin().is_terminal() && io::stdout().is_terminal() {
         pager::page(
-            build_help_document(cli, matches, help)?,
+            build_help_document(config, output_style, help)?,
             None,
             None,
             pager::PagerScreen::Alternate,
@@ -164,107 +168,14 @@ fn show_help(cli: &Cli, matches: &ArgMatches) -> Result<()> {
 }
 
 fn build_help_document(
-    cli: &Cli,
-    matches: &ArgMatches,
+    config: &Config,
+    output_style: OutputStyle,
     help: String,
 ) -> Result<pager::PagerDocument> {
-    let config = Config::from_cli(cli, matches)?;
-    let status_bar_transparent = renderer::terminal::pager_status_bar_transparent(&config)?;
-    Ok(pager::PagerDocument::new(help.clone(), help)
+    let status_bar_transparent = renderer::terminal::pager_status_bar_transparent(config)?;
+    Ok(pager::PagerDocument::new(help.clone(), help, output_style)
         .with_title("Help")
         .with_status_bar_transparent(status_bar_transparent))
-}
-
-fn render_document(
-    content: &str,
-    config: &Config,
-    do_html: bool,
-    show_current_theme: bool,
-    current_preset: Option<&str>,
-    add_leading_blank: bool,
-    for_pager: bool,
-) -> Result<pager::RenderedOutput> {
-    let processor_config =
-        (for_pager && !do_html && !config.source_line_numbers_enabled()).then(|| {
-            let mut config = config.clone();
-            config.line_numbers = Some(LineNumberOptions {
-                target: LineNumberTarget::Source,
-                separator: false,
-            });
-            config
-        });
-    let processor = MarkdownProcessor::new(processor_config.as_ref().unwrap_or(config))
-        .with_extended_math(!do_html);
-    let document = processor.parse_document(content)?;
-    let renderer = TerminalRenderer::new(config)?;
-    let pager_status_bar_transparent = renderer.pager_status_bar_transparent();
-
-    if do_html {
-        return Ok(pager::RenderedOutput::new(
-            renderer.to_html_document(document)?,
-            pager_status_bar_transparent,
-        ));
-    }
-
-    let mut output = String::new();
-    if let Some(name) = current_preset {
-        output.push('\n');
-        output.push_str("Current preset: ");
-        output.push_str(name);
-        output.push('\n');
-    }
-    if show_current_theme {
-        output.push_str(&format_current_themes(config));
-    }
-    if add_leading_blank {
-        output.push('\n');
-    }
-    if for_pager {
-        return pager::render_terminal_document(
-            &renderer,
-            document,
-            output,
-            pager_status_bar_transparent,
-        );
-    }
-
-    output.push_str(&renderer.render_document(document)?);
-    Ok(pager::RenderedOutput::new(
-        output,
-        pager_status_bar_transparent,
-    ))
-}
-
-fn render_document_file(
-    path: &Path,
-    config: &Config,
-    do_html: bool,
-    show_current_theme: bool,
-    current_preset: Option<&str>,
-) -> Result<pager::PagerDocument> {
-    let mut content = std::fs::read_to_string(path)?;
-    strip_leading_bom(&mut content);
-    let rendered = render_document(
-        &content,
-        config,
-        do_html,
-        show_current_theme,
-        current_preset,
-        true,
-        true,
-    )?;
-    Ok(rendered.into_pager_document(content))
-}
-
-fn format_current_themes(config: &Config) -> String {
-    let mut result = String::new();
-    result.push('\n');
-    result.push_str(&format!("Current theme: {}\n", config.theme));
-    result.push_str(&format!(
-        "Current code theme: {}\n",
-        config.code_theme.as_deref().unwrap_or(&config.theme)
-    ));
-    result
 }
 
 fn get_input_content(cli: &Cli) -> Result<String> {
@@ -307,8 +218,6 @@ fn strip_leading_bom(text: &mut String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clap::FromArgMatches;
-    use std::ffi::OsString;
     use tempfile::TempDir;
 
     #[test]
@@ -322,15 +231,13 @@ mod tests {
             "name: transparent\npager_status_bar_transparent: true\n",
         )
         .unwrap();
-        let matches = Cli::command().get_matches_from([
-            OsString::from("mdv"),
-            OsString::from("--config-file"),
-            temp_dir.path().as_os_str().to_owned(),
-            OsString::from("help"),
-        ]);
-        let cli = Cli::from_arg_matches(&matches).unwrap();
-
-        let document = build_help_document(&cli, &matches, "help".to_string()).unwrap();
+        let config = Config {
+            theme: "transparent".to_string(),
+            config_dir: Some(temp_dir.path().to_path_buf()),
+            ..Config::default()
+        };
+        let document =
+            build_help_document(&config, OutputStyle::Disabled, "help".to_string()).unwrap();
 
         assert!(document.status_bar_transparent());
     }

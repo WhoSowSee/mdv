@@ -8,7 +8,7 @@ fn fully_double_tab_indented_fence_dedents_code_content() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -38,7 +38,7 @@ fn fully_double_tab_indented_fence_preserves_extra_inner_tab() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -63,7 +63,7 @@ fn fully_double_tab_indented_fence_with_less_indented_content_dedents_to_plain_c
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("simple")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -93,7 +93,7 @@ fn fully_double_tab_open_with_triple_tab_close_renders_clean_block() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("pretty")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");
@@ -123,7 +123,7 @@ fn fully_five_tab_open_with_four_tab_close_renders_clean_block() {
     let output = mdv_cmd()
         .arg("--code-block-style")
         .arg("pretty")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path())
         .output()
         .expect("run mdv");

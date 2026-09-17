@@ -8,6 +8,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 |---|---|---|
 | [main.rs](../../src/main.rs) | Binary entry point and Clap bootstrap. | [application](application.md) |
 | [lib.rs](../../src/lib.rs) | Root API and execution-mode routing. | [application](application.md) |
+| [document.rs](../../src/document.rs) | Shared document rendering and refresh options. | [application](application.md) |
 | [error.rs](../../src/error.rs) | `MdvError` categories. | [application](application.md) |
 | [cli.rs](../../src/cli.rs) | `Cli` structure and module facade. | [CLI/config](cli-configuration.md) |
 | [config.rs](../../src/config.rs) | Effective `Config`, defaults, and helpers. | [CLI/config](cli-configuration.md) |
@@ -39,6 +40,7 @@ Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [l
 | [callouts.rs](../../src/cli/callouts.rs) | Callout, checkbox, and definition-list CLI types. |
 | [code_blocks.rs](../../src/cli/code_blocks.rs) | Code-block style and wrap-indent types. |
 | [commands.rs](../../src/cli/commands.rs) | CLI subcommands. |
+| [color.rs](../../src/cli/color.rs) | Requested color modes and resolved styling policy. |
 | [help.rs](../../src/cli/help.rs) | Long-help constants. |
 | [layout.rs](../../src/cli/layout.rs) | Text/table wrapping, math-block style, and heading-layout enums. |
 | [line_numbers.rs](../../src/cli/line_numbers.rs) | Line-number targets and options. |
@@ -52,12 +54,15 @@ Unit tests: [tests.rs](../../src/cli/tests.rs), [contract.rs](../../src/cli/test
 | File | Responsibility |
 |---|---|
 | [files.rs](../../src/config/files.rs) | Configuration paths, loading, and init-config writing. |
+| [deserialization.rs](../../src/config/deserialization.rs) | Typed configuration serde with removed-key rejection. |
 | [from_cli.rs](../../src/config/from_cli.rs) | Assemble the effective `Config`. |
 | [merge.rs](../../src/config/merge.rs) | Field-aware merging. |
 | [runtime.rs](../../src/config/runtime.rs) | Derived widths and compiled overrides. |
 | [structured.rs](../../src/config/structured.rs) | Structured YAML forms for complex configuration values. |
 
 Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/config/tests/environment.rs), [loading.rs](../../src/config/tests/loading.rs), [structured.rs](../../src/config/tests/structured.rs), and [writing.rs](../../src/config/tests/writing.rs).
+
+Color schema and migration checks: [color.rs](../../src/config/tests/color.rs).
 
 ## `src/markdown/`
 
@@ -184,7 +189,6 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [syntax_theme/builder.rs](../../src/renderer/syntax_theme/builder.rs) | Terminal palette to `syntect` theme. |
 | [syntax_theme/terminal.rs](../../src/renderer/syntax_theme/terminal.rs) | `syntect` spans to ANSI. |
 | [syntax_theme/tests.rs](../../src/renderer/syntax_theme/tests.rs) | Theme-adapter tests. |
-| [tests.rs](../../src/renderer/tests.rs) | Renderer-facade tests. |
 
 ## `src/renderer/event/core/`
 
@@ -264,6 +268,7 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Callouts: [callouts.rs](../../tests/callouts.rs), [basic.rs](../../tests/callouts/basic.rs), [customization.rs](../../tests/callouts/customization.rs), [formatting.rs](../../tests/callouts/formatting.rs), [heading_layout.rs](../../tests/callouts/heading_layout.rs), and [tables_links.rs](../../tests/callouts/tables_links.rs).
 - Checkboxes: [checkboxes.rs](../../tests/checkboxes.rs) and files under [tests/checkboxes/](../../tests/checkboxes/basic.rs).
 - CLI: [cli_basic.rs](../../tests/cli_basic.rs) and files under [tests/cli_basic/](../../tests/cli_basic/general.rs).
+- Color: [color.rs](../../tests/color.rs) and shared [support.rs](../../tests/support.rs).
 - Code blocks: [code_blocks.rs](../../tests/code_blocks.rs) and files under [tests/code_blocks/](../../tests/code_blocks/basic.rs).
 - Footnotes: [footnotes.rs](../../tests/footnotes.rs) and files under [tests/footnotes/](../../tests/footnotes/attached.rs).
 - Layout: [layout.rs](../../tests/layout.rs) and files under [tests/layout/](../../tests/layout/headings.rs).

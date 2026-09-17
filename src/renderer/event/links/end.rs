@@ -31,12 +31,7 @@ impl<'a> EventRenderer<'a> {
         let force_underline = matches!(self.config.link_style, LinkStyle::ClickableForced);
 
         if let Some(ref mut table) = self.table_state {
-            push_clickable_table_link(
-                table,
-                &link_text,
-                link_url.as_deref(),
-                self.config.no_colors,
-            );
+            push_clickable_table_link(table, &link_text, link_url.as_deref(), self.output_style);
         } else if let Some(url) = link_url.as_deref() {
             self.process_clickable_text_with_wrapping(&link_text, url, force_underline)?;
         }
@@ -62,9 +57,9 @@ impl<'a> EventRenderer<'a> {
 
         if let Some(ref mut table) = self.table_state {
             let style = create_style(self.theme, ThemeElement::Link);
-            let styled_reference = style.apply(&reference_text, self.config.no_colors);
+            let styled_reference = style.apply(&reference_text, self.output_style);
 
-            push_underlined_table_link(table, &self.current_link_text, self.config.no_colors);
+            push_underlined_table_link(table, &self.current_link_text, self.output_style);
 
             push_wrappable_table_reference(&mut table.current_cell, &styled_reference);
         } else {
@@ -76,7 +71,7 @@ impl<'a> EventRenderer<'a> {
 
             // 2) Append the reference number after the text (wrap if needed)
             let style = create_style(self.theme, ThemeElement::Link);
-            let styled_reference = style.apply(&reference_text, self.config.no_colors);
+            let styled_reference = style.apply(&reference_text, self.output_style);
 
             // Decide if reference fits on current line
             let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
@@ -106,9 +101,9 @@ impl<'a> EventRenderer<'a> {
         if let Some(ref mut table) = self.table_state {
             let reference_text = format!("[{}]", self.paragraph_link_counter);
             let style = create_style(self.theme, ThemeElement::Link);
-            let styled_reference = style.apply(&reference_text, self.config.no_colors);
+            let styled_reference = style.apply(&reference_text, self.output_style);
 
-            push_underlined_table_link(table, &self.current_link_text, self.config.no_colors);
+            push_underlined_table_link(table, &self.current_link_text, self.output_style);
 
             push_wrappable_table_reference(&mut table.current_cell, &styled_reference);
         } else {
@@ -119,7 +114,7 @@ impl<'a> EventRenderer<'a> {
 
             let reference_text = format!("[{}]", self.paragraph_link_counter);
             let style = create_style(self.theme, ThemeElement::Link);
-            let styled_reference = style.apply(&reference_text, self.config.no_colors);
+            let styled_reference = style.apply(&reference_text, self.output_style);
 
             let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
                 crate::utils::strip_ansi(&self.output[last_newline + 1..])

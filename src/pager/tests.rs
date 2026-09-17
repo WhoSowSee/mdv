@@ -1,4 +1,5 @@
 use super::*;
+use crate::cli::OutputStyle;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use notify::{EventKind, event::CreateKind};
 use std::sync::atomic::AtomicUsize;
@@ -169,6 +170,7 @@ fn numbered_document(mode: PagerLineNumberMode, label: &str) -> PagerDocument {
             PagerDisplay::new(format!("1 {label} source\n"), vec![Some(1)]),
         )),
         format!("# {label}"),
+        OutputStyle::Disabled,
     )
 }
 
@@ -202,6 +204,7 @@ fn clipboard_text_prefers_the_selection() {
     let document = RwLock::new(PagerDocument::new(
         "rendered output".to_string(),
         "whole source".to_string(),
+        OutputStyle::Disabled,
     ));
 
     assert_eq!(
@@ -215,6 +218,7 @@ fn clipboard_text_uses_the_source_without_a_selection() {
     let document = RwLock::new(PagerDocument::new(
         "rendered output".to_string(),
         "whole source".to_string(),
+        OutputStyle::Disabled,
     ));
 
     assert_eq!(clipboard_text(&document, None).unwrap(), "whole source");
@@ -230,12 +234,14 @@ fn active_watcher_refreshes_modified_file() {
     let document = Arc::new(std::sync::RwLock::new(PagerDocument::new(
         "rendered before".to_string(),
         "# Before".to_string(),
+        OutputStyle::Disabled,
     )));
     let refresh = Arc::new(move || {
         callback_count.fetch_add(1, Ordering::SeqCst);
         Ok(PagerDocument::new(
             "rendered after".to_string(),
             "# After".to_string(),
+            OutputStyle::Disabled,
         ))
     });
     let watcher = ActiveWatcher::start(&file, Pager::new(), refresh, document.clone()).unwrap();

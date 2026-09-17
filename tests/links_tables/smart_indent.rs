@@ -10,7 +10,7 @@ fn test_table_smart_indent_uses_heading_content_indent() {
     .unwrap();
 
     let output_without_indent = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("60")
         .arg(temp_file.path())
@@ -31,7 +31,7 @@ fn test_table_smart_indent_uses_heading_content_indent() {
     );
 
     let output_with_indent = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("60")
         .arg("--table-smart-indent")
@@ -62,7 +62,7 @@ fn test_table_smart_indent_reduces_indent_on_narrow_width() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("18")
         .arg("--table-smart-indent")
@@ -99,7 +99,7 @@ fn test_inline_table_references_follow_table_smart_indent() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("70")
         .arg("--link-style")

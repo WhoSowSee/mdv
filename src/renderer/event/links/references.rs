@@ -138,7 +138,7 @@ impl<'a> EventRenderer<'a> {
                 .lines()
                 .map(|line| {
                     let clickable_line = self.make_clickable_link(line, url);
-                    style.apply(&clickable_line, self.config.no_colors)
+                    style.apply(&clickable_line, self.output_style)
                 })
                 .collect();
 

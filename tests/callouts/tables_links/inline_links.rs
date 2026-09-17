@@ -10,7 +10,7 @@ fn test_callout_pretty_reference_marker_is_not_split_from_url() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("60")
         .arg("--wrap")
@@ -59,7 +59,7 @@ fn test_callout_inline_links_render_outside_while_table_links_stay_inside() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("90")
         .arg("--wrap")

@@ -1,10 +1,10 @@
 use crate::block_spacing::BlockSpacingOverrides;
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
-    CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
-    FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions, LineNumberTarget,
-    LinkStyle, LinkTruncationStyle, MathBlockStyle, MissingFootnoteStyle, PrettyDefinitionStyle,
-    TableWrapMode, TextWrapMode,
+    CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, ColorMode,
+    FootnoteStyle, FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions,
+    LineNumberTarget, LinkStyle, LinkTruncationStyle, MathBlockStyle, MissingFootnoteStyle,
+    PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -21,7 +21,7 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 const CONFIG_FILE_ENV: &str = "MDV_CONFIG_PATH";
-const NO_COLOR_ENV: &str = "MDV_NO_COLOR";
+const COLOR_ENV: &str = "MDV_COLOR";
 const DEFAULT_CONFIG_TEMPLATE: &str = include_str!("../assets/config/config.yaml");
 const DEFAULT_CONFIG_FILE_NAME: &str = "config.yaml";
 
@@ -123,11 +123,33 @@ where
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Config {
+macro_rules! define_config {
+    ($( $(#[$attribute:meta])* $visibility:vis $field:ident: $type:ty, )*) => {
+        #[derive(Debug, Clone, Serialize)]
+        pub struct Config {
+            $( $(#[$attribute])* $visibility $field: $type, )*
+        }
+
+        #[derive(Deserialize)]
+        #[serde(default, remote = "Config")]
+        // Serde's remote schema includes skipped runtime fields for compile-time shape checks.
+        #[allow(dead_code)]
+        struct ConfigSchema {
+            $( $(#[$attribute])* $field: $type, )*
+        }
+
+        impl Default for ConfigSchema {
+            fn default() -> Self {
+                let config = Config::default();
+                Self { $( $field: config.$field, )* }
+            }
+        }
+    };
+}
+
+define_config! {
     // Display options
-    pub no_colors: bool,
+    pub color: ColorMode,
     pub cols: Option<usize>,
     #[serde(skip)]
     pub cols_from_cli: bool,
@@ -227,7 +249,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            no_colors: false,
+            color: ColorMode::Auto,
             cols: None,
             cols_from_cli: false,
             margin: HorizontalMargins::default(),
@@ -286,32 +308,29 @@ impl Default for Config {
     }
 }
 
+mod deserialization;
 mod files;
+pub(crate) use deserialization::REMOVED_COLOR_SETTING;
 mod from_cli;
 mod merge;
 mod runtime;
 mod structured;
-pub(crate) fn mdv_no_color_override() -> Option<bool> {
-    let raw_value = std::env::var_os(NO_COLOR_ENV)?;
-    let value = raw_value.to_string_lossy();
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
+pub(crate) fn mdv_color_override() -> Result<Option<ColorMode>> {
+    use clap::ValueEnum;
 
-    let normalized = trimmed.to_ascii_lowercase();
-    match normalized.as_str() {
-        "true" => Some(true),
-        "false" => Some(false),
-        _ => {
-            log::warn!(
-                "Invalid value '{}' for environment variable {}. Use 'True' or 'False'.",
-                trimmed,
-                NO_COLOR_ENV
-            );
-            None
-        }
-    }
+    let Some(raw_value) = std::env::var_os(COLOR_ENV) else {
+        return Ok(None);
+    };
+    let value = raw_value.into_string().map_err(|_| {
+        anyhow::anyhow!(
+            "Environment variable {COLOR_ENV} is not valid Unicode; expected one of: auto, always, never"
+        )
+    })?;
+    ColorMode::from_str(&value, false).map(Some).map_err(|_| {
+        anyhow::anyhow!(
+            "Invalid value '{value}' for environment variable {COLOR_ENV}; expected one of: auto, always, never"
+        )
+    })
 }
 
 #[cfg(test)]

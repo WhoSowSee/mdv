@@ -2,9 +2,9 @@ use super::*;
 
 pub(super) fn draw_browser(frame: &mut ScreenFrame, app: &App) -> Result<()> {
     let browser = &app.browser;
-    let no_colors = app.config.no_colors;
+    let output_style = app.output_style;
     if browser.show_error() {
-        draw_browser_error(frame, browser, app.width, app.height, no_colors);
+        draw_browser_error(frame, browser, app.width, app.height, output_style);
         return Ok(());
     }
 
@@ -13,13 +13,16 @@ pub(super) fn draw_browser(frame: &mut ScreenFrame, app: &App) -> Result<()> {
             &format!("Find: {}", browser.query()),
             app.width.saturating_sub(3) as usize,
         );
-        let filter = browser_filter_prompt_text(&filter_text, no_colors);
+        let filter = browser_filter_prompt_text(&filter_text, output_style);
         frame.write_line(1, &filter);
     } else {
-        frame.write_line(1, &browser_logo_line(browser.loading_elapsed(), no_colors));
+        frame.write_line(
+            1,
+            &browser_logo_line(browser.loading_elapsed(), output_style),
+        );
     }
 
-    let header = browser_header(browser, no_colors);
+    let header = browser_header(browser, output_style);
     frame.write_line(3, &format!("   {header}"));
 
     let visible = browser.visible_indices();
@@ -36,7 +39,7 @@ pub(super) fn draw_browser(frame: &mut ScreenFrame, app: &App) -> Result<()> {
             5,
             &format!(
                 "   {}",
-                styled(message, Some(rgb(98, 98, 98)), None, false, no_colors)
+                styled(message, Some(rgb(98, 98, 98)), None, false, output_style)
             ),
         );
     } else {
@@ -58,13 +61,13 @@ pub(super) fn draw_browser(frame: &mut ScreenFrame, app: &App) -> Result<()> {
             let title = if browser.filter_state() == FilterState::Editing
                 || browser.section() == BrowserSection::Filter
             {
-                filtered_title(document, &title, browser.query(), title_color, no_colors)
+                filtered_title(document, &title, browser.query(), title_color, output_style)
             } else {
-                styled(&title, Some(title_color), None, false, no_colors)
+                styled(&title, Some(title_color), None, false, output_style)
             };
             let date_text = relative_time(document.modified)?;
-            let date = styled(&date_text, Some(date_color), None, false, no_colors);
-            let prefix = item_prefix(selected, no_colors);
+            let date = styled(&date_text, Some(date_color), None, false, output_style);
+            let prefix = item_prefix(selected, output_style);
             frame.write_line(y, &format!("{prefix}{title}"));
             frame.write_line(y + 1, &format!("{prefix}{date}"));
         }
@@ -74,10 +77,13 @@ pub(super) fn draw_browser(frame: &mut ScreenFrame, app: &App) -> Result<()> {
     if browser.page_count() > 1 {
         frame.write_line(
             pagination_y,
-            &format!("   {}", pagination(browser, app.width as usize, no_colors)),
+            &format!(
+                "   {}",
+                pagination(browser, app.width as usize, output_style)
+            ),
         );
     }
-    draw_browser_help(frame, browser, help_y, app.width as usize, no_colors);
+    draw_browser_help(frame, browser, help_y, app.width as usize, output_style);
     if browser.filter_state() == FilterState::Editing {
         let filter_text = truncate_plain(
             &format!("Find: {}", browser.query()),
@@ -93,14 +99,14 @@ pub(super) fn draw_browser_error(
     browser: &BrowserState,
     width: u16,
     height: u16,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) {
     let title = styled(
         " ERROR ",
         Some(rgb(255, 253, 245)),
         Some(rgb(237, 86, 122)),
         false,
-        no_colors,
+        output_style,
     );
     frame.write_line(1, &format!("   {title}"));
     for (index, error) in browser
@@ -117,7 +123,7 @@ pub(super) fn draw_browser_error(
         Some(rgb(92, 92, 92)),
         None,
         false,
-        no_colors,
+        output_style,
     );
     frame.write_line(height.saturating_sub(2), &format!("   {prompt}"));
 }

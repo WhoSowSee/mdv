@@ -13,10 +13,10 @@ impl<'a> EventRenderer<'a> {
             // Check if we're in a table cell
             if let Some(ref mut table) = self.table_state {
                 // custom_styling keeps the underline scoped through table wrapping.
-                push_underlined_table_link(table, &current_link_text, self.config.no_colors);
+                push_underlined_table_link(table, &current_link_text, self.output_style);
                 let url_part = format!("({})", url);
                 let style = create_style(self.theme, ThemeElement::Link);
-                let styled_url = style.apply(&url_part, self.config.no_colors);
+                let styled_url = style.apply(&url_part, self.output_style);
 
                 if matches!(self.config.link_truncation, LinkTruncationStyle::TableCut) {
                     let target = if table.in_header {
@@ -70,7 +70,7 @@ impl<'a> EventRenderer<'a> {
                             if available_width >= url_part_width {
                                 // URL fits entirely on the current line
                                 let style = create_style(self.theme, ThemeElement::Link);
-                                let styled_url = style.apply(&url_part, self.config.no_colors);
+                                let styled_url = style.apply(&url_part, self.output_style);
                                 let clickable_url = self.make_clickable_link(&styled_url, &url);
                                 self.output.push_str(&clickable_url);
                                 self.enforce_width_on_current_line();
@@ -82,7 +82,7 @@ impl<'a> EventRenderer<'a> {
                                 let truncated_url_part = format!("({})", truncated_display);
                                 let style = create_style(self.theme, ThemeElement::Link);
                                 let styled_truncated =
-                                    style.apply(&truncated_url_part, self.config.no_colors);
+                                    style.apply(&truncated_url_part, self.output_style);
                                 let clickable_truncated =
                                     self.make_clickable_link(&styled_truncated, &url);
                                 self.output.push_str(&clickable_truncated);
@@ -110,7 +110,7 @@ impl<'a> EventRenderer<'a> {
                                 let truncated_url_part = format!("({})", truncated_display);
                                 let style = create_style(self.theme, ThemeElement::Link);
                                 let styled_truncated =
-                                    style.apply(&truncated_url_part, self.config.no_colors);
+                                    style.apply(&truncated_url_part, self.output_style);
                                 let clickable_truncated =
                                     self.make_clickable_link(&styled_truncated, &url);
                                 self.output.push_str(&clickable_truncated);
@@ -119,7 +119,7 @@ impl<'a> EventRenderer<'a> {
                         LinkTruncationStyle::None => {
                             // No truncation - make URL clickable even if it overflows
                             let style = create_style(self.theme, ThemeElement::Link);
-                            let styled_url = style.apply(&url_part, self.config.no_colors);
+                            let styled_url = style.apply(&url_part, self.output_style);
                             let clickable_url = self.make_clickable_link(&styled_url, &url);
                             self.output.push_str(&clickable_url);
                         }
@@ -129,7 +129,7 @@ impl<'a> EventRenderer<'a> {
                             if current_line_width + url_part_width <= terminal_width {
                                 // Fits entirely on the current line
                                 let style = create_style(self.theme, ThemeElement::Link);
-                                let styled_url = style.apply(&url_part, self.config.no_colors);
+                                let styled_url = style.apply(&url_part, self.output_style);
                                 let clickable_url = self.make_clickable_link(&styled_url, &url);
                                 self.output.push_str(&clickable_url);
                             } else {
@@ -152,7 +152,7 @@ impl<'a> EventRenderer<'a> {
                                 // Add the part that fits to the current line
                                 if !taken.is_empty() {
                                     let style = create_style(self.theme, ThemeElement::Link);
-                                    let styled_taken = style.apply(&taken, self.config.no_colors);
+                                    let styled_taken = style.apply(&taken, self.output_style);
                                     let clickable_taken =
                                         self.make_clickable_link(&styled_taken, &url);
                                     self.output.push_str(&clickable_taken);
@@ -166,7 +166,7 @@ impl<'a> EventRenderer<'a> {
                                     // Wrap the remaining part for subsequent lines
                                     let style = create_style(self.theme, ThemeElement::Link);
                                     let styled_remaining =
-                                        style.apply(&remaining, self.config.no_colors);
+                                        style.apply(&remaining, self.output_style);
                                     let wrapped_url =
                                         self.wrap_url_with_indentation(&styled_remaining);
                                     let clickable_wrapped =
@@ -195,7 +195,7 @@ impl<'a> EventRenderer<'a> {
 
                             if available_width >= url_part_width {
                                 let style = create_style(self.theme, ThemeElement::Link);
-                                let styled_url = style.apply(&url_part, self.config.no_colors);
+                                let styled_url = style.apply(&url_part, self.output_style);
                                 let clickable_url = self.make_clickable_link(&styled_url, &url);
                                 self.output.push_str(&clickable_url);
                                 self.enforce_width_on_current_line();
@@ -206,7 +206,7 @@ impl<'a> EventRenderer<'a> {
                                 let truncated_url_part = format!("({})", truncated_display);
                                 let style = create_style(self.theme, ThemeElement::Link);
                                 let styled_truncated =
-                                    style.apply(&truncated_url_part, self.config.no_colors);
+                                    style.apply(&truncated_url_part, self.output_style);
                                 let clickable_truncated =
                                     self.make_clickable_link(&styled_truncated, &url);
                                 self.output.push_str(&clickable_truncated);
@@ -215,7 +215,7 @@ impl<'a> EventRenderer<'a> {
                                 // Not enough space even for parentheses; show minimal clickable marker if possible
                                 if available_width > 0 {
                                     let style = create_style(self.theme, ThemeElement::Link);
-                                    let marker = style.apply("…", self.config.no_colors);
+                                    let marker = style.apply("…", self.output_style);
                                     let clickable_marker = self.make_clickable_link(&marker, &url);
                                     self.output.push_str(&clickable_marker);
                                 }
@@ -224,7 +224,7 @@ impl<'a> EventRenderer<'a> {
                         _ => {
                             // Just add clickable URL without wrapping or truncation
                             let style = create_style(self.theme, ThemeElement::Link);
-                            let styled_url = style.apply(&url_part, self.config.no_colors);
+                            let styled_url = style.apply(&url_part, self.output_style);
                             let clickable_url = self.make_clickable_link(&styled_url, &url);
                             self.output.push_str(&clickable_url);
                             self.enforce_width_on_current_line();

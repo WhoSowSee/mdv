@@ -16,7 +16,7 @@ fn test_render_html_definition_lists() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -46,7 +46,7 @@ fn test_render_html_figure_caption_is_rendered_after_content() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg("-c")
         .arg("80")
@@ -81,6 +81,7 @@ fn test_render_html_basic_inline_css_styles() {
     .unwrap();
 
     let output = mdv_cmd()
+        .args(["--color", "always"])
         .arg("-E")
         .arg("-c")
         .arg("120")
@@ -125,7 +126,7 @@ fn test_render_html_inline_table_references_inside_html_containers() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg("-u")
         .arg("inlinetable")
@@ -175,7 +176,7 @@ fn test_render_html_inline_table_references_reset_across_blocks() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg("-u")
         .arg("inlinetable")

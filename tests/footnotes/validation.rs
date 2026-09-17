@@ -6,7 +6,7 @@ fn missing_footnote_show_renders_placeholder() {
     fs::write(&temp_file, "```md\nIntro[^missing]\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")
@@ -39,7 +39,7 @@ fn missing_footnote_in_plain_text_renders_placeholder() {
     fs::write(&temp_file, "Intro[^missing]\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")
@@ -65,7 +65,7 @@ fn missing_footnote_hide_omits_block() {
     fs::write(&temp_file, "```md\nIntro[^missing]\n```\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")
@@ -98,7 +98,7 @@ fn missing_footnote_hide_omits_all_placeholder_messages() {
     fs::write(&temp_file, "Intro[^missing]\n\n[^empty]:\n[^invalid]\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")
@@ -141,7 +141,7 @@ fn bare_footnote_definition_without_colon_reports_invalid_syntax() {
     fs::write(&temp_file, "Intro[^a]\n\n[^a]\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")
@@ -175,7 +175,7 @@ fn empty_footnote_definition_reports_empty_body() {
     fs::write(&temp_file, "Intro[^a]\n\n[^a]:\n").unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")
@@ -205,7 +205,7 @@ fn markdown_code_block_definitions_match_normal_behavior() {
     .unwrap();
 
     let mut cmd = mdv_cmd();
-    cmd.arg("--no-colors")
+    cmd.args(["--color", "never"])
         .arg("--cols")
         .arg("80")
         .arg("--missing-footnote-style")

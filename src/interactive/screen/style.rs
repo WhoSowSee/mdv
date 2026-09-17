@@ -5,7 +5,7 @@ pub(super) fn styled(
     foreground: Option<Color>,
     background: Option<Color>,
     bold: bool,
-    no_colors: bool,
+    output_style: OutputStyle,
 ) -> String {
     let mut style = AnsiStyle::new();
     if let Some(foreground) = foreground {
@@ -17,7 +17,7 @@ pub(super) fn styled(
     if bold {
         style = style.bold();
     }
-    style.apply(text, no_colors)
+    style.apply(text, output_style)
 }
 
 pub(super) fn rgb(r: u8, g: u8, b: u8) -> Color {

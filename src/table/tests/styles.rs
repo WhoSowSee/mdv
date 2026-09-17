@@ -4,11 +4,12 @@ use super::*;
 fn test_table_link_text_keeps_default_color() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 80, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 80, TableWrapMode::Fit);
 
     let link_text = "Link text";
     let formatted_link_text = format!("\x1b[4m{}\x1b[24m", link_text);
-    let styled_reference = create_style(theme, ThemeElement::Link).apply("[1]", false);
+    let styled_reference =
+        create_style(theme, ThemeElement::Link).apply("[1]", OutputStyle::Enabled);
 
     let headers = vec!["Col".to_string()];
     let rows = vec![vec![format!("{}{}", formatted_link_text, styled_reference)]];
@@ -48,10 +49,10 @@ fn test_table_link_text_keeps_default_color() {
 fn test_table_mixed_inline_code_keeps_plain_text_unstyled() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 100, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 100, TableWrapMode::Fit);
 
     let plain_text = "Versioned little-endian emulator snapshot with magic ";
-    let styled_code = create_style(theme, ThemeElement::Code).apply("`K580`", false);
+    let styled_code = create_style(theme, ThemeElement::Code).apply("`K580`", OutputStyle::Enabled);
     let rows = vec![vec![format!("{plain_text}{styled_code}.")]];
     let output = renderer
         .render_table(&["Purpose".to_string()], &rows, &[Alignment::Left])
@@ -79,10 +80,11 @@ fn test_table_mixed_inline_code_keeps_plain_text_unstyled() {
 fn test_table_mixed_attributes_remain_scoped() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 100, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 100, TableWrapMode::Fit);
 
-    let strong = create_style(theme, ThemeElement::Strong).apply("strong", false);
-    let emphasis = create_style(theme, ThemeElement::Emphasis).apply("emphasis", false);
+    let strong = create_style(theme, ThemeElement::Strong).apply("strong", OutputStyle::Enabled);
+    let emphasis =
+        create_style(theme, ThemeElement::Emphasis).apply("emphasis", OutputStyle::Enabled);
     let content = format!("plain {strong} middle {emphasis} tail");
     let output = renderer
         .render_table(
@@ -106,12 +108,12 @@ fn test_table_mixed_attributes_remain_scoped() {
 fn test_table_inline_link_preserves_text_color() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 80, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 80, TableWrapMode::Fit);
 
     let link_text = "Link text";
     let formatted_link_text = format!("\x1b[4m{}\x1b[24m", link_text);
     let url_part = "(https://example.com)".to_string();
-    let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, false);
+    let styled_url = create_style(theme, ThemeElement::Link).apply(&url_part, OutputStyle::Enabled);
 
     let headers = vec!["Col".to_string()];
     let rows = vec![vec![format!("{}{}", formatted_link_text, styled_url)]];

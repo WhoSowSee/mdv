@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -11,7 +11,3 @@ mod headings;
 mod margins;
 #[path = "layout/spacing.rs"]
 mod spacing;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}

@@ -21,6 +21,7 @@ pub(crate) fn page(
             line_navigation_enabled,
             line_number_toggle_enabled,
             status_bar_transparent,
+            output_style,
         ) = {
             let document = document
                 .read()
@@ -34,6 +35,7 @@ pub(crate) fn page(
                 line_navigation_enabled,
                 document.line_number_mode().is_some(),
                 document.status_bar_transparent(),
+                document.output_style(),
             )
         };
         let help_panel = build_help_panel(
@@ -44,6 +46,7 @@ pub(crate) fn page(
             status_bar_transparent,
         )?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
+        pager.set_output_styling(output_style.is_enabled())?;
         pager.set_line_numbers(LineNumbers::AlwaysOff)?;
         pager.set_mapped_text(output, line_navigation)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;

@@ -10,7 +10,7 @@ fn test_render_html_option_formats_raw_html() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("40")
         .arg("-E")
@@ -56,7 +56,7 @@ fn test_render_html_buffers_centered_semantic_blocks() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("80")
         .arg("-E")
@@ -97,7 +97,7 @@ fn test_render_html_right_aligns_regular_blocks() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("40")
         .arg("-E")
@@ -134,7 +134,7 @@ fn test_render_html_formats_inline_semantic_tags() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("120")
         .arg("-E")
@@ -164,7 +164,7 @@ fn test_render_html_formats_semantic_tags_inside_markdown_paragraph() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-c")
         .arg("160")
         .arg("-E")
@@ -197,7 +197,7 @@ fn test_render_html_details_summary_static_output() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg(temp_file.path())
         .output()
@@ -232,7 +232,7 @@ textarea keeps spaces:
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg("-c")
         .arg("80")
@@ -268,7 +268,7 @@ fn test_render_html_blockquote_uses_quote_prefix() {
     .unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("-E")
         .arg(temp_file.path())
         .output()

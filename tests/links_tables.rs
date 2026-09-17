@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+use crate::support::mdv_cmd;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::NamedTempFile;
@@ -13,7 +13,3 @@ mod references;
 mod smart_indent;
 #[path = "links_tables/truncation.rs"]
 mod truncation;
-
-fn mdv_cmd() -> Command {
-    Command::new(assert_cmd::cargo::cargo_bin!("mdv"))
-}

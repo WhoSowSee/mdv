@@ -111,6 +111,7 @@ pub struct SearchOpts<'a> {
     compiled_regex: Option<Regex>,
     preview_upper_mark: Option<usize>,
     query_selected: bool,
+    output_styling: bool,
 }
 
 /// Pager state captured for incremental-search previews.
@@ -127,6 +128,7 @@ pub struct IncrementalSearchOpts<'a> {
     pub initial_left_mark: usize,
     cols: usize,
     writable_rows: usize,
+    output_styling: bool,
 }
 
 impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
@@ -139,6 +141,7 @@ impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
             initial_left_mark: ps.left_mark,
             cols: ps.cols,
             writable_rows: ps.content_rows(),
+            output_styling: ps.output_styling,
         }
     }
 }
@@ -192,6 +195,7 @@ impl<'a> From<&'a PagerState> for SearchOpts<'a> {
             compiled_regex: None,
             preview_upper_mark: None,
             query_selected,
+            output_styling: ps.output_styling,
             search_mode: ps.search_state.search_mode,
         }
     }
@@ -339,12 +343,16 @@ fn preview_line<'a>(
             } else {
                 None
             };
-            Cow::Owned(highlight_search_matches(
-                &row,
-                query,
-                current_range,
-                iso.content_start_chars(),
-            ))
+            if iso.output_styling {
+                Cow::Owned(highlight_search_matches(
+                    &row,
+                    query,
+                    current_range,
+                    iso.content_start_chars(),
+                ))
+            } else {
+                row
+            }
         })
         .collect::<Vec<_>>();
 
@@ -703,7 +711,7 @@ fn write_search_query(
     out: &mut impl std::io::Write,
     search_opts: &SearchOpts<'_>,
 ) -> Result<(), MinusError> {
-    if search_opts.query_selected {
+    if search_opts.query_selected && search_opts.output_styling {
         write!(out, "{}{}{}", *INVERT, search_opts.string, *NORMAL)?;
     } else {
         write!(out, "{}", search_opts.string)?;
@@ -948,6 +956,7 @@ mod tests {
                 compiled_regex: None,
                 preview_upper_mark: None,
                 query_selected: false,
+                output_styling: true,
                 search_mode: sm,
             }
         }

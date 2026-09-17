@@ -10,7 +10,7 @@ fn test_smart_indent_promotes_first_heading() {
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -28,7 +28,7 @@ fn test_smart_indent_limits_growth_per_step() {
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -50,7 +50,7 @@ fn test_smart_indent_handles_mixed_levels() {
     cmd.arg("--smart-indent")
         .arg("--heading-layout")
         .arg("level")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -73,7 +73,7 @@ fn test_center_heading_layout_adds_blank_line() {
     let mut cmd = mdv_cmd();
     cmd.arg("--heading-layout")
         .arg("center")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg(temp_file.path());
 
     cmd.assert()
@@ -89,7 +89,7 @@ fn test_single_blank_line_before_heading_after_empty_pretty_code_block() {
     fs::write(&temp_file, "```\n```\n\n##\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--code-block-style")
         .arg("pretty")
         .arg("--show-empty-elements")
@@ -128,7 +128,7 @@ fn test_single_blank_line_before_heading_with_surrounding_elements() {
     fs::write(&temp_file, "- Item\n-\n\n```\n```\n>\n>\n\n##\n").unwrap();
 
     let output = mdv_cmd()
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--code-block-style")
         .arg("pretty")
         .arg("--wrap")
@@ -173,7 +173,7 @@ fn test_heading_markers_support_levels_and_center_layout() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--heading-layout")
         .arg("none")
         .arg("--show-heading-markers")
@@ -188,7 +188,7 @@ fn test_heading_markers_support_levels_and_center_layout() {
     fs::write(&alias_file, "## Alias\n").unwrap();
     let alias_output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--cols")
         .arg("40")
         .arg("--heading-layout")
@@ -207,7 +207,7 @@ fn test_heading_markers_load_from_config() {
     let config_dir = tempdir().unwrap();
     fs::write(
         config_dir.path().join("config.yaml"),
-        "no_colors: true\nheading_layout: none\nshow_heading_markers: true\n",
+        "color: never\nheading_layout: none\nshow_heading_markers: true\n",
     )
     .unwrap();
     let temp_file = NamedTempFile::new().unwrap();
@@ -232,7 +232,7 @@ fn test_heading_markers_do_not_duplicate_empty_placeholders() {
 
     let output = mdv_cmd()
         .arg("--no-config")
-        .arg("--no-colors")
+        .args(["--color", "never"])
         .arg("--heading-layout")
         .arg("none")
         .arg("--show-empty-elements")

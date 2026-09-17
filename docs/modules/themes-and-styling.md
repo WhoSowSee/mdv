@@ -93,9 +93,15 @@ An unknown name, invalid component count, or out-of-range component returns an e
 
 [src/terminal.rs](../../src/terminal.rs) contains `AnsiStyle` and color helpers.
 
-`AnsiStyle` accumulates foreground, background, bold, italic, underline, and strikethrough. `apply` emits one coherent escape sequence. With `no_colors`, it returns the original text without escape codes.
+`AnsiStyle` accumulates foreground, background, bold, italic, underline, and strikethrough. `apply` emits one coherent escape sequence when the resolved `OutputStyle` is enabled and returns the original text when it is disabled.
 
 `ansi256_to_rgb` and `calculate_luminosity` support theme comparison and sorting; they do not rewrite user values.
+
+Color mode is independent of the selected palette. Application code resolves
+`ColorMode` from stdout once and supplies `OutputStyle` to `AnsiStyle::apply`,
+`TerminalRenderer`, and `TableRenderer`. Disabled styling also suppresses OSC 8
+links, while all visible symbols and the selected link presentation remain.
+This policy does not sanitize terminal controls supplied in the Markdown source.
 
 ## Inline styles
 
@@ -125,7 +131,7 @@ The renderer receives compiled maps in `Config` and never repeats string parsing
 
 ## Invariants
 
-- `no_colors` disables ANSI but does not alter structural symbols or icons.
+- `color` preserves structural symbols and icons in every mode; `never` disables generated ANSI and OSC 8 styling.
 - A custom callout with an existing name changes presentation while type semantics and default-icon resolution remain predictable.
 - A user theme cannot silently introduce an unknown key.
 - A `None` background means no background sequence, not black.

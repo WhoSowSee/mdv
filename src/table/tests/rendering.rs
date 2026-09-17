@@ -4,7 +4,7 @@ use super::*;
 fn test_table_rendering() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 80, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 80, TableWrapMode::Fit);
 
     let headers = vec!["Name".to_string(), "Value".to_string()];
     let rows = vec![
@@ -27,7 +27,7 @@ fn test_table_rendering() {
 fn test_empty_table() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 80, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 80, TableWrapMode::Fit);
 
     let headers = vec![];
     let rows = vec![];
@@ -39,10 +39,10 @@ fn test_empty_table() {
 }
 
 #[test]
-fn test_table_rendering_no_colors() {
+fn test_table_rendering_unstyled() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, true, 80, TableWrapMode::Fit);
+    let renderer = TableRenderer::new(theme, OutputStyle::Disabled, 80, TableWrapMode::Fit);
 
     let headers = vec!["Name".to_string(), "Value".to_string()];
     let rows = vec![vec!["Test".to_string(), "123".to_string()]];
@@ -57,7 +57,7 @@ fn test_table_rendering_no_colors() {
 fn test_narrow_terminal_vertical_layout() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 30, TableWrapMode::Wrap); // Very narrow terminal with wrap mode
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 30, TableWrapMode::Wrap); // Very narrow terminal with wrap mode
 
     let headers = vec!["Name".to_string(), "Age".to_string(), "City".to_string()];
     let rows = vec![
@@ -86,7 +86,7 @@ fn test_narrow_terminal_vertical_layout() {
 fn test_wide_table_column_wrapping() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 60, TableWrapMode::Wrap); // Medium width terminal with wrap mode
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 60, TableWrapMode::Wrap); // Medium width terminal with wrap mode
 
     let headers = vec![
         "Very Long Header Name".to_string(),
@@ -119,7 +119,7 @@ fn test_wide_table_column_wrapping() {
 fn test_column_wrapping_logic() {
     let theme_manager = ThemeManager::new();
     let theme = theme_manager.get_theme("terminal").unwrap();
-    let renderer = TableRenderer::new(theme, false, 30, TableWrapMode::Fit); // Very narrow terminal
+    let renderer = TableRenderer::new(theme, OutputStyle::Enabled, 30, TableWrapMode::Fit); // Very narrow terminal
 
     let headers = vec![
         "Very Long Column Header 1".to_string(),
