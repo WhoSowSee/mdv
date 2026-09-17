@@ -86,23 +86,27 @@ pub struct Cli {
     pub show_empty_elements: bool,
 
     /// Disable heuristic language detection for code blocks
-    #[arg(long = "no-code-guessing", help_heading = "Themes and code", display_order = 34)]
+    #[arg(long = "no-code-guessing", help_heading = "Themes and code", display_order = 35)]
     pub no_code_guessing: bool,
 
     /// Directory containing custom .sublime-syntax files
-    #[arg(long = "syntaxes-dir", value_name = "DIR", help_heading = "Themes and code", display_order = 33, long_help = SYNTAXES_DIR_LONG_HELP,)]
+    #[arg(long = "syntaxes-dir", value_name = "DIR", help_heading = "Themes and code", display_order = 34, long_help = SYNTAXES_DIR_LONG_HELP,)]
     pub syntaxes_dir: Option<PathBuf>,
 
     /// Configure visual style for code blocks
     #[arg(short = 'b', long = "code-block-style", value_name = "CODE_STYLE", default_value = "basic", value_parser = parse_code_block_style_config, help_heading = "Themes and code", display_order = 29, long_help = CODE_BLOCK_STYLE_LONG_HELP,)]
     pub code_block_style: Option<CodeBlockStyleConfig>,
 
+    /// Configure visual style for display math and fenced math blocks
+    #[arg(long = "math-block-style", value_enum, value_name = "MATH_STYLE", default_value = "basic", help_heading = "Themes and code", display_order = 30, long_help = MATH_BLOCK_STYLE_LONG_HELP,)]
+    pub math_block_style: Option<MathBlockStyle>,
+
     /// Show row numbers inside code blocks with optional source and separator modes
-    #[arg(short = 'K', long = "code-line-numbers", num_args = 0..=1, value_name = "MODE", value_enum, hide_possible_values = true, help_heading = "Themes and code", display_order = 30, long_help = CODE_LINE_NUMBERS_LONG_HELP,)]
+    #[arg(short = 'K', long = "code-line-numbers", num_args = 0..=1, value_name = "MODE", value_enum, hide_possible_values = true, help_heading = "Themes and code", display_order = 31, long_help = CODE_LINE_NUMBERS_LONG_HELP,)]
     pub code_line_numbers: Option<Option<LineNumberOptions>>,
 
     /// Override code block icon/label/aliases.
-    #[arg(long = "custom-code-block", value_name = "BLOCKS", help_heading = "Themes and code", display_order = 31, long_help = CUSTOM_CODE_BLOCK_LONG_HELP,)]
+    #[arg(long = "custom-code-block", value_name = "BLOCKS", help_heading = "Themes and code", display_order = 32, long_help = CUSTOM_CODE_BLOCK_LONG_HELP,)]
     pub custom_code_block: Option<String>,
 
     #[arg(short = 'C', long = "callout-style", value_name = "CALLOUT_STYLE", default_value = "pretty", value_parser = parse_callout_style_config, help_heading = "Callouts and lists", display_order = 35, long_help = STYLE_CALLOUT_LONG_HELP,)]
@@ -132,7 +136,7 @@ pub struct Cli {
     #[arg(long = "custom-list", value_name = "PAIRS", help_heading = "Callouts and lists", display_order = 41, long_help = CUSTOM_LIST_LONG_HELP,)]
     pub custom_list: Option<String>,
     /// Set hanging indent style for wrapped code block lines
-    #[arg(long = "code-wrap-indent", value_enum, value_name = "MODE", default_value = "double", help_heading = "Themes and code", display_order = 32)]
+    #[arg(long = "code-wrap-indent", value_enum, value_name = "MODE", default_value = "double", help_heading = "Themes and code", display_order = 33)]
     pub code_wrap_indent: Option<CodeWrapIndent>,
 
     /// Show current theme and optionally display the contents of FILE when provided
@@ -270,7 +274,7 @@ mod margins;
 pub use callouts::{CalloutStyle, CalloutStyleConfig, CheckboxShape, PrettyDefinitionStyle};
 pub use code_blocks::{CodeBlockStyle, CodeBlockStyleConfig, CodeWrapIndent};
 pub use commands::CliCommand;
-pub use layout::{HeadingLayout, TableWrapMode, TextWrapMode};
+pub use layout::{HeadingLayout, MathBlockStyle, TableWrapMode, TextWrapMode};
 pub use line_numbers::{LineNumberOptions, LineNumberTarget};
 pub use links::{FootnoteStyle, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle};
 pub use margins::HorizontalMargins;

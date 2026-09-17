@@ -26,6 +26,10 @@ pub struct Theme {
 
     // Special elements
     pub code: Color,
+    #[serde(default)]
+    pub math: Option<Color>,
+    #[serde(default)]
+    pub math_border: Option<Color>,
     pub quote: Color,
     pub link: Color,
     pub emphasis: Color,
@@ -103,6 +107,14 @@ impl Default for SyntaxTheme {
 }
 
 impl Theme {
+    pub(crate) fn math_color(&self) -> &Color {
+        self.math.as_ref().unwrap_or(&self.text)
+    }
+
+    pub(crate) fn math_border_color(&self) -> &Color {
+        self.math_border.as_ref().unwrap_or(&self.border)
+    }
+
     pub(crate) fn front_matter_title_color(&self) -> &Color {
         self.front_matter_title.as_ref().unwrap_or(&self.border)
     }

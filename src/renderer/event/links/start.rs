@@ -2,6 +2,11 @@ use super::*;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn handle_link_start(&mut self, dest_url: CowStr) -> Result<()> {
+        if self.pending_callout_label_override {
+            self.current_link_text.clear();
+            self.in_link = true;
+            return Ok(());
+        }
         // If we are at visual line start (after a soft break or paragraph start),
         // ensure proper indentation/prefix before rendering the link.
         if self.table_state.is_none() {

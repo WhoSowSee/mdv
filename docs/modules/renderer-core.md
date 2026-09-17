@@ -64,6 +64,7 @@ In reverse mode, front matter follows the reversed Markdown body so it remains a
 | Tables and HTML | optional `TableState` and pending HTML-block buffer. |
 | Links | current link text, paragraph/document references, and counters. |
 | Code | code-block buffer, language, plaintext depth, and captured references. |
+| Math | shared `Rc<MathDiagnostics>` for the current document render. |
 | Footnotes | definitions, order, occurrences, scan buffer, and suppression flags. |
 | Inline formatting | semantic formatting stack and active backtick style. |
 | Paragraph spacing | content flags, blank-line streak, and soft-break suppression. |
@@ -99,7 +100,8 @@ Fields are crate-visible because inherent `impl EventRenderer` blocks are physic
 8. Complete attached footnotes.
 9. Render document link references.
 10. Render endnote footnotes.
-11. Normalize the trailing newline to one.
+11. Remove mathematical layout metadata after all containers finish.
+12. Normalize the trailing newline to one.
 
 Ordering matters. A link inside code, a table, or a callout may defer its reference block until the containing element closes.
 

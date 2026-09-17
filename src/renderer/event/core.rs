@@ -10,6 +10,7 @@ use crate::theme::Color;
 use crate::utils::strip_ansi;
 use pulldown_cmark::BlockQuoteKind;
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 mod callouts;
 mod constructor;
@@ -36,6 +37,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) theme: &'a Theme,
     pub(crate) syntax_set: &'a SyntaxSet,
     pub(crate) code_theme: &'a CodeHighlightTheme,
+    pub(crate) math_diagnostics: Rc<crate::math::MathDiagnostics>,
     pub(crate) output: String,
     pub(crate) current_indent: usize,
     pub(crate) blockquote_level: usize,
@@ -57,6 +59,7 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) document_links: Vec<(String, String)>,
     pub(crate) in_code_block: bool,
     pub(crate) code_block_content: String,
+    pub(crate) math_code_block_source_line: Option<usize>,
     pub(crate) code_block_language: Option<String>,
     pub(crate) max_code_line_number_width: usize,
     pub(crate) plaintext_code_block_depth: usize,

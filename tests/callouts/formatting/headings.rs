@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn test_callout_setext_heading_simple_keeps_single_prefix() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "> [!tip]\n> dadas\n> ---\n> Как сделать так\n").unwrap();
+    fs::write(&temp_file, "> [!tip]\n> example\n> ---\n> How to do this\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--no-colors")
@@ -31,7 +31,7 @@ fn test_callout_setext_heading_simple_keeps_single_prefix() {
 #[test]
 fn test_callout_setext_h1_simple_keeps_single_prefix() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "> [!tip]\n> dadas\n> =\n> Как сделать так\n").unwrap();
+    fs::write(&temp_file, "> [!tip]\n> example\n> =\n> How to do this\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--no-colors")
@@ -59,7 +59,7 @@ fn test_callout_setext_h1_simple_keeps_single_prefix() {
 #[test]
 fn test_callout_setext_heading_pretty_has_no_inner_pipe() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "> [!tip]\n> dadas\n> ---\n> Как сделать так\n").unwrap();
+    fs::write(&temp_file, "> [!tip]\n> example\n> ---\n> How to do this\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--no-colors")
@@ -84,7 +84,7 @@ fn test_callout_setext_heading_pretty_has_no_inner_pipe() {
 
     let heading_line = stdout
         .lines()
-        .find(|line| line.contains("dadas"))
+        .find(|line| line.contains("example"))
         .expect("heading line present");
     let indent = spaces_after_prefix(heading_line, '│');
     assert_eq!(
@@ -97,7 +97,7 @@ fn test_callout_setext_heading_pretty_has_no_inner_pipe() {
 #[test]
 fn test_callout_setext_h1_pretty_has_no_inner_pipe() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "> [!tip]\n> dadas\n> =\n> Как сделать так\n").unwrap();
+    fs::write(&temp_file, "> [!tip]\n> example\n> =\n> How to do this\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--no-colors")
@@ -122,7 +122,7 @@ fn test_callout_setext_h1_pretty_has_no_inner_pipe() {
 
     let heading_line = stdout
         .lines()
-        .find(|line| line.contains("dadas"))
+        .find(|line| line.contains("example"))
         .expect("heading line present");
     let indent = spaces_after_prefix(heading_line, '│');
     assert_eq!(

@@ -1,6 +1,71 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
+    pub(in crate::renderer::event) fn push_styled_inline_atom(
+        &mut self,
+        text: &str,
+        style: &AnsiStyle,
+        terminal_width: usize,
+    ) {
+        if !self.config.is_text_wrapping_enabled() {
+            self.output
+                .push_str(&style.apply(text, self.config.no_colors));
+            self.commit_pending_heading_placeholder_if_content();
+            return;
+        }
+
+        let wrap_mode = self.config.text_wrap_mode();
+        let mut remaining = text.to_string();
+        while !remaining.is_empty() {
+            let current_line = self
+                .output
+                .rfind('\n')
+                .map_or(self.output.as_str(), |index| &self.output[index + 1..]);
+            let current_line_width = display_width(&strip_ansi(current_line));
+            let available = terminal_width.saturating_sub(current_line_width);
+            if available == 0 {
+                if current_line_width > self.compute_line_start_context_width() {
+                    self.push_newline_with_context();
+                    continue;
+                }
+                let style_text = style.apply(&remaining, self.config.no_colors);
+                self.output.push_str(&style_text);
+                break;
+            }
+
+            let indent = self
+                .compute_line_start_context_width()
+                .min(current_line_width);
+            let has_line_content = current_line_width > indent;
+            if matches!(wrap_mode, WrapMode::Word)
+                && display_width(&remaining) > available
+                && has_line_content
+            {
+                self.push_newline_with_context();
+                continue;
+            }
+
+            if display_width(&remaining) <= available {
+                self.output
+                    .push_str(&style.apply(&remaining, self.config.no_colors));
+                break;
+            }
+
+            let (chunk, rest) = self.take_prefix_by_width(&remaining, available);
+            self.output
+                .push_str(&style.apply(&chunk, self.config.no_colors));
+            if rest.len() >= remaining.len() || rest.is_empty() {
+                break;
+            }
+            remaining = rest;
+            if !remaining.is_empty() {
+                self.push_newline_with_context();
+            }
+        }
+
+        self.commit_pending_heading_placeholder_if_content();
+    }
+
     pub(in crate::renderer::event) fn reset_explicit_blank_line_streak(&mut self) {
         self.explicit_blank_line_streak = 0;
     }

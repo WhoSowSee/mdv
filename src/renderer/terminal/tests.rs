@@ -123,3 +123,44 @@ fn pager_render_preserves_callout_layout_with_source_metadata() {
         assert!(pager_render.source.source_lines.contains(&Some(3)));
     }
 }
+
+#[test]
+fn pager_render_preserves_display_math_geometry_and_source_line() {
+    let mut config = Config {
+        cols: Some(40),
+        no_colors: true,
+        ..Config::default()
+    };
+    config.code_block_style.style = crate::cli::CodeBlockStyle::Simple;
+    config.math_block_style = crate::cli::MathBlockStyle::Simple;
+    let mut processor_config = config.clone();
+    processor_config.line_numbers = Some(LineNumberOptions {
+        target: LineNumberTarget::Source,
+        separator: false,
+    });
+    let document = MarkdownProcessor::new(&processor_config)
+        .with_extended_math(true)
+        .parse_document("\\[\n\\frac{a+b}{c+d}\n\\]\n")
+        .unwrap();
+    let rendered = TerminalRenderer::new(&config)
+        .unwrap()
+        .render_document_for_pager(document)
+        .unwrap();
+
+    for view in [&rendered.unnumbered, &rendered.rendered, &rendered.source] {
+        assert!(view.output.contains("a+b") && view.output.contains("c+d"));
+        assert!(view.output.contains("───"), "{}", view.output);
+        assert!(!view.output.contains('\u{2062}'));
+        assert_eq!(view.source_lines.len(), view.output.lines().count());
+    }
+    assert_eq!(
+        rendered
+            .source
+            .source_lines
+            .iter()
+            .flatten()
+            .copied()
+            .collect::<Vec<_>>(),
+        [1]
+    );
+}

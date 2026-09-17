@@ -1,4 +1,5 @@
 use super::*;
+use crate::math::convert_html_script;
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn render_html_text(&mut self, text: &str, context: HtmlContext) -> Result<()> {
@@ -14,7 +15,7 @@ impl<'a> EventRenderer<'a> {
 
         let text = context
             .script
-            .map(|script| convert_script(&text, script))
+            .map(|script| convert_html_script(&text, script))
             .unwrap_or(text);
 
         if context.highlighted {

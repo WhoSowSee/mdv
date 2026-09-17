@@ -1,4 +1,5 @@
 use super::*;
+use unicode_segmentation::UnicodeSegmentation;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn render_code_block_border(&self) -> String {
@@ -25,8 +26,8 @@ impl<'a> EventRenderer<'a> {
         }
     }
 
-    /// Helper: take a visible-width prefix from `s` that fits into `max_width`.
-    /// Returns (prefix, rest). Uses display width and is unicode-safe.
+    /// Returns a prefix and remainder without splitting grapheme clusters.
+    /// A first cluster wider than a positive limit is consumed intact.
     pub(in crate::renderer::event) fn take_prefix_by_width(
         &self,
         s: &str,
@@ -36,19 +37,16 @@ impl<'a> EventRenderer<'a> {
             return (String::new(), s.to_string());
         }
 
-        let mut taken = String::new();
         let mut width = 0usize;
         let mut split_idx = 0usize;
-        for (i, ch) in s.char_indices() {
-            let ch_w = crate::utils::display_width(&ch.to_string());
-            if width + ch_w > max_width {
+        for (i, grapheme) in s.grapheme_indices(true) {
+            let grapheme_width = display_width(grapheme);
+            if width + grapheme_width > max_width && split_idx > 0 {
                 break;
             }
-            taken.push(ch);
-            width += ch_w;
-            split_idx = i + ch.len_utf8();
+            width += grapheme_width;
+            split_idx = i + grapheme.len();
         }
-        let rest = s.get(split_idx..).unwrap_or("").to_string();
-        (taken, rest)
+        (s[..split_idx].to_string(), s[split_idx..].to_string())
     }
 }

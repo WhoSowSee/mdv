@@ -12,6 +12,8 @@ h4: blue
 h5: magenta
 h6: cyan
 code: "ansi(102)"
+math: "ansi(110)"
+math_border: "ansi(66)"
 quote: "ansi(109)"
 link: blue
 emphasis: yellow

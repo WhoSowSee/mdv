@@ -40,7 +40,7 @@ Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [l
 | [code_blocks.rs](../../src/cli/code_blocks.rs) | Code-block style and wrap-indent types. |
 | [commands.rs](../../src/cli/commands.rs) | CLI subcommands. |
 | [help.rs](../../src/cli/help.rs) | Long-help constants. |
-| [layout.rs](../../src/cli/layout.rs) | Text/table wrapping and heading-layout enums. |
+| [layout.rs](../../src/cli/layout.rs) | Text/table wrapping, math-block style, and heading-layout enums. |
 | [line_numbers.rs](../../src/cli/line_numbers.rs) | Line-number targets and options. |
 | [links.rs](../../src/cli/links.rs) | Link and footnote enums. |
 | [margins.rs](../../src/cli/margins.rs) | Horizontal-margin parser and serde support. |
@@ -69,6 +69,9 @@ Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/co
 | [detection.rs](../../src/markdown/detection.rs) | Code-language extraction and detection. |
 | [events.rs](../../src/markdown/events.rs) | Event postprocessing. |
 | [fences.rs](../../src/markdown/fences.rs) | Tab-indented fence normalization. |
+| [math.rs](../../src/markdown/math.rs) | Extended terminal-math delimiter scanner. |
+| [math/dollars.rs](../../src/markdown/math/dollars.rs) | Dollar-math discovery and placeholder protection inside Markdown tables. |
+| [math/protected.rs](../../src/markdown/math/protected.rs) | Code, HTML, attribute, link, container, and existing-math ranges. |
 | [parsing.rs](../../src/markdown/parsing.rs) | Constructor, first-line YAML extraction, parsing, and preprocessing order. |
 | [raw_html.rs](../../src/markdown/raw_html.rs) | Raw-text HTML event coalescing. |
 | [source_lines.rs](../../src/markdown/source_lines.rs) | Source-line maps and markers. |
@@ -81,9 +84,24 @@ Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/co
 | File | Responsibility |
 |---|---|
 | [parser.rs](../../src/math/parser.rs) | Recursive math parser. |
-| [rendering.rs](../../src/math/rendering.rs) | Fractions, roots, matrices, and alignment. |
-| [scripts.rs](../../src/math/scripts.rs) | Superscripts, subscripts, delimiters, and literal commands. |
-| [symbols.rs](../../src/math/symbols.rs) | Command-to-symbol table. |
+| [ast.rs](../../src/math/ast.rs) | Math tree and diagnostics. |
+| [diagnostics.rs](../../src/math/diagnostics.rs) | Warning deduplication for one document render. |
+| [fonts.rs](../../src/math/fonts.rs) | Unicode math alphabet mappings. |
+| [parser/commands.rs](../../src/math/parser/commands.rs) | Commands and delimiters. |
+| [parser/environment.rs](../../src/math/parser/environment.rs) | Nested environments and cells. |
+| [parser/input.rs](../../src/math/parser/input.rs) | Cursor movement, whitespace, and balanced raw input. |
+| [layout.rs](../../src/math/layout.rs) | Baseline-aware terminal geometry. |
+| [layout/decorations.rs](../../src/math/layout/decorations.rs) | Accents, annotations, and braces. |
+| [layout/environment.rs](../../src/math/layout/environment.rs) | Matrix and alignment layout. |
+| [layout/scripts.rs](../../src/math/layout/scripts.rs) | Scripts and operator-limit layout. |
+| [layout/structures.rs](../../src/math/layout/structures.rs) | Grouped roots and binomials. |
+| [rendering.rs](../../src/math/rendering.rs) | Inline/display output. |
+| [rendering/boundaries.rs](../../src/math/rendering/boundaries.rs) | AST operator boundaries and fraction grouping. |
+| [rendering/fractions.rs](../../src/math/rendering/fractions.rs) | Compact fractions and complete outer grouping. |
+| [rendering/wrapping.rs](../../src/math/rendering/wrapping.rs) | Flat-expression word and grapheme wrapping. |
+| [scripts.rs](../../src/math/scripts.rs) | Atomic superscript and subscript conversion. |
+| [symbols.rs](../../src/math/symbols.rs) | Command, delimiter, operator, spacing, literal, and `mathbb` tables. |
+| [tests.rs](../../src/math/tests.rs) | Parser and layout contracts. |
 
 ## `src/interactive/`
 
@@ -233,7 +251,8 @@ Files: [blockquotes.rs](../../src/renderer/event/html/blockquotes.rs), [blocks.r
 | [event/definition_lists.rs](../../src/renderer/event/definition_lists.rs) | Definition-list state and handlers. |
 | [event/headings.rs](../../src/renderer/event/headings.rs) | Heading layouts and smart indentation. |
 | [event/images.rs](../../src/renderer/event/images.rs) | Markdown media markers. |
-| [event/math.rs](../../src/renderer/event/math.rs) | Math events and blocks. |
+| [event/math.rs](../../src/renderer/event/math.rs) | Math events and shared rendering state. |
+| [event/math/block.rs](../../src/renderer/event/math/block.rs) | Math-only basic, simple, and pretty containers. |
 | [event/misc.rs](../../src/renderer/event/misc.rs) | HTML bridge, rules, footnote references, and task markers. |
 | [event/soft_breaks.rs](../../src/renderer/event/soft_breaks.rs) | Soft-break and reflow behavior. |
 | [event/spacing.rs](../../src/renderer/event/spacing.rs) | Prepared block-spacing sequence. |
@@ -250,6 +269,7 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Layout: [layout.rs](../../tests/layout.rs) and files under [tests/layout/](../../tests/layout/headings.rs).
 - Links and tables: [links_tables.rs](../../tests/links_tables.rs) and files under [tests/links_tables/](../../tests/links_tables/basic.rs).
 - Standalone groups: [definition_lists.rs](../../tests/definition_lists.rs), [front_matter.rs](../../tests/front_matter.rs), [html_table_content.rs](../../tests/html_table_content.rs), [inline_styles.rs](../../tests/inline_styles.rs), [line_numbers.rs](../../tests/line_numbers.rs), [math.rs](../../tests/math.rs), [media.rs](../../tests/media.rs), [syntax_palette.rs](../../tests/syntax_palette.rs), and [visibility.rs](../../tests/visibility.rs).
+- Math contexts: [math/contexts.rs](../../tests/math/contexts.rs).
 
 ### Complete nested integration-file list
 

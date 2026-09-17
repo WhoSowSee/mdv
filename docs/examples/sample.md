@@ -260,6 +260,15 @@ Term Two
 
 Inline math style using delimiters: $E = mc^2$.
 
+Extended inline delimiter: \(\lVert x\rVert_2 = \sqrt{\sum_i x_i^2}\).
+
+Display fraction and matrix:
+
+\[
+x=\frac{a+b}{c+d},\qquad
+A=\begin{bmatrix}1&2\\3&4\end{bmatrix}
+\]
+
 Fenced math block:
 
 ```math

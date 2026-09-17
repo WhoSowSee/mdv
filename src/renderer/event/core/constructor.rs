@@ -6,12 +6,14 @@ impl<'a> EventRenderer<'a> {
         theme: &'a Theme,
         syntax_set: &'a SyntaxSet,
         code_theme: &'a CodeHighlightTheme,
+        math_diagnostics: Rc<crate::math::MathDiagnostics>,
     ) -> Self {
         Self {
             config,
             theme,
             syntax_set,
             code_theme,
+            math_diagnostics,
             output: String::new(),
             current_indent: 0,
             blockquote_level: 0,
@@ -33,6 +35,7 @@ impl<'a> EventRenderer<'a> {
             document_links: Vec::new(),
             in_code_block: false,
             code_block_content: String::new(),
+            math_code_block_source_line: None,
             code_block_language: None,
             max_code_line_number_width: 0,
             plaintext_code_block_depth: 0,

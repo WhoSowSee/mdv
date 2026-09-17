@@ -38,6 +38,8 @@ pager_status_bar_transparent: true
 h1: "#ff5577"
 h2: "#ffaa33"
 link: "#66ccff"
+math: "#66ccff"
+math_border: "#6699cc"
 emphasis: "#ffaa33"
 background: "#1c1c1c"
 

@@ -4,7 +4,7 @@ use super::{
     Alignment, CowStr, EventRenderer, HeadingLevel, HtmlBlockBuffer, LinkStyle, Result, TableState,
     ThemeElement, create_style,
 };
-use crate::math::{ScriptKind, convert_script};
+use crate::math::ScriptKind;
 use crate::utils::{display_width, escape_html_text, strip_ansi};
 use ego_tree::NodeRef;
 use scraper::{ElementRef, Html, Node as HtmlNode};

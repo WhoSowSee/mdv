@@ -29,6 +29,8 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
         ThemeElement::H5 => &theme.h5,
         ThemeElement::H6 => &theme.h6,
         ThemeElement::Code => &theme.code,
+        ThemeElement::Math => theme.math_color(),
+        ThemeElement::MathBorder => theme.math_border_color(),
         ThemeElement::Quote => &theme.quote,
         ThemeElement::Link => &theme.link,
         ThemeElement::Emphasis => &theme.emphasis,

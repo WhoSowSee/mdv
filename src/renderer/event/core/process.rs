@@ -80,6 +80,15 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn push_source_line_marker(&mut self, source_line: usize) {
+        if self.in_code_block
+            && self
+                .code_block_language
+                .as_deref()
+                .is_some_and(crate::math::is_math_language_hint)
+        {
+            self.math_code_block_source_line.get_or_insert(source_line);
+            return;
+        }
         let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
         if self.in_code_block {
             self.code_block_content.push_str(&marker);
@@ -119,5 +128,20 @@ impl<'a> EventRenderer<'a> {
 
         let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
         self.output.insert_str(line_start, &marker);
+    }
+
+    pub(in crate::renderer::event) fn take_pending_source_line_marker(&mut self) -> Option<String> {
+        let line_start = self
+            .output
+            .rfind('\n')
+            .map_or(0, |index| index.saturating_add(1));
+        let (line, source_line) =
+            crate::renderer::line_numbers::strip_internal_markers(&self.output[line_start..]);
+        let line = strip_ansi(&line);
+        let source_line = source_line.filter(|_| !Self::line_has_visible_text(&line))?;
+        self.output.truncate(line_start);
+        Some(crate::renderer::line_numbers::encode_internal_marker(
+            source_line,
+        ))
     }
 }

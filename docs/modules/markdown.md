@@ -42,6 +42,7 @@ flowchart LR
 7. Admonition syntax becomes a callout blockquote.
 8. Callout markers are separated from setext headings.
 9. Blockquote prefixes and blank lines inside quotes are normalized.
+10. For terminal rendering, `\(…\)` and `\[…\]` are normalized into protected math ranges after code, HTML, and link destinations are excluded.
 
 Every transformation goes through `source_lines::apply_transform`, keeping inserted and removed lines synchronized with the source-line map.
 
@@ -53,6 +54,9 @@ Every transformation goes through `source_lines::apply_transform`, keeping inser
 | [src/markdown/admonitions.rs](../../src/markdown/admonitions.rs) | Convert `:::note`, `:::{note} Title`, and `!!! note` to a compatible callout marker. |
 | [src/markdown/blockquotes.rs](../../src/markdown/blockquotes.rs) | Parse `>` prefixes, nesting, and explicit blank lines inside blockquotes. |
 | [src/markdown/fences.rs](../../src/markdown/fences.rs) | Find fence markers and normalize tab-indented fences without losing inner indentation. |
+| [src/markdown/math.rs](../../src/markdown/math.rs) | Recognize extended TeX delimiters outside protected Markdown ranges. |
+| [src/markdown/math/dollars.rs](../../src/markdown/math/dollars.rs) | Protect table separators inside dollar-delimited formulas. |
+| [src/markdown/math/protected.rs](../../src/markdown/math/protected.rs) | Build protected ranges from Markdown offset events. |
 | [src/markdown/task_lists.rs](../../src/markdown/task_lists.rs) | Terminate task-list blocks and normalize alternative checkbox spelling. |
 | [src/markdown/structure.rs](../../src/markdown/structure.rs) | Recognize list, callout, and setext structural lines. |
 | [src/markdown/events.rs](../../src/markdown/events.rs) | Postprocess offset events, source markers, and special-case indented code. |
@@ -80,6 +84,16 @@ A marker without the required space before a custom title does not override the 
 
 `events.rs` can also demote a plain indented block to text when the original structure identifies it as a paragraph. The decision uses source byte ranges, not only the event kind.
 
+## Extended math delimiters
+
+Terminal parsing accepts the dollar delimiters implemented by `pulldown-cmark` plus `\(…\)` and `\[…\]`. The scanner uses offset events to exclude inline/fenced code, raw HTML, heading attributes, inline link destinations, autolinks, and reference destinations. An unclosed delimiter remains ordinary Markdown. CLI HTML export disables this normalization so its existing output contract remains unchanged.
+
+Library callers opt into the same terminal-specific normalization with `MarkdownProcessor::with_extended_math(true)`; `MarkdownProcessor::new` alone keeps the original delimiter behavior because the processor does not know which output backend will consume its events.
+
+Collision-checked internal placeholders protect dollar signs, table pipes, and delimiter-edge whitespace until parsing completes. They are restored in math events and in text/code/HTML events when Markdown does not recognize a formula. The math parser therefore receives the original TeX rather than Markdown escape characters. Math pipes are protected with table parsing disabled so they cannot prevent header recognition. Display delimiter lines are protected while explicit blank-line preprocessing runs, so TeX `\\` row separators remain part of the formula. Every transformation still passes through the source-line remapper.
+
+Protected and container ranges come from one offset event stream. Reference-definition spans come from that same parser, protecting only definitions that it actually recognized and leaving following prose available for math normalization.
+
 ## Source-line markers
 
 Source numbering is enabled only for `LineNumberTarget::Source`. In this mode:
@@ -89,6 +103,7 @@ Source numbering is enabled only for `LineNumberTarget::Source`. In this mode:
 - a line inserted during preprocessing receives `None`;
 - an invisible internal marker is inserted before an event;
 - skipped blank source lines receive their own marker;
+- fenced math keeps its first source-line marker separate from the TeX buffer;
 - `renderer/line_numbers.rs` decodes markers and removes them from output.
 
 Markers must never reach ANSI or HTML output or contribute to visible width.

@@ -1,195 +1,180 @@
-use super::code::CodeBlockRenderInput;
-use super::{CodeBlockStyle, CowStr, EventRenderer, Result, ThemeElement, WrapMode, create_style};
+use super::{CowStr, EventRenderer, MathBlockStyle, Result, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
-use crate::math::{MathMode, render_math};
+use crate::math::{MathMode, RenderedMath, render_math_detailed, render_table_math_detailed};
+use crate::utils::display_width;
+
+pub(in crate::renderer::event) const PROTECTED_MATH_LAYOUT_MARKER: &str = "\u{2062}\u{2062}";
+
+pub(in crate::renderer::event) fn strip_protected_math_layout(text: &str) -> String {
+    text.replace(PROTECTED_MATH_LAYOUT_MARKER, "")
+}
+
+pub(in crate::renderer::event) fn has_protected_math_layout(text: &str) -> bool {
+    text.contains(PROTECTED_MATH_LAYOUT_MARKER)
+}
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_inline_math(&mut self, math: CowStr) -> Result<()> {
-        let rendered = render_math(math.as_ref(), MathMode::Inline);
+        if self.in_link {
+            let rendered = self.render_math(math.as_ref(), MathMode::Inline);
+            if rendered.trim().is_empty() {
+                return Ok(());
+            }
+            self.current_link_text.push_str(&rendered);
+            return Ok(());
+        }
+
+        if self.pending_callout_label_override {
+            let rendered = self.render_math(math.as_ref(), MathMode::Inline);
+            self.pending_callout_label_buffer.push_str(&rendered);
+            return Ok(());
+        }
+
+        if self.table_state.is_some() {
+            let rendered = self.render_table_math(math.as_ref(), false);
+            self.append_math_to_table(&rendered);
+            return Ok(());
+        }
+
+        let rendered = self.render_math(math.as_ref(), MathMode::Inline);
         if rendered.trim().is_empty() {
             return Ok(());
         }
 
-        let style = create_style(self.theme, ThemeElement::Code);
-        let styled = style.apply(&rendered, self.config.no_colors);
-
-        if let Some(ref mut table) = self.table_state {
-            table.current_cell.push_str(&styled);
-            return Ok(());
-        }
-
+        let style = create_style(self.theme, ThemeElement::Math);
         self.note_paragraph_content();
-
-        if !self.config.is_text_wrapping_enabled() {
-            self.output.push_str(&styled);
-            self.commit_pending_heading_placeholder_if_content();
-            return Ok(());
-        }
-
         let terminal_width = self.effective_text_width();
-        let wrap_mode = self.config.text_wrap_mode();
-
-        let mut remaining = rendered.clone();
-
-        while !remaining.is_empty() {
-            let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-                crate::utils::strip_ansi(&self.output[last_newline + 1..])
-            } else {
-                crate::utils::strip_ansi(&self.output)
-            };
-            let current_line_width = crate::utils::display_width(&current_line_clean);
-            let available = terminal_width.saturating_sub(current_line_width);
-
-            if available == 0 {
-                self.push_newline_with_context();
-                continue;
-            }
-
-            let line_indent_width = self.compute_line_start_context_width();
-            let effective_indent = line_indent_width.min(current_line_width);
-            let has_line_content = current_line_width > effective_indent;
-            let remaining_width = crate::utils::display_width(&remaining);
-
-            match wrap_mode {
-                WrapMode::Word => {
-                    if remaining_width <= available {
-                        let styled_chunk = style.apply(&remaining, self.config.no_colors);
-                        self.output.push_str(&styled_chunk);
-                        remaining.clear();
-                    } else if has_line_content {
-                        self.push_newline_with_context();
-                    } else {
-                        let (chunk, rest) = self.take_prefix_by_width(&remaining, available);
-                        let styled_chunk = style.apply(&chunk, self.config.no_colors);
-                        self.output.push_str(&styled_chunk);
-                        remaining = rest;
-                        if !remaining.is_empty() {
-                            self.push_newline_with_context();
-                        }
-                    }
-                }
-                WrapMode::Character | WrapMode::None => {
-                    let (chunk, rest) = self.take_prefix_by_width(&remaining, available);
-                    let styled_chunk = style.apply(&chunk, self.config.no_colors);
-                    self.output.push_str(&styled_chunk);
-                    remaining = rest;
-                    if !remaining.is_empty() {
-                        self.push_newline_with_context();
-                    }
-                }
-            }
-        }
-
-        self.commit_pending_heading_placeholder_if_content();
+        self.push_styled_inline_atom(&rendered, &style, terminal_width);
         Ok(())
     }
 
     pub(super) fn handle_display_math(&mut self, math: CowStr) -> Result<()> {
         if self.table_state.is_some() {
-            let inline = render_math(math.as_ref(), MathMode::Inline);
-            if !inline.trim().is_empty() {
-                let style = create_style(self.theme, ThemeElement::Code);
-                let styled = style.apply(&inline, self.config.no_colors);
-                if let Some(ref mut table) = self.table_state {
-                    table.current_cell.push_str(&styled);
-                }
-            }
+            let rendered = self.render_table_math(math.as_ref(), true);
+            self.append_math_to_table(&rendered);
             return Ok(());
         }
 
+        let source_marker = self.take_pending_source_line_marker();
+
         if let Some(start) = self.current_paragraph_start
             && !self.current_paragraph_has_content
+            && start <= self.output.len()
+            && !Self::line_has_visible_text(&crate::utils::strip_ansi(
+                &crate::renderer::line_numbers::strip_internal_markers(&self.output[start..]).0,
+            ))
         {
-            if start <= self.output.len() {
-                self.output.truncate(start);
-            }
+            self.output.truncate(start);
             self.current_paragraph_has_leading_break = false;
             self.suppress_next_paragraph_break = true;
         }
 
-        let rendered = render_math(math.as_ref(), MathMode::Display);
-        self.render_math_block(&rendered, None)
+        let rendered = self.render_math(math.as_ref(), MathMode::Display);
+        self.render_math_block(&rendered, source_marker.as_deref());
+        Ok(())
     }
 
     pub(super) fn handle_math_code_block(
         &mut self,
         raw_math: &str,
-        language_hint: Option<&str>,
+        source_marker: Option<&str>,
     ) -> Result<()> {
         if self.table_state.is_some() {
-            let inline = render_math(raw_math, MathMode::Inline);
-            if !inline.trim().is_empty() {
-                let style = create_style(self.theme, ThemeElement::Code);
-                let styled = style.apply(&inline, self.config.no_colors);
-                if let Some(ref mut table) = self.table_state {
-                    table.current_cell.push_str(&styled);
-                }
-            }
+            let rendered = self.render_table_math(raw_math, true);
+            self.append_math_to_table(&rendered);
             return Ok(());
         }
 
-        let rendered = render_math(raw_math, MathMode::Display);
-        let (hint, base_label) = match language_hint {
-            Some(hint) if hint.eq_ignore_ascii_case("latex") => (hint, "LaTeX"),
-            Some(hint) if hint.eq_ignore_ascii_case("tex") => (hint, "TeX"),
-            Some(hint) => (hint, "Math"),
-            None => ("math", "Math"),
-        };
-        let label = self.format_code_block_label(hint, base_label);
-        self.render_math_block(&rendered, label.as_deref())
+        let rendered = self.render_math(raw_math, MathMode::Display);
+        self.render_math_block(&rendered, source_marker);
+        Ok(())
     }
 
-    fn render_math_block(&mut self, rendered: &str, label: Option<&str>) -> Result<()> {
+    fn render_math_block(&mut self, rendered: &str, source_marker: Option<&str>) {
         let mut rendered = rendered.trim_end().to_string();
         if rendered.trim().is_empty() {
             if !self.config.show_empty_elements {
-                return Ok(());
+                return;
             }
             rendered.clear();
         }
 
-        let style = create_style(self.theme, ThemeElement::Code);
-        let lines: Vec<&str> = if rendered.is_empty() {
-            vec![""]
+        let style = create_style(self.theme, ThemeElement::Math);
+        let styled_lines = if rendered.is_empty() {
+            vec![style.apply("", self.config.no_colors)]
         } else {
-            rendered.lines().collect()
+            rendered
+                .lines()
+                .map(|line| style.apply(line, self.config.no_colors))
+                .collect()
         };
-        let highlighted = lines
-            .iter()
-            .map(|line| style.apply(line, self.config.no_colors))
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        let should_wrap = self.config.is_text_wrapping_enabled();
-        let wrap_mode = self.config.text_wrap_mode();
-        let terminal_width = self.effective_text_width();
-        let render_input = CodeBlockRenderInput::new(
-            &highlighted,
-            label,
-            false,
-            should_wrap,
-            wrap_mode,
-            terminal_width,
-            &rendered,
-        );
 
         let spacing = self.config.block_spacing.spacing(BlockElement::DisplayMath);
         self.ensure_contextual_blank_lines(spacing.top);
-
-        match self.config.code_block_style.style {
-            CodeBlockStyle::Basic => {
-                self.render_code_block_basic(render_input)?;
-            }
-            CodeBlockStyle::Simple => {
-                self.render_code_block_simple(render_input)?;
-            }
-            CodeBlockStyle::Pretty => {
-                self.render_code_block_pretty(render_input)?;
-            }
-        }
-
+        self.render_math_container(&styled_lines, source_marker);
         self.ensure_contextual_blank_lines(spacing.bottom);
         self.commit_pending_heading_placeholder_if_content();
-        Ok(())
+    }
+
+    fn append_math_to_table(&mut self, rendered: &str) {
+        if !rendered.trim().is_empty() {
+            let style = create_style(self.theme, ThemeElement::Math);
+            let styled = style.apply(rendered, self.config.no_colors);
+            if let Some(table) = self.table_state.as_mut() {
+                table.current_cell.push_str(&styled);
+            }
+        }
+    }
+
+    fn render_math(&self, source: &str, mode: MathMode) -> String {
+        let RenderedMath {
+            mut output,
+            diagnostics,
+            structured,
+        } = render_math_detailed(source, mode);
+        self.math_diagnostics.report(source, &diagnostics);
+        if mode == MathMode::Display {
+            let available = self.math_content_width();
+            let max_width = output.lines().map(display_width).max().unwrap_or(0);
+            if max_width > available && !structured && !output.contains('\n') {
+                output =
+                    crate::math::wrap_flat_math(&output, available, self.config.text_wrap_mode());
+            }
+            let remaining_width = output.lines().map(display_width).max().unwrap_or(0);
+            if remaining_width > available && self.config.is_text_wrapping_enabled() {
+                self.math_diagnostics
+                    .report_overflow(source, remaining_width, available);
+            }
+        }
+        output
+    }
+
+    fn render_table_math(&self, source: &str, force_display: bool) -> String {
+        let RenderedMath {
+            output,
+            diagnostics,
+            ..
+        } = render_table_math_detailed(source, force_display);
+        self.math_diagnostics.report(source, &diagnostics);
+        output
+    }
+
+    fn math_content_width(&self) -> usize {
+        let decoration = match self.config.math_block_style {
+            MathBlockStyle::Basic | MathBlockStyle::Simple => 2,
+            MathBlockStyle::Pretty => 4,
+        };
+        let context_width = if matches!(self.config.math_block_style, MathBlockStyle::Pretty)
+            && self.callout_is_pretty()
+        {
+            0
+        } else {
+            self.compute_indented_block_context_width()
+        };
+        self.effective_text_width()
+            .saturating_sub(context_width + decoration)
+            .max(1)
     }
 }
+
+mod block;

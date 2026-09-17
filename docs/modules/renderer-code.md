@@ -87,13 +87,41 @@ Math rendering does not depend on `syntect`, although fenced blocks with `math`,
 | File | Responsibility |
 |---|---|
 | [src/math.rs](../../src/math.rs) | `MathMode`, `render_math`, language-hint detection, and parser facade. |
-| [src/math/parser.rs](../../src/math/parser.rs) | Recursive parser for commands, groups, scripts, delimiters, and environments. |
-| [src/math/rendering.rs](../../src/math/rendering.rs) | Fractions, roots, binomials, align/matrix environments, and output normalization. |
-| [src/math/scripts.rs](../../src/math/scripts.rs) | Unicode superscript/subscript, spacing, delimiters, and `mathbb`. |
-| [src/math/symbols.rs](../../src/math/symbols.rs) | LaTeX-command-to-Unicode-symbol table. |
+| [src/math/ast.rs](../../src/math/ast.rs) | Structured math nodes and parser diagnostics. |
+| [src/math/diagnostics.rs](../../src/math/diagnostics.rs) | Warning deduplication shared by all layouts of one document render. |
+| [src/math/fonts.rs](../../src/math/fonts.rs) | Unicode script, Fraktur, bold Latin, and bold Greek alphabets. |
+| [src/math/parser.rs](../../src/math/parser.rs) | Recursive groups, scripts, arguments, and parser limits. |
+| [src/math/parser/commands.rs](../../src/math/parser/commands.rs) | TeX commands, delimiters, accents, and annotations. |
+| [src/math/parser/environment.rs](../../src/math/parser/environment.rs) | Nested environments and depth-aware row/cell splitting. |
+| [src/math/parser/input.rs](../../src/math/parser/input.rs) | Cursor movement, whitespace modes, comments, and balanced raw input. |
+| [src/math/layout.rs](../../src/math/layout.rs) | Baseline-aware terminal boxes and horizontal/vertical composition. |
+| [src/math/layout/decorations.rs](../../src/math/layout/decorations.rs) | Accents, annotations, and braces. |
+| [src/math/layout/environment.rs](../../src/math/layout/environment.rs) | Matrices, aligned rows, cases, and array columns. |
+| [src/math/layout/scripts.rs](../../src/math/layout/scripts.rs) | Compact scripts plus side and centered operator limits. |
+| [src/math/layout/structures.rs](../../src/math/layout/structures.rs) | Root grouping and vertical binomial layout. |
+| [src/math/rendering.rs](../../src/math/rendering.rs) | Compact inline output and display layout. |
+| [src/math/rendering/boundaries.rs](../../src/math/rendering/boundaries.rs) | AST boundaries for operator spacing and nested-fraction grouping. |
+| [src/math/rendering/fractions.rs](../../src/math/rendering/fractions.rs) | Compact fractions and validation of complete outer parentheses. |
+| [src/math/rendering/wrapping.rs](../../src/math/rendering/wrapping.rs) | Flat-expression wrapping at word or grapheme boundaries. |
+| [src/math/scripts.rs](../../src/math/scripts.rs) | Atomic Unicode superscript/subscript conversion. |
+| [src/math/symbols.rs](../../src/math/symbols.rs) | Commands, delimiters, operators, spacing, literals, and `mathbb` symbols. |
 | [event/math.rs](../../src/renderer/event/math.rs) | Inline/display events and fenced math blocks in the current renderer context. |
 
-The math parser intentionally produces a terminal text approximation rather than a full TeX layout. Display math receives block spacing; inline math continues the current line.
+The parser builds a math tree before rendering. Inline math becomes one compact Unicode sequence; display math becomes a `MathBox` with a line buffer, width, and baseline (its height is the line count), allowing fractions and matrix cells to compose without losing alignment. Ordinary source newlines collapse to spaces and an explicit TeX `\\` creates a mathematical row.
+
+The implementation covers fractions, roots with explicit parenthesized scope, compact scripts, common symbols and operators, `operatorname*` limits, Unicode math alphabets, vertical binomials, accents, `overset`/`underset`, braces, `align`, `gather`, matrices, `cases`, and basic `array` column specifications. Unsupported commands and environments retain their original TeX. Structural errors retain the entire original formula and produce a deduplicated warning.
+
+Fonts apply to supported AST text and symbol nodes before composition; unsupported source remains literal, including physical-line whitespace. Mathematical scripts convert atomically and use a parenthesized form when a complete expression cannot become Unicode scripts. HTML `sup`/`sub` uses a separate conversion that retains spaces. Inline and display accents share the single-grapheme, single-column predicate.
+
+Ordinary-line alphabet glyphs, relation symbols, arrows, and fraction slashes cannot qualify as Unicode script conversions. Punctuation can accompany converted characters, but a punctuation-only script keeps its explicit marker. Fraction arguments with nested fractions retain an outer group unless one balanced pair encloses the entire rendered argument.
+
+Named operators retain an AST body inside a `Compact` node, which keeps their original inline representation in display layout. A `mathbb` argument containing unsupported source also retains a `Compact` AST body; only fully supported arguments may be reduced to a symbol or plain text. This preserves unsupported descendants through nested wrappers and outer fonts.
+
+Flat display expressions can wrap by words or grapheme clusters. Structured layouts remain indivisible even when their compact result has one line; if they exceed the available width, mdv preserves their geometry and reports the overflow. Math lines inside pretty callouts carry temporary metadata at the boundary between the container prefix and mathematical content. Callout frames containing these lines preserve protection at every nesting level. Event-renderer finalization removes the metadata after all framing completes. `math_block_style` selects the math-only `basic`, `simple`, or `pretty` container and is unrelated to code block styles and code-line numbering.
+
+Fenced math receives clean TeX and separate source-line metadata. Its first content row receives the formula's source marker; pretty borders and subsequent decorative rows remain unnumbered. `TerminalRenderer::render` creates a fresh warning set, while `render_for_pager` shares one set across all three layouts and repeated gutter calculations. Nested code, HTML-table, and footnote renderers share the same set. No global warning cache survives a document refresh.
+
+TeX operators remain distinct from ordinary text in the tree. This lets display layout center limits under `operatorname*`, `sum`, `prod`, `lim`, `min`, and `max`, while an ordinary subscript stays compact or beside its base. Operator boundaries also supply readable spacing before fractions and neighboring operands. Markdown table cells keep inline formulas compact, but `\displaystyle` and display events use the same structured layout as other display math.
 
 ## Invariants
 

@@ -72,6 +72,8 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         "h5" => theme.h5 = parse_color_spec(value)?,
         "h6" => theme.h6 = parse_color_spec(value)?,
         "code" => theme.code = parse_color_spec(value)?,
+        "math" => theme.math = parse_optional_color_spec(value)?,
+        "math_border" | "mathborder" => theme.math_border = parse_optional_color_spec(value)?,
         "quote" => theme.quote = parse_color_spec(value)?,
         "link" => theme.link = parse_color_spec(value)?,
         "emphasis" => theme.emphasis = parse_color_spec(value)?,

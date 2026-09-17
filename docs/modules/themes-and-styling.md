@@ -38,7 +38,7 @@ A complete theme contains:
 
 - general `text` and `text_light` colors plus independent line-number colors;
 - `h1` through `h6`;
-- code, quote, link, and inline semantic colors;
+- independent code, math content, math border, quote, link, and inline semantic colors;
 - optional foreground and background for combined inline styles;
 - document background and border colors plus optional front matter title, key, value, and border colors;
 - list, table, error, and warning colors;
@@ -58,6 +58,8 @@ A complete theme contains:
 User themes are read from `<config_dir>/themes/*.yaml|*.yml` in lexical order. `extends` may refer to an embedded theme or an already loaded user theme. Unspecified fields inherit from the base; without `extends`, the base is `Theme::default()`.
 
 Unlike the partial user schema, an embedded theme must define every required color, its description, syntax palette, and status-bar transparency flag.
+
+`math` and `math_border` are optional in user themes for compatibility. When omitted they inherit from the selected base theme; legacy serialized themes fall back to `text` and `border`. All embedded themes define visibly distinct math colors.
 
 ## Application order
 

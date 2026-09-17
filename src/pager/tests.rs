@@ -6,7 +6,7 @@ use tempfile::TempDir;
 
 #[test]
 fn editor_key_accepts_supported_layouts_without_control_modifiers() {
-    for character in ['E', 'e', 'У', 'у'] {
+    for character in ['E', 'e', '\u{0423}', '\u{0443}'] {
         let event = Event::Key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
 
         assert!(is_editor_key(&event), "character: {character}");

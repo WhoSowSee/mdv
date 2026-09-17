@@ -71,6 +71,8 @@ content is removed after `comfy-table` has positioned the borders.
 
 `TableState` accumulates headers, rows, alignments, the current cell, inline URLs, and replacements. At `TagEnd::Table`, this state becomes parameters for the independent `TableRenderer`.
 
+Math events are rendered before the accumulated cell reaches `TableRenderer`. Ordinary inline formulas stay compact; `\displaystyle` and display math retain their multi-line terminal layout, which `comfy-table` treats as explicit cell lines. Math pipes are protected during Markdown parsing and restored before this stage. Outside tables, `math_block_style` controls the display container independently from `code_block_style`.
+
 ## Low-level `TableRenderer`
 
 | File | Responsibility |

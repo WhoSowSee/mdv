@@ -39,6 +39,8 @@ h6: cyan
 
 # Special elements
 code: red
+math: "#66ccff"
+math_border: "#6699cc"
 quote: darkgrey
 link: blue
 emphasis: yellow

@@ -16,9 +16,8 @@ impl<'a> EventRenderer<'a> {
         self.current_line_prefix_for_blockquote_level_with_options(self.blockquote_level, true)
     }
 
-    /// Prefix for fenced/indented code blocks.
-    /// Code blocks should not inherit list continuation indentation.
-    pub(in crate::renderer::event) fn current_code_block_prefix(&self) -> String {
+    /// Prefix for code and math block containers without list continuation indentation.
+    pub(in crate::renderer::event) fn current_indented_block_prefix(&self) -> String {
         self.current_line_prefix_for_blockquote_level_with_options(self.blockquote_level, false)
     }
 
@@ -31,8 +30,8 @@ impl<'a> EventRenderer<'a> {
         self.output.push_str(&prefix);
     }
 
-    pub(in crate::renderer::event) fn push_code_block_indent_for_line_start(&mut self) {
-        let prefix = self.current_code_block_prefix();
+    pub(in crate::renderer::event) fn push_indented_block_prefix(&mut self) {
+        let prefix = self.current_indented_block_prefix();
         self.output.push_str(&prefix);
     }
 
@@ -70,7 +69,7 @@ impl<'a> EventRenderer<'a> {
 
     pub(in crate::renderer::event) fn effective_text_width(&self) -> usize {
         let mut width = self.config.get_content_width();
-        if self.should_reserve_callout_padding() {
+        if self.callout_is_pretty() {
             width = width.saturating_sub(2);
         }
         if self.active_backtick_style.is_some() {

@@ -1,19 +1,60 @@
 use super::*;
+use unicode_segmentation::UnicodeSegmentation;
 
-pub(crate) fn convert_script(text: &str, kind: ScriptKind) -> String {
-    let mut out = String::new();
-    for ch in text.chars() {
-        if let Some(mapped) = map_script_char(ch, kind) {
-            out.push(mapped);
+pub(super) struct ScriptConversion {
+    pub(super) output: String,
+    pub(super) fully_converted: bool,
+}
+
+pub(super) fn convert_script(text: &str, kind: ScriptKind) -> ScriptConversion {
+    let mut converted = String::new();
+    let mut source = String::new();
+    let mut fully_converted = true;
+    let mut has_script_character = false;
+
+    for character in text.chars() {
+        if character.is_whitespace() {
+            continue;
+        }
+        source.push(character);
+        if let Some(mapped) = map_script_char(character, kind) {
+            converted.push(mapped);
+            has_script_character |= mapped != character;
         } else {
-            let marker = match kind {
-                ScriptKind::Sup => "^",
-                ScriptKind::Sub => "_",
-            };
-            return format!("{}({})", marker, text);
+            fully_converted = false;
         }
     }
-    out
+
+    fully_converted &= has_script_character || source.is_empty();
+    if fully_converted {
+        return ScriptConversion {
+            output: converted,
+            fully_converted,
+        };
+    }
+
+    let marker = match kind {
+        ScriptKind::Sup => '^',
+        ScriptKind::Sub => '_',
+    };
+
+    let mut graphemes = source.graphemes(true);
+    let single_grapheme = graphemes.next().is_some() && graphemes.next().is_none();
+    let output = if single_grapheme {
+        format!("{marker}{source}")
+    } else {
+        format!("{marker}({source})")
+    };
+    ScriptConversion {
+        output,
+        fully_converted,
+    }
+}
+
+pub(crate) fn convert_html_script(text: &str, kind: ScriptKind) -> String {
+    text.chars()
+        .map(|character| map_script_char(character, kind).unwrap_or(character))
+        .collect()
 }
 
 pub(super) fn map_script_char(ch: char, kind: ScriptKind) -> Option<char> {
@@ -59,6 +100,8 @@ pub(super) fn map_script_char(ch: char, kind: ScriptKind) -> Option<char> {
             'x' => Some('ˣ'),
             'y' => Some('ʸ'),
             'z' => Some('ᶻ'),
+            '⊤' => Some('ᵀ'),
+            ',' | '.' | ';' | ':' => Some(ch),
             _ => None,
         },
         ScriptKind::Sub => match ch {
@@ -78,6 +121,7 @@ pub(super) fn map_script_char(ch: char, kind: ScriptKind) -> Option<char> {
             '(' => Some('₍'),
             ')' => Some('₎'),
             'a' => Some('ₐ'),
+            'b' => Some('ᵦ'),
             'e' => Some('ₑ'),
             'h' => Some('ₕ'),
             'i' => Some('ᵢ'),
@@ -94,62 +138,8 @@ pub(super) fn map_script_char(ch: char, kind: ScriptKind) -> Option<char> {
             'u' => Some('ᵤ'),
             'v' => Some('ᵥ'),
             'x' => Some('ₓ'),
+            ',' | '.' | ';' | ':' => Some(ch),
             _ => None,
         },
-    }
-}
-
-pub(super) fn literal_command(name: &str) -> Option<&'static str> {
-    match name {
-        "%" => Some("%"),
-        "$" => Some("$"),
-        "#" => Some("#"),
-        "_" => Some("_"),
-        "{" => Some("{"),
-        "}" => Some("}"),
-        "&" => Some("&"),
-        "^" => Some("^"),
-        _ => None,
-    }
-}
-
-pub(super) fn spacing_command(name: &str) -> Option<&'static str> {
-    match name {
-        "," | ";" | ":" | "!" | " " => Some(" "),
-        "quad" => Some("  "),
-        "qquad" => Some("    "),
-        _ => None,
-    }
-}
-
-pub(super) fn delimiter_symbol(name: &str) -> Option<&'static str> {
-    match name {
-        "(" => Some("("),
-        ")" => Some(")"),
-        "[" => Some("["),
-        "]" => Some("]"),
-        "{" => Some("{"),
-        "}" => Some("}"),
-        "|" => Some("|"),
-        "langle" => Some("⟨"),
-        "rangle" => Some("⟩"),
-        "lfloor" => Some("⌊"),
-        "rfloor" => Some("⌋"),
-        "lceil" => Some("⌈"),
-        "rceil" => Some("⌉"),
-        "vert" => Some("|"),
-        "Vert" => Some("‖"),
-        _ => None,
-    }
-}
-
-pub(super) fn mathbb_symbol(letter: &str) -> Option<&'static str> {
-    match letter {
-        "R" => Some("ℝ"),
-        "Z" => Some("ℤ"),
-        "Q" => Some("ℚ"),
-        "C" => Some("ℂ"),
-        "N" => Some("ℕ"),
-        _ => None,
     }
 }

@@ -27,6 +27,7 @@ impl From<SourceMappedOutput> for PagerRenderView {
 
 impl TerminalRenderer {
     pub(crate) fn render_for_pager(&self, events: Vec<Event<'static>>) -> Result<PagerRender> {
+        let math_diagnostics = std::rc::Rc::default();
         let separator = self
             .config
             .line_numbers
@@ -42,12 +43,19 @@ impl TerminalRenderer {
 
         Ok(PagerRender {
             initial_target: self.config.line_numbers.map(|options| options.target),
-            unnumbered: self.render_with_options(events.clone(), None, true)?.into(),
+            unnumbered: self
+                .render_with_options(events.clone(), None, true, &math_diagnostics)?
+                .into(),
             rendered: self
-                .render_with_options(events.clone(), Some(rendered_options), true)?
+                .render_with_options(
+                    events.clone(),
+                    Some(rendered_options),
+                    true,
+                    &math_diagnostics,
+                )?
                 .into(),
             source: self
-                .render_with_options(events, Some(source_options), true)?
+                .render_with_options(events, Some(source_options), true, &math_diagnostics)?
                 .into(),
         })
     }

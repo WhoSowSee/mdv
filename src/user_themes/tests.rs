@@ -33,7 +33,7 @@ fn loads_full_theme_with_all_fields() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("warm.yaml"),
-        "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nline_number: yellow\nline_number_separator: blue\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
+        "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nline_number: yellow\nline_number_separator: blue\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\nmath: cyan\nmath_border: blue\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
     )
     .unwrap();
 
@@ -52,6 +52,8 @@ fn loads_full_theme_with_all_fields() {
     );
     assert_eq!(theme.line_number, Color::Yellow);
     assert_eq!(theme.line_number_separator, Color::Blue);
+    assert_eq!(theme.math_color(), &Color::Cyan);
+    assert_eq!(theme.math_border_color(), &Color::Blue);
     assert_eq!(theme.syntax.keyword, Color::Red);
 }
 
@@ -86,6 +88,11 @@ fn partial_fields_fill_from_default() {
     assert_eq!(theme.front_matter_title_color(), &Theme::default().border);
     assert_eq!(theme.front_matter_value_color(), &Theme::default().text);
     assert_eq!(theme.front_matter_border_color(), &Theme::default().border);
+    assert_eq!(theme.math_color(), Theme::default().math_color());
+    assert_eq!(
+        theme.math_border_color(),
+        Theme::default().math_border_color()
+    );
 }
 
 #[test]

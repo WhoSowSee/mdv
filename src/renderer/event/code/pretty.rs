@@ -8,7 +8,7 @@ impl<'a> EventRenderer<'a> {
         let left_padding = 1usize;
         let right_padding = 1usize;
 
-        let context_width = self.compute_code_block_context_width();
+        let context_width = self.compute_indented_block_context_width();
         let available_frame_width = input.terminal_width.saturating_sub(context_width);
         if available_frame_width <= 4 {
             return self.render_code_block_simple(input);
@@ -67,13 +67,13 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        self.push_code_block_indent_for_line_start();
+        self.push_indented_block_prefix();
         let top_line = self.render_pretty_top_border(inner_box_width, input.language_label);
         self.output.push_str(&top_line);
         self.output.push('\n');
 
         for line in &layout.lines {
-            self.push_code_block_indent_for_line_start();
+            self.push_indented_block_prefix();
             let decorated = self.highlight_footnote_markers_in_ansi(&line.text);
             let numbered = self.format_code_line(&layout, line, &decorated);
             let content_line = self.render_pretty_content_line(text_width, &numbered);
@@ -81,7 +81,7 @@ impl<'a> EventRenderer<'a> {
             self.output.push('\n');
         }
 
-        self.push_code_block_indent_for_line_start();
+        self.push_indented_block_prefix();
         let bottom_line = self.render_pretty_bottom_border(inner_box_width);
         self.output.push_str(&bottom_line);
         self.output.push('\n');

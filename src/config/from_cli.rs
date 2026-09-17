@@ -188,6 +188,11 @@ impl Config {
         {
             config.code_block_style = style;
         }
+        if let Some(style) = cli.math_block_style
+            && arg_has_user_value(matches, "math_block_style")
+        {
+            config.math_block_style = style;
+        }
         if let Some(style) = cli.style_callout
             && arg_has_user_value(matches, "style_callout")
         {

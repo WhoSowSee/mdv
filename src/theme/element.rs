@@ -11,6 +11,8 @@ pub enum ThemeElement {
     H5,
     H6,
     Code,
+    Math,
+    MathBorder,
     Quote,
     Link,
     Emphasis,

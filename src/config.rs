@@ -3,8 +3,8 @@ use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, FootnoteStyle,
     FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions, LineNumberTarget,
-    LinkStyle, LinkTruncationStyle, MissingFootnoteStyle, PrettyDefinitionStyle, TableWrapMode,
-    TextWrapMode,
+    LinkStyle, LinkTruncationStyle, MathBlockStyle, MissingFootnoteStyle, PrettyDefinitionStyle,
+    TableWrapMode, TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -167,6 +167,7 @@ pub struct Config {
     pub code_guessing: bool,
     pub syntaxes_dir: Option<PathBuf>,
     pub code_block_style: CodeBlockStyleConfig,
+    pub math_block_style: MathBlockStyle,
     pub callout_style: CalloutStyleConfig,
     pub pretty_checkbox: Option<CheckboxShape>,
     #[serde(default, deserialize_with = "structured::deserialize_custom_checkbox")]
@@ -252,6 +253,7 @@ impl Default for Config {
             code_guessing: true,
             syntaxes_dir: None,
             code_block_style: CodeBlockStyleConfig::default(),
+            math_block_style: MathBlockStyle::default(),
             callout_style: CalloutStyleConfig::default(),
             pretty_list: None,
             pretty_definition: None,

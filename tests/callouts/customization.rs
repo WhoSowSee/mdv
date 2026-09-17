@@ -121,7 +121,7 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        ">[!info]Информация\n>terminalconfigurationterminalconfiguration\n",
+        ">[!info]Information\n>terminalconfigurationterminalconfiguration\n",
     )
     .unwrap();
 
@@ -167,7 +167,7 @@ fn test_callout_inline_label_without_space_does_not_add_extra_blank_line() {
         stdout
     );
     assert!(
-        !stdout.contains("Информация"),
+        !stdout.contains("Information"),
         "expected inline label to be ignored, stdout:\n{}",
         stdout
     );
@@ -178,7 +178,7 @@ fn test_callout_word_wrap_does_not_insert_extra_blank_line_after_header() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        ">[!info]- Информация\n>配置配置配置配置配置配置配置配置配置配置配置配置配置配置配置\n>terminalconfigurationterminalconfigurationterminalconfiguration\n",
+        ">[!info]- Information\n>配置配置配置配置配置配置配置配置配置配置配置配置配置配置配置\n>terminalconfigurationterminalconfigurationterminalconfiguration\n",
     )
     .unwrap();
 
@@ -200,7 +200,7 @@ fn test_callout_word_wrap_does_not_insert_extra_blank_line_after_header() {
 
     let header_idx = lines
         .iter()
-        .position(|line| *line == "┃   Информация ")
+        .position(|line| *line == "┃   Information ")
         .expect("callout header present");
 
     assert_eq!(

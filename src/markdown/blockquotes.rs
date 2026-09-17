@@ -52,8 +52,10 @@ impl MarkdownProcessor {
         let mut fence_char = '\0';
         let mut fence_len = 0usize;
         let mut last_blank = false;
+        let mut math_closing = None;
+        let lines = content.lines().collect::<Vec<_>>();
 
-        for raw_line in content.lines() {
+        for (line_index, raw_line) in lines.iter().enumerate() {
             let line = raw_line.trim_end_matches('\r');
             let trimmed_start = line.trim_start();
             let indent_columns = Self::leading_indent_columns(line);
@@ -77,6 +79,24 @@ impl MarkdownProcessor {
             if in_fence {
                 result.push(line.to_string());
                 last_blank = false;
+                continue;
+            }
+
+            let math_text = Self::split_blockquote_prefix(line).1.trim();
+            if let Some(closing) = math_closing {
+                result.push(line.to_string());
+                last_blank = false;
+                if contains_unescaped(math_text, closing) {
+                    math_closing = None;
+                }
+                continue;
+            }
+            if let Some(closing) = display_math_closing(math_text)
+                && has_display_math_closing(&lines[line_index + 1..], closing)
+            {
+                result.push(line.to_string());
+                last_blank = false;
+                math_closing = Some(closing);
                 continue;
             }
 
@@ -155,4 +175,37 @@ impl MarkdownProcessor {
         let prefix = line.get(..prefix_len).unwrap_or("").to_string();
         (level, prefix, &trimmed[idx..])
     }
+}
+
+fn display_math_closing(line: &str) -> Option<&'static str> {
+    if let Some(rest) = line.strip_prefix("$$")
+        && !contains_unescaped(rest, "$$")
+    {
+        return Some("$$");
+    }
+    if let Some(rest) = line.strip_prefix("\\[")
+        && !contains_unescaped(rest, "\\]")
+    {
+        return Some("\\]");
+    }
+    None
+}
+
+fn has_display_math_closing(lines: &[&str], closing: &str) -> bool {
+    lines.iter().any(|line| {
+        let math_text = MarkdownProcessor::split_blockquote_prefix(line).1;
+        contains_unescaped(math_text, closing)
+    })
+}
+
+fn contains_unescaped(text: &str, delimiter: &str) -> bool {
+    let mut cursor = 0usize;
+    while let Some(relative) = text[cursor..].find(delimiter) {
+        let index = cursor + relative;
+        if !super::math::is_escaped(text, index) {
+            return true;
+        }
+        cursor = index + delimiter.len();
+    }
+    false
 }

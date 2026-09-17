@@ -38,7 +38,8 @@ impl<'a> EventRenderer<'a> {
         self.finalize_document_footnotes()?;
 
         // Remove excessive trailing newlines, but keep one
-        let mut result = self.output.trim_end().to_string();
+        let mut result = crate::renderer::event::math::strip_protected_math_layout(&self.output);
+        result.truncate(result.trim_end().len());
         if !result.is_empty() {
             result.push('\n');
         }

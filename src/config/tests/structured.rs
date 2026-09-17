@@ -1,6 +1,6 @@
 use super::*;
 use crate::block_spacing::BlockElement;
-use crate::cli::CalloutStyle;
+use crate::cli::{CalloutStyle, MathBlockStyle};
 use crate::theme::{Color, Theme, apply_custom_code_theme, apply_custom_theme};
 
 fn parse_with_structured_preset(
@@ -95,6 +95,23 @@ callout_style:
     assert!(config.callout_style.show_fold_icons);
     assert!(config.callout_style.label_inside);
     assert!(config.callout_style.uppercase);
+}
+
+#[test]
+fn preset_and_cli_override_math_block_style() {
+    let preset = parse_with_structured_preset(
+        "math_block_style: pretty\n",
+        "math_block_style: basic\n",
+        &[],
+    );
+    assert_eq!(preset.math_block_style, MathBlockStyle::Basic);
+
+    let config = parse_with_structured_preset(
+        "math_block_style: pretty\n",
+        "math_block_style: basic\n",
+        &["--math-block-style", "simple"],
+    );
+    assert_eq!(config.math_block_style, MathBlockStyle::Simple);
 }
 
 #[test]

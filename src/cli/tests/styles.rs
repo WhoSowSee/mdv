@@ -57,6 +57,14 @@ fn code_block_style_rejects_removed_options() {
 }
 
 #[test]
+fn math_block_style_is_independent_and_has_no_options() {
+    let cli = Cli::parse_from(["mdv", "--math-block-style", "pretty"]);
+    assert_eq!(cli.math_block_style, Some(MathBlockStyle::Pretty));
+
+    assert!(Cli::try_parse_from(["mdv", "--math-block-style", "simple:show-name"]).is_err());
+}
+
+#[test]
 fn callout_style_parses_simple_icons() {
     let cli = Cli::parse_from([
         "mdv",

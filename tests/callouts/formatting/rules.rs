@@ -81,7 +81,7 @@ fn test_callout_rule_ignores_heading_indent() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        "> [!tip]\n> # Требования\n> dadas\n> ***\n> ## Тест\n",
+        "> [!tip]\n> # Requirements\n> example\n> ***\n> ## Test\n",
     )
     .unwrap();
 

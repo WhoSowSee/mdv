@@ -7,6 +7,7 @@ impl<'a> EventRenderer<'a> {
         self.reset_explicit_blank_line_streak();
 
         let mut raw_code = std::mem::take(&mut self.code_block_content);
+        let math_source_line = self.math_code_block_source_line.take();
         let language_hint = self.code_block_language.clone();
         if Self::is_markdown_language_hint(language_hint.as_deref()) {
             let (cleaned, definitions) = self.extract_markdown_code_footnote_definitions(&raw_code);
@@ -27,7 +28,9 @@ impl<'a> EventRenderer<'a> {
             && is_math_language_hint(hint)
         {
             self.code_block_language = None;
-            return self.handle_math_code_block(&raw_code, language_hint.as_deref());
+            let source_marker =
+                math_source_line.map(crate::renderer::line_numbers::encode_internal_marker);
+            return self.handle_math_code_block(&raw_code, source_marker.as_deref());
         }
         let treat_as_plaintext =
             self.should_render_code_block_as_plaintext(language_hint.as_deref());
@@ -119,7 +122,7 @@ impl<'a> EventRenderer<'a> {
         let wrap_mode = self.config.text_wrap_mode();
 
         // Ensure exactly one contextual blank line before the block.
-        let code_block_prefix = self.current_code_block_prefix();
+        let code_block_prefix = self.current_indented_block_prefix();
         let spacing = self.config.block_spacing.spacing(BlockElement::CodeBlock);
         self.ensure_contextual_blank_lines_with_prefix(spacing.top, &code_block_prefix);
 

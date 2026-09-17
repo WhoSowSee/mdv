@@ -12,7 +12,8 @@ fn is_quote_prefix_char(ch: char) -> bool {
 
 fn strip_layout_metadata(line: &str) -> String {
     let clean = strip_ansi(line);
-    crate::renderer::line_numbers::strip_internal_markers(&clean).0
+    let clean = crate::renderer::line_numbers::strip_internal_markers(&clean).0;
+    crate::renderer::event::math::strip_protected_math_layout(&clean)
 }
 
 const DEFAULT_UNKNOWN_CALLOUT_ICON: &str = "";

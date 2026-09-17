@@ -47,11 +47,16 @@ impl<'a> EventRenderer<'a> {
             nested_config.cols_from_cli = true;
         }
 
-        let processor = MarkdownProcessor::new(&nested_config);
+        let processor = MarkdownProcessor::new(&nested_config).with_extended_math(true);
         let events = processor.parse(code)?;
 
-        let mut nested_renderer =
-            EventRenderer::new(&nested_config, self.theme, self.syntax_set, self.code_theme);
+        let mut nested_renderer = EventRenderer::new(
+            &nested_config,
+            self.theme,
+            self.syntax_set,
+            self.code_theme,
+            self.math_diagnostics.clone(),
+        );
         nested_renderer.plaintext_code_block_depth = self.plaintext_code_block_depth + 1;
         nested_renderer.suppress_footnote_output = true;
         if matches!(self.config.link_style, LinkStyle::EndTable) {
@@ -84,7 +89,7 @@ impl<'a> EventRenderer<'a> {
             return None;
         }
 
-        let context_width = self.compute_code_block_context_width();
+        let context_width = self.compute_indented_block_context_width();
         let available = terminal_width.saturating_sub(context_width);
         if available == 0 {
             return None;

@@ -11,6 +11,20 @@ impl<'a> EventRenderer<'a> {
             return line.to_string();
         }
 
+        let original_line = line;
+        if let Some(marker_start) =
+            line.find(crate::renderer::event::math::PROTECTED_MATH_LAYOUT_MARKER)
+        {
+            let prefix = self.strip_callout_prefix_from_line(
+                &line[..marker_start],
+                callout_level,
+                list_indent,
+            );
+            return format!("{prefix}{}", &line[marker_start..]);
+        }
+        let (line_without_source_marker, source_line) =
+            crate::renderer::line_numbers::strip_internal_markers(line);
+        let line = line_without_source_marker.as_str();
         let clean = strip_ansi(line);
         let mut clean_chars = clean.chars().peekable();
         let mut leading_indent = 0usize;
@@ -26,12 +40,12 @@ impl<'a> EventRenderer<'a> {
         }
 
         if pipe_count == 0 || !matches!(clean_chars.peek(), Some(ch) if *ch == ' ') {
-            return line.to_string();
+            return original_line.to_string();
         }
 
         let remove_pipes = callout_level.min(pipe_count);
         if remove_pipes == 0 {
-            return line.to_string();
+            return original_line.to_string();
         }
         let remaining_pipes = pipe_count.saturating_sub(remove_pipes);
 
@@ -100,7 +114,11 @@ impl<'a> EventRenderer<'a> {
             result.push(ch);
         }
 
-        result
+        let mut metadata = source_line
+            .map(crate::renderer::line_numbers::encode_internal_marker)
+            .unwrap_or_default();
+        metadata.push_str(&result);
+        metadata
     }
 
     pub(in crate::renderer::event) fn render_callout_pretty_top_border(
@@ -288,6 +306,12 @@ impl<'a> EventRenderer<'a> {
         let mut idx = 1usize;
         while idx < lines.len() {
             let has_single_char_tail = Self::is_single_visible_char_line(&lines[idx]);
+            if crate::renderer::event::math::has_protected_math_layout(&lines[idx])
+                || crate::renderer::event::math::has_protected_math_layout(&lines[idx - 1])
+            {
+                idx += 1;
+                continue;
+            }
             let previous_visible = strip_ansi(&lines[idx - 1]);
             let current_visible = strip_ansi(&lines[idx]);
             let previous_tail = previous_visible.trim_end().chars().next_back();

@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn long_unicode_file_name_is_truncated_to_terminal_width() {
-        let plain = build_footer("очень-длинный-файл-📚.md", progress(7), false)
+        let plain = build_footer("very-long-file-name-📚.md", progress(7), false)
             .unwrap()
             .render_plain(32);
 

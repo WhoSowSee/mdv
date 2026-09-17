@@ -117,6 +117,10 @@ impl<'a> EventRenderer<'a> {
         if max_content_width > available_content_width {
             let mut wrapped_lines = Vec::new();
             for line in content_lines {
+                if crate::renderer::event::math::has_protected_math_layout(&line) {
+                    wrapped_lines.push(line);
+                    continue;
+                }
                 let line_width = display_width(&strip_ansi(&line));
                 if line_width <= available_content_width {
                     wrapped_lines.push(line);
@@ -163,11 +167,19 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        if inner_box_width > available_frame_width {
+        let contains_protected_math = content_lines
+            .iter()
+            .any(|line| crate::renderer::event::math::has_protected_math_layout(line));
+        if inner_box_width > available_frame_width && !contains_protected_math {
             return false;
         }
 
         let spacing = self.config.block_spacing.spacing(BlockElement::Callout);
+        let layout_marker = if contains_protected_math {
+            crate::renderer::event::math::PROTECTED_MATH_LAYOUT_MARKER
+        } else {
+            ""
+        };
         if leading_blank_lines.is_empty() {
             self.ensure_contextual_blank_lines(spacing.top);
         } else {
@@ -183,6 +195,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.push_indent_for_line_start();
+        self.output.push_str(layout_marker);
         if !label_inside {
             self.output.push_str(&header_source_marker);
         }
@@ -193,6 +206,7 @@ impl<'a> EventRenderer<'a> {
 
         for line in content_lines {
             self.push_indent_for_line_start();
+            self.output.push_str(layout_marker);
             let content_line = self.render_callout_pretty_content_line(
                 text_width,
                 &line,
@@ -205,6 +219,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         self.push_indent_for_line_start();
+        self.output.push_str(layout_marker);
         let bottom_line = self.render_callout_pretty_bottom_border(inner_box_width, kind);
         self.output.push_str(&bottom_line);
         self.output.push('\n');

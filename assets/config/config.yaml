@@ -14,6 +14,8 @@ custom_theme: null         # Flat YAML mapping of UI values, or a legacy key=val
 # custom_theme:
 #   text: "#cdd6f4"
 #   h1: "#89b4fa"
+#   math: "#89dceb"
+#   math_border: "#74c7ec"
 #   background: null
 inline_style: {}           # Per-element backticks/bold/italic/underline/strikethrough overrides
 custom_code_theme: null    # Flat YAML mapping of syntax colors, or a legacy key=value string
@@ -72,6 +74,7 @@ show_empty_elements: false # Show otherwise hidden empty lists, block quotes, ta
 code_guessing: true        # Disable to keep unknown code blocks as plain text
 code_block_style: "basic"  # Styles: "basic" | "simple" | "pretty"; options: "show-name" | "show-icon"
                            # Labels are hidden by default; combine options with ";" to show both parts.
+math_block_style: "basic"  # Styles: "basic" | "simple" | "pretty"; no labels or icons
 callout_style: "pretty"    # Options: "simple:show-icons;show-simple-icons;fold-icons;uppercase" | "pretty:show-icons;show-simple-icons;fold-icons;label-inside;uppercase"
                            # label-inside is supported only with "pretty"; show-icons and show-simple-icons cannot be combined.
                            # fold-icons requires show-icons.
@@ -124,7 +127,7 @@ from_text: null            # Render starting from the first line that contains t
 # Available keys for custom_theme:
 # pager_status_bar_transparent (true or false)
 # text, text_light, line_number, line_number_separator, h1..h6,
-# code, quote, link, emphasis, strong, strong_emphasis, strikethrough, highlight,
+# code, math, math_border, quote, link, emphasis, strong, strong_emphasis, strikethrough, highlight,
 # highlight_background, emphasis_background, strong_background,
 # strong_emphasis_background, code_background, strikethrough_background,
 # background, border, list_marker,

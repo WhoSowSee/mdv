@@ -81,6 +81,9 @@ impl Config {
         if other.code_block_style != CodeBlockStyleConfig::default() {
             self.code_block_style = other.code_block_style;
         }
+        if other.math_block_style != MathBlockStyle::default() {
+            self.math_block_style = other.math_block_style;
+        }
         if other.callout_style != CalloutStyleConfig::default() {
             self.callout_style = other.callout_style;
         }

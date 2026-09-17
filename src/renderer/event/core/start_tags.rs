@@ -94,6 +94,7 @@ impl<'a> EventRenderer<'a> {
             Tag::CodeBlock(kind) => {
                 self.in_code_block = true;
                 self.code_block_content.clear();
+                self.math_code_block_source_line = None;
                 self.code_block_language = extract_code_language(&kind);
             }
             Tag::List(start_number) => {

@@ -114,7 +114,7 @@ fn test_callout_simple_icons_cover_all_builtin_categories() {
 #[test]
 fn test_callout_backslash_keeps_blockquote_context() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "> [!important]\n> Арбуз\\\n> Арбуз\n").unwrap();
+    fs::write(&temp_file, "> [!important]\n> Watermelon\\\n> Watermelon\n").unwrap();
 
     let output = mdv_cmd()
         .arg("--no-colors")
@@ -135,23 +135,23 @@ fn test_callout_backslash_keeps_blockquote_context() {
         stdout
     );
 
-    let arbuz_lines: Vec<&str> = stdout
+    let watermelon_lines: Vec<&str> = stdout
         .lines()
-        .filter(|line| line.contains("Арбуз"))
+        .filter(|line| line.contains("Watermelon"))
         .collect();
 
     assert!(
-        !arbuz_lines.is_empty(),
+        !watermelon_lines.is_empty(),
         "expected callout body lines, stdout:\n{}",
         stdout
     );
     assert!(
-        arbuz_lines.iter().all(|line| line.starts_with("┃ ")),
+        watermelon_lines.iter().all(|line| line.starts_with("┃ ")),
         "expected backslash content to stay inside callout, stdout:\n{}",
         stdout
     );
     assert!(
-        !stdout.contains("│ Арбуз"),
+        !stdout.contains("│ Watermelon"),
         "expected no plain blockquote after backslash, stdout:\n{}",
         stdout
     );
@@ -242,7 +242,7 @@ fn test_callout_admonition_syntaxes_render() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        ":::note\nAlpha\n:::\n\n:::{note} Title\nBeta\n:::\n\n!!! note Арбуз\nГамма\n",
+        ":::note\nAlpha\n:::\n\n:::{note} Title\nBeta\n:::\n\n!!! note Watermelon\nGamma\n",
     )
     .unwrap();
 
@@ -270,12 +270,12 @@ fn test_callout_admonition_syntaxes_render() {
         stdout
     );
     assert!(
-        stdout.contains("┃ [Арбуз]"),
+        stdout.contains("┃ [Watermelon]"),
         "expected custom callout label in bang syntax, stdout:\n{}",
         stdout
     );
     assert!(
-        stdout.contains("Alpha") && stdout.contains("Beta") && stdout.contains("Гамма"),
+        stdout.contains("Alpha") && stdout.contains("Beta") && stdout.contains("Gamma"),
         "expected callout bodies to render, stdout:\n{}",
         stdout
     );

@@ -22,6 +22,21 @@ pub enum TableWrapMode {
     None,
 }
 
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize,
+)]
+#[serde(rename_all = "kebab-case")]
+/// Visual container used for display and fenced math blocks.
+pub enum MathBlockStyle {
+    #[default]
+    #[value(help = "Indented math block without a border")]
+    Basic,
+    #[value(help = "Math block with a single left border")]
+    Simple,
+    #[value(help = "Box-drawn frame around math blocks")]
+    Pretty,
+}
+
 #[derive(Debug, Clone, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum HeadingLayout {

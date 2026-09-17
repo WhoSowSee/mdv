@@ -114,7 +114,7 @@ impl<'a> EventRenderer<'a> {
         include_name: bool,
     ) -> String {
         let terminal_width = self.config.get_content_width();
-        let context_width = self.compute_code_block_context_width();
+        let context_width = self.compute_indented_block_context_width();
         let layout_overhead = match self.config.code_block_style.style {
             CodeBlockStyle::Basic => BASIC_CODE_BLOCK_INDENT,
             CodeBlockStyle::Simple => 2,

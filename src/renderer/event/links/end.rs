@@ -2,6 +2,13 @@ use super::*;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn handle_link_end(&mut self) -> Result<()> {
+        if self.pending_callout_label_override {
+            self.pending_callout_label_buffer
+                .push_str(&self.current_link_text);
+            self.current_link_text.clear();
+            self.in_link = false;
+            return Ok(());
+        }
         if self.table_state.is_none() && !matches!(self.config.link_style, LinkStyle::Hide) {
             self.note_paragraph_content();
         }

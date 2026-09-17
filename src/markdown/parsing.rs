@@ -17,7 +17,14 @@ impl MarkdownProcessor {
         Self {
             config: config.clone(),
             options,
+            extended_math: false,
         }
+    }
+
+    /// Enable terminal-only `\(...\)` and `\[...\]` math delimiters.
+    pub const fn with_extended_math(mut self, enabled: bool) -> Self {
+        self.extended_math = enabled;
+        self
     }
 
     /// Parse Markdown body events, validating and omitting recognized front matter.
@@ -31,11 +38,17 @@ impl MarkdownProcessor {
         } else {
             split_front_matter(markdown)?
         };
-        let (content, source_lines) =
-            self.preprocess_content(document.body, document.body_start_line)?;
+        let PreprocessedContent {
+            content,
+            source_lines,
+            math_placeholders,
+        } = self.preprocess_content(document.body, document.body_start_line)?;
         let parser = Parser::new_ext(&content, self.options).into_offset_iter();
 
-        let events: Vec<(Event, Range<usize>)> = parser.collect();
+        let mut events: Vec<(Event, Range<usize>)> = parser.collect();
+        if let Some(placeholders) = math_placeholders {
+            placeholders.restore_events(&mut events);
+        }
         let line_starts = source_lines
             .as_ref()
             .map(|_| source_lines::starts(&content))
@@ -54,11 +67,11 @@ impl MarkdownProcessor {
         })
     }
 
-    pub(super) fn preprocess_content(
+    fn preprocess_content(
         &self,
         content: &str,
         first_source_line: usize,
-    ) -> Result<(String, Option<Vec<Option<usize>>>)> {
+    ) -> Result<PreprocessedContent> {
         let mut processed = content.to_string();
         let mut source_lines = self.config.source_line_numbers_enabled().then(|| {
             (first_source_line..first_source_line + content.lines().count())
@@ -100,8 +113,21 @@ impl MarkdownProcessor {
         processed = source_lines::apply_transform(processed, source_lines.as_mut(), |content| {
             self.preprocess_blockquotes(content)
         });
+        let math_placeholders = self
+            .extended_math
+            .then(|| math::MathPlaceholders::new(&processed));
+        if let Some(placeholders) = math_placeholders.as_ref() {
+            processed =
+                source_lines::apply_transform(processed, source_lines.as_mut(), |content| {
+                    self.normalize_extended_math_delimiters(content, placeholders)
+                });
+        }
 
-        Ok((processed, source_lines))
+        Ok(PreprocessedContent {
+            content: processed,
+            source_lines,
+            math_placeholders,
+        })
     }
 
     pub(super) fn filter_line_range(lines: &[&str], from_text: &str) -> Range<usize> {
@@ -123,6 +149,12 @@ impl MarkdownProcessor {
         });
         start..end
     }
+}
+
+struct PreprocessedContent {
+    content: String,
+    source_lines: Option<Vec<Option<usize>>>,
+    math_placeholders: Option<math::MathPlaceholders>,
 }
 
 struct SplitDocument<'a> {

@@ -15,6 +15,7 @@ pub(crate) use source_lines::{Marker as SourceLineMarker, from_event as source_l
 pub struct MarkdownProcessor {
     config: Config,
     options: Options,
+    extended_math: bool,
 }
 
 pub(crate) struct ParsedDocument {
@@ -33,6 +34,7 @@ mod conversion;
 mod detection;
 mod events;
 mod fences;
+mod math;
 mod parsing;
 mod structure;
 mod task_lists;

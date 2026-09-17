@@ -6,8 +6,8 @@ impl<'a> EventRenderer<'a> {
         display_width(&strip_ansi(&prefix))
     }
 
-    pub(in crate::renderer::event) fn compute_code_block_context_width(&self) -> usize {
-        let prefix = self.current_code_block_prefix();
+    pub(in crate::renderer::event) fn compute_indented_block_context_width(&self) -> usize {
+        let prefix = self.current_indented_block_prefix();
         display_width(&strip_ansi(&prefix))
     }
     pub(in crate::renderer::event) fn render_blockquote_prefix(&self) -> String {

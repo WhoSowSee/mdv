@@ -65,7 +65,7 @@ fn should_trigger_render(event: &NotifyEvent) -> bool {
 fn render_file(path: &Path, config: &Config, renderer: &TerminalRenderer) -> Result<()> {
     let content = std::fs::read_to_string(path)?;
 
-    let processor = MarkdownProcessor::new(config);
+    let processor = MarkdownProcessor::new(config).with_extended_math(true);
     let events = processor.parse(&content)?;
 
     let output = renderer.render(events)?;

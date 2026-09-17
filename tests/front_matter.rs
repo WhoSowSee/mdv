@@ -303,7 +303,7 @@ fn from_filter_keeps_panel_properties() {
 #[test]
 fn panel_preserves_dedicated_colors_and_wraps_once() {
     let long_value = "d".repeat(114);
-    let long_key = "в".repeat(128);
+    let long_key = "k".repeat(128);
     let markdown = format!("---\nsdsd: dasdas{long_value}\ndsadas{long_key}: dasda\n---\n# Body\n");
     let output = render(
         &markdown,

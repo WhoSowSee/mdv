@@ -8,7 +8,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 |---|---|
 | [src/cli.rs](../../src/cli.rs) | `Cli`: arguments, aliases, conflicts, help groups, and Clap defaults. |
 | [src/cli/commands.rs](../../src/cli/commands.rs) | `CliCommand`, including full-format help. |
-| [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, and `HeadingLayout`. |
+| [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, `MathBlockStyle`, and `HeadingLayout`. |
 | [src/cli/links.rs](../../src/cli/links.rs) | `LinkStyle`, `LinkTruncationStyle`, `FootnoteStyle`, and `MissingFootnoteStyle`. |
 | [src/cli/line_numbers.rs](../../src/cli/line_numbers.rs) | Shared `LineNumberOptions` and `LineNumberTarget` values for document and code-block gutters. |
 | [src/cli/margins.rs](../../src/cli/margins.rs) | Parsing, serde support, and total width for `HorizontalMargins`. |
@@ -24,7 +24,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 |---|---|---|
 | Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
 | Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing` | Runtime layout and the event renderer. |
-| Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, and code-block rendering. |
+| Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--math-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, code-block, and math-block rendering. |
 | Callouts and lists | `--callout-style`, `--pretty-checkbox`, `--pretty-list`, custom overrides | Normalized maps and settings in `Config`. |
 | Links and footnotes | `--link-style`, `--link-truncation`, footnote options | Link and footnote event handlers. |
 | Configuration | `--config-file`, `--no-config`, `--preset`, `--init-config` | Configuration and preset loading. |
@@ -76,7 +76,7 @@ CLI candidates precede environment candidates when both are present. The first e
 ## `Config` field groups
 
 - Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, front matter, and document line numbers.
-- Code, callouts, and lists: language guessing, custom syntaxes, styles, code-block line numbers, and compiled override maps.
+- Code, math, callouts, and lists: language guessing, custom syntaxes, independent code/math styles, code-block line numbers, and compiled override maps.
 - Themes: terminal theme, code theme, inline styles, and custom palette mappings or legacy strings.
 - Links and footnotes: link presentation plus footnote placement and missing-definition behavior.
 - Content filtering: `from_text` and reverse output.

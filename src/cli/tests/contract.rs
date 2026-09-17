@@ -94,6 +94,7 @@ fn help_groups_options_in_task_oriented_order() {
         "--custom-code-theme",
         "--inline-style",
         "--code-block-style",
+        "--math-block-style",
         "--code-line-numbers",
         "--custom-code-block",
         "--code-wrap-indent",

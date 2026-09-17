@@ -148,7 +148,7 @@ fn test_callout_pretty_word_wrap_keeps_frame_for_long_unbroken_lines() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        ">[!info]- Информация\n>配置配置配置配置配置配置配置配置配置配置配置配置配置配置配置\n>terminalconfigurationterminalconfigurationterminalconfiguration\n",
+        ">[!info]- Information\n>配置配置配置配置配置配置配置配置配置配置配置配置配置配置配置\n>terminalconfigurationterminalconfigurationterminalconfiguration\n",
     )
     .unwrap();
 
@@ -171,7 +171,7 @@ fn test_callout_pretty_word_wrap_keeps_frame_for_long_unbroken_lines() {
     assert!(
         lines
             .iter()
-            .any(|line| line.contains('╭') && line.contains("Информация")),
+            .any(|line| line.contains('╭') && line.contains("Information")),
         "expected pretty top border with label, stdout:\n{}",
         stdout
     );
@@ -183,7 +183,7 @@ fn test_callout_pretty_word_wrap_keeps_frame_for_long_unbroken_lines() {
         stdout
     );
     assert!(
-        !stdout.contains("┃ [Информация]") && !stdout.contains("┃ [Info]"),
+        !stdout.contains("┃ [Information]") && !stdout.contains("┃ [Info]"),
         "expected no fallback to raw blockquote callout rendering, stdout:\n{}",
         stdout
     );
@@ -271,7 +271,7 @@ fn test_callout_pretty_style_preserves_heading_content_indent() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        "> [!note]\n>\n> ### Требования\n> - Установленный Rust\n> - Терминал с поддержкой ANSI-цветов\n",
+        "> [!note]\n>\n> ### Requirements\n> - Installed Rust\n> - Terminal with ANSI color support\n",
     )
     .unwrap();
 
@@ -291,11 +291,11 @@ fn test_callout_pretty_style_preserves_heading_content_indent() {
 
     let heading_line = lines
         .iter()
-        .find(|line| line.contains("Требования"))
+        .find(|line| line.contains("Requirements"))
         .expect("heading line present");
     let first_item_line = lines
         .iter()
-        .find(|line| line.contains("- Установленный Rust"))
+        .find(|line| line.contains("- Installed Rust"))
         .expect("list item line present");
 
     let heading_indent = spaces_after_prefix(heading_line, '│');

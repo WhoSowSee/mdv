@@ -68,12 +68,15 @@ Large topic files act as facades with explicit `#[path = "..."]` declarations:
 - `tests/code_blocks/tab_indent/`: fences, deep indentation, and paragraphs;
 - `tests/layout/spacing/`: backslashes, paragraphs, block spacing, and inline HTML;
 - `tests/links_tables/basic/` and `references/`: core table/link behavior and reference scopes.
+- `tests/math/contexts.rs`: table headers, source mapping, callout labels and nested frames, HTML scripts, and impossible-width timeout regressions.
 
 Shared helpers remain in the facade module and are imported by child tests through `use super::*`.
 
 ## Fixtures
 
 - `tests/files/` contains reusable Markdown fixtures.
+- `tests/files/math-layout.md` covers extended delimiters and structured math across ordinary text, callouts, and tables.
+- `tests/math.rs` verifies all three math containers and their independence from code-block options; theme tests cover the dedicated content and border colors.
 - A small, scenario-specific document is created with `NamedTempFile` directly in its test.
 - `docs/examples/config.yaml` is the reference for the complete configuration schema.
 - Root `test_*.md` files support manual visual checks and do not replace assertions.

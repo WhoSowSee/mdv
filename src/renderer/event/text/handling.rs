@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(super) fn line_has_visible_text(line: &str) -> bool {
+    pub(in crate::renderer::event) fn line_has_visible_text(line: &str) -> bool {
         line.chars()
             .any(|ch| !ch.is_whitespace() && ch != '│' && ch != '┃')
     }

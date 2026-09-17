@@ -9,6 +9,7 @@ use crate::theme::{
 use crate::user_themes;
 use anyhow::Result;
 use pulldown_cmark::Event;
+use std::rc::Rc;
 use std::sync::Arc;
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
@@ -58,7 +59,7 @@ impl TerminalRenderer {
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
         Ok(self
-            .render_with_options(events, self.config.line_numbers, false)?
+            .render_with_options(events, self.config.line_numbers, false, &Rc::default())?
             .output)
     }
 
@@ -67,19 +68,26 @@ impl TerminalRenderer {
         events: Vec<Event<'static>>,
         line_numbers: Option<LineNumberOptions>,
         collect_source_lines: bool,
+        math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<super::line_numbers::SourceMappedOutput> {
         let mut output = match line_numbers {
             None => {
-                let output = self.render_events(&self.config, events)?;
+                let output = self.render_events(&self.config, events, math_diagnostics)?;
                 mapped_output(output, collect_source_lines)
             }
             Some(options) => match options.target {
-                LineNumberTarget::Rendered => {
-                    self.render_with_rendered_line_numbers(events, options, collect_source_lines)?
-                }
-                LineNumberTarget::Source => {
-                    self.render_with_source_line_numbers(events, options, collect_source_lines)?
-                }
+                LineNumberTarget::Rendered => self.render_with_rendered_line_numbers(
+                    events,
+                    options,
+                    collect_source_lines,
+                    math_diagnostics,
+                )?,
+                LineNumberTarget::Source => self.render_with_source_line_numbers(
+                    events,
+                    options,
+                    collect_source_lines,
+                    math_diagnostics,
+                )?,
             },
         };
         output.output = apply_left_margin(&output.output, self.config.margin.left);
@@ -90,10 +98,15 @@ impl TerminalRenderer {
         self.theme.pager_status_bar_transparent
     }
 
-    fn render_events(&self, config: &Config, events: Vec<Event<'static>>) -> Result<String> {
+    fn render_events(
+        &self,
+        config: &Config,
+        events: Vec<Event<'static>>,
+        math_diagnostics: &Rc<crate::math::MathDiagnostics>,
+    ) -> Result<String> {
         if config.code_line_numbers.is_none() {
             return self
-                .render_events_once(config, events)
+                .render_events_once(config, events, math_diagnostics)
                 .map(|(output, _)| output);
         }
 
@@ -102,7 +115,7 @@ impl TerminalRenderer {
             let mut render_config = config.clone();
             render_config.code_line_number_width = number_width;
             let (output, required_width) =
-                self.render_events_once(&render_config, events.clone())?;
+                self.render_events_once(&render_config, events.clone(), math_diagnostics)?;
             if required_width <= number_width {
                 return Ok(output);
             }
@@ -114,10 +127,16 @@ impl TerminalRenderer {
         &self,
         config: &Config,
         events: Vec<Event<'static>>,
+        math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<(String, usize)> {
         config.validate_horizontal_margins()?;
-        let mut renderer =
-            EventRenderer::new(config, &self.theme, &self.syntax_set, &self.code_theme);
+        let mut renderer = EventRenderer::new(
+            config,
+            &self.theme,
+            &self.syntax_set,
+            &self.code_theme,
+            Rc::clone(math_diagnostics),
+        );
         let output = renderer.render_events(events)?;
         Ok((output, renderer.max_code_line_number_width))
     }
@@ -127,9 +146,10 @@ impl TerminalRenderer {
         events: Vec<Event<'static>>,
         options: LineNumberOptions,
         collect_source_lines: bool,
+        math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<super::line_numbers::SourceMappedOutput> {
         let Some(max_line) = super::line_numbers::max_source_line(&events) else {
-            let output = self.render_events(&self.config, events)?;
+            let output = self.render_events(&self.config, events, math_diagnostics)?;
             return Ok(mapped_output(output, collect_source_lines));
         };
 
@@ -137,7 +157,7 @@ impl TerminalRenderer {
         render_config.line_numbers = Some(options);
         render_config.line_number_gutter_width =
             super::line_numbers::gutter_width(max_line, options);
-        let output = self.render_events(&render_config, events)?;
+        let output = self.render_events(&render_config, events, math_diagnostics)?;
         Ok(self.apply_line_numbers(&output, max_line, options, collect_source_lines))
     }
 
@@ -146,6 +166,7 @@ impl TerminalRenderer {
         events: Vec<Event<'static>>,
         options: LineNumberOptions,
         collect_source_lines: bool,
+        math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<super::line_numbers::SourceMappedOutput> {
         let mut number_width = 1;
 
@@ -154,7 +175,7 @@ impl TerminalRenderer {
             render_config.line_numbers = Some(options);
             render_config.line_number_gutter_width =
                 super::line_numbers::gutter_width_for_number_width(number_width, options);
-            let output = self.render_events(&render_config, events.clone())?;
+            let output = self.render_events(&render_config, events.clone(), math_diagnostics)?;
             let rendered_lines = super::line_numbers::rendered_line_count(&output);
 
             if rendered_lines == 0 {

@@ -1,239 +1,259 @@
-use super::*;
+use super::ast::{MathDiagnostic, MathNode, ParsedMath};
 
-impl MathParser {
-    pub(super) fn new(input: &str, mode: MathMode) -> Self {
-        Self {
-            chars: input.chars().collect(),
-            pos: 0,
-            mode,
-        }
-    }
+const MAX_MATH_DEPTH: usize = 128;
 
-    pub(super) fn parse_until(&mut self, stop: Option<char>) -> String {
-        let mut out = String::new();
-        while let Some(ch) = self.peek() {
-            if stop == Some(ch) {
-                self.pos += 1;
-                break;
-            }
-
-            self.pos += 1;
-            match ch {
-                '\\' => out.push_str(&self.parse_command()),
-                '^' => out.push_str(&self.parse_script(ScriptKind::Sup)),
-                '_' => out.push_str(&self.parse_script(ScriptKind::Sub)),
-                '{' => out.push_str(&self.parse_until(Some('}'))),
-                '}' => out.push('}'),
-                '&' => out.push_str(self.align_separator()),
-                '~' => out.push(' '),
-                '\n' | '\r' => out.push_str(self.line_break()),
-                _ => out.push(ch),
-            }
-        }
-        out
-    }
-
-    pub(super) fn peek(&self) -> Option<char> {
-        self.chars.get(self.pos).copied()
-    }
-
-    pub(super) fn parse_atom(&mut self) -> String {
-        match self.peek() {
-            Some('{') => {
-                self.pos += 1;
-                self.parse_until(Some('}'))
-            }
-            Some('\\') => {
-                self.pos += 1;
-                self.parse_command()
-            }
-            Some(ch) => {
-                self.pos += 1;
-                ch.to_string()
-            }
-            None => String::new(),
-        }
-    }
-
-    pub(super) fn parse_script(&mut self, kind: ScriptKind) -> String {
-        let atom = self.parse_atom();
-        if atom.is_empty() {
-            return String::new();
-        }
-        convert_script(&atom, kind)
-    }
-
-    pub(super) fn parse_command(&mut self) -> String {
-        let name = self.read_command_name();
-        if name.is_empty() {
-            return "\\".to_string();
-        }
-
-        if let Some(literal) = literal_command(&name) {
-            return literal.to_string();
-        }
-
-        if let Some(space) = spacing_command(&name) {
-            return space.to_string();
-        }
-
-        match name.as_str() {
-            "\\" => self.line_break().to_string(),
-            "displaystyle" | "textstyle" | "scriptstyle" | "scriptscriptstyle" | "limits"
-            | "nolimits" => String::new(),
-            "frac" => {
-                let numerator = self.parse_group();
-                let denominator = self.parse_group();
-                render_fraction(&numerator, &denominator)
-            }
-            "sqrt" => {
-                let index = self.parse_optional_bracket();
-                let radicand = self.parse_group();
-                render_sqrt(index.as_deref(), &radicand)
-            }
-            "binom" => {
-                let upper = self.parse_group();
-                let lower = self.parse_group();
-                render_binom(&upper, &lower)
-            }
-            "left" | "right" => self.parse_delimiter(),
-            "begin" => {
-                let env = self.parse_raw_group();
-                let content = self.consume_until_end_env(&env);
-                render_environment(&env, &content, self.mode)
-            }
-            "end" => {
-                self.parse_raw_group();
-                String::new()
-            }
-            "text" | "mathrm" | "mathbf" | "mathbb" | "mathcal" | "mathsf" | "mathit"
-            | "operatorname" => {
-                let content = self.parse_group();
-                render_text_command(&name, &content)
-            }
-            _ => command_symbol(&name)
-                .map(|symbol| symbol.to_string())
-                .unwrap_or_else(|| format!("\\{}", name)),
-        }
-    }
-
-    pub(super) fn read_command_name(&mut self) -> String {
-        let mut name = String::new();
-        match self.peek() {
-            Some(ch) if ch.is_ascii_alphabetic() => {
-                while let Some(next) = self.peek() {
-                    if next.is_ascii_alphabetic() {
-                        name.push(next);
-                        self.pos += 1;
-                    } else {
-                        break;
-                    }
-                }
-            }
-            Some(ch) => {
-                name.push(ch);
-                self.pos += 1;
-            }
-            None => {}
-        }
-        name
-    }
-
-    pub(super) fn parse_group(&mut self) -> String {
-        if self.peek() != Some('{') {
-            return String::new();
-        }
-        self.pos += 1;
-        self.parse_until(Some('}'))
-    }
-
-    pub(super) fn parse_raw_group(&mut self) -> String {
-        if self.peek() != Some('{') {
-            return String::new();
-        }
-        self.pos += 1;
-        let mut name = String::new();
-        while let Some(ch) = self.peek() {
-            self.pos += 1;
-            if ch == '}' {
-                break;
-            }
-            name.push(ch);
-        }
-        name
-    }
-
-    pub(super) fn parse_optional_bracket(&mut self) -> Option<String> {
-        if self.peek() != Some('[') {
-            return None;
-        }
-        self.pos += 1;
-        let mut content = String::new();
-        while let Some(ch) = self.peek() {
-            self.pos += 1;
-            if ch == ']' {
-                break;
-            }
-            content.push(ch);
-        }
-        if content.is_empty() {
-            None
-        } else {
-            Some(content)
-        }
-    }
-
-    pub(super) fn parse_delimiter(&mut self) -> String {
-        match self.peek() {
-            Some('.') => {
-                self.pos += 1;
-                String::new()
-            }
-            Some('\\') => {
-                self.pos += 1;
-                let name = self.read_command_name();
-                delimiter_symbol(&name)
-                    .map(|symbol| symbol.to_string())
-                    .unwrap_or_else(|| format!("\\{}", name))
-            }
-            Some(ch) => {
-                self.pos += 1;
-                ch.to_string()
-            }
-            None => String::new(),
-        }
-    }
-
-    pub(super) fn consume_until_end_env(&mut self, env: &str) -> String {
-        if env.is_empty() {
-            return String::new();
-        }
-
-        let remaining: String = self.chars[self.pos..].iter().collect();
-        let end_marker = format!("\\end{{{}}}", env);
-
-        if let Some(idx) = remaining.find(&end_marker) {
-            let content = remaining[..idx].to_string();
-            let consumed_chars = remaining[..idx].chars().count() + end_marker.chars().count();
-            self.pos = self.pos.saturating_add(consumed_chars);
-            content
-        } else {
-            self.pos = self.chars.len();
-            remaining
-        }
-    }
-
-    pub(super) fn line_break(&self) -> &'static str {
-        match self.mode {
-            MathMode::Inline => " ",
-            MathMode::Display => "\n",
-        }
-    }
-
-    pub(super) fn align_separator(&self) -> &'static str {
-        match self.mode {
-            MathMode::Inline => " ",
-            MathMode::Display => " ",
-        }
+pub(super) fn parse_math(input: &str) -> ParsedMath {
+    let mut parser = MathParser::new(input, 0);
+    let root = parser.parse_sequence(None, false);
+    ParsedMath {
+        root,
+        diagnostics: parser.diagnostics,
     }
 }
+
+pub(super) struct MathParser<'a> {
+    pub(super) input: &'a str,
+    pub(super) pos: usize,
+    pub(super) base_offset: usize,
+    pub(super) depth: usize,
+    pub(super) preserve_whitespace: bool,
+    pub(super) diagnostics: Vec<MathDiagnostic>,
+}
+
+impl<'a> MathParser<'a> {
+    pub(super) fn new(input: &'a str, base_offset: usize) -> Self {
+        Self {
+            input,
+            pos: 0,
+            base_offset,
+            depth: 0,
+            preserve_whitespace: false,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    pub(super) fn parse_sequence(&mut self, stop: Option<char>, stop_at_right: bool) -> MathNode {
+        let mut nodes = Vec::new();
+        while let Some(ch) = self.peek() {
+            if stop == Some(ch) {
+                self.bump();
+                return MathNode::sequence(nodes);
+            }
+            if stop_at_right && self.starts_command("right") {
+                return MathNode::sequence(nodes);
+            }
+            if ch == '%' {
+                self.skip_comment();
+                continue;
+            }
+            if ch.is_whitespace() {
+                let whitespace = self.parse_whitespace();
+                push_node(&mut nodes, MathNode::Text(whitespace));
+                continue;
+            }
+
+            let node = self.parse_atom_with_scripts();
+            push_node(&mut nodes, node);
+        }
+
+        if stop.is_some() {
+            self.diagnostic("unclosed group", true);
+        }
+        MathNode::sequence(nodes)
+    }
+
+    fn parse_atom_with_scripts(&mut self) -> MathNode {
+        let mut base = self.parse_atom();
+        let mut subscript = None;
+        let mut superscript = None;
+
+        loop {
+            let saved = self.pos;
+            self.skip_tex_ignored();
+            if self.starts_command("limits") || self.starts_command("nolimits") {
+                self.bump();
+                let limits = self.read_command_name() == "limits";
+                if let MathNode::Operator {
+                    limits: placement, ..
+                } = &mut base
+                {
+                    *placement = limits;
+                }
+                self.skip_whitespace();
+                continue;
+            }
+            let target = match self.peek() {
+                Some('_') => &mut subscript,
+                Some('^') => &mut superscript,
+                _ => {
+                    self.pos = saved;
+                    break;
+                }
+            };
+            self.bump();
+            let argument = self.parse_required_argument("script");
+            if target.replace(Box::new(argument)).is_some() {
+                self.diagnostic("repeated script", true);
+            }
+        }
+
+        if subscript.is_some() || superscript.is_some() {
+            base = MathNode::Scripts {
+                base: Box::new(base),
+                subscript,
+                superscript,
+            };
+        }
+        base
+    }
+
+    fn parse_atom(&mut self) -> MathNode {
+        match self.peek() {
+            Some('\\') => self.parse_command(),
+            Some('{') => self.parse_group(),
+            Some('}') => {
+                self.bump();
+                self.diagnostic("unexpected closing brace", true);
+                MathNode::Text("}".to_string())
+            }
+            Some('~') => {
+                self.bump();
+                MathNode::Text(" ".to_string())
+            }
+            Some(ch @ ('^' | '_')) => {
+                self.bump();
+                self.diagnostic("script has no base", true);
+                MathNode::Text(ch.to_string())
+            }
+            Some(ch) => {
+                self.bump();
+                MathNode::Text(ch.to_string())
+            }
+            None => MathNode::Text(String::new()),
+        }
+    }
+
+    fn parse_group(&mut self) -> MathNode {
+        if self.depth >= MAX_MATH_DEPTH {
+            self.diagnostic("maximum group depth exceeded", true);
+            return MathNode::Unsupported(self.consume_balanced_raw('{', '}'));
+        }
+        self.bump();
+        self.depth += 1;
+        let node = self.parse_sequence(Some('}'), false);
+        self.depth = self.depth.saturating_sub(1);
+        node
+    }
+
+    pub(super) fn parse_required_argument(&mut self, command: &str) -> MathNode {
+        self.skip_tex_ignored();
+        if self.peek().is_none() {
+            self.diagnostic(&format!("missing argument for \\{command}"), true);
+            return MathNode::Text(String::new());
+        }
+        if self.depth >= MAX_MATH_DEPTH {
+            self.diagnostic("maximum argument depth exceeded", true);
+            return MathNode::Unsupported(self.consume_atom_raw());
+        }
+        if self.peek() == Some('{') {
+            self.parse_group()
+        } else {
+            self.depth += 1;
+            let argument = self.parse_atom();
+            self.depth = self.depth.saturating_sub(1);
+            argument
+        }
+    }
+
+    pub(super) fn parse_text_argument(&mut self) -> MathNode {
+        let previous = self.preserve_whitespace;
+        self.preserve_whitespace = true;
+        let argument = self.parse_required_argument("text");
+        self.preserve_whitespace = previous;
+        argument
+    }
+
+    fn parse_optional_argument(&mut self) -> Option<MathNode> {
+        let saved = self.pos;
+        self.skip_tex_ignored();
+        if self.peek() != Some('[') {
+            self.pos = saved;
+            return None;
+        }
+        if self.depth >= MAX_MATH_DEPTH {
+            self.diagnostic("maximum optional argument depth exceeded", true);
+            return Some(MathNode::Unsupported(self.consume_balanced_raw('[', ']')));
+        }
+        let raw = self.consume_balanced_raw('[', ']');
+        let inner = raw.strip_prefix('[')?.strip_suffix(']')?;
+        let inner_offset = self
+            .base_offset
+            .saturating_add(self.pos.saturating_sub(raw.len()))
+            .saturating_add(1);
+        let mut parser = MathParser {
+            input: inner,
+            pos: 0,
+            base_offset: inner_offset,
+            depth: self.depth.saturating_add(1),
+            preserve_whitespace: self.preserve_whitespace,
+            diagnostics: Vec::new(),
+        };
+        let root = parser.parse_sequence(None, false);
+        self.diagnostics.extend(parser.diagnostics);
+        Some(root)
+    }
+
+    pub(super) fn parse_required_raw_group_with_offset(
+        &mut self,
+        command: &str,
+    ) -> (String, usize) {
+        self.skip_tex_ignored();
+        if self.peek() != Some('{') {
+            self.diagnostic(&format!("missing argument for \\{command}"), true);
+            return (String::new(), self.base_offset + self.pos);
+        }
+        let content_offset = self.base_offset + self.pos + 1;
+        let raw = self.consume_balanced_raw('{', '}');
+        let content = raw
+            .strip_prefix('{')
+            .and_then(|value| value.strip_suffix('}'))
+            .unwrap_or(&raw)
+            .to_string();
+        (content, content_offset)
+    }
+
+    fn unknown_command(&mut self, start: usize) -> MathNode {
+        if self.peek() == Some('*') {
+            self.bump();
+        }
+        loop {
+            let saved = self.pos;
+            self.skip_tex_ignored();
+            if !matches!(self.peek(), Some('{') | Some('[')) {
+                self.pos = saved;
+                break;
+            }
+            let (open, close) = if self.peek() == Some('{') {
+                ('{', '}')
+            } else {
+                ('[', ']')
+            };
+            self.consume_balanced_raw(open, close);
+        }
+        let source = self.input[start..self.pos].to_string();
+        self.diagnostic_at(start, &format!("unsupported command in {source}"), false);
+        MathNode::Unsupported(source)
+    }
+}
+
+fn push_node(nodes: &mut Vec<MathNode>, node: MathNode) {
+    if let (Some(MathNode::Text(current)), MathNode::Text(next)) = (nodes.last_mut(), &node) {
+        current.push_str(next);
+    } else {
+        nodes.push(node);
+    }
+}
+
+mod commands;
+mod environment;
+mod input;

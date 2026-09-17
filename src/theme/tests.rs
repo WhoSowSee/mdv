@@ -40,11 +40,25 @@ fn test_create_style() {
 }
 
 #[test]
+fn math_style_uses_dedicated_palette_entries() {
+    let theme = Theme::default();
+
+    assert_eq!(
+        create_style(&theme, ThemeElement::Math).fg_color,
+        Some(theme.math_color().clone().into())
+    );
+    assert_eq!(
+        create_style(&theme, ThemeElement::MathBorder).fg_color,
+        Some(theme.math_border_color().clone().into())
+    );
+}
+
+#[test]
 fn test_apply_custom_theme_overrides() {
     let mut theme = Theme::default();
     apply_custom_theme(
         &mut theme,
-        "h1=#ffffff; link=187,154,247; background=none; strong=rgb(10,20,30); strong_emphasis=#070809; highlight=#0a0b0c; highlight_bg=#112233; emphasis_background=#0d0e0f; code_background=none; line_number=#010203; line_number_separator=#040506",
+        "h1=#ffffff; link=187,154,247; math=#141516; math-border=#171819; background=none; strong=rgb(10,20,30); strong_emphasis=#070809; highlight=#0a0b0c; highlight_bg=#112233; emphasis_background=#0d0e0f; code_background=none; line_number=#010203; line_number_separator=#040506",
     )
     .expect("custom theme overrides should be applied");
 
@@ -101,6 +115,22 @@ fn test_apply_custom_theme_overrides() {
     ));
     assert_eq!(theme.line_number, Color::Rgb { r: 1, g: 2, b: 3 });
     assert_eq!(theme.line_number_separator, Color::Rgb { r: 4, g: 5, b: 6 });
+    assert_eq!(
+        theme.math_color(),
+        &Color::Rgb {
+            r: 20,
+            g: 21,
+            b: 22
+        }
+    );
+    assert_eq!(
+        theme.math_border_color(),
+        &Color::Rgb {
+            r: 23,
+            g: 24,
+            b: 25
+        }
+    );
 }
 
 #[test]

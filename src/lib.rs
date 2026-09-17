@@ -193,7 +193,8 @@ fn render_document(
             });
             config
         });
-    let processor = MarkdownProcessor::new(processor_config.as_ref().unwrap_or(config));
+    let processor = MarkdownProcessor::new(processor_config.as_ref().unwrap_or(config))
+        .with_extended_math(!do_html);
     let document = processor.parse_document(content)?;
     let renderer = TerminalRenderer::new(config)?;
     let pager_status_bar_transparent = renderer.pager_status_bar_transparent();

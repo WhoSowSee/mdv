@@ -175,8 +175,13 @@ impl<'a> EventRenderer<'a> {
         let mut nested_config = self.config.clone();
         nested_config.footnote_style = FootnoteStyle::Endnotes;
 
-        let mut nested_renderer =
-            EventRenderer::new(&nested_config, self.theme, self.syntax_set, self.code_theme);
+        let mut nested_renderer = EventRenderer::new(
+            &nested_config,
+            self.theme,
+            self.syntax_set,
+            self.code_theme,
+            self.math_diagnostics.clone(),
+        );
         nested_renderer.suppress_footnote_output = true;
         nested_renderer.footnote_definitions = self.footnote_definitions.clone();
 

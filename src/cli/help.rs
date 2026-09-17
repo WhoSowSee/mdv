@@ -6,6 +6,8 @@ pub(super) const SYNTAXES_DIR_LONG_HELP: &str = "Directory containing custom .su
 
 pub(super) const CODE_BLOCK_STYLE_LONG_HELP: &str = "Configure visual style for code blocks\nStyles: basic, simple, pretty\nOptions: show-name, show-icon\nCombine options with ';', for example pretty:show-name;show-icon\nIcons require a Nerd Font in the terminal to display correctly";
 
+pub(super) const MATH_BLOCK_STYLE_LONG_HELP: &str = "Configure visual style for display math and fenced math blocks\nStyles: basic, simple, pretty\nMath blocks do not use code block labels, icons, or line numbers";
+
 pub(super) const CUSTOM_CODE_BLOCK_LONG_HELP: &str = "Override code block icon/label/aliases.\nEntries are separated by ';', options by ',', aliases by '|'.\nAt least one of 'icon' or 'label' is required; 'aliases' is optional.\n\nExample: rust:icon=*,label=russst;py:icon=?,aliases=py|py3";
 
 pub(super) const STYLE_CALLOUT_LONG_HELP: &str = "Configure visual style for callouts\n(pretty:show-icons;show-simple-icons;label-inside;uppercase;fold-icons\nsimple:show-icons;show-simple-icons;uppercase;fold-icons)\nOptions show-icons and show-simple-icons cannot be combined\nOption fold-icons requires show-icons\nshow-icons and fold-icons require a Nerd Font; show-simple-icons uses portable ASCII markers";

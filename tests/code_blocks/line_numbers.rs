@@ -38,6 +38,24 @@ fn code_line_numbers_are_limited_to_code_block_rows() {
     assert!(lines.contains(&"  2 two();"), "{output}");
     assert!(lines.contains(&"Before."), "{output}");
     assert!(lines.contains(&"After."), "{output}");
+
+    let output = render(
+        "Before.\n\n```rust\none();\ntwo();\n```\n\nAfter.\n",
+        &[
+            "--line-numbers",
+            "source;separator",
+            "--code-line-numbers",
+            "source;separator",
+        ],
+    );
+    assert!(
+        output.lines().any(|line| line == "4 │   1 │ one();"),
+        "{output}"
+    );
+    assert!(
+        output.lines().any(|line| line == "5 │   2 │ two();"),
+        "{output}"
+    );
 }
 
 #[test]

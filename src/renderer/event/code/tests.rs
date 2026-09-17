@@ -9,6 +9,15 @@ fn test_code_theme() -> CodeHighlightTheme {
     CodeHighlightTheme::syntect_only(SyntectTheme::default())
 }
 
+fn test_renderer<'a>(
+    config: &'a Config,
+    theme: &'a Theme,
+    syntax_set: &'a SyntaxSet,
+    code_theme: &'a CodeHighlightTheme,
+) -> EventRenderer<'a> {
+    EventRenderer::new(config, theme, syntax_set, code_theme, Default::default())
+}
+
 #[test]
 fn resolve_syntax_returns_plain_text_when_guessing_disabled() {
     let config = Config {
@@ -20,7 +29,7 @@ fn resolve_syntax_returns_plain_text_when_guessing_disabled() {
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
 
-    let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
 
     let syntax_with_hint = renderer.resolve_syntax(Some("unknownlang"), "fn main() {}");
     assert_eq!(syntax_with_hint.name, "Plain Text");
@@ -35,7 +44,7 @@ fn code_block_icon_mapping_recognises_common_languages() {
     let theme = Theme::default();
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
-    let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
 
     assert_eq!(
         renderer.code_block_icon_for_hint("rust", "Rust"),
@@ -65,7 +74,7 @@ fn code_block_icon_mapping_uses_default_icon_for_unknown_language() {
     let theme = Theme::default();
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
-    let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
 
     assert_eq!(
         renderer.code_block_icon_for_hint("unknownlang", "Unknownlang"),
@@ -88,7 +97,7 @@ fn custom_code_block_icon_overrides_default() {
     let theme = Theme::default();
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
-    let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
 
     assert_eq!(
         renderer.code_block_icon_for_hint("rust", "Rust"),
@@ -109,7 +118,7 @@ fn custom_default_icon_overrides_builtin_default() {
     let theme = Theme::default();
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
-    let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
 
     assert_eq!(
         renderer.code_block_icon_for_hint("unknownlang", "Unknownlang"),
@@ -126,7 +135,7 @@ fn highlight_code_reset_closes_last_line_without_phantom_row() {
     let theme = Theme::default();
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
-    let renderer = EventRenderer::new(&config, &theme, &syntax_set, &code_theme);
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
     let highlighted = renderer
         .highlight_code("print(\"hi\")\n", Some("python"))
         .unwrap();

@@ -55,6 +55,8 @@ A callout passes through several stages:
 
 A pretty callout first accumulates logical content and is framed afterward. Handlers must not print border segments directly in the middle of the block.
 
+A link inside a pending custom label collects its visible text and inline math in `current_link_text`. Link end appends that complete text to the pending label without emitting body content or registering URL references. The label keeps the original order of text around the link.
+
 `show-icons` selects the Nerd Font icon map, while `show-simple-icons` selects bracketed ASCII markers. The options are mutually exclusive; custom callout icons continue to take precedence over either built-in map.
 
 ## Headings and spacing

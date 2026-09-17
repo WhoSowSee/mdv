@@ -6,7 +6,7 @@ impl<'a> EventRenderer<'a> {
         input: CodeBlockRenderInput<'_>,
     ) -> Result<()> {
         let indent = " ".repeat(BASIC_CODE_BLOCK_INDENT);
-        let context_width = self.compute_code_block_context_width();
+        let context_width = self.compute_indented_block_context_width();
         let available = input
             .terminal_width
             .saturating_sub(context_width + BASIC_CODE_BLOCK_INDENT);
@@ -24,14 +24,14 @@ impl<'a> EventRenderer<'a> {
             };
 
             for part in wrapped_label.split('\n') {
-                self.push_code_block_indent_for_line_start();
+                self.push_indented_block_prefix();
                 self.output.push_str(&indent);
                 self.output.push_str(&self.style_pretty_accent(part));
                 self.output.push('\n');
             }
 
             if !input.code_starts_with_blank {
-                self.push_code_block_indent_for_line_start();
+                self.push_indented_block_prefix();
                 self.output.push_str(&indent);
                 self.output.push('\n');
             }
@@ -40,7 +40,7 @@ impl<'a> EventRenderer<'a> {
         let layout = self.layout_code_lines(input, available, false);
         self.record_code_line_number_width(&layout);
         for line in &layout.lines {
-            self.push_code_block_indent_for_line_start();
+            self.push_indented_block_prefix();
             self.output.push_str(&indent);
             let decorated = self.highlight_footnote_markers_in_ansi(&line.text);
             let rendered = self.format_code_line(&layout, line, &decorated);
@@ -63,7 +63,7 @@ impl<'a> EventRenderer<'a> {
                 label
             };
 
-            let context_width = self.compute_code_block_context_width();
+            let context_width = self.compute_indented_block_context_width();
             let border_visible_width = display_width(&strip_ansi(&prefix));
             let available_width = input
                 .terminal_width
@@ -76,20 +76,20 @@ impl<'a> EventRenderer<'a> {
             };
 
             for part in wrapped_label.split('\n') {
-                self.push_code_block_indent_for_line_start();
+                self.push_indented_block_prefix();
                 self.output.push_str(&prefix);
                 self.output.push_str(&self.style_pretty_accent(part));
                 self.output.push('\n');
             }
 
             if !input.code_starts_with_blank {
-                self.push_code_block_indent_for_line_start();
+                self.push_indented_block_prefix();
                 self.output.push_str(&prefix);
                 self.output.push('\n');
             }
         }
 
-        let context_width = self.compute_code_block_context_width();
+        let context_width = self.compute_indented_block_context_width();
         let border_visible_width = 2usize;
         let available = input
             .terminal_width
@@ -98,7 +98,7 @@ impl<'a> EventRenderer<'a> {
         self.record_code_line_number_width(&layout);
 
         for line in &layout.lines {
-            self.push_code_block_indent_for_line_start();
+            self.push_indented_block_prefix();
             self.output.push_str(&prefix);
             let decorated = self.highlight_footnote_markers_in_ansi(&line.text);
             let rendered = self.format_code_line(&layout, line, &decorated);

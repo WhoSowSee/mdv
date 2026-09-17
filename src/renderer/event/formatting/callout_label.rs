@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(in crate::renderer::event) fn should_reserve_callout_padding(&self) -> bool {
+    pub(in crate::renderer::event) fn callout_is_pretty(&self) -> bool {
         matches!(
             self.config.callout_style.style,
             crate::cli::CalloutStyle::Pretty
@@ -205,19 +205,7 @@ impl<'a> EventRenderer<'a> {
         label_override: Option<&str>,
         fold: Option<CalloutFold>,
     ) {
-        let current_line_start = self
-            .output
-            .rfind('\n')
-            .map_or(0, |index| index.saturating_add(1));
-        let (current_line, source_line) = crate::renderer::line_numbers::strip_internal_markers(
-            &self.output[current_line_start..],
-        );
-        let source_marker = source_line
-            .filter(|_| strip_ansi(&current_line).trim().is_empty())
-            .map(crate::renderer::line_numbers::encode_internal_marker);
-        if source_marker.is_some() {
-            self.output.truncate(current_line_start);
-        }
+        let source_marker = self.take_pending_source_line_marker();
 
         let outer_level = self.blockquote_level.saturating_sub(1);
         self.ensure_contextual_blank_line_for_blockquote_level(outer_level);

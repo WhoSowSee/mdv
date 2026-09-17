@@ -37,14 +37,14 @@ fn test_link_styles() {
 #[test]
 fn test_clickable_link_text_wraps_with_surrounding_paragraph() {
     const LINKED_MARKDOWN: &str = concat!(
-        "# Простой тест ссылок\n\n",
-        "Короткая [ссылка](https://example.com) Длинная ссылка ",
-        "[ссылка которая занимает почти всю строку]",
-        "(https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams) sd",
+        "# Simple link test\n\n",
+        "Short [link](https://example.com) Long link ",
+        "[a link that occupies almost the entire line]",
+        "(https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams) end",
     );
     const PLAIN_MARKDOWN: &str = concat!(
-        "# Простой тест ссылок\n\n",
-        "Короткая ссылка Длинная ссылка ссылка которая занимает почти всю строку sd",
+        "# Simple link test\n\n",
+        "Short link Long link a link that occupies almost the entire line end",
     );
 
     for width in ["10", "29", "30", "31", "80"] {
@@ -74,7 +74,7 @@ fn test_clickable_link_text_wraps_with_surrounding_paragraph() {
                 );
                 if width == 30 {
                     assert!(
-                        paragraph_lines.iter().all(|line| line.trim() != "а"),
+                        paragraph_lines.iter().all(|line| line.trim() != "a"),
                         "{wrap_mode}/{link_style} left a dangling word fragment: {paragraph_lines:?}"
                     );
                 }

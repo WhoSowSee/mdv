@@ -1,4 +1,8 @@
 pub(super) fn command_symbol(name: &str) -> Option<&'static str> {
+    if let Some(symbol) = delimiter_symbol(name) {
+        return Some(symbol);
+    }
+
     match name {
         "alpha" => Some("α"),
         "beta" => Some("β"),
@@ -65,19 +69,16 @@ pub(super) fn command_symbol(name: &str) -> Option<&'static str> {
         "approx" => Some("≈"),
         "equiv" => Some("≡"),
         "propto" => Some("∝"),
+        "sim" => Some("∼"),
         "infty" => Some("∞"),
         "partial" => Some("∂"),
         "nabla" => Some("∇"),
         "angle" => Some("∠"),
-        "sum" => Some("∑"),
-        "prod" => Some("∏"),
-        "int" => Some("∫"),
-        "iint" => Some("∬"),
-        "iiint" => Some("∭"),
-        "oint" => Some("∮"),
         "cdots" => Some("⋯"),
         "ldots" => Some("…"),
         "dots" => Some("…"),
+        "vdots" => Some("⋮"),
+        "ddots" => Some("⋱"),
         "to" | "rightarrow" => Some("→"),
         "leftarrow" => Some("←"),
         "leftrightarrow" => Some("↔"),
@@ -94,19 +95,104 @@ pub(super) fn command_symbol(name: &str) -> Option<&'static str> {
         "cup" => Some("∪"),
         "cap" => Some("∩"),
         "setminus" => Some("∖"),
+        "triangle" => Some("△"),
+        "mid" => Some("∣"),
         "forall" => Some("∀"),
         "exists" => Some("∃"),
         "neg" => Some("¬"),
         "land" => Some("∧"),
         "lor" => Some("∨"),
-        "sin" => Some("sin"),
-        "cos" => Some("cos"),
-        "tan" => Some("tan"),
-        "ln" => Some("ln"),
-        "log" => Some("log"),
-        "exp" => Some("exp"),
-        "lim" => Some("lim"),
-        "det" => Some("det"),
+        "top" => Some("⊤"),
+        "hbar" => Some("ℏ"),
+        _ => None,
+    }
+}
+
+pub(super) fn delimiter_symbol(name: &str) -> Option<&'static str> {
+    match name {
+        "(" => Some("("),
+        ")" => Some(")"),
+        "[" => Some("["),
+        "]" => Some("]"),
+        "{" => Some("{"),
+        "}" => Some("}"),
+        "|" => Some("‖"),
+        "langle" => Some("⟨"),
+        "rangle" => Some("⟩"),
+        "lfloor" => Some("⌊"),
+        "rfloor" => Some("⌋"),
+        "lceil" => Some("⌈"),
+        "rceil" => Some("⌉"),
+        "lvert" | "vert" => Some("|"),
+        "rvert" => Some("|"),
+        "lVert" | "Vert" => Some("‖"),
+        "rVert" => Some("‖"),
+        _ => None,
+    }
+}
+
+pub(super) fn operator_command(name: &str) -> Option<(&'static str, bool)> {
+    match name {
+        "sum" => Some(("∑", true)),
+        "prod" => Some(("∏", true)),
+        "lim" => Some(("lim", true)),
+        "arg" => Some(("arg", true)),
+        "min" => Some(("min", true)),
+        "max" => Some(("max", true)),
+        "int" => Some(("∫", false)),
+        "iint" => Some(("∬", false)),
+        "iiint" => Some(("∭", false)),
+        "oint" => Some(("∮", false)),
+        "sin" => Some(("sin", false)),
+        "cos" => Some(("cos", false)),
+        "tan" => Some(("tan", false)),
+        "ln" => Some(("ln", false)),
+        "log" => Some(("log", false)),
+        "exp" => Some(("exp", false)),
+        "det" => Some(("det", false)),
+        "rank" => Some(("rank", false)),
+        "trace" => Some(("trace", false)),
+        _ => None,
+    }
+}
+
+pub(super) fn literal_command(name: &str) -> Option<&'static str> {
+    match name {
+        "%" => Some("%"),
+        "$" => Some("$"),
+        "#" => Some("#"),
+        "_" => Some("_"),
+        "{" => Some("{"),
+        "}" => Some("}"),
+        "&" => Some("&"),
+        "|" => Some("‖"),
+        "^" => Some("^"),
+        _ => None,
+    }
+}
+
+pub(super) fn spacing_command(name: &str) -> Option<&'static str> {
+    match name {
+        "," | ";" | ":" | "!" | " " => Some(" "),
+        "quad" => Some("  "),
+        "qquad" => Some("    "),
+        _ => None,
+    }
+}
+
+pub(super) fn is_opening_delimiter_command(name: &str) -> bool {
+    matches!(name, "langle" | "lceil" | "lfloor" | "lvert" | "lVert")
+}
+
+pub(super) fn mathbb_symbol(letter: &str) -> Option<&'static str> {
+    match letter {
+        "R" => Some("ℝ"),
+        "Z" => Some("ℤ"),
+        "Q" => Some("ℚ"),
+        "C" => Some("ℂ"),
+        "N" => Some("ℕ"),
+        "P" => Some("ℙ"),
+        "E" => Some("𝔼"),
         _ => None,
     }
 }

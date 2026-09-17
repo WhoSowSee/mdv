@@ -89,8 +89,13 @@ impl<'a> EventRenderer<'a> {
     ) -> Result<()> {
         let text = text.replace('\t', &" ".repeat(self.config.tab_length));
         let language = html_preformatted_language(element);
-        let mut renderer =
-            EventRenderer::new(self.config, self.theme, self.syntax_set, self.code_theme);
+        let mut renderer = EventRenderer::new(
+            self.config,
+            self.theme,
+            self.syntax_set,
+            self.code_theme,
+            self.math_diagnostics.clone(),
+        );
         renderer.code_block_content = text;
         renderer.code_block_language = language;
         renderer.handle_code_block_end()?;
