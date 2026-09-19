@@ -31,6 +31,7 @@ pub(crate) fn select_interactive_target(
     requested: bool,
     pager_requested: bool,
     stdin_is_terminal: bool,
+    stdout_is_terminal: bool,
 ) -> Result<Option<InteractiveTarget>> {
     if pager_requested {
         return Ok(None);
@@ -50,7 +51,9 @@ pub(crate) fn select_interactive_target(
                 Ok(_) | Err(_) => None,
             }
         }
-        None if stdin_is_terminal => Some(InteractiveTarget::Directory(std::env::current_dir()?)),
+        None if stdin_is_terminal && (requested || stdout_is_terminal) => {
+            Some(InteractiveTarget::Directory(std::env::current_dir()?))
+        }
         None if requested => Some(InteractiveTarget::Stdin),
         None => None,
     };

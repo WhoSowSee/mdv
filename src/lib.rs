@@ -83,6 +83,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         cli.interactive,
         cli.pager,
         stdin_is_terminal,
+        stdout_is_terminal,
     )? {
         return interactive::run(target, config, output_style);
     }

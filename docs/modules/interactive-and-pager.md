@@ -10,9 +10,9 @@ The interactive subsystem has two levels: a Markdown document browser and a page
 - `File(PathBuf)` opens the pager immediately;
 - `Stdin` reads standard input and opens a pager without file actions.
 
-`select_interactive_target` considers the filename, `--interactive`, `--pager`, and whether standard input is a terminal. An explicit pager takes precedence and bypasses interactive target selection.
+`select_interactive_target` considers the filename, `--interactive`, `--pager`, and whether standard input and output are terminals. An explicit pager takes precedence and bypasses interactive target selection.
 
-With no filename and terminal standard input, the current directory opens automatically. Interactive mode requires terminal standard output.
+With no filename and terminal standard input and output, the current directory opens automatically. Redirected output does not select the browser implicitly. Explicit interactive targets still require terminal standard output.
 
 ## Browser files
 

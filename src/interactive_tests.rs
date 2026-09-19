@@ -12,6 +12,7 @@ fn directory_arguments_open_the_browser_without_an_explicit_flag() {
         false,
         false,
         true,
+        true,
     )
     .unwrap();
 
@@ -29,11 +30,11 @@ fn regular_files_require_the_interactive_flag() {
     let filename = file.path().to_string_lossy();
 
     assert_eq!(
-        select_interactive_target(Some(filename.as_ref()), false, false, true).unwrap(),
+        select_interactive_target(Some(filename.as_ref()), false, false, true, true).unwrap(),
         None
     );
     assert_eq!(
-        select_interactive_target(Some(filename.as_ref()), true, false, true).unwrap(),
+        select_interactive_target(Some(filename.as_ref()), true, false, true, true).unwrap(),
         Some(InteractiveTarget::File(file.path().canonicalize().unwrap()))
     );
 }
@@ -41,7 +42,26 @@ fn regular_files_require_the_interactive_flag() {
 #[test]
 fn pager_mode_never_selects_an_interactive_target() {
     assert_eq!(
-        select_interactive_target(None, false, true, true).unwrap(),
+        select_interactive_target(None, false, true, true, true).unwrap(),
+        None
+    );
+}
+
+#[test]
+fn automatic_browser_requires_terminal_input_and_output() {
+    assert!(
+        matches!(
+            select_interactive_target(None, false, false, true, true).unwrap(),
+            Some(InteractiveTarget::Directory(_))
+        ),
+        "a fully interactive terminal should open the current directory"
+    );
+    assert_eq!(
+        select_interactive_target(None, false, false, true, false).unwrap(),
+        None
+    );
+    assert_eq!(
+        select_interactive_target(None, false, false, false, true).unwrap(),
         None
     );
 }
