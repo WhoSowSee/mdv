@@ -5,6 +5,7 @@ vendor/minus/target/
 
 # Python
 __pycache__/
+.ruff_cache/
 
 # IDE
 .vscode/

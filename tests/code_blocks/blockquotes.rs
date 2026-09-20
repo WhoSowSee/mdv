@@ -9,7 +9,7 @@ fn test_blockquote_code_block_preserves_prefix() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        "> \n> ```python\n> print(\"Hello word\")\n> ```\n>\n>> \n>> ```python\n>> print(\"Hello word\")\n>> ```\n",
+        "> \n> ```python\n> print(\"Docs ready\")\n> ```\n>\n>> \n>> ```python\n>> print(\"Docs ready\")\n>> ```\n",
     )
     .unwrap();
 
@@ -42,7 +42,7 @@ fn test_blockquote_code_block_preserves_prefix() {
     );
     assert_eq!(
         lines.next(),
-        Some("│ │ print(\"Hello word\")"),
+        Some("│ │ print(\"Docs ready\")"),
         "expected first code block to keep blockquote and border prefixes"
     );
     assert_eq!(
@@ -67,7 +67,7 @@ fn test_blockquote_code_block_preserves_prefix() {
     );
     assert_eq!(
         lines.next(),
-        Some("││ │ print(\"Hello word\")"),
+        Some("││ │ print(\"Docs ready\")"),
         "expected nested blockquote code line to keep prefixes"
     );
     assert_eq!(

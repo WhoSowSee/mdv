@@ -33,10 +33,10 @@ fn arg_has_user_value_detects_command_line_sources() {
 #[test]
 fn arg_has_user_value_ignores_default_values() {
     let matches = Command::new("mdv-test")
-        .arg(Arg::new("opt").default_value("foo"))
+        .arg(Arg::new("color").default_value("auto"))
         .get_matches_from(vec!["mdv-test"]);
 
-    assert!(!arg_has_user_value(&matches, "opt"));
+    assert!(!arg_has_user_value(&matches, "color"));
 }
 
 #[test]

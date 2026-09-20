@@ -780,7 +780,7 @@ mod tests {
         let mut command_queue = CommandQueue::new_zero();
         let is_exited = Arc::new(AtomicBool::new(false));
         ps.screen.orig_text = TEST_STR.to_string();
-        ps.search_state.search_term = Some(regex::Regex::new(r"dasdas\s+das").unwrap());
+        ps.search_state.search_term = Some(regex::Regex::new(r"missing\s+section").unwrap());
         ps.reformat_display().unwrap();
         ps.upper_mark = 3;
 

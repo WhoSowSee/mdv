@@ -114,7 +114,7 @@ fn test_callout_simple_icons_cover_all_builtin_categories() {
 #[test]
 fn test_callout_backslash_keeps_blockquote_context() {
     let temp_file = NamedTempFile::new().unwrap();
-    fs::write(&temp_file, "> [!important]\n> Watermelon\\\n> Watermelon\n").unwrap();
+    fs::write(&temp_file, "> [!important]\n> Read docs.\\\n> Run tests.\n").unwrap();
 
     let output = mdv_cmd()
         .args(["--color", "never"])
@@ -135,23 +135,24 @@ fn test_callout_backslash_keeps_blockquote_context() {
         stdout
     );
 
-    let watermelon_lines: Vec<&str> = stdout
+    let body_lines: Vec<&str> = stdout
         .lines()
-        .filter(|line| line.contains("Watermelon"))
+        .filter(|line| line.contains("Read docs.") || line.contains("Run tests."))
         .collect();
 
-    assert!(
-        !watermelon_lines.is_empty(),
+    assert_eq!(
+        body_lines.len(),
+        2,
         "expected callout body lines, stdout:\n{}",
         stdout
     );
     assert!(
-        watermelon_lines.iter().all(|line| line.starts_with("┃ ")),
+        body_lines.iter().all(|line| line.starts_with("┃ ")),
         "expected backslash content to stay inside callout, stdout:\n{}",
         stdout
     );
     assert!(
-        !stdout.contains("│ Watermelon"),
+        !stdout.contains("│ Read docs.") && !stdout.contains("│ Run tests."),
         "expected no plain blockquote after backslash, stdout:\n{}",
         stdout
     );
@@ -242,7 +243,7 @@ fn test_callout_admonition_syntaxes_render() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        ":::note\nAlpha\n:::\n\n:::{note} Title\nBeta\n:::\n\n!!! note Watermelon\nGamma\n",
+        ":::note\nRead the guide.\n:::\n\n:::{note} Configuration\nEdit config.yaml.\n:::\n\n!!! note Validation\nRun cargo test.\n",
     )
     .unwrap();
 
@@ -265,17 +266,19 @@ fn test_callout_admonition_syntaxes_render() {
         stdout
     );
     assert!(
-        stdout.contains("┃ [Title]"),
+        stdout.contains("┃ [Configuration]"),
         "expected custom callout label to render, stdout:\n{}",
         stdout
     );
     assert!(
-        stdout.contains("┃ [Watermelon]"),
+        stdout.contains("┃ [Validation]"),
         "expected custom callout label in bang syntax, stdout:\n{}",
         stdout
     );
     assert!(
-        stdout.contains("Alpha") && stdout.contains("Beta") && stdout.contains("Gamma"),
+        stdout.contains("Read the guide.")
+            && stdout.contains("Edit config.yaml.")
+            && stdout.contains("Run cargo test."),
         "expected callout bodies to render, stdout:\n{}",
         stdout
     );

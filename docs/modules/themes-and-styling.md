@@ -119,11 +119,11 @@ Partial YAML retains semantic defaults. Duplicate properties in a string overrid
 
 Visual extensions are parsed before rendering:
 
-- [src/callout.rs](../../src/callout.rs) — custom callout icon and color;
-- [src/list_marker.rs](../../src/list_marker.rs) — pretty, uniform, and per-level list markers;
-- [src/checkbox.rs](../../src/checkbox.rs) — standard square and circle icons;
-- [src/checkbox_override.rs](../../src/checkbox_override.rs) — custom checkbox states;
-- [src/custom_code_block.rs](../../src/custom_code_block.rs) — code label, icon, and aliases.
+- [src/callout.rs](../../src/callout.rs) - custom callout icon and color;
+- [src/list_marker.rs](../../src/list_marker.rs) - pretty, uniform, and per-level list markers;
+- [src/checkbox.rs](../../src/checkbox.rs) - standard square and circle icons;
+- [src/checkbox_override.rs](../../src/checkbox_override.rs) - custom checkbox states;
+- [src/custom_code_block.rs](../../src/custom_code_block.rs) - code label, icon, and aliases.
 
 The main configuration and presets may express custom callouts, code blocks, checkbox states, and list levels as nested YAML mappings. CLI arguments retain their compact string syntax, and an explicitly supplied higher-priority setting still replaces the complete lower-priority setting.
 

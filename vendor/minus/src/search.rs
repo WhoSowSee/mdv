@@ -1005,7 +1005,7 @@ mod tests {
             let mut search_opts = new_search_opts(SearchMode::Forward);
             let mut out = Vec::new();
             search_opts.ev = Some(Event::Key(KeyEvent {
-                code: KeyCode::Char('Т'),
+                code: KeyCode::Char('Å'),
                 kind: KeyEventKind::Press,
                 modifiers: KeyModifiers::SHIFT,
                 state: KeyEventState::NONE,
@@ -1013,28 +1013,28 @@ mod tests {
 
             handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
 
-            for c in "екст".chars() {
+            for c in "ngström".chars() {
                 search_opts.ev = Some(make_event_from_keycode(KeyCode::Char(c)));
                 handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
             }
 
-            assert_eq!(search_opts.string, "Текст");
-            assert_eq!(search_opts.cursor_position, 6);
+            assert_eq!(search_opts.string, "Ångström");
+            assert_eq!(search_opts.cursor_position, 9);
 
             search_opts.ev = Some(make_event_from_keycode(KeyCode::Left));
             handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
             search_opts.ev = Some(make_event_from_keycode(KeyCode::Backspace));
             handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
 
-            assert_eq!(search_opts.string, "Тект");
-            assert_eq!(search_opts.cursor_position, 4);
+            assert_eq!(search_opts.string, "Ångstrm");
+            assert_eq!(search_opts.cursor_position, 7);
 
             search_opts.ev = Some(make_event_from_keycode(KeyCode::Home));
             handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
             search_opts.ev = Some(make_event_from_keycode(KeyCode::Delete));
             handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
 
-            assert_eq!(search_opts.string, "ект");
+            assert_eq!(search_opts.string, "ngstrm");
             assert_eq!(search_opts.cursor_position, 1);
         }
 

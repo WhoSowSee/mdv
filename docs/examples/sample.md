@@ -217,7 +217,7 @@ This sentence includes a footnote reference.[^1] You can add multiple footnotes 
 
 Quoted text with a citation[^citation]:
 
-> “Markdown allows you to write using an easy-to-read, easy-to-write plain text format.” — *Anonymous*
+> “Markdown allows you to write using an easy-to-read, easy-to-write plain text format.” - *Anonymous*
 
 [^1]: Footnotes appear at the end of the document or section.
 [^2]: Multiple footnotes showcase repeated usage.

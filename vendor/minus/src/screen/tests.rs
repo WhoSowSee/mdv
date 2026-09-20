@@ -198,13 +198,13 @@ mod wrapping {
 
     #[test]
     fn osc8_hyperlink_does_not_change_wrap_position() {
-        let plain = "Короткая ссылка Длинная ссылка ссылка которая занимает почти всю строку sd";
+        let plain = "Compact résumé Detailed guide: résumé link nearly covers the whole line OK";
         let linked = concat!(
-            "Короткая \x1b]8;;https://example.com\x1b\\ссылка\x1b]8;;\x1b\\ ",
-            "Длинная ссылка ",
+            "Compact \x1b]8;;https://example.com\x1b\\résumé\x1b]8;;\x1b\\ ",
+            "Detailed guide: ",
             "\x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
-            "ссылка которая занимает почти всю строку",
-            "\x1b]8;;\x1b\\ sd"
+            "résumé link nearly covers the whole line",
+            "\x1b]8;;\x1b\\ OK"
         );
 
         for width in [10, 29, 30, 31, 80] {
@@ -223,16 +223,16 @@ mod wrapping {
 
         let narrow_lines = [
             concat!(
-                " Короткая \x1b]8;;https://example.com\x1b\\ссылка\x1b]8;;\x1b\\ ",
-                "Длинная ссылк"
+                " Compact \x1b]8;;https://example.com\x1b\\résumé\x1b]8;;\x1b\\ ",
+                "Detailed guide"
             ),
             concat!(
-                " а \x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
-                "ссылка которая занимает поч\x1b]8;;\x1b\\"
+                " : \x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
+                "résumé link nearly covers t\x1b]8;;\x1b\\"
             ),
             concat!(
                 " \x1b]8;;https://very-long-url-that-should-be-truncated-when-using-cut-mode.exams\x1b\\",
-                "ти всю строку\x1b]8;;\x1b\\ sd"
+                "he whole line\x1b]8;;\x1b\\ OK"
             ),
         ];
 

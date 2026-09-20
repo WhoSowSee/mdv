@@ -127,7 +127,7 @@ fn attached_footnotes_render_after_tables() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
-        "| A | B |\n| - | - |\n| foo[^a] | bar |\n\n[^a]: alpha\n",
+        "| Tool | Mode |\n| - | - |\n| mdv[^a] | CLI |\n\n[^a]: Terminal Markdown viewer.\n",
     )
     .unwrap();
 
@@ -153,7 +153,7 @@ fn attached_footnotes_render_after_tables() {
         stdout
     );
     assert!(
-        stdout.contains("[^a] alpha"),
+        stdout.contains("[^a] Terminal Markdown viewer."),
         "footnote body should render after table: {}",
         stdout
     );

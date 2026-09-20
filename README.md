@@ -95,49 +95,49 @@ cat <FILE> | mdv
 
 ### Output and workflow
 
-- `--html` — prints HTML instead of terminal formatting.
-- `-E, --render-html` — renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally.
-- `-N, --line-numbers [<MODE>]` — prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
-- `--color <auto|always|never>` — controls terminal styling. `auto` enables ANSI and OSC 8 only when stdout is a terminal, `always` preserves styling through pipes, and `never` emits plain rendered output.
-- `--hide-comments` — removes Markdown comments from the rendered output.
-- `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` — controls an exact `---`-delimited YAML property mapping beginning on the first line. `hidden` omits it; `panel` renders a property panel; `table` uses Property/Value columns; `plain` emits normalized key/value lines; `inline` joins properties into one flowing row; `blocks` places each value below its key; `code` renders highlighted YAML; and `source` parses the complete input as ordinary Markdown.
-- `--theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
-- `--from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
-- `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.
-- `-p, --pager[=<COMMAND>]` — opens the rendered output in a pager. A bare flag uses `MDV_PAGER` when set and the default pager otherwise. `--pager=default` selects the default backend (currently the built-in `minus`), `--pager=builtin` explicitly selects `minus`, and a command such as `--pager="less -R"` receives the rendered output on stdin.
-- `-i, --interactive` — opens the interactive document browser. Running `mdv` without arguments in a terminal opens the current directory, and passing a directory opens that directory. Redirected output does not open the browser implicitly. The browser recursively finds Markdown files while honoring hidden-file and `.gitignore` rules.
-- `--monitor` — watches the source file and re-renders when it changes.
-- `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
-- `-P, --preset <NAME>` — applies a built-in or user preset above the configuration file and below explicit CLI options.
-- `--preset-info` — lists available presets when no positional `FILE` is provided. `mdv --preset-info FILE --preset NAME` renders the document and prints `Current preset: NAME`; with `FILE` but no `--preset`, the flag does not alter rendering.
-- `-n, --no-config` — skips `config.yaml`/`config.yml`; presets remain available.
-- `--init-config [CONFIG_DIR]` — creates the default config file. Uses the provided directory, `--config-file`, `MDV_CONFIG_PATH`, or the default config directory.
+- `--html` - prints HTML instead of terminal formatting.
+- `-E, --render-html` - renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally.
+- `-N, --line-numbers [<MODE>]` - prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
+- `--color <auto|always|never>` - controls terminal styling. `auto` enables ANSI and OSC 8 only when stdout is a terminal, `always` preserves styling through pipes, and `never` emits plain rendered output.
+- `--hide-comments` - removes Markdown comments from the rendered output.
+- `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` - controls an exact `---`-delimited YAML property mapping beginning on the first line. `hidden` omits it; `panel` renders a property panel; `table` uses Property/Value columns; `plain` emits normalized key/value lines; `inline` joins properties into one flowing row; `blocks` places each value below its key; `code` renders highlighted YAML; and `source` parses the complete input as ordinary Markdown.
+- `--theme-info [FILE]` - shows the active palette; when `FILE` is provided it renders the file along with palette information.
+- `--from <TEXT>` - starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
+- `-r, --reverse` - renders the document starting from the end while keeping block formatting intact.
+- `-p, --pager[=<COMMAND>]` - opens the rendered output in a pager. A bare flag uses `MDV_PAGER` when set and the default pager otherwise. `--pager=default` selects the default backend (currently the built-in `minus`), `--pager=builtin` explicitly selects `minus`, and a command such as `--pager="less -R"` receives the rendered output on stdin.
+- `-i, --interactive` - opens the interactive document browser. Running `mdv` without arguments in a terminal opens the current directory, and passing a directory opens that directory. Redirected output does not open the browser implicitly. The browser recursively finds Markdown files while honoring hidden-file and `.gitignore` rules.
+- `--monitor` - watches the source file and re-renders when it changes.
+- `-F, --config-file <CONFIG_DIR>` - reads configuration from the provided directory.
+- `-P, --preset <NAME>` - applies a built-in or user preset above the configuration file and below explicit CLI options.
+- `--preset-info` - lists available presets when no positional `FILE` is provided. `mdv --preset-info FILE --preset NAME` renders the document and prints `Current preset: NAME`; with `FILE` but no `--preset`, the flag does not alter rendering.
+- `-n, --no-config` - skips `config.yaml`/`config.yml`; presets remain available.
+- `--init-config [CONFIG_DIR]` - creates the default config file. Uses the provided directory, `--config-file`, `MDV_CONFIG_PATH`, or the default config directory.
 
 ### Theming
 
-- `-t, --theme <NAME>` — chooses a built-in theme (default `terminal`).
-- `-T, --code-theme <NAME>` — sets the syntax highlight palette (default `terminal`).
-- `--syntaxes-dir <DIR>` — recursively loads custom `.sublime-syntax` files on top of the embedded syntax set. Custom entries take precedence over matching built-in syntaxes.
-- `-b, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` — selects an indented borderless block, a single gutter, or a boxed frame. Labels are hidden by default; `show-name` displays the language name, `show-icon` displays its icon, and both options may be combined (default `basic`).
-- `--math-block-style <basic|simple|pretty>` — selects the presentation for display formulas and fenced `math`/`latex`/`tex` blocks.
-- `-K, --code-line-numbers [<MODE>]` — numbers rows inside each code block. Without a mode, every wrapped terminal row is numbered; `source` numbers physical code lines and leaves wrapped continuations unnumbered, `separator` adds a separator, and `"source;separator"` combines both modes.
-- `--custom-theme <key=value;...>` — overrides UI colors on top of the selected theme.
-- `--inline-style <STYLES>` — overrides decorations for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Use `element:property=true,property=false` entries separated by `;`; properties are `backticks`, `bold`, `italic`, `underline`, and `strikethrough` (for example `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
-- `--custom-code-theme <key=value;...>` — overrides syntax colors using the same format as `--custom-theme`.
-- `--custom-code-block <lang:icon=...,label=...,aliases=...>[;...]` — overrides the icon, label, and aliases for specific code block languages. Multiple languages are separated by `;`, options within one language by `,`, and aliases by `|` (for example, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Works for any language hint, even if it is not in the built-in icon mapping. Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic. Use `default:icon=...` to set the fallback icon for unknown languages.
+- `-t, --theme <NAME>` - chooses a built-in theme (default `terminal`).
+- `-T, --code-theme <NAME>` - sets the syntax highlight palette (default `terminal`).
+- `--syntaxes-dir <DIR>` - recursively loads custom `.sublime-syntax` files on top of the embedded syntax set. Custom entries take precedence over matching built-in syntaxes.
+- `-b, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` - selects an indented borderless block, a single gutter, or a boxed frame. Labels are hidden by default; `show-name` displays the language name, `show-icon` displays its icon, and both options may be combined (default `basic`).
+- `--math-block-style <basic|simple|pretty>` - selects the presentation for display formulas and fenced `math`/`latex`/`tex` blocks.
+- `-K, --code-line-numbers [<MODE>]` - numbers rows inside each code block. Without a mode, every wrapped terminal row is numbered; `source` numbers physical code lines and leaves wrapped continuations unnumbered, `separator` adds a separator, and `"source;separator"` combines both modes.
+- `--custom-theme <key=value;...>` - overrides UI colors on top of the selected theme.
+- `--inline-style <STYLES>` - overrides decorations for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Use `element:property=true,property=false` entries separated by `;`; properties are `backticks`, `bold`, `italic`, `underline`, and `strikethrough` (for example `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
+- `--custom-code-theme <key=value;...>` - overrides syntax colors using the same format as `--custom-theme`.
+- `--custom-code-block <lang:icon=...,label=...,aliases=...>[;...]` - overrides the icon, label, and aliases for specific code block languages. Multiple languages are separated by `;`, options within one language by `,`, and aliases by `|` (for example, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Works for any language hint, even if it is not in the built-in icon mapping. Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic. Use `default:icon=...` to set the fallback icon for unknown languages.
 
 ### Callouts
 
-- `-C, --callout-style <pretty|simple>[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]` — sets the callout layout and label behavior. `show-icons` uses Nerd Font glyphs; `show-simple-icons` uses portable ASCII markers such as `[i]`, `[*]`, `[!]`, and `[x]`. The two icon options cannot be combined.
+- `-C, --callout-style <pretty|simple>[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]` - sets the callout layout and label behavior. `show-icons` uses Nerd Font glyphs; `show-simple-icons` uses portable ASCII markers such as `[i]`, `[*]`, `[!]`, and `[x]`. The two icon options cannot be combined.
   `label-inside` is only supported with `pretty`, `fold-icons` requires `show-icons`.
-- `--custom-callout <name:icon=...,color=...;...>` — overrides or adds callout labels.
+- `--custom-callout <name:icon=...,color=...;...>` - overrides or adds callout labels.
   `icon` and `color` are optional; color formats match `--custom-theme`.
 - A Nerd Font is required in the terminal for icons enabled by `show-icons` and `fold-icons` to render correctly. `show-simple-icons` does not require a Nerd Font.
 
 ### Checkboxes
 
-- `-x, --pretty-checkbox <square|circle>` — renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers. Requires a Nerd Font in the terminal.
-- `--custom-checkbox <PAIRS>` — overrides built-in checkbox icons or adds new states (only with `--pretty-checkbox`). Each semicolon-separated pair is either `<char>:<icon>[:<color>]` or `<char>:<color>`. The color-only form keeps an existing icon or uses the default unchecked icon for a new state. Colors accept named, hex, rgb, and `ansi(N)` values.
+- `-x, --pretty-checkbox <square|circle>` - renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers. Requires a Nerd Font in the terminal.
+- `--custom-checkbox <PAIRS>` - overrides built-in checkbox icons or adds new states (only with `--pretty-checkbox`). Each semicolon-separated pair is either `<char>:<icon>[:<color>]` or `<char>:<color>`. The color-only form keeps an existing icon or uses the default unchecked icon for a new state. Colors accept named, hex, rgb, and `ansi(N)` values.
   - Override:  `--custom-checkbox ' :󰀦'`          replace the unchecked icon
   - Add:       `--custom-checkbox '*:󰞋'`          add a new `[*]` checkbox state
   - Color:     `--custom-checkbox ' :󰀦:yellow'`   or `#ff0000`, `128,1,1`, `ansi(200)`
@@ -146,53 +146,53 @@ cat <FILE> | mdv
 
 ### Lists
 
-- `-L, --pretty-list <style>` — replaces the default `-` unordered-list markers with a level-aware icon set. The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--pretty-list 'type:unicode;size:small'`.
+- `-L, --pretty-list <style>` - replaces the default `-` unordered-list markers with a level-aware icon set. The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--pretty-list 'type:unicode;size:small'`.
   - `size` changes only Nerd Font markers. Unicode accepts either value but renders the same markers; their spacing may vary by font. Verified with Nerd Font families, especially JetBrainsMono Nerd Font.
-- `-D, --pretty-definition <unicode|nerd-font>` — renders definition descriptions with a built-in Unicode or Nerd Font marker.
-- `--uniform-list-marker <level:1-4|icon:glyph>` — uses one marker at every nesting level (only with `--pretty-list`). `level:2` reuses level 2 from the selected set; `icon:*` uses a custom glyph.
-- `--custom-list <level>:<icon>[:<color>];...` — overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
+- `-D, --pretty-definition <unicode|nerd-font>` - renders definition descriptions with a built-in Unicode or Nerd Font marker.
+- `--uniform-list-marker <level:1-4|icon:glyph>` - uses one marker at every nesting level (only with `--pretty-list`). `level:2` reuses level 2 from the selected set; `icon:*` uses a custom glyph.
+- `--custom-list <level>:<icon>[:<color>];...` - overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
   - Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
   - Icon only:     `--custom-list '1:>'`          marker `>` in theme color
   - Color only:    `--custom-list '1:red'`        keep built-in icon, red color
 
 ### Layout and wrapping
 
-- `-c, --cols <N>` — enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
-- `-m, --margin <right:N;left:N>` — reserves separate left and right terminal margins. An omitted side defaults to `0`.
-- `--tab-length <N>` — replaces tab characters with `N` spaces (default `4`).
-- `-w, --wrap <char|word|none>` — selects the break strategy for text, code, callouts, and table cells (default `char`).
-- `--reflow` — collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.
-- `-W, --table-wrap <fit|wrap|none>` — chooses table geometry: fit cells, split columns into blocks, or allow overflow (default `fit`). Cell breaks still follow `--wrap`.
-- `-B, --pretty-table` — restores full rounded table borders.
-- `-S, --table-smart-indent` — automatic table indent adjustment based on available width.
-- `-H, --heading-layout <level|center|flat|none>` — controls heading indentation (default `level`).
-- `--show-heading-markers` — prefixes headings with markdown-style markers matching their level.
-- `-I, --smart-indent` — smooths indentation jumps between heading levels in `level` mode.
-- `--code-wrap-indent <none|base|double>` — sets the hanging indent applied to wrapped code block lines (default `double`).
-- `--block-spacing <spec>` — overrides top and bottom blank lines per block. Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
+- `-c, --cols <N>` - enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
+- `-m, --margin <right:N;left:N>` - reserves separate left and right terminal margins. An omitted side defaults to `0`.
+- `--tab-length <N>` - replaces tab characters with `N` spaces (default `4`).
+- `-w, --wrap <char|word|none>` - selects the break strategy for text, code, callouts, and table cells (default `char`).
+- `--reflow` - collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.
+- `-W, --table-wrap <fit|wrap|none>` - chooses table geometry: fit cells, split columns into blocks, or allow overflow (default `fit`). Cell breaks still follow `--wrap`.
+- `-B, --pretty-table` - restores full rounded table borders.
+- `-S, --table-smart-indent` - automatic table indent adjustment based on available width.
+- `-H, --heading-layout <level|center|flat|none>` - controls heading indentation (default `level`).
+- `--show-heading-markers` - prefixes headings with markdown-style markers matching their level.
+- `-I, --smart-indent` - smooths indentation jumps between heading levels in `level` mode.
+- `--code-wrap-indent <none|base|double>` - sets the hanging indent applied to wrapped code block lines (default `double`).
+- `--block-spacing <spec>` - overrides top and bottom blank lines per block. Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
 
 ### Content visibility
 
-- `--show-empty-elements` — keeps normally hidden empty headings, lists, block quotes, code blocks, and tables in the output.
-- `--no-code-guessing` — disables heuristic detection of code block languages (unknown blocks remain plain text).
+- `--show-empty-elements` - keeps normally hidden empty headings, lists, block quotes, code blocks, and tables in the output.
+- `--no-code-guessing` - disables heuristic detection of code block languages (unknown blocks remain plain text).
 
 ### Links
 
-- `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` — changes how links are displayed (default `clickable`).
-- `-l, --link-truncation <wrap|cut|tablecut|none>` — determines how long links are shortened (default `wrap`).
+- `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` - changes how links are displayed (default `clickable`).
+- `-l, --link-truncation <wrap|cut|tablecut|none>` - determines how long links are shortened (default `wrap`).
 
 ### Footnotes
 
-- `--footnote-style <endnotes|attached>` — places footnotes at the end of the document or immediately after the block that references them, including paragraphs, tables, and list items.
-- `--missing-footnote-style <show|hide>` — controls placeholder entries for missing, invalid, or empty footnote definitions.
+- `--footnote-style <endnotes|attached>` - places footnotes at the end of the document or immediately after the block that references them, including paragraphs, tables, and list items.
+- `--missing-footnote-style <show|hide>` - controls placeholder entries for missing, invalid, or empty footnote definitions.
   `show` renders a placeholder message in the footnote block
   `hide` omits those entries entirely.
 
 ### Information
 
-- `mdv help` — opens the full `mdv --help` output in the selected pager. It uses `MDV_PAGER` when set and the built-in pager otherwise; when input or output is redirected, it prints the same help directly.
-- `-h, --help` — shows the help text.
-- `-V, --version` — prints the current version.
+- `mdv help` - opens the full `mdv --help` output in the selected pager. It uses `MDV_PAGER` when set and the built-in pager otherwise; when input or output is redirected, it prints the same help directly.
+- `-h, --help` - shows the help text.
+- `-V, --version` - prints the current version.
 
 ## Configuration
 
@@ -235,9 +235,9 @@ The structured form changes only how a value is written. A setting present in a 
 
 mdv ships with three presets:
 
-- `reader` — word wrapping, paragraph reflow, attached footnotes, an inline link table, and the `nord` theme for long-form reading.
-- `compact` — flat headings, simple code/callout blocks, hidden code labels, and end-of-document links for dense terminal output.
-- `showcase` — centered headings, `tokyonight`, rich code/callout frames, checkboxes, and list icons. This preset requires a Nerd Font for its icons.
+- `reader` - word wrapping, paragraph reflow, attached footnotes, an inline link table, and the `nord` theme for long-form reading.
+- `compact` - flat headings, simple code/callout blocks, hidden code labels, and end-of-document links for dense terminal output.
+- `showcase` - centered headings, `tokyonight`, rich code/callout frames, checkboxes, and list icons. This preset requires a Nerd Font for its icons.
 
 Select one with `mdv --preset reader README.md`. Explicit CLI options override the selected preset, so `mdv --preset compact --cols 100 README.md` uses the compact preset at 100 columns.
 
@@ -256,15 +256,15 @@ inline_style:
     backticks: false
 ```
 
-Every preset accepts the same keys and values as [`docs/examples/config.yaml`](docs/examples/config.yaml), plus the required non-empty `name` field. Presets are partial layers: omitted settings remain unchanged, while explicit values—including `false`, default-valued options, and `null`—override the configuration beneath them. A user preset with the same name as a built-in replaces the built-in. Run `mdv --preset-info` to list the active catalog. When a file and preset are both provided, `mdv --preset-info FILE --preset NAME` renders the file with `Current preset: NAME`; without `--preset`, the flag does not alter file rendering.
+Every preset accepts the same keys and values as [`docs/examples/config.yaml`](docs/examples/config.yaml), plus the required non-empty `name` field. Presets are partial layers: omitted settings remain unchanged, while explicit values-including `false`, default-valued options, and `null`-override the configuration beneath them. A user preset with the same name as a built-in replaces the built-in. Run `mdv --preset-info` to list the active catalog. When a file and preset are both provided, `mdv --preset-info FILE --preset NAME` renders the file with `Current preset: NAME`; without `--preset`, the flag does not alter file rendering.
 
 ## Environment variables
 
-- `MDV_CONFIG_PATH` — custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
-- `MDV_EDITOR` — editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors.
-- `MDV_EDITOR_MODE` — optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
-- `MDV_PAGER` — pager command, optionally with quoted paths and arguments (for example, `less -R`). It selects the backend for `--pager`, `mdv help`, and documents opened from the interactive browser, but does not enable paging for ordinary output by itself. An explicit `--pager=<COMMAND>` has higher priority; `default` selects the default backend (currently built-in `minus`), while `builtin` explicitly selects `minus`. Empty, malformed, non-Unicode, and recursive `mdv` commands are errors. Commands are split into a program and arguments and run directly without shell interpretation.
-- `MDV_COLOR` — sets `auto`, `always`, or `never`; an explicit `--color` has higher priority.
+- `MDV_CONFIG_PATH` - custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
+- `MDV_EDITOR` - editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors.
+- `MDV_EDITOR_MODE` - optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
+- `MDV_PAGER` - pager command, optionally with quoted paths and arguments (for example, `less -R`). It selects the backend for `--pager`, `mdv help`, and documents opened from the interactive browser, but does not enable paging for ordinary output by itself. An explicit `--pager=<COMMAND>` has higher priority; `default` selects the default backend (currently built-in `minus`), while `builtin` explicitly selects `minus`. Empty, malformed, non-Unicode, and recursive `mdv` commands are errors. Commands are split into a program and arguments and run directly without shell interpretation.
+- `MDV_COLOR` - sets `auto`, `always`, or `never`; an explicit `--color` has higher priority.
 
 ## Themes
 
@@ -406,8 +406,8 @@ Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-i
 
 Drop one or more `*.yaml`/`*.yml` files into `<config_dir>/themes/` to register your own themes. The directory follows the same resolution order as `config.yaml` (the `--config-file` flag, `$MDV_CONFIG_PATH`, then `~/.config/mdv/`). Two ready-to-use examples ship with the repository:
 
-- [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) — uses `extends: monokai` to override just a handful of fields.
-- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) — fully standalone palette that lists every available field for reference.
+- [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) - uses `extends: monokai` to override just a handful of fields.
+- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - fully standalone palette that lists every available field for reference.
 
 ```yaml
 # <config_dir>/themes/warm.yaml
@@ -431,13 +431,13 @@ syntax:
 
 Field reference:
 
-- `name` (required) — the value accepted by `--theme`.
-- `description` (optional) — shown in `mdv --theme-info`; falls back to the base theme's description.
-- `extends` (optional) — names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
-- `pager_status_bar_transparent` (optional) — `false` keeps the filled pager status bar and Help panel; `true` removes both backgrounds and separates footer sections with `|`. It inherits from the base theme when omitted.
+- `name` (required) - the value accepted by `--theme`.
+- `description` (optional) - shown in `mdv --theme-info`; falls back to the base theme's description.
+- `extends` (optional) - names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
+- `pager_status_bar_transparent` (optional) - `false` keeps the filled pager status bar and Help panel; `true` removes both backgrounds and separates footer sections with `|`. It inherits from the base theme when omitted.
 - Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. `strong_emphasis` falls back to `strong`, while an omitted `highlight` keeps the surrounding foreground.
-- `inline_style:` (optional) — partially overrides `backticks`, `bold`, `italic`, `underline`, and `strikethrough` for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Omitted properties inherit from the base theme. The defaults are italic emphasis, bold strong, bold-italic strong emphasis, backticks around code, strikethrough decoration, and no extra highlight decoration.
-- `syntax:` (optional) — overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
+- `inline_style:` (optional) - partially overrides `backticks`, `bold`, `italic`, `underline`, and `strikethrough` for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Omitted properties inherit from the base theme. The defaults are italic emphasis, bold strong, bold-italic strong emphasis, backticks around code, strikethrough decoration, and no extra highlight decoration.
+- `syntax:` (optional) - overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).
 
 A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying every field. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.

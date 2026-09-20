@@ -102,7 +102,7 @@ fn test_word_wrapping_preserves_words() {
 
 #[test]
 fn test_word_wrap_splits_oversized_ansi_token() {
-    let token = "http://bpuser-bP8zwDSb:CO5cB2oXMyupkschZbsT_country-FR_session-V";
+    let token = "https://docs.example.com/reference/terminal-rendering/options";
     let text = format!("\x1b[31m{token}\x1b[0m");
     let wrapped = wrap_text_with_mode(&text, 20, WrapMode::Word);
 

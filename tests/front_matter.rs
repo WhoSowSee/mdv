@@ -315,9 +315,9 @@ fn from_filter_keeps_panel_properties() {
 
 #[test]
 fn panel_preserves_dedicated_colors_and_wraps_once() {
-    let long_value = "d".repeat(114);
-    let long_key = "k".repeat(128);
-    let markdown = format!("---\nsdsd: dasdas{long_value}\ndsadas{long_key}: dasda\n---\n# Body\n");
+    let long_value = "guide/".repeat(19);
+    let long_key = "section_".repeat(16);
+    let markdown = format!("---\npath: /docs/{long_value}\ngroup_{long_key}: ready\n---\n# Body\n");
     let output = render(
         &markdown,
         &[
@@ -358,7 +358,7 @@ fn panel_preserves_dedicated_colors_and_wraps_once() {
     assert!(
         property_lines
             .iter()
-            .any(|line| line.starts_with("sdsd: dasdas")),
+            .any(|line| line.starts_with("path: /docs/")),
         "stdout:\n{stdout}"
     );
     assert!(
