@@ -3,6 +3,9 @@
 vendor/minus/target/
 **/*.rs.bk
 
+# Python
+__pycache__/
+
 # IDE
 .vscode/
 .zed/

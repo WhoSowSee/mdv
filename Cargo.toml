@@ -78,6 +78,21 @@ tempfile = "3.27.0"
 assert_cmd = "2.2.2"
 predicates = { version = "3.1.4", default-features = false }
 
+[package.metadata.deb]
+name = "mdv"
+
+[package.metadata.deb.variants.glibc-2-39]
+depends = "libc6 (>= 2.39), libgcc-s1"
+
+[package.metadata.deb.variants.glibc-2-18]
+depends = "libc6 (>= 2.18), libgcc-s1"
+
+[package.metadata.deb.variants.glibc-2-27]
+depends = "libc6 (>= 2.27), libgcc-s1"
+
+[package.metadata.deb.variants.musl]
+depends = ""
+
 [profile.dev]
 debug = "line-tables-only"
 

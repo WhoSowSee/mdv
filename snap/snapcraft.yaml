@@ -1,4 +1,5 @@
 name: mdv
+title: mdv
 base: core24
 version: git
 summary: Fast, themeable Markdown viewer for the terminal
@@ -7,6 +8,8 @@ description: |
   The package includes the mdv binary and is ready to run in strict confinement Snap.
 grade: stable
 confinement: strict
+license: MIT
+contact: https://github.com/WhoSowSee/mdv/issues
 
 platforms:
   amd64:
@@ -27,6 +30,4 @@ parts:
   mdv:
     plugin: rust
     source: .
-    build-packages:
-      - pkg-config
-      - libssl-dev
+    rust-channel: stable

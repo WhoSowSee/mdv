@@ -58,6 +58,8 @@ nix profile install github:WhoSowSee/mdv
 
 Nix-пакет собирает mdv из `flake.nix` и устанавливает бинарник `mdv` в Nix-профиль. `nix run` запускает без установки, `nix profile install` — для постоянной установки.
 
+Используется стабильная ветка Nixpkgs 26.05; поддерживаются Linux x86_64 и ARM64.
+
 ### Установка из исходников
 
 ```bash

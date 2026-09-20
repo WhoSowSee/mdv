@@ -2,7 +2,7 @@
   description = "Terminal Markdown Viewer";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs = { self, nixpkgs }:
@@ -65,6 +65,7 @@
           default = {
             type = "app";
             program = "${package}/bin/mdv";
+            meta.description = cargoToml.package.description;
           };
         });
 

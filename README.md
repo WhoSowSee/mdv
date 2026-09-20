@@ -58,6 +58,8 @@ nix profile install github:WhoSowSee/mdv
 
 The Nix flake builds mdv from `flake.nix` and installs the `mdv` binary into the Nix profile. Use `nix run` to try it without installing, or `nix profile install` for a persistent install.
 
+It uses the stable Nixpkgs 26.05 branch and supports x86_64 and ARM64 Linux.
+
 ### Install from source
 
 ```bash

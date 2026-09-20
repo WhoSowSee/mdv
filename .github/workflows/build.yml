@@ -10,7 +10,7 @@ env:
   PROJECT_NAME: mdv
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   package:
@@ -23,7 +23,28 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Check formatting and lints
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Test Debian package validation
+        run: python3 .github/scripts/test_verify_deb.py
+
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          python3 - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+          version = tomllib.loads(Path("Cargo.toml").read_text())["package"]["version"]
+          tag = os.environ["GITHUB_REF_NAME"]
+          if tag.removeprefix("v") != version:
+              raise SystemExit(f"Tag {tag!r} does not match Cargo version {version!r}")
+          PY
 
       - name: Verify publishable package
         run: cargo publish --dry-run --locked
@@ -38,24 +59,31 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
             builder: cargo
+            deb_variant: glibc-2-39
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-latest
             builder: cross
+            deb_variant: musl
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
             builder: cargo
+            deb_variant: glibc-2-39
           - target: x86_64-unknown-linux-musl
             runner: ubuntu-latest
             builder: cross
+            deb_variant: musl
           - target: i686-unknown-linux-gnu
             runner: ubuntu-latest
             builder: cross
+            deb_variant: glibc-2-18
           - target: riscv64gc-unknown-linux-gnu
             runner: ubuntu-latest
             builder: cross
+            deb_variant: glibc-2-27
           - target: sparc64-unknown-linux-gnu
             runner: ubuntu-latest
             builder: cross
+            deb_variant: glibc-2-18
 
     steps:
       - name: Checkout sources
@@ -63,8 +91,6 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - name: Cache cargo build artifacts
         uses: Swatinem/rust-cache@v2
@@ -86,11 +112,15 @@ jobs:
         if: matrix.builder == 'cross'
         run: cross build --release --locked --target ${{ matrix.target }}
 
-      - name: Ensure artifacts directory
-        run: mkdir -p artifacts
+      - name: Test native binary
+        if: matrix.builder == 'cargo'
+        run: |
+          cargo test --locked --target ${{ matrix.target }}
+          "target/${{ matrix.target }}/release/${PROJECT_NAME}" --version
 
       - name: Package zip
         run: |
+          mkdir -p artifacts
           binary="target/${{ matrix.target }}/release/${PROJECT_NAME}"
           if [ ! -f "$binary" ]; then
             echo "::error::Binary artifact not found: $binary" >&2
@@ -99,36 +129,45 @@ jobs:
           zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "$binary"
 
       - name: Install cargo-deb
-        if: (contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')) && runner.arch != 'ARM64'
+        if: runner.arch != 'ARM64'
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-deb
           fallback: none
 
       - name: Install cargo-deb on ARM64
-        if: (contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')) && runner.arch == 'ARM64'
-        run: cargo install cargo-deb --version 3.7.0 --locked
+        if: runner.arch == 'ARM64'
+        run: cargo install cargo-deb --version 3.8.0 --locked
 
       - name: Build deb package
-        if: contains(matrix.target, 'linux-gnu') || contains(matrix.target, 'linux-musl')
-        run: cargo deb --no-build --target ${{ matrix.target }} --output "artifacts/${PROJECT_NAME}-${{ matrix.target }}.deb"
+        run: >-
+          cargo deb --locked --no-build --variant ${{ matrix.deb_variant }}
+          --target ${{ matrix.target }} --output "artifacts/${PROJECT_NAME}-${{ matrix.target }}.deb"
+
+      - name: Verify deb package
+        run: python3 .github/scripts/verify_deb.py "${{ matrix.target }}" "artifacts/${PROJECT_NAME}-${{ matrix.target }}.deb"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
+          if-no-files-found: error
           compression-level: 0
 
   macos:
     name: macOS target ${{ matrix.target }}
-    runs-on: macos-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - aarch64-apple-darwin
-          - x86_64-apple-darwin
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+            arch: arm64
+          - target: x86_64-apple-darwin
+            runner: macos-26-intel
+            arch: x86_64
 
     steps:
       - name: Checkout sources
@@ -137,7 +176,6 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           targets: ${{ matrix.target }}
 
       - name: Cache cargo build artifacts
@@ -147,6 +185,12 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Test and verify binary
+        run: |
+          cargo test --locked --target ${{ matrix.target }}
+          lipo -verify_arch ${{ matrix.arch }} "target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          "target/${{ matrix.target }}/release/${PROJECT_NAME}" --version
 
       - name: Package zip
         run: |
@@ -163,17 +207,20 @@ jobs:
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
+          if-no-files-found: error
           compression-level: 0
 
   windows:
     name: Windows target ${{ matrix.target }}
-    runs-on: windows-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - x86_64-pc-windows-msvc
-          - aarch64-pc-windows-msvc
+        include:
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
 
     steps:
       - name: Checkout sources
@@ -182,7 +229,6 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           targets: ${{ matrix.target }}
 
       - name: Cache cargo build artifacts
@@ -192,6 +238,13 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Test and verify binary
+        shell: pwsh
+        run: |
+          cargo test --locked --target ${{ matrix.target }}
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "target/${{ matrix.target }}/release/${env:PROJECT_NAME}.exe" --version
 
       - name: Package zip
         shell: pwsh
@@ -208,6 +261,7 @@ jobs:
         with:
           name: mdv-${{ matrix.target }}
           path: artifacts/*
+          if-no-files-found: error
           compression-level: 0
 
   snap:
@@ -224,6 +278,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install LXD and Snapcraft
         run: |
@@ -232,28 +288,44 @@ jobs:
           sudo snap install lxd
           sudo lxd init --auto
           sudo iptables -P FORWARD ACCEPT
-          sudo snap install --channel 8.x/stable --classic snapcraft
+          sudo snap install --channel 9.x/stable --classic snapcraft
 
       - name: Build snap
-        run: sudo -u runner -E snapcraft --use-lxd --build-for=${{ matrix.arch }}
+        run: sudo -u runner -E snapcraft pack --use-lxd --build-for=${{ matrix.arch }}
 
       - name: Collect snaps
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          snap_name=$(ls *_${{ matrix.arch }}.snap)
-          mv "$snap_name" "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+          snaps=(*_${{ matrix.arch }}.snap)
+          test "${#snaps[@]}" -eq 1
+          test -f "${snaps[0]}"
+          mv "${snaps[0]}" "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+
+      - name: Test snap
+        run: |
+          sudo snap install --dangerous "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+          snap run "${PROJECT_NAME}" --version
 
       - name: Upload snaps
         uses: actions/upload-artifact@v7
         with:
           name: mdv-snap-${{ matrix.arch }}
           path: artifacts/*
+          if-no-files-found: error
           compression-level: 0
 
   nix:
-    name: Nix package
-    runs-on: ubuntu-latest
+    name: Nix package ${{ matrix.system }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -265,7 +337,9 @@ jobs:
         run: nix flake check --no-build --print-build-logs
 
       - name: Build Nix package
-        run: nix build .#packages.x86_64-linux.default --print-build-logs
+        run: |
+          nix build .#packages.${{ matrix.system }}.default --print-build-logs
+          ./result/bin/mdv --version
 
   release:
     name: Publish GitHub release
@@ -276,7 +350,10 @@ jobs:
       - macos
       - windows
       - snap
+      - nix
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -291,97 +368,17 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Set version
-        run: echo "VERSION=${GITHUB_REF##*/}" >> "$GITHUB_ENV"
-
-      - name: Extract tag metadata
-        id: tag_meta
-        run: |
-          # Fallback order: changelog entry -> tag annotation -> commit message
-          TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="${TAG#v}"
-          COMMIT=$(git rev-list -n 1 "$TAG")
-          TAG_MESSAGE=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)')
-          if [ -z "${TAG_MESSAGE//[$'\r\n\t ']/}" ]; then
-            TAG_MESSAGE=$(git tag -l "$TAG" --format='%(contents)')
-          fi
-          COMMIT_MESSAGE=$(git show -s --format=%B "$COMMIT")
-          CHANGELOG_SECTION=""
-          if [ -f CHANGELOG.md ]; then
-            CHANGELOG_SECTION=$(awk -v ver="$VERSION" '
-              function trim(str) {
-                sub(/^[[:space:]]+/, "", str)
-                sub(/[[:space:]]+$/, "", str)
-                return str
-              }
-              /^## \[/ {
-                if (match($0, /^## \[([^\]]+)\]/, m)) {
-                  heading = trim(m[1])
-                  if (found && heading != ver) {
-                    exit
-                  }
-                  if (!found && heading == ver) {
-                    found = 1
-                    next
-                  }
-                }
-              }
-              found {
-                if (!printed) {
-                  if ($0 ~ /^[[:space:]]*$/) {
-                    next
-                  }
-                  printed = 1
-                  print
-                  next
-                }
-                print
-              }
-            ' CHANGELOG.md)
-          fi
-          if [ -n "$(printf '%s' "$CHANGELOG_SECTION" | tr -d $'\r\n\t ')" ]; then
-            MESSAGE="$CHANGELOG_SECTION"
-          elif [ -n "$(printf '%s' "$TAG_MESSAGE" | tr -d $'\r\n\t ')" ]; then
-            MESSAGE="$TAG_MESSAGE"
-          else
-            MESSAGE="$COMMIT_MESSAGE"
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
-          printf 'message<<EOF\n%s\nEOF\n' "$MESSAGE" >> "$GITHUB_OUTPUT"
-
-      - name: Generate GitHub release notes
-        id: gh_notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          RESPONSE=$(gh api repos/${GITHUB_REPOSITORY}/releases/generate-notes \
-            -f tag_name="${{ steps.tag_meta.outputs.tag }}" \
-            -f target_commitish="${{ steps.tag_meta.outputs.commit }}")
-          BODY=$(echo "$RESPONSE" | jq -r '.body // ""')
-          printf 'body<<EOF\n%s\nEOF\n' "$BODY" >> "$GITHUB_OUTPUT"
+      - name: Compose release notes
+        run: bash .github/scripts/release-notes.sh
 
       - name: Rename artifacts with version
         run: |
           shopt -s nullglob
           for file in dist/*; do
-            base=$(basename "$file")
-            new_base=${base/${PROJECT_NAME}/${PROJECT_NAME}-${VERSION}}
-            mv "$file" "dist/${new_base}"
+            base=${file##*/}
+            suffix=${base#"${PROJECT_NAME}-"}
+            mv "$file" "dist/${PROJECT_NAME}-${GITHUB_REF_NAME}-${suffix}"
           done
-
-      - name: Compose release body
-        run: |
-          {
-            printf '%s\n\n' "$TAG_MESSAGE";
-            echo '---';
-            echo;
-            printf '%s\n' "$GENERATED_NOTES";
-          } > release-notes.md
-        env:
-          TAG_MESSAGE: ${{ steps.tag_meta.outputs.message }}
-          GENERATED_NOTES: ${{ steps.gh_notes.outputs.body }}
 
       - name: List packaged files
         run: ls -R dist
@@ -391,7 +388,7 @@ jobs:
         with:
           files: dist/*
           body_path: release-notes.md
+          generate_release_notes: true
+          target_commitish: ${{ github.sha }}
           draft: false
           fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -18,6 +18,7 @@ This section documents the internal architecture of `mdv` after large source fil
 | [themes-and-styling.md](themes-and-styling.md) | Themes, ANSI styles, inline styles, user themes, and visual overrides. |
 | [interactive-and-pager.md](interactive-and-pager.md) | Interactive document browser, pager, editor integration, and file watching. |
 | [testing.md](testing.md) | Unit and integration test organization, fixtures, and validation commands. |
+| [ci-release.md](ci-release.md) | Platform build matrix, stable tools, package checks, and release publishing. |
 | [file-index.md](file-index.md) | Complete index of Rust source and test files with links to topic documents. |
 
 ## Suggested reading paths
