@@ -84,11 +84,27 @@ fn custom_checkbox_help_uses_real_icons_in_examples() {
 
 #[test]
 fn test_version_command() {
-    let mut cmd = mdv_cmd();
-    cmd.arg("--version");
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("mdv"));
+    let directory = TempDir::new().unwrap();
+    let expected = format!(
+        "mdv\n    Version: {}\n    Debug  : {}\n    Triple : {} ({}-{})\n    Rustc  : {}\n",
+        env!("MDV_BUILD_VERSION"),
+        cfg!(debug_assertions),
+        env!("MDV_BUILD_TARGET"),
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        env!("MDV_BUILD_RUSTC"),
+    );
+
+    for flag in ["--version", "-V"] {
+        mdv_cmd()
+            .current_dir(directory.path())
+            .env("PATH", "")
+            .arg(flag)
+            .assert()
+            .success()
+            .stdout(expected.clone())
+            .stderr("");
+    }
 }
 
 #[test]

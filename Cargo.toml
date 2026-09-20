@@ -2,6 +2,7 @@
 name = "mdv"
 version = "5.1.0"
 edition = "2024"
+build = "build/version.rs"
 autotests = false
 authors = ["WhoSowSee"]
 description = "Terminal Markdown Viewer"

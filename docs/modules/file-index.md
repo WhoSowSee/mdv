@@ -7,6 +7,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | File | Responsibility | Details |
 |---|---|---|
 | [main.rs](../../src/main.rs) | Binary entry point and Clap bootstrap. | [application](application.md) |
+| [version.rs](../../src/version.rs) | Build-information output for both CLI version flags; metadata is collected by [build/version.rs](../../build/version.rs). | [application](application.md) |
 | [lib.rs](../../src/lib.rs) | Root API and execution-mode routing. | [application](application.md) |
 | [document.rs](../../src/document.rs) | Shared document rendering and refresh options. | [application](application.md) |
 | [error.rs](../../src/error.rs) | `MdvError` categories. | [application](application.md) |

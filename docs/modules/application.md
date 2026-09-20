@@ -5,6 +5,8 @@
 | File | Responsibility |
 |---|---|
 | [src/main.rs](../../src/main.rs) | Minimal binary wrapper: logging, Clap parsing, and the call to `mdv::run`. |
+| [src/version.rs](../../src/version.rs) | Plain build-information output for `--version` and `-V`. |
+| [build/version.rs](../../build/version.rs) | Compile-time package revision, target triple, and Rust compiler version. |
 | [src/lib.rs](../../src/lib.rs) | Crate root, module declarations, and routing for every execution mode. |
 | [src/document.rs](../../src/document.rs) | Shared document rendering options, metadata prefixes, and refresh rendering. |
 | [src/error.rs](../../src/error.rs) | Typed `MdvError` variants for configuration, themes, Markdown, rendering, monitoring, I/O, and syntax highlighting. |
@@ -15,11 +17,25 @@
 `main` intentionally contains no application logic:
 
 1. Initialize `env_logger` with plain diagnostics.
-2. Build `clap::ArgMatches` through `Cli::command()`.
+2. Build `clap::ArgMatches` through `Cli::command()`. Handle Clap's `DisplayVersion` by printing build information; other help/error exits retain Clap behavior.
 3. Construct `Cli` with `Cli::from_arg_matches`.
 4. Pass both values to `mdv::run`.
 
 `ArgMatches` remains available because configuration assembly must distinguish explicit user input from Clap-provided defaults.
+
+Both version flags print `mdv` followed by aligned `Version`, `Debug`, `Triple`,
+and `Rustc` fields before configuration or input is loaded. `Debug` reflects the
+binary's `debug_assertions`; the target triple comes from Cargo's `TARGET`, with
+OS/architecture from the compiled target. Version requests launch no external commands.
+
+`build/version.rs`, selected by `package.build` in `Cargo.toml`, embeds the package
+version and compiler's `--version` output. A local
+`.git` directory or worktree file adds the abbreviated HEAD hash and committer
+date to `Version`. Git HEAD, refs, and existing packed refs are tracked so a
+revision change updates an incremental build. Source archives, crates.io
+packages, and Nix sources without `.git` print the package version without Git
+metadata. Failures to read an existing checkout or query the compiler fail the
+build rather than embedding placeholder values.
 
 ## `lib.rs`
 
