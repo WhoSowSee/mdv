@@ -4,13 +4,12 @@
 //! Incremental search reuses preview results after confirmation. Applications can replace its
 //! activation predicate with [`Pager::set_incremental_search_condition`](crate::Pager::set_incremental_search_condition).
 
-#![allow(unused_imports)]
 use crate::minus_core::utils::{LinesRowMap, display, term};
 use crate::screen::Screen;
 use crate::{LineNumbers, PagerState};
-use crate::{error::MinusError, input::HashedEventRegister, minus_core::utils, screen};
+use crate::{error::MinusError, minus_core::utils, screen};
 use crossterm::{
-    cursor::{self, MoveTo},
+    cursor,
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::Attribute,
     terminal::{Clear, ClearType},
@@ -24,8 +23,6 @@ use std::{
     sync::LazyLock,
     time::Duration,
 };
-
-use std::collections::hash_map::RandomState;
 
 mod highlight;
 pub(crate) use highlight::{highlight_line_navigation_target, highlight_search_matches};
