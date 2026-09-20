@@ -91,6 +91,29 @@ mode and does not include resolved styling. Removed `no_colors` YAML keys are
 errors in both configuration and presets; removed color environment variables are
 ignored. Generic variables such as `NO_COLOR` do not influence this policy.
 
+## Pager policy
+
+Pager selection is runtime routing state rather than a YAML `Config` field. The
+backend is resolved after configuration loading with this priority:
+
+1. an explicit `--pager=<COMMAND>` value;
+2. `MDV_PAGER`;
+3. the built-in `minus` pager.
+
+A bare `--pager` requests paging but contributes no backend value, so it uses
+`MDV_PAGER` when present. `MDV_PAGER` selects the backend for explicit paging,
+full help, and documents opened from the interactive browser; it does not enable
+paging for ordinary output by itself. `default` selects the default backend,
+currently the built-in `minus`, while `builtin` explicitly selects `minus`.
+
+Like `MDV_COLOR`, the environment layer is validated before a higher-priority
+CLI value is applied. Empty, malformed, non-Unicode, and recursive mdv commands
+are errors even when `--pager=<COMMAND>` is present. External commands are split
+with platform-appropriate quoting rules and launched directly without a shell.
+Redirected stdout still suppresses paging. Color resolution remains independent:
+the selected `OutputStyle` is applied before either backend receives the output,
+and mdv does not add color-preserving flags to a user-supplied pager command.
+
 ## `Config` field groups
 
 - Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, front matter, and document line numbers.

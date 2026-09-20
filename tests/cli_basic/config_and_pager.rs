@@ -159,6 +159,18 @@ fn test_pager_mode_prints_to_stdout_when_output_is_not_a_terminal() {
 }
 
 #[test]
+fn test_invalid_mdv_pager_is_rejected_before_cli_override() {
+    let output = mdv_cmd()
+        .env("MDV_PAGER", "")
+        .arg("--pager=builtin")
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("environment variable MDV_PAGER"));
+}
+
+#[test]
 fn test_interactive_requires_terminal_output() {
     let mut cmd = mdv_cmd();
     cmd.arg("--interactive")

@@ -1,6 +1,6 @@
 # Interactive Mode and Pager
 
-The interactive subsystem has two levels: a Markdown document browser and a pager for one document. Ordinary `--pager` uses the same pager without the browser UI.
+The interactive subsystem has two levels: a Markdown document browser and a pager for one document. Ordinary `--pager` uses the same pager selection without the browser UI.
 
 ## Target selection
 
@@ -74,18 +74,50 @@ Pressing `.` toggles files excluded by `.gitignore`, the global Git ignore file,
 | File | Responsibility |
 |---|---|
 | [src/pager.rs](../../src/pager.rs) | Module facade and internal re-exports. |
+| [pager/command.rs](../../src/pager/command.rs) | Backend precedence, command parsing, recursion checks, and external process lifecycle. |
 | [pager/document.rs](../../src/pager/document.rs) | `PagerDocument`, line-number view state, `RefreshCallback`, and `PagerScreen`. |
 | [pager/page.rs](../../src/pager/page.rs) | Configure `minus::Pager` and run the pager/editor loop. |
 | [pager/rendering.rs](../../src/pager/rendering.rs) | Build the three pager line-number views, prefixes, and source-line maps. |
 | [pager/input.rs](../../src/pager/input.rs) | Custom input classifier for help, copy, reload, and editor actions. |
+| [pager/interrupt.rs](../../src/pager/interrupt.rs) | Preserve parent interrupt handling and configure external pager children. |
 | [pager/footer.rs](../../src/pager/footer.rs) | Opaque/transparent footer, title, progress, and width clamping. |
 | [pager/help.rs](../../src/pager/help.rs) | Prompt panel listing available shortcuts. |
 | [pager/operations.rs](../../src/pager/operations.rs) | Document replacement, clipboard handling, and status/error messages. |
 | [pager/watcher.rs](../../src/pager/watcher.rs) | `notify` watcher and debounced refresh. |
 
+## Pager backend selection
+
+The default backend is the built-in `minus` pager. A command from `MDV_PAGER`
+replaces it wherever mdv already opens a pager: explicit `--pager`, full help,
+and a document selected in the interactive browser. The variable does not turn
+ordinary output into paged output. An explicit `--pager=<COMMAND>` overrides the
+environment. `--pager=default` selects the default backend, currently the
+built-in `minus`, while `--pager=builtin` restores `minus` explicitly. A bare
+`--pager` only requests paging and retains the environment-selected backend.
+
+External commands accept quoted program paths and arguments. mdv splits the
+command without shell evaluation, rejects empty or recursive commands, pipes the
+active rendered view to the child's standard input, inherits its output streams,
+temporarily handles Ctrl+C in the parent while waiting for the child, and waits
+for a successful exit. It does not silently fall back to stdout and does not
+inject pager-specific flags; a color-capable `less` command therefore normally
+includes `-R`. Redirected stdout retains the existing direct-output behavior and
+does not start either pager backend. External paging uses one rendered view;
+the built-in pager additionally prepares its three switchable views and source
+navigation maps.
+
+The built-in pager owns mdv-specific search, copy, reload, editor, help, and
+line-number switching. An external pager owns its controls and receives only the
+initial view selected by the effective line-number configuration.
+
+When the browser opens an external pager, mdv fully suspends the browser session,
+then restores the alternate screen and raw mode after the child exits. The
+built-in pager uses the lighter in-place pause path because it shares mdv's
+terminal session.
+
 ## `PagerDocument`
 
-The document stores these values separately:
+For the built-in backend, the document stores these values separately:
 
 - unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
 - the active line-number mode;

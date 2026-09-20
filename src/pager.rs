@@ -11,17 +11,19 @@ use std::sync::{Arc, RwLock, mpsc};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
+mod command;
 mod document;
 mod footer;
 mod help;
 mod input;
+mod interrupt;
 mod operations;
 mod page;
 mod rendering;
 mod watcher;
 
+pub(crate) use command::PagerBackend;
 pub(super) use document::{PagerDocument, PagerScreen, RefreshCallback};
-pub(super) use page::page;
 pub(crate) use rendering::{RenderedOutput, render_terminal_document};
 
 use document::{PagerContent, PagerDisplay, PagerLineNumberMode, PagerLineNumberViews};
@@ -35,6 +37,22 @@ use operations::{
 use watcher::ActiveWatcher;
 
 const STATUS_MESSAGE_TIMEOUT: Duration = Duration::from_secs(3);
+
+pub(super) fn page(
+    document: PagerDocument,
+    file: Option<PathBuf>,
+    refresh: Option<RefreshCallback>,
+    screen: PagerScreen,
+    backend: &PagerBackend,
+) -> Result<()> {
+    match backend {
+        PagerBackend::Builtin => page::page(document, file, refresh, screen),
+        PagerBackend::External(command) => {
+            let output = document.into_output();
+            command.page(&output)
+        }
+    }
+}
 
 #[cfg(test)]
 use input::{

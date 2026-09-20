@@ -24,6 +24,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [math.rs](../../src/math.rs) | Math parser facade. | [renderer code](renderer-code.md) |
 | [monitor.rs](../../src/monitor.rs) | Ordinary `--monitor` watcher. | [application](application.md) |
 | [pager.rs](../../src/pager.rs) | Pager facade. | [interactive/pager](interactive-and-pager.md) |
+| [process_command.rs](../../src/process_command.rs) | Cross-platform splitting of user-supplied process commands. | [interactive/pager](interactive-and-pager.md) |
 | [table.rs](../../src/table.rs) | Low-level table facade. | [links/tables](links-footnotes-tables.md) |
 | [terminal.rs](../../src/terminal.rs) | ANSI styling and color conversion. | [themes](themes-and-styling.md) |
 | [theme.rs](../../src/theme.rs) | Theme facade and public re-exports. | [themes](themes-and-styling.md) |
@@ -134,10 +135,12 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 
 | File | Responsibility |
 |---|---|
+| [command.rs](../../src/pager/command.rs) | Pager backend selection, external command parsing, and process lifecycle. |
 | [document.rs](../../src/pager/document.rs) | Pager document, line-number views, screen, and callback types. |
 | [page.rs](../../src/pager/page.rs) | `minus` pager setup and event loop. |
 | [rendering.rs](../../src/pager/rendering.rs) | Pager-specific three-mode rendering and source-line maps. |
 | [input.rs](../../src/pager/input.rs) | Custom keys and classifier. |
+| [interrupt.rs](../../src/pager/interrupt.rs) | Parent and child interrupt handling for external pager processes. |
 | [operations.rs](../../src/pager/operations.rs) | Refresh, clipboard, and messages. |
 | [watcher.rs](../../src/pager/watcher.rs) | Targeted file watcher. |
 | [footer.rs](../../src/pager/footer.rs) | Footer renderer and tests. |

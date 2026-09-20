@@ -6,7 +6,7 @@ pub(crate) mod screen;
 use crate::cli::OutputStyle;
 use crate::config::Config;
 use crate::editor::EditorCommand;
-use crate::pager::{self, PagerScreen, RefreshCallback};
+use crate::pager::{self, PagerBackend, PagerScreen, RefreshCallback};
 use anyhow::{Result, anyhow, ensure};
 use app::{App, AppAction};
 use crossterm::event::{self, Event};
@@ -65,6 +65,7 @@ pub(crate) fn run(
     target: InteractiveTarget,
     config: Config,
     output_style: OutputStyle,
+    pager_backend: PagerBackend,
 ) -> Result<()> {
     ensure!(
         std::io::stdout().is_terminal(),
@@ -73,13 +74,19 @@ pub(crate) fn run(
     let root = match target {
         InteractiveTarget::Directory(root) => root,
         InteractiveTarget::File(path) => {
-            return open_file_in_pager(path, &config, output_style, PagerScreen::Alternate);
+            return open_file_in_pager(
+                path,
+                &config,
+                output_style,
+                PagerScreen::Alternate,
+                &pager_backend,
+            );
         }
         InteractiveTarget::Stdin => {
             let mut source = String::new();
             std::io::stdin().read_to_string(&mut source)?;
             crate::strip_leading_bom(&mut source);
-            return open_source_in_pager(source, &config, output_style);
+            return open_source_in_pager(source, &config, output_style, &pager_backend);
         }
     };
     let (width, height) = crossterm::terminal::size()?;
@@ -131,9 +138,21 @@ pub(crate) fn run(
             AppAction::None => {}
             AppAction::Quit => return Ok(()),
             AppAction::OpenPager(path) => {
-                terminal.pause_for_pager()?;
-                let result = open_file_in_pager(path, &config, output_style, PagerScreen::InPlace);
-                terminal.resume_after_pager()?;
+                let builtin_pager = pager_backend.is_builtin();
+                let screen = if builtin_pager {
+                    terminal.pause_for_pager()?;
+                    PagerScreen::InPlace
+                } else {
+                    terminal.suspend()?;
+                    PagerScreen::Alternate
+                };
+                let result =
+                    open_file_in_pager(path, &config, output_style, screen, &pager_backend);
+                if builtin_pager {
+                    terminal.resume_after_pager()?;
+                } else {
+                    terminal.resume()?;
+                }
                 app.after_pager(result);
             }
             AppAction::OpenEditor(path) => {
@@ -156,31 +175,49 @@ fn open_file_in_pager(
     config: &Config,
     output_style: OutputStyle,
     screen: PagerScreen,
+    pager_backend: &PagerBackend,
 ) -> Result<()> {
-    let document = crate::render_document_file(&path, config, false, false, None, output_style)?;
-    let refresh_path = path.clone();
-    let refresh_config = config.clone();
-    let refresh = Arc::new(move || {
-        crate::render_document_file(
-            &refresh_path,
-            &refresh_config,
-            false,
-            false,
-            None,
-            output_style,
-        )
-    }) as RefreshCallback;
-    pager::page(document, Some(path), Some(refresh), screen)
+    let builtin_pager = pager_backend.is_builtin();
+    let document = crate::render_document_file(
+        &path,
+        config,
+        false,
+        false,
+        None,
+        output_style,
+        builtin_pager,
+    )?;
+    let refresh = builtin_pager.then(|| {
+        let refresh_path = path.clone();
+        let refresh_config = config.clone();
+        Arc::new(move || {
+            crate::render_document_file(
+                &refresh_path,
+                &refresh_config,
+                false,
+                false,
+                None,
+                output_style,
+                true,
+            )
+        }) as RefreshCallback
+    });
+    pager::page(document, Some(path), refresh, screen, pager_backend)
 }
 
-fn open_source_in_pager(source: String, config: &Config, output_style: OutputStyle) -> Result<()> {
+fn open_source_in_pager(
+    source: String,
+    config: &Config,
+    output_style: OutputStyle,
+    pager_backend: &PagerBackend,
+) -> Result<()> {
     let rendered = crate::render_document(
         &source,
         config,
         output_style,
         crate::RenderOptions {
             add_leading_blank: true,
-            for_pager: true,
+            prepare_pager_views: pager_backend.is_builtin(),
             ..crate::RenderOptions::default()
         },
     )?;
@@ -189,6 +226,7 @@ fn open_source_in_pager(source: String, config: &Config, output_style: OutputSty
         None,
         None,
         PagerScreen::Alternate,
+        pager_backend,
     )
 }
 

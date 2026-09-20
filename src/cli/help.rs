@@ -1,5 +1,7 @@
 pub(super) const LINE_NUMBERS_LONG_HELP: &str = "Show row numbers in terminal and pager output\nWithout a value, number every rendered row without a separator\n\nPossible values:\n- source:    Number physical Markdown source lines instead of rendered rows\n- separator: Display a separator after each rendered row number\n\nExamples:\n  --line-numbers separator\n  --line-numbers source\n  --line-numbers \"source;separator\"";
 
+pub(super) const PAGER_LONG_HELP: &str = "Show output in a pager instead of printing everything at once\nA bare flag uses MDV_PAGER when set and the default pager otherwise\nUse --pager=default to select the default pager or --pager=builtin to select the built-in pager\nExternal commands may include quoted paths and arguments\n\nExamples:\n  --pager\n  --pager=default\n  --pager=builtin\n  --pager=\"less -R\"";
+
 pub(super) const CODE_LINE_NUMBERS_LONG_HELP: &str = "Number rows inside code blocks\nWithout a value, number every wrapped terminal row without a separator\n\nPossible values:\n- source:    Number physical code lines instead of wrapped terminal rows\n- separator: Display a separator after each code line number\n\nExamples:\n  --code-line-numbers separator\n  --code-line-numbers source\n  --code-line-numbers \"source;separator\"";
 
 pub(super) const SYNTAXES_DIR_LONG_HELP: &str = "Directory containing custom .sublime-syntax files\nFiles are loaded recursively on top of the embedded syntax set\nCustom entries take precedence";

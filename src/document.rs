@@ -12,7 +12,7 @@ pub(crate) struct RenderOptions<'a> {
     pub(crate) show_current_theme: bool,
     pub(crate) current_preset: Option<&'a str>,
     pub(crate) add_leading_blank: bool,
-    pub(crate) for_pager: bool,
+    pub(crate) prepare_pager_views: bool,
 }
 
 pub(crate) fn render_document(
@@ -26,10 +26,10 @@ pub(crate) fn render_document(
         show_current_theme,
         current_preset,
         add_leading_blank,
-        for_pager,
+        prepare_pager_views,
     } = options;
     let processor_config =
-        (for_pager && !do_html && !config.source_line_numbers_enabled()).then(|| {
+        (prepare_pager_views && !do_html && !config.source_line_numbers_enabled()).then(|| {
             let mut config = config.clone();
             config.line_numbers = Some(LineNumberOptions {
                 target: LineNumberTarget::Source,
@@ -64,7 +64,7 @@ pub(crate) fn render_document(
     if add_leading_blank {
         output.push('\n');
     }
-    if for_pager {
+    if prepare_pager_views {
         return pager::render_terminal_document(
             &renderer,
             document,
@@ -88,6 +88,7 @@ pub(crate) fn render_document_file(
     show_current_theme: bool,
     current_preset: Option<&str>,
     output_style: OutputStyle,
+    prepare_pager_views: bool,
 ) -> Result<pager::PagerDocument> {
     let mut content = std::fs::read_to_string(path)?;
     crate::strip_leading_bom(&mut content);
@@ -100,7 +101,7 @@ pub(crate) fn render_document_file(
             show_current_theme,
             current_preset,
             add_leading_blank: true,
-            for_pager: true,
+            prepare_pager_views,
         },
     )?;
     Ok(rendered.into_pager_document(content))

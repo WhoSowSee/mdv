@@ -46,7 +46,7 @@ flowchart LR
 - `--preset-info` and `--theme-info` without a file print metadata and return;
 - `--interactive`, or an implicitly selected interactive target, enters `interactive::run`;
 - an ordinary file or standard input goes through `render_document`;
-- `--pager` with terminal output passes a `PagerDocument` to `pager::page`;
+- `--pager[=<COMMAND>]` with terminal output passes a `PagerDocument` to the selected built-in or external backend through `pager::page`;
 - `--monitor` starts only after ordinary initial output and never shares an active pager.
 
 ## State ownership
@@ -57,7 +57,7 @@ flowchart LR
 | Markdown preprocessing | `MarkdownProcessor` | Front matter extraction and all source transformations happen before terminal output is constructed. |
 | Current document state | `EventRenderer` | Lists, links, footnotes, tables, and callouts depend on event order. |
 | Theme and syntax set | `TerminalRenderer` | Document-wide resources are selected once and shared by event handlers. |
-| Pager document | `RwLock<PagerDocument>` | The watcher and input classifier update one coherent snapshot. |
+| Built-in pager document | `RwLock<PagerDocument>` | The watcher and input classifier update one coherent snapshot. |
 | Browser state | `interactive::browser::BrowserState` | The UI owns filtering, selection, pages, and discovery errors. |
 
 ## Key types

@@ -138,12 +138,13 @@ fn init_config_flag_parses() {
 }
 
 #[test]
-fn pager_flag_parses() {
-    let cli = Cli::parse_from(["mdv", "--pager"]);
-    assert!(cli.pager);
+fn pager_argument_parses_without_consuming_the_file() {
+    let cli = Cli::parse_from(["mdv", "--pager=less -R"]);
+    assert_eq!(cli.pager, Some(Some("less -R".to_string())));
 
-    let cli = Cli::parse_from(["mdv", "-p"]);
-    assert!(cli.pager);
+    let cli = Cli::parse_from(["mdv", "--pager", "README.md"]);
+    assert_eq!(cli.pager, Some(None));
+    assert_eq!(cli.filename.as_deref(), Some("README.md"));
 }
 
 #[test]

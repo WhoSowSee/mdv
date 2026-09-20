@@ -64,9 +64,9 @@ pub struct Cli {
     #[arg(long = "html", help_heading = "Output and flow", display_order = 5)]
     pub do_html: bool,
 
-    /// Show output in the built-in pager instead of printing everything at once
-    #[arg(short = 'p', long = "pager", help_heading = "Output and flow", display_order = 0)]
-    pub pager: bool,
+    /// Show output in a pager, optionally selecting the pager command
+    #[arg(short = 'p', long = "pager", num_args = 0..=1, require_equals = true, value_name = "COMMAND", help_heading = "Output and flow", display_order = 0, long_help = PAGER_LONG_HELP)]
+    pub pager: Option<Option<String>>,
 
     /// Browse and read Markdown documents in an interactive terminal interface
     #[arg(short = 'i', long = "interactive", conflicts_with = "pager", help_heading = "Output and flow", display_order = 1)]

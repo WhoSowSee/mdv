@@ -16,6 +16,7 @@ pub mod math;
 pub mod monitor;
 mod pager;
 mod preset;
+mod process_command;
 pub mod renderer;
 pub mod table;
 pub mod terminal;
@@ -47,10 +48,12 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     let config = Config::from_cli(&cli, matches)?;
+    let pager_backend =
+        pager::PagerBackend::resolve(cli.pager.as_ref().and_then(Option::as_deref))?;
     let stdout_is_terminal = io::stdout().is_terminal();
     let output_style = config.color.resolve(stdout_is_terminal);
     if matches!(cli.command, Some(CliCommand::Help)) {
-        return show_help(&config, output_style);
+        return show_help(&config, output_style, &pager_backend);
     }
     if let Some(Some(path)) = &cli.theme_info
         && cli.filename.is_none()
@@ -81,15 +84,16 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     if let Some(target) = interactive::select_interactive_target(
         cli.filename.as_deref(),
         cli.interactive,
-        cli.pager,
+        cli.pager.is_some(),
         stdin_is_terminal,
         stdout_is_terminal,
     )? {
-        return interactive::run(target, config, output_style);
+        return interactive::run(target, config, output_style, pager_backend);
     }
 
     let content = get_input_content(&cli)?;
-    let pager_active = cli.pager && stdout_is_terminal;
+    let pager_active = cli.pager.is_some() && stdout_is_terminal;
+    let builtin_pager = pager_backend.is_builtin();
     let rendered = render_document(
         &content,
         &config,
@@ -99,16 +103,19 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             show_current_theme,
             current_preset,
             add_leading_blank: stdout_is_terminal,
-            for_pager: pager_active,
+            prepare_pager_views: pager_active && builtin_pager,
         },
     )?;
 
     if pager_active {
-        let pager_file = cli
-            .filename
-            .as_deref()
-            .filter(|filename| *filename != "-")
-            .map(PathBuf::from);
+        let pager_file = if builtin_pager {
+            cli.filename
+                .as_deref()
+                .filter(|filename| *filename != "-")
+                .map(PathBuf::from)
+        } else {
+            None
+        };
         let refresh = pager_file.as_ref().map(|path| {
             let path = path.clone();
             let config = config.clone();
@@ -122,6 +129,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
                     show_current_theme,
                     current_preset.as_deref(),
                     output_style,
+                    true,
                 )
             }) as pager::RefreshCallback
         });
@@ -130,6 +138,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             pager_file,
             refresh,
             pager::PagerScreen::Alternate,
+            &pager_backend,
         )?;
     } else {
         print!("{}", rendered.output());
@@ -145,7 +154,11 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn show_help(config: &Config, output_style: OutputStyle) -> Result<()> {
+fn show_help(
+    config: &Config,
+    output_style: OutputStyle,
+    pager_backend: &pager::PagerBackend,
+) -> Result<()> {
     let mut command = Cli::command();
     if let Some(bin_name) = std::env::args_os()
         .next()
@@ -161,6 +174,7 @@ fn show_help(config: &Config, output_style: OutputStyle) -> Result<()> {
             None,
             None,
             pager::PagerScreen::Alternate,
+            pager_backend,
         )
     } else {
         print!("{help}");

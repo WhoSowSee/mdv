@@ -102,7 +102,7 @@ cat <FILE> | mdv
 - `--theme-info [FILE]` — shows the active palette; when `FILE` is provided it renders the file along with palette information.
 - `--from <TEXT>` — starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
 - `-r, --reverse` — renders the document starting from the end while keeping block formatting intact.
-- `-p, --pager` — opens the rendered output in the built-in `minus` pager. Press `E`|`e` or `У`|`у` to open the current file in the configured editor; saved changes are rendered automatically.
+- `-p, --pager[=<COMMAND>]` — opens the rendered output in a pager. A bare flag uses `MDV_PAGER` when set and the default pager otherwise. `--pager=default` selects the default backend (currently the built-in `minus`), `--pager=builtin` explicitly selects `minus`, and a command such as `--pager="less -R"` receives the rendered output on stdin.
 - `-i, --interactive` — opens the interactive document browser. Running `mdv` without arguments in a terminal opens the current directory, and passing a directory opens that directory. Redirected output does not open the browser implicitly. The browser recursively finds Markdown files while honoring hidden-file and `.gitignore` rules.
 - `--monitor` — watches the source file and re-renders when it changes.
 - `-F, --config-file <CONFIG_DIR>` — reads configuration from the provided directory.
@@ -188,7 +188,7 @@ cat <FILE> | mdv
 
 ### Information
 
-- `mdv help` — opens the full `mdv --help` output in the built-in pager. When input or output is redirected, it prints the same help directly.
+- `mdv help` — opens the full `mdv --help` output in the selected pager. It uses `MDV_PAGER` when set and the built-in pager otherwise; when input or output is redirected, it prints the same help directly.
 - `-h, --help` — shows the help text.
 - `-V, --version` — prints the current version.
 
@@ -261,6 +261,7 @@ Every preset accepts the same keys and values as [`docs/examples/config.yaml`](d
 - `MDV_CONFIG_PATH` — custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
 - `MDV_EDITOR` — editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors.
 - `MDV_EDITOR_MODE` — optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
+- `MDV_PAGER` — pager command, optionally with quoted paths and arguments (for example, `less -R`). It selects the backend for `--pager`, `mdv help`, and documents opened from the interactive browser, but does not enable paging for ordinary output by itself. An explicit `--pager=<COMMAND>` has higher priority; `default` selects the default backend (currently built-in `minus`), while `builtin` explicitly selects `minus`. Empty, malformed, non-Unicode, and recursive `mdv` commands are errors. Commands are split into a program and arguments and run directly without shell interpretation.
 - `MDV_COLOR` — sets `auto`, `always`, or `never`; an explicit `--color` has higher priority.
 
 ## Themes

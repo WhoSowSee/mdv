@@ -8,6 +8,7 @@ pub(crate) fn mdv_cmd() -> Command {
     let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
     command
         .env_remove("MDV_COLOR")
+        .env_remove("MDV_PAGER")
         .env("MDV_CONFIG_PATH", config_dir.path());
     command
 }

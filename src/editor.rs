@@ -1,3 +1,4 @@
+use crate::process_command::split_command;
 use anyhow::{Result, bail};
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -225,7 +226,7 @@ impl EditorCommand {
         let Some(raw) = raw else {
             return Ok(None);
         };
-        let Some(parts) = split_command(raw) else {
+        let Ok(parts) = split_command(raw) else {
             return Ok(None);
         };
         let mut parts = parts.into_iter();
@@ -270,16 +271,6 @@ impl EditorCommand {
 
         Ok(())
     }
-}
-
-#[cfg(windows)]
-fn split_command(raw: &str) -> Option<Vec<String>> {
-    Some(winsplit::split(raw))
-}
-
-#[cfg(not(windows))]
-fn split_command(raw: &str) -> Option<Vec<String>> {
-    shell_words::split(raw).ok()
 }
 
 fn detect_editor(program: &str, args: &[String]) -> Option<EditorKind> {

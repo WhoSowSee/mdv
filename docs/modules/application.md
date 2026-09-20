@@ -32,13 +32,13 @@ The crate publicly exposes reusable modules such as `cli`, `config`, `markdown`,
 `run(mut cli, matches)` evaluates branches in a fixed order:
 
 1. `--init-config` writes the reference configuration without loading color settings.
-2. The effective `Config` is assembled and `OutputStyle` is resolved from stdout TTY.
+2. The effective `Config` and pager backend are resolved, then `OutputStyle` is resolved from stdout TTY.
 3. `mdv help` builds the extended help document using the effective configuration and styling policy.
 4. `--preset-info` without a file prints the preset catalog.
 5. `--theme-info` without a file prints active theme information.
 6. `interactive::select_interactive_target` decides whether to open the document browser or page a specific file or standard input.
 7. The ordinary path reads input and calls `render_document`.
-8. With `--pager` and terminal output, the result is wrapped in `PagerDocument`.
+8. With `--pager[=<COMMAND>]` and terminal output, the result is wrapped in `PagerDocument` and sent to the selected backend.
 9. Otherwise, the result is written directly.
 10. `--monitor` starts only for ordinary file output without an active pager.
 
@@ -80,6 +80,15 @@ over environment, presets, and configuration. `auto` enables styling only when
 stdout is a terminal. Piped stdin does not disable styling in a terminal.
 The resolved `OutputStyle` is passed to document renderers, browser, pager,
 monitor, and refresh callbacks without mutating `Config.color`.
+
+Pager backend selection is resolved independently as explicit
+`--pager=<COMMAND>` over `MDV_PAGER` over the default backend, currently
+`builtin`. The special value `default` selects that default explicitly, while a
+bare `--pager` enables paging without overriding the environment-selected
+backend. Because color is resolved before pager dispatch, built-in and external
+backends receive the same styled or plain rendering. External commands are not
+started when stdout is redirected. External paging renders one selected view;
+the built-in backend prepares the additional line-number and navigation views.
 
 Disabled styling suppresses generated SGR and OSC 8, preserving visible text
 and layout. Full-screen terminal-control commands remain necessary in `never`.

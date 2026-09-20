@@ -94,6 +94,14 @@ impl PagerLineNumberViews {
         });
         (current.output.clone(), navigation)
     }
+
+    fn into_output(self) -> String {
+        match self.mode {
+            PagerLineNumberMode::Off => self.unnumbered.output,
+            PagerLineNumberMode::Rendered => self.rendered.output,
+            PagerLineNumberMode::Source => self.source.output,
+        }
+    }
 }
 
 impl PagerContent {
@@ -101,6 +109,13 @@ impl PagerContent {
         match self {
             Self::Static(output) => output,
             Self::LineNumbers(views) => &views.current().output,
+        }
+    }
+
+    fn into_output(self) -> String {
+        match self {
+            Self::Static(output) => output,
+            Self::LineNumbers(views) => views.into_output(),
         }
     }
 }
@@ -147,6 +162,10 @@ impl PagerDocument {
             PagerContent::Static(output) => (output.clone(), None),
             PagerContent::LineNumbers(views) => views.snapshot(),
         }
+    }
+
+    pub(in crate::pager) fn into_output(self) -> String {
+        self.content.into_output()
     }
 
     pub(in crate::pager) fn line_number_mode(&self) -> Option<PagerLineNumberMode> {
