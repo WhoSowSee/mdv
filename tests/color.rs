@@ -5,6 +5,7 @@ use std::{fs, process::Stdio};
 use tempfile::{NamedTempFile, TempDir};
 
 const DOCUMENT: &str = include_str!("files/color-mode.md");
+
 const RENDER_ARGS: &[&str] = &[
     "--cols",
     "80",
@@ -47,6 +48,42 @@ fn configured_command(config: &TempDir) -> Command {
 }
 
 #[test]
+fn color_depth_limits_mixed_output_without_changing_text_or_links() {
+    let mut visible = None;
+    let extended = regex::Regex::new(r"\x1b\[(?:\d+;)*(?:38|48|58);(?:2|5);").unwrap();
+    let rgb = regex::Regex::new(r"\x1b\[(?:\d+;)*(?:38|48|58);2;").unwrap();
+    for depth in ["truecolor", "256", "16"] {
+        let output = render(
+            mdv_cmd().args(RENDER_ARGS).args([
+                "--color=always",
+                "--pretty-table",
+                "--theme=tokyonight",
+                "--color-depth",
+                depth,
+            ]),
+            DOCUMENT,
+        );
+        assert!(output.contains("\x1b]8;;https://example.com"));
+        match depth {
+            "16" => {
+                assert!(!extended.is_match(&output));
+                assert!(
+                    output.contains("\x1b[94m") && output.contains("\x1b[92m"),
+                    "blue and green syntax colors must remain distinct"
+                );
+            }
+            "256" => {
+                assert!(!rgb.is_match(&output));
+                assert!(extended.is_match(&output));
+            }
+            _ => assert!(rgb.is_match(&output)),
+        }
+        let text = strip_ansi(&output);
+        assert_eq!(&text, visible.get_or_insert_with(|| text.clone()));
+    }
+}
+
+#[test]
 fn pipe_modes_preserve_geometry_and_ignore_unrelated_color_environment() {
     let mut visible = String::new();
     for (mode, old_value) in [
@@ -65,6 +102,9 @@ fn pipe_modes_preserve_geometry_and_ignore_unrelated_color_environment() {
             .args(RENDER_ARGS);
         if !mode.is_empty() {
             command.args(["--color", mode]);
+        }
+        if mode == "never" {
+            command.arg("--color-depth=16");
         }
         let output = render(command.arg("-"), DOCUMENT);
         if mode == "always" {

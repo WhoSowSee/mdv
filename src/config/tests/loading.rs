@@ -1,4 +1,5 @@
 use super::*;
+use crate::cli::ColorDepth;
 
 #[test]
 fn cli_cols_override_terminal_width() {
@@ -39,6 +40,7 @@ fn config_file_settings_survive_cli_defaults() {
     let config = parse_with_config(
         r#"
 color: never
+color_depth: 16
 wrap: word
 table_wrap: wrap
 tab_length: 2
@@ -52,6 +54,7 @@ link_truncation: cut
     );
 
     assert_eq!(config.color, ColorMode::Never);
+    assert_eq!(config.color_depth, ColorDepth::Ansi16);
     assert!(matches!(config.wrap, TextWrapMode::Word));
     assert!(matches!(config.table_wrap, TableWrapMode::Wrap));
     assert_eq!(config.tab_length, 2);
@@ -122,7 +125,11 @@ fn cli_arguments_override_config_when_provided() {
     let _env_lock = env_lock();
     let temp_dir = TempDir::new().expect("create temp dir");
     let config_path = temp_dir.path().join("config.yaml");
-    std::fs::write(&config_path, "wrap: word\nlink_style: inline\n").expect("write config file");
+    std::fs::write(
+        &config_path,
+        "wrap: word\nlink_style: inline\ncolor_depth: 16\n",
+    )
+    .expect("write config file");
 
     let (cli, matches) = parse_cli_from(vec![
         OsString::from("mdv"),
@@ -132,11 +139,13 @@ fn cli_arguments_override_config_when_provided() {
         OsString::from("none"),
         OsString::from("--link-style"),
         OsString::from("hide"),
+        OsString::from("--color-depth=auto"),
     ]);
 
     let config = Config::from_cli(&cli, &matches).expect("load config with overrides");
     assert!(matches!(config.wrap, TextWrapMode::None));
     assert!(matches!(config.link_style, LinkStyle::Hide));
+    assert_eq!(config.color_depth, ColorDepth::Auto);
 }
 
 #[test]
@@ -171,13 +180,13 @@ fn preset_overrides_config_and_cli_overrides_preset() {
     let temp_dir = TempDir::new().expect("create temp dir");
     std::fs::write(
         temp_dir.path().join("config.yaml"),
-        "cols: 100\ntheme: monokai\nsmart_indent: true\npretty_table: false\ncode_theme: monokai\n",
+        "cols: 100\ntheme: monokai\nsmart_indent: true\npretty_table: false\ncode_theme: monokai\ncolor_depth: 16\n",
     )
     .expect("write config file");
     write_preset(
         temp_dir.path(),
         "reader.yaml",
-        "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\npretty_table: true\ncode_theme: null\n",
+        "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\npretty_table: true\ncode_theme: null\ncolor_depth: 256\n",
     );
 
     let (cli, matches) = parse_cli_from(vec![
@@ -188,10 +197,12 @@ fn preset_overrides_config_and_cli_overrides_preset() {
         OsString::from("reader"),
         OsString::from("--cols"),
         OsString::from("60"),
+        OsString::from("--color-depth=truecolor"),
     ]);
 
     let config = Config::from_cli(&cli, &matches).expect("load layered config");
     assert_eq!(config.cols, Some(60));
+    assert_eq!(config.color_depth, ColorDepth::TrueColor);
     assert_eq!(config.theme, "terminal");
     assert!(!config.smart_indent);
     assert!(config.pretty_table);
@@ -205,7 +216,7 @@ fn no_config_does_not_disable_user_presets() {
     write_preset(
         temp_dir.path(),
         "custom.yml",
-        "name: custom\ncols: 45\ntheme: nord\n",
+        "name: custom\ncols: 45\ntheme: nord\ncolor_depth: 256\n",
     );
 
     let (cli, matches) = parse_cli_from(vec![
@@ -219,6 +230,7 @@ fn no_config_does_not_disable_user_presets() {
 
     let config = Config::from_cli(&cli, &matches).expect("load preset without config");
     assert_eq!(config.theme, "nord");
+    assert_eq!(config.color_depth, ColorDepth::Ansi256);
 }
 
 #[test]

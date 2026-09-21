@@ -62,6 +62,20 @@ fn preview_highlights_matches_before_confirmation() {
             .sum::<usize>(),
         2
     );
+
+    state.color_depth = crate::ColorDepth::Ansi16;
+    state.search_state.search_mode = super::SearchMode::Forward;
+    let mut search = super::SearchOpts::from(&state);
+    search.compiled_regex = Some(query);
+    for enabled in [true, false] {
+        let mut output = Vec::new();
+        super::run_incremental_search(&mut output, &search, |_| enabled).unwrap();
+        let output = String::from_utf8(output).unwrap();
+        assert!(!output.contains("38;") && !output.contains("48;"));
+        if enabled {
+            assert!(output.contains("\x1b[30;103m"));
+        }
+    }
 }
 
 #[test]

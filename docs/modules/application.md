@@ -48,7 +48,7 @@ The crate publicly exposes reusable modules such as `cli`, `config`, `markdown`,
 `run(mut cli, matches)` evaluates branches in a fixed order:
 
 1. `--init-config` writes the reference configuration without loading color settings.
-2. The effective `Config` and pager backend are resolved, then `OutputStyle` is resolved from stdout TTY.
+2. The effective `Config` and pager backend are resolved, then `OutputStyle` is resolved from stdout TTY and the requested or detected color depth.
 3. `mdv help` builds the extended help document using the effective configuration and styling policy.
 4. `--preset-info` without a file prints the preset catalog.
 5. `--theme-info` without a file prints active theme information.

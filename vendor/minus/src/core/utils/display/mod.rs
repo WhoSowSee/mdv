@@ -206,7 +206,7 @@ pub fn draw_append_text<L: Display + AsRef<str>>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_text_checked<L: Display + AsRef<str>>(
+pub fn write_text_checked<L: AsRef<str>>(
     out: &mut impl Write,
     lines: &[L],
     mut upper_mark: usize,
@@ -216,6 +216,7 @@ pub fn write_text_checked<L: Display + AsRef<str>>(
     left_mark: usize,
     line_numbers: LineNumbers,
     total_line_count: usize,
+    color_depth: crate::ColorDepth,
 ) -> Result<(), MinusError> {
     let line_count = lines.len();
 
@@ -228,14 +229,17 @@ pub fn write_text_checked<L: Display + AsRef<str>>(
         lower_mark = upper_mark.saturating_add(writable_rows.min(line_count));
     }
 
-    let display_lines = &lines[upper_mark..lower_mark];
+    let display_lines = lines[upper_mark..lower_mark]
+        .iter()
+        .map(|line| color_depth.adapt(line.as_ref()))
+        .collect::<Vec<_>>();
 
     term::move_cursor(out, 0, 0, false)?;
     term::clear_entire_screen(out, false)?;
 
     write_lines(
         out,
-        display_lines,
+        &display_lines,
         cols,
         line_wrapping,
         left_mark,

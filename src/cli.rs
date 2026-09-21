@@ -7,8 +7,10 @@ use std::fmt;
 use std::path::PathBuf;
 
 mod color;
+mod color_depth;
 mod help;
 pub use color::{ColorMode, OutputStyle};
+pub use color_depth::ColorDepth;
 use help::*;
 
 #[derive(Parser, Debug)]
@@ -43,6 +45,10 @@ pub struct Cli {
     /// Control terminal styling based on stdout, always enable it, or always disable it
     #[arg(long = "color", value_enum, value_name = "WHEN", default_value = "auto", help_heading = "Output and flow", display_order = 8)]
     pub color: Option<ColorMode>,
+
+    /// Detect terminal color depth or limit colors explicitly
+    #[arg(long = "color-depth", value_enum, value_name = "DEPTH", default_value = "auto", help_heading = "Output and flow", display_order = 8)]
+    pub color_depth: Option<ColorDepth>,
 
     /// Hide Markdown comments from the rendered output
     #[arg(long = "hide-comments", help_heading = "Output and flow", display_order = 9)]

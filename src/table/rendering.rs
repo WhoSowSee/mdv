@@ -278,7 +278,7 @@ impl TableRenderer {
             return Ok(String::new());
         }
 
-        match self.table_wrap {
+        let output = match self.table_wrap {
             TableWrapMode::None => {
                 // No wrapping: tables overflow horizontally (like --no-wrap for text)
                 self.render_single_table_block_no_width_limit(headers, rows, alignments)
@@ -300,7 +300,8 @@ impl TableRenderer {
                 // Fit behavior: wrap text within table cells, fit to terminal width
                 self.render_single_table_block(headers, rows, alignments)
             }
-        }
+        }?;
+        Ok(self.output_style.adapt_owned(output))
     }
 }
 

@@ -76,6 +76,11 @@ impl Pager {
         Ok(self.tx.send(Command::SetOutputStyling(enabled))?)
     }
 
+    /// Limits content, prompts, and generated highlights to the selected color depth.
+    pub fn set_color_depth(&self, depth: crate::ColorDepth) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::SetColorDepth(depth))?)
+    }
+
     /// Sets the single-line text displayed in the prompt.
     pub fn set_prompt(&self, text: impl Into<String>) -> Result<(), MinusError> {
         let text: String = text.into();

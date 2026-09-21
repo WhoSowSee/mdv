@@ -9,6 +9,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 | [src/cli.rs](../../src/cli.rs) | `Cli`: arguments, aliases, conflicts, help groups, and Clap defaults. |
 | [src/cli/commands.rs](../../src/cli/commands.rs) | `CliCommand`, including full-format help. |
 | [src/cli/color.rs](../../src/cli/color.rs) | `ColorMode` settings and resolved `OutputStyle`. |
+| [src/cli/color_depth.rs](../../src/cli/color_depth.rs) | `ColorDepth` CLI values and YAML string/numeric parsing. |
 | [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, `MathBlockStyle`, and `HeadingLayout`. |
 | [src/cli/links.rs](../../src/cli/links.rs) | `LinkStyle`, `LinkTruncationStyle`, `FootnoteStyle`, and `MissingFootnoteStyle`. |
 | [src/cli/line_numbers.rs](../../src/cli/line_numbers.rs) | Shared `LineNumberOptions` and `LineNumberTarget` values for document and code-block gutters. |
@@ -90,6 +91,33 @@ separately to renderers and TUI. Configuration serialization retains the selecte
 mode and does not include resolved styling. Removed `no_colors` YAML keys are
 errors in both configuration and presets; removed color environment variables are
 ignored. Generic variables such as `NO_COLOR` do not influence this policy.
+
+`color_depth` / `--color-depth` accepts `auto`, `16`, `256`, and `truecolor`.
+YAML accepts 16 and 256 as numbers or strings. Its precedence is explicit CLI,
+preset, configuration file, then `auto`; an explicit `auto` replaces a lower
+forced value. It does not change the `color` policy and has no environment override.
+
+[src/terminal/detection.rs](../../src/terminal/detection.rs) resolves the depth
+once at startup, outside renderers. Explicit depth and disabled styling bypass
+detection. Auto uses these rules:
+
+- Basic terminal identities such as `linux`, `dumb`, and `vt100` use ANSI 16.
+- Direct-color TERM identities and Unix terminfo Tc/true-color capabilities
+  select True Color. Otherwise terminfo supplies the palette size; the generic
+  RGB capability alone does not establish 24-bit support.
+- Outside `screen`/`tmux`, `COLORTERM=truecolor|24bit` and known modern terminal
+  identities can select True Color. `TERM_PROGRAM` and `WT_SESSION` are ignored
+  in SSH sessions; multiplexer depth comes from its own TERM/terminfo rather
+  than inherited outer-terminal variables. `TMUX` and `STY` also identify a
+  multiplexer when its TERM name has been customized.
+- Without a database entry, a `-256color`/`-256` TERM suffix selects ANSI 256.
+- Insufficient evidence selects True Color, preserving the original colors.
+  TTY detection controls whether styling is enabled, not this palette choice.
+
+No terminal queries read stdin, and no `tput` process is launched. Terminfo is
+read with the pure-Rust `terminfo` crate on Unix; absence of its database is
+handled by the environment rules. Resolved depth travels with `OutputStyle`
+through rendering, reloads, and browser/pager transitions. It is not serialized.
 
 ## Pager policy
 

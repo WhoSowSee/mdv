@@ -104,6 +104,7 @@ impl TerminalRenderer {
             },
         };
         output.output = apply_left_margin(&output.output, self.config.margin.left);
+        output.output = self.output_style.adapt_owned(output.output);
         Ok(output)
     }
 

@@ -3,6 +3,7 @@ use super::*;
 impl Config {
     pub(super) fn merge_with(&mut self, other: Self) {
         self.color = other.color;
+        self.color_depth = other.color_depth;
 
         if other.cols.is_some() {
             self.cols = other.cols;

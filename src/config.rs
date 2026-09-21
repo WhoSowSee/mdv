@@ -1,8 +1,8 @@
 use crate::block_spacing::BlockSpacingOverrides;
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
-    CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, ColorMode,
-    FootnoteStyle, FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions,
+    CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, ColorDepth,
+    ColorMode, FootnoteStyle, FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions,
     LineNumberTarget, LinkStyle, LinkTruncationStyle, MathBlockStyle, MissingFootnoteStyle,
     PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
 };
@@ -150,6 +150,7 @@ macro_rules! define_config {
 define_config! {
     // Display options
     pub color: ColorMode,
+    pub color_depth: ColorDepth,
     pub cols: Option<usize>,
     #[serde(skip)]
     pub cols_from_cli: bool,
@@ -250,6 +251,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             color: ColorMode::Auto,
+            color_depth: ColorDepth::Auto,
             cols: None,
             cols_from_cli: false,
             margin: HorizontalMargins::default(),

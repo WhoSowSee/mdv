@@ -14,6 +14,7 @@
 //!
 //! [`Pager`] sends content and configuration to the pager. Feature-gated runner functions start
 //! either a streaming or preloaded session, while [`input`] exposes input customization.
+mod color;
 #[cfg(feature = "dynamic_output")]
 mod dynamic_pager;
 pub mod error;
@@ -43,6 +44,7 @@ pub use minus_core::RunMode;
 #[cfg(feature = "search")]
 pub use search::SearchMode;
 
+pub use color::{ColorDepth, ansi256_to_rgb};
 pub use error::MinusError;
 #[cfg(feature = "search")]
 pub use line_navigation::LineNavigation;

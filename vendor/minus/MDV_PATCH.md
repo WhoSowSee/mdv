@@ -35,6 +35,16 @@ mdv adds a typed prompt-rendering API:
 
 The renderer runs synchronously while the pager state is locked. Implementations must remain fast, non-blocking, and free of terminal I/O.
 
+`Pager::set_color_depth(ColorDepth::{Ansi16, Ansi256, TrueColor})` limits document
+rows and pager-generated colors, including prompts, panels, incremental search,
+selection, and line navigation. True Color preserves existing output by default.
+ANSI 16 uses contrasting highlight pairs. `ColorDepth::adapt` exposes the same
+SGR conversion for application rendering while retaining text and OSC/control
+payloads. Terminal capability detection remains the application's responsibility.
+
+The hue conversion uses Björn Ottosson's public-domain
+[sRGB-to-Oklab transform](https://bottosson.github.io/posts/oklab/).
+
 The fork adds direct `unicode-segmentation` and `unicode-width` dependencies for grapheme-safe prompt layout and selection geometry.
 
 The extension exists because upstream `minus` 5.7.2 hardcodes its prompt colors and does not expose a dynamic status-line renderer.

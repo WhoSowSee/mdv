@@ -61,12 +61,17 @@ pub fn init_core(
     if *RUNMODE.lock() == RunMode::Static {
         use {super::utils::display::write_raw_lines, crossterm::tty::IsTty};
         if !out.is_tty() {
-            write_raw_lines(&mut out, &[ps.screen.orig_text], None)?;
+            write_raw_lines(
+                &mut out,
+                &[ps.color_depth.adapt(&ps.screen.orig_text)],
+                None,
+            )?;
             *RUNMODE.lock() = RunMode::Uninitialized;
             return Ok(());
         }
         if ps.screen.formatted_lines_count() <= ps.rows && !ps.run_no_overflow {
-            write_raw_lines(&mut out, &ps.screen.formatted_lines, Some("\r"))?;
+            let rows = ps.render_rows_for_display(0, ps.screen.formatted_lines_count());
+            write_raw_lines(&mut out, &rows, Some("\r"))?;
             ps.exit();
             *RUNMODE.lock() = RunMode::Uninitialized;
             return Ok(());

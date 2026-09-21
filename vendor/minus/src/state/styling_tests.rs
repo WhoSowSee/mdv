@@ -1,6 +1,52 @@
 use super::*;
 use crate::{Pager, PromptColor, PromptLine, PromptSpan, PromptStyle};
 
+#[cfg(feature = "search")]
+#[test]
+fn limited_depth_covers_prompts_search_selection_and_navigation() {
+    let handle = Pager::new();
+    handle.set_color_depth(crate::ColorDepth::Ansi16).unwrap();
+    handle
+        .set_mapped_text(
+            "\x1b[38;2;100;170;255mtarget one\x1b[0m\nsecond row\n".into(),
+            Some(LineNavigation::from_current(vec![Some(1), Some(2)])),
+        )
+        .unwrap();
+    let mut state = PagerState::generate_initial_state(&handle.rx).unwrap();
+    let style = PromptStyle::default()
+        .foreground(PromptColor::AnsiValue(102))
+        .background(PromptColor::AnsiValue(235));
+    state.prompt_renderer = Some(Arc::new(move |_| {
+        Ok(PromptLine::new().left(PromptSpan::new("footer", style)?))
+    }));
+    state.prompt_panel = vec![PromptLine::new().left(PromptSpan::new("help", style).unwrap())];
+    state.search_state.search_term = Some(regex::Regex::new("target").unwrap());
+    state.reformat_display().unwrap();
+    state.begin_line_navigation().unwrap();
+    state.finish_line_navigation(Some(2)).unwrap();
+    state.selection_anchor = Some(Selection {
+        absolute_row: 0,
+        col: 7,
+    });
+    state.selection = Some(Selection {
+        absolute_row: 0,
+        col: 9,
+    });
+    let rows = state.render_rows_for_display(0, 2);
+    assert!(rows[0].contains("\x1b[30;103m"));
+    assert!(rows[0].contains("\x1b[30;107m"));
+    assert!(rows[1].contains("\x1b[30;47m"));
+    for output in [
+        &state.displayed_prompt,
+        &state.displayed_prompt_panel[0],
+        rows[0].as_ref(),
+        rows[1].as_ref(),
+    ] {
+        assert!(!output.contains("38;"));
+        assert!(!output.contains("48;"));
+    }
+}
+
 #[test]
 fn output_styling_command_controls_default_and_custom_prompts() {
     let handle = Pager::new();

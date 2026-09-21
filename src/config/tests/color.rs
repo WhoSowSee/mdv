@@ -1,4 +1,5 @@
 use super::*;
+use crate::cli::ColorDepth;
 
 #[test]
 fn color_schema_is_strict_and_runtime_style_is_not_serialized() {
@@ -22,6 +23,13 @@ fn color_schema_is_strict_and_runtime_style_is_not_serialized() {
         serde_yaml::from_str::<Config>("{}\n").unwrap().color,
         ColorMode::Auto
     );
+    for value in ["16", "'16'"] {
+        let config: Config = serde_yaml::from_str(&format!("color_depth: {value}\n")).unwrap();
+        assert_eq!(config.color_depth, ColorDepth::Ansi16);
+    }
+    for value in ["8", "true", "null", "AUTO"] {
+        assert!(serde_yaml::from_str::<Config>(&format!("color_depth: {value}\n")).is_err());
+    }
 }
 
 #[test]

@@ -221,16 +221,27 @@ fn mini_help_truncates_at_a_segment_boundary() {
 #[test]
 fn filtering_underlines_only_the_fuzzy_match_characters() {
     let document = DocumentEntry::for_test("test_codeblock_indent.md");
-    let title = filtered_title(
-        &document,
-        &document.relative_path,
-        "doc",
-        rgb(221, 221, 221),
+    for style in [
         OutputStyle::Enabled,
-    );
-
-    assert_eq!(title.matches("\x1b[4m").count(), 3);
-    assert_eq!(crate::utils::strip_ansi(&title), "test_codeblock_indent.md");
+        OutputStyle::Ansi16,
+        OutputStyle::Ansi256,
+    ] {
+        let title = filtered_title(
+            &document,
+            &document.relative_path,
+            "doc",
+            rgb(221, 221, 221),
+            style,
+        );
+        assert_eq!(title.matches("\x1b[4m").count(), 3);
+        assert_eq!(crate::utils::strip_ansi(&title), "test_codeblock_indent.md");
+        if style != OutputStyle::Enabled {
+            assert!(!title.contains(";2;"));
+        }
+        if style == OutputStyle::Ansi16 {
+            assert!(!title.contains("38;"));
+        }
+    }
 }
 
 #[test]

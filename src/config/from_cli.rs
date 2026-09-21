@@ -24,6 +24,12 @@ impl Config {
             config.color = color;
         }
 
+        if let Some(depth) = cli.color_depth
+            && arg_has_user_value(matches, "color_depth")
+        {
+            config.color_depth = depth;
+        }
+
         if let Some(cols) = cli.cols
             && arg_has_user_value(matches, "cols")
         {

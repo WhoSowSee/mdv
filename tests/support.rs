@@ -9,6 +9,11 @@ pub(crate) fn mdv_cmd() -> Command {
     command
         .env_remove("MDV_COLOR")
         .env_remove("MDV_PAGER")
+        .env_remove("TMUX")
+        .env_remove("STY")
+        .env_remove("TERM_PROGRAM")
+        .env("TERM", "xterm-256color")
+        .env("COLORTERM", "truecolor")
         .env("MDV_CONFIG_PATH", config_dir.path());
     command
 }

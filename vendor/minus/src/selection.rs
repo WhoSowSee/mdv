@@ -35,12 +35,22 @@ pub fn grapheme_end_char_index(line: &str, char_index: usize) -> usize {
     grapheme_start
 }
 
-pub fn highlight_visible_range(line: Cow<'_, str>, start: usize, end: usize) -> Cow<'_, str> {
+pub fn highlight_visible_range(
+    line: Cow<'_, str>,
+    start: usize,
+    end: usize,
+    depth: crate::ColorDepth,
+) -> Cow<'_, str> {
     if start >= end {
         return line;
     }
 
     let end = grapheme_end_char_index(&line, end - 1);
+    let selection_style = if depth == crate::ColorDepth::Ansi16 {
+        "\x1b[30;107m"
+    } else {
+        SELECTION_STYLE
+    };
 
     let bytes = line.as_bytes();
     let mut out = String::with_capacity(line.len() + SELECTION_STYLE.len() + RESET.len());
@@ -60,7 +70,7 @@ pub fn highlight_visible_range(line: Cow<'_, str>, start: usize, end: usize) -> 
             if is_sgr {
                 sgr_history.push_str(sequence);
                 if highlighted {
-                    out.push_str(SELECTION_STYLE);
+                    out.push_str(selection_style);
                 }
             }
             byte_index = sequence_end;
@@ -68,7 +78,7 @@ pub fn highlight_visible_range(line: Cow<'_, str>, start: usize, end: usize) -> 
         }
 
         if !highlighted && visible_index == start {
-            out.push_str(SELECTION_STYLE);
+            out.push_str(selection_style);
             highlighted = true;
         }
         if highlighted && visible_index == end {
@@ -131,10 +141,10 @@ pub fn ansi_sequence_end(bytes: &[u8], start: usize) -> Option<(usize, bool)> {
             }
             Some((bytes.len(), false))
         }
-        Some(b']') => {
+        Some(b']' | b'P' | b'_' | b'^' | b'X') => {
             let mut index = start + 2;
             while let Some(&byte) = bytes.get(index) {
-                if byte == b'\x07' {
+                if byte == b'\x07' && bytes[start + 1] == b']' {
                     return Some((index + 1, false));
                 }
                 if byte == b'\x1b' && bytes.get(index + 1) == Some(&b'\\') {
@@ -144,7 +154,7 @@ pub fn ansi_sequence_end(bytes: &[u8], start: usize) -> Option<(usize, bool)> {
             }
             Some((bytes.len(), false))
         }
-        Some(_) => Some(((start + 2).min(bytes.len()), false)),
+        Some(byte) => Some((start + if byte.is_ascii() { 2 } else { 1 }, false)),
         None => Some((bytes.len(), false)),
     }
 }

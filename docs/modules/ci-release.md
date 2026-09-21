@@ -108,6 +108,11 @@ Cargo removes the path dependency when packaging mdv and uses the crates.io
 release during verification. The dry run blocks publication if that release
 does not contain the APIs used by mdv, even when local binary builds succeed.
 
+The vendored pager contains unreleased color-depth APIs (`ColorDepth` and
+`Pager::set_color_depth`); crate verification requires a published fork containing
+them. The Unix-only `terminfo` 0.9.0 dependency reads terminfo files in Rust
+and adds no ncurses linkage or mandatory runtime database package.
+
 `.github/scripts/release-notes.sh` writes the custom release body directly to a
 file, preserving the existing changelog, tag annotation, and commit-message
 priority. The release action's `generate_release_notes` option appends GitHub's

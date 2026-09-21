@@ -49,6 +49,7 @@ cols: null                 # Use detected terminal width; fallback is 80 when de
 margin: null              # null disables margins; otherwise use "left:N", "right:N", or both
 tab_length: 4              # Replace tab characters with this many spaces
 color: auto                # Terminal styling: auto | always | never
+color_depth: auto          # Palette limit: auto | 16 | 256 | truecolor
 wrap: "char"               # Text and table-cell breaks: "char" | "word" | "none"
 reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
 table_wrap: "fit"          # Table geometry: fit cells | wrap columns into blocks | allow overflow

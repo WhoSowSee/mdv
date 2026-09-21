@@ -126,6 +126,7 @@ pub struct IncrementalSearchOpts<'a> {
     cols: usize,
     writable_rows: usize,
     output_styling: bool,
+    color_depth: crate::ColorDepth,
 }
 
 impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
@@ -139,6 +140,7 @@ impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
             cols: ps.cols,
             writable_rows: ps.content_rows(),
             output_styling: ps.output_styling,
+            color_depth: ps.color_depth,
         }
     }
 }
@@ -346,6 +348,7 @@ fn preview_line<'a>(
                     query,
                     current_range,
                     iso.content_start_chars(),
+                    iso.color_depth,
                 ))
             } else {
                 row
@@ -491,6 +494,7 @@ where
             initial_left_mark,
             line_numbers,
             screen.line_count(),
+            iso.color_depth,
         )?;
         Ok(())
     };
@@ -517,6 +521,7 @@ where
         iso.initial_left_mark,
         iso.line_numbers,
         iso.screen.line_count(),
+        iso.color_depth,
     )?;
 
     Ok(Some(preview.upper_mark))
@@ -930,7 +935,7 @@ mod tests {
             style::Attribute,
             terminal::{Clear, ClearType},
         };
-        use std::{convert::TryInto, io::Write};
+        use std::io::Write;
 
         fn new_search_opts(sm: SearchMode) -> SearchOpts<'static> {
             let search_char = match sm {

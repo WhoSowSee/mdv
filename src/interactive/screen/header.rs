@@ -116,7 +116,7 @@ pub(super) fn filtered_title(
         if indices.binary_search(&index).is_ok() {
             style = style.underline();
         }
-        output.push_str(&style.apply(&character.to_string(), OutputStyle::Enabled));
+        output.push_str(&style.apply(&character.to_string(), output_style));
     }
     output
 }

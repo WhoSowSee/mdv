@@ -51,7 +51,8 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     let pager_backend =
         pager::PagerBackend::resolve(cli.pager.as_ref().and_then(Option::as_deref))?;
     let stdout_is_terminal = io::stdout().is_terminal();
-    let output_style = config.color.resolve(stdout_is_terminal);
+    let output_style =
+        terminal::detection::resolve(config.color.resolve(stdout_is_terminal), config.color_depth);
     if matches!(cli.command, Some(CliCommand::Help)) {
         return show_help(&config, output_style, &pager_backend);
     }

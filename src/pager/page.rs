@@ -47,6 +47,7 @@ pub(crate) fn page(
         )?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
         pager.set_output_styling(output_style.is_enabled())?;
+        pager.set_color_depth(output_style.color_depth())?;
         pager.set_line_numbers(LineNumbers::AlwaysOff)?;
         pager.set_mapped_text(output, line_navigation)?;
         pager.set_prompt_renderer(move |context| footer.render(context))?;

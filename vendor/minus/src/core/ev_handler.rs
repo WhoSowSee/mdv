@@ -294,6 +294,12 @@ pub fn handle_event(
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
             queue_prompt_redraw(p, command_queue)?;
         }
+        Command::SetColorDepth(depth) => {
+            p.color_depth = depth;
+            p.format_prompt()?;
+            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+            queue_prompt_redraw(p, command_queue)?;
+        }
         Command::SetExitStrategy(es) => {
             p.hooks.remove_callback(Hook::PostPagerExit, 1);
             if es == ExitStrategy::ProcessQuit {

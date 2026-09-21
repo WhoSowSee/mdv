@@ -99,6 +99,7 @@ cat <FILE> | mdv
 - `-E, --render-html` - renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally.
 - `-N, --line-numbers [<MODE>]` - prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
 - `--color <auto|always|never>` - controls terminal styling. `auto` enables ANSI and OSC 8 only when stdout is a terminal, `always` preserves styling through pipes, and `never` emits plain rendered output.
+- `--color-depth <auto|16|256|truecolor>` - detects the terminal palette or sets its limit explicitly. Applies to document colors and the interactive interface; default `auto`.
 - `--hide-comments` - removes Markdown comments from the rendered output.
 - `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` - controls an exact `---`-delimited YAML property mapping beginning on the first line. `hidden` omits it; `panel` renders a property panel; `table` uses Property/Value columns; `plain` emits normalized key/value lines; `inline` joins properties into one flowing row; `blocks` places each value below its key; `code` renders highlighted YAML; and `source` parses the complete input as ordinary Markdown.
 - `--theme-info [FILE]` - shows the active palette; when `FILE` is provided it renders the file along with palette information.

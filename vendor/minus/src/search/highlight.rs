@@ -124,25 +124,11 @@ fn ansi16_color(index: u16) -> Rgb {
 }
 
 fn ansi256_color(index: u8) -> Rgb {
-    match index {
-        0..=15 => ansi16_color(u16::from(index)),
-        16..=231 => {
-            let value = index - 16;
-            Rgb::new(
-                ansi_cube_component(value / 36),
-                ansi_cube_component((value % 36) / 6),
-                ansi_cube_component(value % 6),
-            )
-        }
-        232..=255 => {
-            let gray = 8 + (index - 232) * 10;
-            Rgb::new(gray, gray, gray)
-        }
+    if index < 16 {
+        return ansi16_color(u16::from(index));
     }
-}
-
-const fn ansi_cube_component(value: u8) -> u8 {
-    if value == 0 { 0 } else { 55 + value * 40 }
+    let (red, green, blue) = crate::ansi256_to_rgb(index);
+    Rgb::new(red, green, blue)
 }
 
 fn extended_color(parameters: &[Option<u16>], index: usize) -> Option<(Rgb, usize)> {
@@ -185,7 +171,22 @@ fn highlight_color(state: SgrState, current: bool, fixed: Option<Rgb>) -> Rgb {
     })
 }
 
-fn highlight_background(state: SgrState, current: bool, fixed: Option<Rgb>) -> String {
+fn highlight_background(
+    state: SgrState,
+    current: bool,
+    fixed: Option<Rgb>,
+    depth: crate::ColorDepth,
+) -> String {
+    if depth == crate::ColorDepth::Ansi16 {
+        return (if fixed.is_some() {
+            "\x1b[30;47m"
+        } else if current {
+            "\x1b[30;103m"
+        } else {
+            "\x1b[30;106m"
+        })
+        .into();
+    }
     let color = highlight_color(state, current, fixed);
     format!("\x1b[48;2;{};{};{}m", color.r, color.g, color.b)
 }
@@ -196,6 +197,7 @@ fn highlight_matches(
     current_range: Option<SearchRange>,
     content_start_chars: usize,
     fixed_background: Option<Rgb>,
+    depth: crate::ColorDepth,
 ) -> String {
     let stripped = ANSI_REGEX.replace_all(line, "");
     let content_start = stripped
@@ -269,6 +271,7 @@ fn highlight_matches(
                 sgr_state,
                 current_range == Some(matches[index].2),
                 fixed_background,
+                depth,
             ));
         }
 
@@ -281,6 +284,7 @@ fn highlight_matches(
                 sgr_state,
                 current_range == Some(matches[match_index].2),
                 fixed_background,
+                depth,
             ));
             if matches[match_index].0 == matches[match_index].1 {
                 output.push_str(RESET_STYLE);
@@ -300,17 +304,23 @@ pub fn highlight_search_matches(
     query: &Regex,
     current_range: Option<SearchRange>,
     content_start_chars: usize,
+    depth: crate::ColorDepth,
 ) -> String {
-    highlight_matches(line, query, current_range, content_start_chars, None)
+    highlight_matches(line, query, current_range, content_start_chars, None, depth)
 }
 
-pub fn highlight_line_navigation_target(line: &str, content_start_chars: usize) -> String {
+pub fn highlight_line_navigation_target(
+    line: &str,
+    content_start_chars: usize,
+    depth: crate::ColorDepth,
+) -> String {
     highlight_matches(
         line,
         &WHOLE_LINE,
         None,
         content_start_chars,
         Some(LINE_NAVIGATION_BACKGROUND),
+        depth,
     )
 }
 

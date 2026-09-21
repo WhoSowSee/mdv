@@ -49,6 +49,7 @@ pub enum Command {
     LineWrapping(bool),
     SetLineNumbers(LineNumbers),
     SetOutputStyling(bool),
+    SetColorDepth(crate::ColorDepth),
     FollowOutput(bool),
 
     SetExitStrategy(ExitStrategy),
@@ -91,6 +92,7 @@ impl PartialEq for Command {
             (Self::LineWrapping(d1), Self::LineWrapping(d2)) => d1 == d2,
             (Self::SetLineNumbers(d1), Self::SetLineNumbers(d2)) => d1 == d2,
             (Self::SetOutputStyling(d1), Self::SetOutputStyling(d2)) => d1 == d2,
+            (Self::SetColorDepth(d1), Self::SetColorDepth(d2)) => d1 == d2,
             (Self::ShowPrompt(d1), Self::ShowPrompt(d2)) => d1 == d2,
             (Self::SetExitStrategy(d1), Self::SetExitStrategy(d2)) => d1 == d2,
             #[cfg(feature = "static_output")]
@@ -138,6 +140,7 @@ impl Debug for Command {
             Self::SetOutputStyling(enabled) => {
                 write!(f, "SetOutputStyling({enabled:?})")
             }
+            Self::SetColorDepth(depth) => write!(f, "SetColorDepth({depth:?})"),
             Self::LineWrapping(lw) => write!(f, "LineWrapping({lw:?})"),
             Self::SetExitStrategy(es) => write!(f, "SetExitStrategy({es:?})"),
             Self::SetInputClassifier(_) => write!(f, "SetInputClassifier"),

@@ -92,6 +92,11 @@ tests request `--color always`, plain-output tests request `--color never`, and
 default behavior is verified with captured non-TTY stdout. Unit environment
 tests use the existing mutex and restoring guards.
 
+The shared CLI helper supplies a deterministic True Color terminal environment.
+Color-depth coverage checks configuration priority, explicit detection snapshots,
+palette/SGR invariants, and mixed-document output. Browser and pager tests check
+color limits after their own dynamic highlighting.
+
 ## Fixtures
 
 - `tests/files/` contains reusable Markdown fixtures.

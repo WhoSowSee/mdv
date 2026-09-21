@@ -95,13 +95,35 @@ An unknown name, invalid component count, or out-of-range component returns an e
 
 `AnsiStyle` accumulates foreground, background, bold, italic, underline, and strikethrough. `apply` emits one coherent escape sequence when the resolved `OutputStyle` is enabled and returns the original text when it is disabled.
 
-`ansi256_to_rgb` and `calculate_luminosity` support theme comparison and sorting; they do not rewrite user values.
+`ansi256_to_rgb` is re-exported from the shared pager color module and supplies
+the same indexed palette to theme handling and color reduction.
+`calculate_luminosity` supports theme sorting; neither rewrites user values.
 
 Color mode is independent of the selected palette. Application code resolves
 `ColorMode` from stdout once and supplies `OutputStyle` to `AnsiStyle::apply`,
 `TerminalRenderer`, and `TableRenderer`. Disabled styling also suppresses OSC 8
 links, while all visible symbols and the selected link presentation remain.
 This policy does not sanitize terminal controls supplied in the Markdown source.
+
+`OutputStyle::Ansi16` and `Ansi256` additionally limit emitted color sequences;
+`Enabled` retains the original colors for library callers. The shared converter
+is `minus::ColorDepth::adapt` in `vendor/minus/src/color/`. It processes SGR
+colors, preserving text, OSC payloads, attributes, and other controls. ANSI 16
+preserves the nearest hue family in Oklab for chromatic colors, choosing its normal or
+bright entry by weighted luma. Colors with HSV saturation below 25%, or all RGB
+channels below 64, use the neutral ramp. This avoids collapsing pastel accents
+to gray when comparing them with a conventional fully saturated ANSI palette.
+ANSI indices 0–15 retain their meaning; RGB-to-256 conversion uses weighted RGB
+distance to the fixed cube and grayscale entries 16–255.
+ANSI 16 uses basic/bright foreground and background codes, including for table
+headers emitted by `comfy-table`. Independent underline colors are omitted in
+that mode. Distinct explicit foreground/background colors that collapse to one
+entry receive a contrasting foreground; original resets restore their state.
+
+The converter runs at style and complete-render boundaries, and on final pager
+rows after dynamic highlighting. Reapplying it is idempotent. Themes retain
+their original values; HTML export is unaffected. Reduced colors approximate a
+conventional ANSI palette because the actual terminal palette is user-defined.
 
 ## Inline styles
 

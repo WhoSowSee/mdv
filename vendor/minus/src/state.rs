@@ -136,6 +136,7 @@ pub struct PagerState {
     pub(crate) lines_to_row_map: LinesRowMap,
     pub(crate) follow_output: bool,
     pub(crate) output_styling: bool,
+    pub(crate) color_depth: crate::ColorDepth,
     pub(crate) selection_anchor: Option<Selection>,
 }
 
@@ -196,6 +197,7 @@ impl PagerState {
             lines_to_row_map: LinesRowMap::new(),
             follow_output: false,
             output_styling: true,
+            color_depth: crate::ColorDepth::TrueColor,
             selection_anchor: None,
         };
 
@@ -268,13 +270,17 @@ impl PagerState {
         } else {
             self.format_default_prompt();
         }
+        self.displayed_prompt = self
+            .color_depth
+            .adapt(std::mem::take(&mut self.displayed_prompt))
+            .into_owned();
 
         self.displayed_prompt_panel = self
             .prompt_panel
             .iter()
             .map(|line| {
                 if self.output_styling {
-                    line.render(self.cols)
+                    self.color_depth.adapt(line.render(self.cols)).into_owned()
                 } else {
                     line.render_plain(self.cols)
                 }
@@ -549,6 +555,7 @@ impl PagerState {
             Cow::Owned(crate::search::highlight_line_navigation_target(
                 &row,
                 prefix_width,
+                self.color_depth,
             ))
         } else {
             row
@@ -562,6 +569,7 @@ impl PagerState {
                 row,
                 prefix_width.saturating_add(visible_start),
                 prefix_width.saturating_add(visible_end),
+                self.color_depth,
             )
         } else {
             row
@@ -591,12 +599,13 @@ impl PagerState {
                 search_term,
                 current_range,
                 prefix_width,
+                self.color_depth,
             ))
         } else {
             row
         };
 
-        Some(row)
+        Some(self.color_depth.adapt(row))
     }
 
     fn horizontal_scroll_view<'a>(&self, row: &'a str) -> (Cow<'a, str>, usize) {
@@ -889,12 +898,18 @@ mod tests {
             Cow::Borrowed("\x1b[31mred\x1b[0m plain"),
             0,
             "red plain".chars().count(),
+            crate::ColorDepth::TrueColor,
         );
 
         assert!(rendered.contains(&format!("\x1b[31m{SELECTION_BACKGROUND}red")));
         assert!(!rendered.contains("\x1b[7m"));
 
-        let rendered = highlight_visible_range(Cow::Borrowed("\x1b[31mred plain\x1b[0m"), 0, 3);
+        let rendered = highlight_visible_range(
+            Cow::Borrowed("\x1b[31mred plain\x1b[0m"),
+            0,
+            3,
+            crate::ColorDepth::TrueColor,
+        );
         assert!(rendered.contains("red\x1b[0m\x1b[31m plain"));
     }
 }

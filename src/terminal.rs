@@ -1,5 +1,8 @@
 use crate::cli::OutputStyle;
 use crossterm::style::Color;
+pub use minus::ansi256_to_rgb;
+
+pub(crate) mod detection;
 
 /// ANSI color and style utilities
 #[derive(Debug, Clone, Default)]
@@ -78,7 +81,7 @@ impl AnsiStyle {
         result.push_str(text);
         result.push_str("\x1b[0m");
 
-        result
+        output_style.adapt_owned(result)
     }
 }
 
@@ -114,46 +117,6 @@ fn color_to_ansi_code(color: Color) -> u8 {
         Color::Reset => 39,
         Color::AnsiValue(_) | Color::Rgb { .. } => {
             unreachable!("indexed and RGB colors emit their own sequences")
-        }
-    }
-}
-
-/// Convert 256-color palette index to RGB approximation
-pub fn ansi256_to_rgb(color: u8) -> (u8, u8, u8) {
-    match color {
-        // Standard colors (0-15)
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Dark Red
-        2 => (0, 128, 0),      // Dark Green
-        3 => (128, 128, 0),    // Dark Yellow
-        4 => (0, 0, 128),      // Dark Blue
-        5 => (128, 0, 128),    // Dark Magenta
-        6 => (0, 128, 128),    // Dark Cyan
-        7 => (192, 192, 192),  // Light Gray
-        8 => (128, 128, 128),  // Dark Gray
-        9 => (255, 0, 0),      // Red
-        10 => (0, 255, 0),     // Green
-        11 => (255, 255, 0),   // Yellow
-        12 => (0, 0, 255),     // Blue
-        13 => (255, 0, 255),   // Magenta
-        14 => (0, 255, 255),   // Cyan
-        15 => (255, 255, 255), // White
-
-        // 216-color cube (16-231)
-        16..=231 => {
-            let n = color - 16;
-            let r = n / 36;
-            let g = (n % 36) / 6;
-            let b = n % 6;
-
-            let to_rgb = |c| if c == 0 { 0 } else { 55 + c * 40 };
-            (to_rgb(r), to_rgb(g), to_rgb(b))
-        }
-
-        // Grayscale (232-255)
-        232..=255 => {
-            let gray = 8 + (color - 232) * 10;
-            (gray, gray, gray)
         }
     }
 }

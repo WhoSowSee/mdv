@@ -28,6 +28,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [process_command.rs](../../src/process_command.rs) | Cross-platform splitting of user-supplied process commands. | [interactive/pager](interactive-and-pager.md) |
 | [table.rs](../../src/table.rs) | Low-level table facade. | [links/tables](links-footnotes-tables.md) |
 | [terminal.rs](../../src/terminal.rs) | ANSI styling and color conversion. | [themes](themes-and-styling.md) |
+| [terminal/detection.rs](../../src/terminal/detection.rs) | Environment and Unix terminfo color-depth detection. | [CLI/config](cli-configuration.md) |
 | [theme.rs](../../src/theme.rs) | Theme facade and public re-exports. | [themes](themes-and-styling.md) |
 | [user_themes.rs](../../src/user_themes.rs) | User-theme facade. | [themes](themes-and-styling.md) |
 | [utils.rs](../../src/utils.rs) | Display width, ANSI stripping, and text wrapping. | [architecture](architecture.md) |
@@ -43,6 +44,7 @@ Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [l
 | [code_blocks.rs](../../src/cli/code_blocks.rs) | Code-block style and wrap-indent types. |
 | [commands.rs](../../src/cli/commands.rs) | CLI subcommands. |
 | [color.rs](../../src/cli/color.rs) | Requested color modes and resolved styling policy. |
+| [color_depth.rs](../../src/cli/color_depth.rs) | Requested palette depth and YAML parsing. |
 | [help.rs](../../src/cli/help.rs) | Long-help constants. |
 | [layout.rs](../../src/cli/layout.rs) | Text/table wrapping, math-block style, and heading-layout enums. |
 | [line_numbers.rs](../../src/cli/line_numbers.rs) | Line-number targets and options. |

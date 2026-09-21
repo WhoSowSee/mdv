@@ -110,6 +110,13 @@ The built-in pager owns mdv-specific search, copy, reload, editor, help, and
 line-number switching. An external pager owns its controls and receives only the
 initial view selected by the effective line-number configuration.
 
+The resolved color depth also reaches the browser and `Pager::set_color_depth`.
+The built-in pager limits final content rows, prompts, help panels, incremental
+search previews, and selection/navigation highlights. ANSI 16 uses contrasting
+fixed pairs for search, selection, and navigation rather than RGB background
+tints. External pagers receive already converted document text and control
+their own interface colors.
+
 When the browser opens an external pager, mdv fully suspends the browser session,
 then restores the alternate screen and raw mode after the child exits. The
 built-in pager uses the lighter in-place pause path because it shares mdv's
