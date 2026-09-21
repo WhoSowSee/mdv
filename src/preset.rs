@@ -7,10 +7,14 @@ use std::fs;
 use std::path::Path;
 
 const PRESETS_DIR: &str = "presets";
-const BUILTIN_PRESETS: [(&str, &str); 3] = [
+const BUILTIN_PRESETS: [(&str, &str); 4] = [
     (
         "compact",
         include_str!("../assets/config/presets/compact.yaml"),
+    ),
+    (
+        "pretty",
+        include_str!("../assets/config/presets/pretty.yaml"),
     ),
     (
         "reader",

@@ -233,10 +233,11 @@ The structured form changes only how a value is written. A setting present in a 
 
 ## Presets
 
-mdv ships with three presets:
+mdv ships with four presets:
 
 - `reader` - word wrapping, paragraph reflow, attached footnotes, an inline link table, and the `nord` theme for long-form reading.
 - `compact` - flat headings, simple code/callout blocks, hidden code labels, and end-of-document links for dense terminal output.
+- `pretty` - framed tables and code blocks, with list and checkbox icons. Icons require a Nerd Font.
 - `showcase` - centered headings, `tokyonight`, rich code/callout frames, checkboxes, and list icons. This preset requires a Nerd Font for its icons.
 
 Select one with `mdv --preset reader README.md`. Explicit CLI options override the selected preset, so `mdv --preset compact --cols 100 README.md` uses the compact preset at 100 columns.

@@ -143,6 +143,8 @@ before delegating to that schema, so direct decoder calls cannot bypass validati
 
 [src/preset.rs](../../src/preset.rs) loads embedded presets from `assets/config/presets/` and user `presets/*.yaml` files under `config_dir`.
 
+The embedded catalog contains `compact`, `pretty`, `reader`, and `showcase`. `pretty` adds frames and icons while preserving the selected themes.
+
 - A user preset may replace an embedded preset with the same name.
 - Two user files declaring the same name are an error.
 - Files are sorted lexically for deterministic diagnostics.

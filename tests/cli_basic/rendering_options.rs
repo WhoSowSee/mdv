@@ -245,6 +245,7 @@ fn test_preset_info_lists_builtin_and_user_presets() {
         "Available presets:\n\n",
         "  compact              - built-in\n",
         "  custom               - custom\n",
+        "  pretty               - built-in\n",
         "  reader               - built-in\n",
         "  showcase             - built-in\n",
     ));
@@ -281,4 +282,41 @@ fn test_preset_info_with_file_without_preset_is_ignored() {
         .stdout(predicate::str::contains("plain preset info content"))
         .stdout(predicate::str::contains("Current preset:").not())
         .stdout(predicate::str::contains("Available presets:").not());
+}
+
+#[test]
+fn test_pretty_preset_matches_explicit_options() {
+    let input = concat!(
+        include_str!("../files/color-mode.md"),
+        "\n#### Skipped heading\n\nTerm\n: A definition\n\n",
+        "> [!TIP]+ Foldable tip\n> Some useful text.\n",
+    );
+    let explicit_args = [
+        "--link-style=inlinetable",
+        "--link-truncation=cut",
+        "--wrap=word",
+        "--heading-layout=level",
+        "--smart-indent",
+        "--table-smart-indent",
+        "--render-html",
+        "--pretty-list=type:nerd-font;size:small",
+        "--callout-style=pretty:show-icons;fold-icons",
+        "--code-block-style=pretty:show-name;show-icon",
+        "--pretty-checkbox=square",
+        "--pretty-definition=unicode",
+        "--pretty-table",
+        "--front-matter=panel",
+    ];
+    let render = |args: &[&str]| {
+        mdv_cmd()
+            .args(["--no-config", "--cols=80", "--color=always"])
+            .args(args)
+            .write_stdin(input)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone()
+    };
+    assert_eq!(render(&["--preset", "pretty"]), render(&explicit_args));
 }

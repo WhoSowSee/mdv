@@ -1,0 +1,15 @@
+name: pretty
+wrap: word
+heading_layout: level
+smart_indent: true
+table_smart_indent: true
+render_html: true
+pretty_list: "type:nerd-font;size:small"
+callout_style: "pretty:show-icons;fold-icons"
+code_block_style: "pretty:show-name;show-icon"
+pretty_checkbox: square
+pretty_definition: unicode
+pretty_table: true
+front_matter: panel
+link_style: inlinetable
+link_truncation: cut
