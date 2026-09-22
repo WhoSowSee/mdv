@@ -65,7 +65,7 @@ impl<'a> EventRenderer<'a> {
                 .chars()
                 .nth(1)
                 .unwrap_or(' ');
-            let marker = if self.config.pretty_checkbox.is_some() {
+            let marker = if self.config.checkbox_style.is_some() {
                 self.styled_checkbox_marker(state)
             } else {
                 let style = create_style(self.theme, ThemeElement::ListMarker);

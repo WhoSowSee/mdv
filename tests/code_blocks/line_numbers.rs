@@ -173,12 +173,12 @@ fn help_lists_code_line_number_values_and_examples() {
 
     for expected in [
         "-K, --code-line-numbers [<MODE>]",
-        "Number rows inside code blocks",
+        "Show row numbers inside code blocks",
         "source: Number physical code lines instead of wrapped terminal rows",
         "separator: Display a separator after each code line number",
         "--code-line-numbers separator",
         "--code-line-numbers source",
-        "--code-line-numbers \"source;separator\"",
+        "--code-line-numbers 'source;separator'",
     ] {
         assert!(
             normalized.contains(expected),

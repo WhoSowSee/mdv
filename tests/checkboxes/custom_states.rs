@@ -7,11 +7,11 @@ fn test_custom_list_marker_stripped_for_checkbox() {
         let marker = format!("1:{icon}");
         let stdout = run(
             &[
-                "--pretty-list",
+                "--list-style",
                 "type:nerd-font;size:large",
                 "--custom-list",
                 marker.as_str(),
-                "--pretty-checkbox",
+                "--checkbox-style",
                 "square",
             ],
             md,
@@ -35,7 +35,7 @@ fn test_custom_checkbox_color_only_existing_state() {
     let md = "- [?] question\n";
     let stdout = run_with_colors(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             "?:yellow",
@@ -62,7 +62,7 @@ fn test_custom_checkbox_color_only_new_state() {
     let md = "- [*] starred\n";
     let stdout = run_with_colors(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             "*:yellow",
@@ -88,7 +88,7 @@ fn test_custom_checkbox_icon_and_color_together() {
     let md = "- [*] starred\n";
     let stdout = run_with_colors(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             "*:\u{F078B}:red",

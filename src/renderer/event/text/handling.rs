@@ -172,7 +172,7 @@ impl<'a> EventRenderer<'a> {
                 if let Some((marker, remainder)) = self.split_custom_task_marker_prefix(&buffer) {
                     self.note_paragraph_content();
                     self.strip_bullet_for_checkbox_item();
-                    let rendered_marker = if self.config.pretty_checkbox.is_some() {
+                    let rendered_marker = if self.config.checkbox_style.is_some() {
                         let state = marker.chars().nth(1).unwrap_or(' ');
                         self.styled_checkbox_marker(state)
                     } else {

@@ -97,7 +97,7 @@ impl MarkdownProcessor {
         processed = source_lines::apply_transform(processed, source_lines.as_mut(), |content| {
             self.ensure_task_list_termination(content)
         });
-        if self.config.pretty_checkbox.is_some() {
+        if self.config.checkbox_style.is_some() {
             processed = source_lines::apply_transform(
                 processed,
                 source_lines.as_mut(),

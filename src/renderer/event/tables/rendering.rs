@@ -196,7 +196,7 @@ impl<'a> EventRenderer<'a> {
         available_width: usize,
     ) -> Result<String> {
         if matches!(self.config.link_style, LinkStyle::Inline)
-            && matches!(self.config.link_truncation, LinkTruncationStyle::TableCut)
+            && matches!(self.config.link_overflow, LinkTruncationStyle::TableCut)
         {
             self.apply_table_inline_url_truncation(table, available_width);
         }
@@ -207,7 +207,7 @@ impl<'a> EventRenderer<'a> {
             available_width,
             self.config.table_wrap,
         )
-        .with_pretty_table(self.config.pretty_table)
+        .with_table_borders(self.config.table_borders)
         .with_text_wrap_mode(self.config.wrap);
 
         let mut rendered =

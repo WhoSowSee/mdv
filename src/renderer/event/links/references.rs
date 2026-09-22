@@ -192,7 +192,7 @@ impl<'a> EventRenderer<'a> {
                 self.config.link_style,
                 LinkStyle::InlineTable | LinkStyle::EndTable
             ) {
-                match self.config.link_truncation {
+                match self.config.link_overflow {
                     LinkTruncationStyle::Cut | LinkTruncationStyle::TableCut => {
                         // Cut the URL and add "..." if it doesn't fit
                         let truncated_url = self.truncate_url_with_ellipsis(url, available_width);

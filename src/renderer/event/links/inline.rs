@@ -18,7 +18,7 @@ impl<'a> EventRenderer<'a> {
                 let style = create_style(self.theme, ThemeElement::Link);
                 let styled_url = style.apply(&url_part, self.output_style);
 
-                if matches!(self.config.link_truncation, LinkTruncationStyle::TableCut) {
+                if matches!(self.config.link_overflow, LinkTruncationStyle::TableCut) {
                     let target = if table.in_header {
                         TableInlineUrlTarget::Header {
                             column_index: table.current_row.len(),
@@ -62,7 +62,7 @@ impl<'a> EventRenderer<'a> {
                     let url_part_width = crate::utils::display_width(&url_part);
 
                     // Check truncation style for Inline mode
-                    match self.config.link_truncation {
+                    match self.config.link_overflow {
                         LinkTruncationStyle::Cut | LinkTruncationStyle::TableCut => {
                             // Precisely fit the URL display into the remaining space on the current line.
                             let available_width = terminal_width.saturating_sub(current_line_width);
@@ -179,7 +179,7 @@ impl<'a> EventRenderer<'a> {
                     }
                 } else {
                     // No wrapping, but still ensure we do not exceed terminal width
-                    match self.config.link_truncation {
+                    match self.config.link_overflow {
                         LinkTruncationStyle::Cut | LinkTruncationStyle::TableCut => {
                             let terminal_width = self.effective_text_width();
                             let current_line_clean =

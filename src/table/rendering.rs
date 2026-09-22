@@ -146,7 +146,7 @@ impl TableRenderer {
         }
 
         let Some(widths) =
-            arranged_column_content_widths(&rendered, headers.len(), self.pretty_table)
+            arranged_column_content_widths(&rendered, headers.len(), self.table_borders)
         else {
             return Ok(rendered);
         };

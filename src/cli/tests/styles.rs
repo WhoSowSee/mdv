@@ -101,21 +101,21 @@ fn custom_code_block_flag_parses() {
 }
 
 #[test]
-fn pretty_list_rejects_legacy_bare_flag() {
-    assert!(Cli::try_parse_from(["mdv", "--pretty-list"]).is_err());
+fn list_style_rejects_legacy_bare_flag() {
+    assert!(Cli::try_parse_from(["mdv", "--list-style"]).is_err());
     assert!(Cli::try_parse_from(["mdv", "-L"]).is_err());
-    assert!(Cli::try_parse_from(["mdv", "--pretty-list", "README.md"]).is_err());
+    assert!(Cli::try_parse_from(["mdv", "--list-style", "README.md"]).is_err());
 }
 
 #[test]
-fn pretty_list_accepts_spaced_style_value() {
+fn list_style_accepts_spaced_style_value() {
     let cli = Cli::parse_from([
         "mdv",
-        "--pretty-list",
+        "--list-style",
         "type:nerd-font;size:small",
         "README.md",
     ]);
-    let style = cli.pretty_list.expect("pretty list style parsed");
+    let style = cli.list_style.expect("pretty list style parsed");
 
     assert_eq!(style.to_string(), "type:nerd-font;size:small");
     assert_eq!(cli.filename.as_deref(), Some("README.md"));

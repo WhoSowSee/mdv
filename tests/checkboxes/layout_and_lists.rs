@@ -1,10 +1,10 @@
 use super::*;
 
 #[test]
-fn test_pretty_checkbox_nested_indent() {
+fn test_checkbox_style_nested_indent() {
     // Nested checkboxes must preserve list-level indentation.
     let md = "- [ ] top\n  - [x] child\n    - [-] deep\n  - [?] back\n";
-    let stdout = run(&["--pretty-checkbox", "square"], md);
+    let stdout = run(&["--checkbox-style", "square"], md);
     let lines: Vec<&str> = stdout.lines().collect();
 
     // top: 1 leading space (content_indent=0, list level 0, but icon replaces "- ")
@@ -35,10 +35,10 @@ fn test_pretty_checkbox_nested_indent() {
 }
 
 #[test]
-fn test_pretty_checkbox_heading_indent() {
+fn test_checkbox_style_heading_indent() {
     // Checkboxes under H2 should have +1 content indent vs H1.
     let md = "# H1\n\n- [ ] under h1\n\n## H2\n\n- [ ] under h2\n";
-    let stdout = run(&["--pretty-checkbox", "square"], md);
+    let stdout = run(&["--checkbox-style", "square"], md);
     let h1_line = stdout.lines().find(|l| l.contains("under h1")).unwrap();
     let h2_line = stdout.lines().find(|l| l.contains("under h2")).unwrap();
     let h1_indent = h1_line.len() - h1_line.trim_start().len();
@@ -50,10 +50,10 @@ fn test_pretty_checkbox_heading_indent() {
 }
 
 #[test]
-fn test_pretty_checkbox_bullet_removed_not_regular_items() {
+fn test_checkbox_style_bullet_removed_not_regular_items() {
     // Pretty mode removes "-" only for checkbox items, not regular list items.
     let md = "- [ ] checkbox item\n- regular item\n";
-    let stdout = run(&["--pretty-checkbox", "square"], md);
+    let stdout = run(&["--checkbox-style", "square"], md);
     let checkbox_line = stdout
         .lines()
         .find(|l| l.contains("checkbox item"))
@@ -74,13 +74,13 @@ fn test_pretty_checkbox_bullet_removed_not_regular_items() {
 }
 
 #[test]
-fn test_pretty_list_and_pretty_checkbox_coexist() {
+fn test_list_style_and_checkbox_style_coexist() {
     let md = "- [ ] checkbox item\n- regular item\n";
     let stdout = run(
         &[
-            "--pretty-list",
+            "--list-style",
             "type:nerd-font;size:large",
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
         ],
         md,
@@ -105,9 +105,9 @@ fn test_pretty_list_and_pretty_checkbox_coexist() {
 }
 
 #[test]
-fn test_pretty_list_unicode_icons() {
+fn test_list_style_unicode_icons() {
     let stdout = run(
-        &["--pretty-list", "type:unicode;size:small"],
+        &["--list-style", "type:unicode;size:small"],
         nested_list_markdown(),
     );
 
@@ -124,7 +124,7 @@ fn test_pretty_list_unicode_icons() {
 fn test_uniform_list_marker_accepts_level_or_icon() {
     let from_level = run(
         &[
-            "--pretty-list",
+            "--list-style",
             "type:unicode;size:large",
             "--uniform-list-marker",
             "level:2",

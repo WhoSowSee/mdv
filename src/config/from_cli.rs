@@ -60,8 +60,8 @@ impl Config {
         {
             config.table_wrap = table_wrap;
         }
-        if cli.pretty_table {
-            config.pretty_table = true;
+        if cli.table_borders {
+            config.table_borders = true;
         }
         if cli.reflow {
             config.reflow = true;
@@ -129,10 +129,10 @@ impl Config {
             config.link_style = link_style;
         }
 
-        if let Some(link_truncation) = cli.link_truncation.clone()
-            && arg_has_user_value(matches, "link_truncation")
+        if let Some(link_overflow) = cli.link_overflow.clone()
+            && arg_has_user_value(matches, "link_overflow")
         {
-            config.link_truncation = link_truncation;
+            config.link_overflow = link_overflow;
         }
 
         if let Some(footnote_style) = cli.footnote_style
@@ -206,20 +206,20 @@ impl Config {
         {
             config.callout_style = style;
         }
-        if let Some(shape) = cli.pretty_checkbox
-            && arg_has_user_value(matches, "pretty_checkbox")
+        if let Some(shape) = cli.checkbox_style
+            && arg_has_user_value(matches, "checkbox_style")
         {
-            config.pretty_checkbox = Some(shape);
+            config.checkbox_style = Some(shape);
         }
-        if let Some(style) = cli.pretty_list
-            && arg_has_user_value(matches, "pretty_list")
+        if let Some(style) = cli.list_style
+            && arg_has_user_value(matches, "list_style")
         {
-            config.pretty_list = Some(style);
+            config.list_style = Some(style);
         }
-        if let Some(style) = cli.pretty_definition
-            && arg_has_user_value(matches, "pretty_definition")
+        if let Some(style) = cli.definition_marker_style
+            && arg_has_user_value(matches, "definition_marker_style")
         {
-            config.pretty_definition = Some(style);
+            config.definition_marker_style = Some(style);
         }
 
         if let Some(marker) = &cli.uniform_list_marker

@@ -111,7 +111,7 @@ fn test_callout_table_inline_table_references_stay_inside_callout() {
 }
 
 #[test]
-fn test_callout_pretty_table_reference_block_has_no_trailing_blank_when_last() {
+fn test_callout_table_borders_reference_block_has_no_trailing_blank_when_last() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,

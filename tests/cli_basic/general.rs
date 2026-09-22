@@ -6,7 +6,7 @@ fn test_help_command() {
     cmd.arg("--help");
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("terminal-based markdown viewer"));
+        .stdout(predicate::str::contains("Render Markdown in the terminal"));
 }
 
 #[test]
@@ -19,7 +19,7 @@ fn test_help_subcommand_prints_long_help_when_output_is_not_a_terminal() {
     assert_eq!(subcommand.stdout, help_flag.stdout);
 
     let stdout = String::from_utf8(subcommand.stdout).unwrap();
-    assert!(stdout.contains("terminal-based markdown viewer"));
+    assert!(stdout.contains("Render Markdown in the terminal"));
     assert!(stdout.contains("Usage:"));
     assert!(stdout.contains("--block-spacing <SPACING>"));
 }
@@ -35,24 +35,25 @@ fn test_pretty_marker_help_documents_font_behavior() {
             "size option only changes Nerd Font icons",
         ))
         .stdout(predicate::str::contains(
-            "--pretty-list 'type:nerd-font;size:large'",
+            "--list-style 'type:nerd-font;size:large'",
         ))
         .stdout(predicate::str::contains(
-            "--pretty-list 'type:nerd-font;size:small'",
+            "--list-style 'type:nerd-font;size:small'",
         ))
         .stdout(predicate::str::contains(
-            "--pretty-list 'type:unicode;size:large'",
+            "--list-style 'type:unicode;size:large'",
         ))
-        .stdout(predicate::str::contains("--pretty-list 'size:large'"))
-        .stdout(predicate::str::contains("--pretty-list 'type:unicode'"))
-        .stdout(predicate::str::contains("JetBrainsMono Nerd Font"))
+        .stdout(predicate::str::contains("--list-style 'size:large'"))
+        .stdout(predicate::str::contains("--list-style 'type:unicode'"))
         .stdout(predicate::str::contains("--uniform-list-marker"))
-        .stdout(predicate::str::contains("-D, --pretty-definition <STYLE>"))
+        .stdout(predicate::str::contains(
+            "-D, --definition-marker-style <STYLE>",
+        ))
         .stdout(predicate::str::contains(
             "Unicode definition marker spacing may vary by font",
         ))
         .stdout(predicate::str::contains(
-            "Nerd Font definition marker requires a Nerd Font terminal",
+            "The nerd-font marker requires a Nerd Font",
         ))
         .stdout(predicate::str::contains("U+F444").not());
 }
@@ -63,21 +64,11 @@ fn custom_checkbox_help_uses_real_icons_in_examples() {
     cmd.arg("--help");
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains(
-            "Override:  --custom-checkbox ' :󰀦'         replaces the unchecked icon",
-        ))
-        .stdout(predicate::str::contains(
-            "Add:       --custom-checkbox '*:󰞋'         adds a new '[*]' checkbox state",
-        ))
-        .stdout(predicate::str::contains(
-            "Color:     --custom-checkbox ' :󰀦:yellow'  accepts '#ffffff', '128,1,1', 'ansi(200)'",
-        ))
-        .stdout(predicate::str::contains(
-            "Iconless:  --custom-checkbox '?:red'       keeps the [?] icon and applies red",
-        ))
-        .stdout(predicate::str::contains(
-            "           --custom-checkbox '*:yellow'    uses the unchecked icon and applies yellow",
-        ))
+        .stdout(predicate::str::contains("--custom-checkbox ' :󰀦'"))
+        .stdout(predicate::str::contains("--custom-checkbox '*:󰞋'"))
+        .stdout(predicate::str::contains("--custom-checkbox ' :󰀦:yellow'"))
+        .stdout(predicate::str::contains("--custom-checkbox '?:red'"))
+        .stdout(predicate::str::contains("--custom-checkbox '*:yellow'"))
         .stdout(predicate::str::contains("--custom-checkbox ' :icon'").not())
         .stdout(predicate::str::contains("--custom-checkbox '*:icon'").not());
 }

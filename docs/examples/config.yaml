@@ -53,7 +53,7 @@ color_depth: auto          # Palette limit: auto | 16 | 256 | truecolor
 wrap: "char"               # Text and table-cell breaks: "char" | "word" | "none"
 reflow: false              # Collapse in-paragraph source newlines and refill lines to width (requires wrapping)
 table_wrap: "fit"          # Table geometry: fit cells | wrap columns into blocks | allow overflow
-pretty_table: false        # Use full rounded borders for tables
+table_borders: false        # Use full rounded borders for tables
 heading_layout: "level"    # Options: "level" | "center" | "flat" | "none"
 show_heading_markers: false # Prefix headings with markdown-style markers matching their level
 smart_indent: false        # Smooth heading indentation jumps (only with "level" layout)
@@ -90,8 +90,8 @@ callout_style: "pretty"    # Options: "simple:show-icons;show-simple-icons;fold-
 #   uppercase: true
 code_wrap_indent: "double" # Options: "none" | "base" | "double"; controls hanging indent inside code blocks
 reverse: false             # Render document starting from the end while preserving layout
-pretty_checkbox: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
-custom_checkbox: null      # Mapping of checkbox states to icon/color, or a legacy string; requires pretty_checkbox
+checkbox_style: null      # Options: | "square" | "circle"; render task-list checkboxes as Nerd Font icons
+custom_checkbox: null      # Mapping of checkbox states to icon/color, or a legacy string; requires checkbox_style
 # Example:
 # custom_checkbox:
 #   " ":
@@ -99,12 +99,12 @@ custom_checkbox: null      # Mapping of checkbox states to icon/color, or a lega
 #     color: yellow
 #   x:
 #     color: green
-pretty_list: null          # null | "type:nerd-font;size:small" | "type:unicode;size:large"; booleans are not accepted
+list_style: null          # null | "type:nerd-font;size:small" | "type:unicode;size:large"; booleans are not accepted
                            # size only changes Nerd Font icons; Unicode accepts both sizes and uses the same glyphs.
                            # Unicode spacing depends on the font; verified especially with JetBrainsMono Nerd Font.
-pretty_definition: null    # null | "unicode" | "nerd-font"; null renders definitions with a two-space indent
+definition_marker_style: null    # null | "unicode" | "nerd-font"; null renders definitions with a two-space indent
 uniform_list_marker: null  # Use one icon at every level: "level:1".."level:4" or a custom "icon:*"
-custom_list: null          # Mapping of nesting levels to icon/color, or a legacy string; requires pretty_list
+custom_list: null          # Mapping of nesting levels to icon/color, or a legacy string; requires list_style
 # Example:
 # custom_list:
 #   1:
@@ -114,7 +114,7 @@ custom_list: null          # Mapping of nesting levels to icon/color, or a legac
 #     color: red
 # Link handling
 link_style: "clickable"    # Options: "clickable" | "fclickable" | "inline" | "inlinetable" | "endtable" | "hide" (aliases: c/clickable, fc/fclickable, i/inline, it/inlinetable, et/endtable, h/hide)
-link_truncation: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"
+link_overflow: "wrap"    # Options: "wrap" | "cut" | "tablecut" | "none"
 
 # Footnotes
 footnote_style: "endnotes" # Options: "endnotes" | "attached"

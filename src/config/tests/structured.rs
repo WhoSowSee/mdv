@@ -167,14 +167,14 @@ custom_code_block:
 fn structured_checkbox_and_list_overrides_load_from_config() {
     let config = parse_with_config(
         r#"
-pretty_checkbox: square
+checkbox_style: square
 custom_checkbox:
   " ":
     icon: "U"
     color: yellow
   x:
     color: green
-pretty_list: "type:unicode;size:large"
+list_style: "type:unicode;size:large"
 custom_list:
   1:
     icon: "*"
@@ -246,9 +246,9 @@ custom_theme: "text=#010203"
 custom_code_theme: "keyword=#040506"
 block_spacing: "paragraph:top=0,bottom=2"
 callout_style: "pretty:show-icons;fold-icons"
-pretty_checkbox: square
+checkbox_style: square
 custom_checkbox: "x:X:green"
-pretty_list: "type:unicode;size:large"
+list_style: "type:unicode;size:large"
 custom_list: "1:*:yellow"
 custom_callout: "important:icon=!,color=#ff0000"
 custom_code_block: "rust:icon=R,label=Rust,aliases=rs|rustlang"

@@ -59,7 +59,7 @@ fn help_lists_line_number_values_and_examples() {
         "Examples:",
         "--line-numbers separator",
         "--line-numbers source",
-        "--line-numbers \"source;separator\"",
+        "--line-numbers 'source;separator'",
     ] {
         assert!(
             normalized_help.contains(expected),

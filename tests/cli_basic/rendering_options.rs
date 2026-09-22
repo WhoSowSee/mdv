@@ -293,18 +293,18 @@ fn test_pretty_preset_matches_explicit_options() {
     );
     let explicit_args = [
         "--link-style=inlinetable",
-        "--link-truncation=cut",
+        "--link-overflow=cut",
         "--wrap=word",
         "--heading-layout=level",
         "--smart-indent",
         "--table-smart-indent",
         "--render-html",
-        "--pretty-list=type:nerd-font;size:small",
+        "--list-style=type:nerd-font;size:small",
         "--callout-style=pretty:show-icons;fold-icons",
         "--code-block-style=pretty:show-name;show-icon",
-        "--pretty-checkbox=square",
-        "--pretty-definition=unicode",
-        "--pretty-table",
+        "--checkbox-style=square",
+        "--definition-marker-style=unicode",
+        "--table-borders",
         "--front-matter=panel",
     ];
     let render = |args: &[&str]| {

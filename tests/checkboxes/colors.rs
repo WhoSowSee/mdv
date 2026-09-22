@@ -6,14 +6,14 @@ fn test_empty_checkbox_visibility_follows_show_empty_elements() {
     let modes: &[(&[&str], &[&str])] = &[
         (&[], &["[ ]", "[✓]", "[-]", "[*]", "[z]"]),
         (
-            &["--pretty-checkbox", "square"],
+            &["--checkbox-style", "square"],
             &["\u{F0131}", "\u{F0132}", "\u{F0375}", "[*]", "[z]"],
         ),
         (
             &[
-                "--pretty-checkbox",
+                "--checkbox-style",
                 "square",
-                "--pretty-list",
+                "--list-style",
                 "type:unicode;size:small",
             ],
             &["\u{F0131}", "\u{F0132}", "\u{F0375}", "[*]", "[z]"],
@@ -45,7 +45,7 @@ fn test_custom_checkbox_color_override() {
     let md = "- [*] starred\n- [!] important\n";
     let stdout = run_with_colors(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             "*:\u{F078B}:yellow;!:\u{F0027}:128,1,1",
@@ -73,7 +73,7 @@ fn test_custom_checkbox_hex_color() {
     let md = "- [ ] test\n";
     let stdout = run_with_colors(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             " :\u{F0131}:#ff5500",
@@ -93,7 +93,7 @@ fn test_custom_checkbox_no_color_still_works() {
     let md = "- [*] starred\n";
     let stdout = run(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             "*:\u{F078B}",

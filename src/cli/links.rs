@@ -3,27 +3,27 @@ use super::*;
 #[derive(Debug, Clone, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum LinkStyle {
-    /// [alias:  c] Link text becomes clickable without showing URL
+    /// Make link text clickable without showing the URL (alias: c)
     #[value(alias = "c")]
     #[serde(alias = "c")]
     Clickable,
-    /// [alias: fc] Clickable links with forced underline
+    /// Underline clickable link text (alias: fc)
     #[value(name = "fclickable", alias = "fc")]
     #[serde(alias = "fclickable", alias = "fc")]
     ClickableForced,
-    /// [alias:  i] Link URL after link name
+    /// Show the URL after the link text (alias: i)
     #[value(alias = "i")]
     #[serde(alias = "i")]
     Inline,
-    /// [alias: it] Index after link name and link URL table after text
+    /// Number links and show a URL table after the text (alias: it)
     #[value(name = "inlinetable", alias = "it")]
     #[serde(alias = "inlinetable", alias = "it")]
     InlineTable,
-    /// [alias: et] Index after link name and link URL table at document end
+    /// Number links and show a URL table at the document end (alias: et)
     #[value(name = "endtable", alias = "et")]
     #[serde(alias = "endtable", alias = "et")]
     EndTable,
-    /// [alias:  h] Hide link URLs
+    /// Hide link URLs (alias: h)
     #[value(alias = "h")]
     #[serde(alias = "h")]
     Hide,
@@ -40,7 +40,7 @@ pub enum LinkTruncationStyle {
     #[value(name = "tablecut")]
     #[serde(rename = "tablecut")]
     TableCut,
-    /// No truncation - links overflow horizontally
+    /// Allow links to overflow horizontally
     None,
 }
 

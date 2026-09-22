@@ -49,7 +49,7 @@ table_smart_indent: true
 math_block_style: pretty
 front_matter: panel
 link_style: inline
-link_truncation: cut
+link_overflow: cut
 "#,
     );
 
@@ -63,40 +63,40 @@ link_truncation: cut
     assert_eq!(config.math_block_style, crate::cli::MathBlockStyle::Pretty);
     assert_eq!(config.front_matter, FrontMatterMode::Panel);
     assert!(matches!(config.link_style, LinkStyle::Inline));
-    assert!(matches!(config.link_truncation, LinkTruncationStyle::Cut));
+    assert!(matches!(config.link_overflow, LinkTruncationStyle::Cut));
 }
 
 #[test]
-fn config_file_parses_tablecut_link_truncation() {
+fn config_file_parses_tablecut_link_overflow() {
     let _env_lock = env_lock();
     let config = parse_with_config(
         r#"
 link_style: inline
-link_truncation: tablecut
+link_overflow: tablecut
 "#,
     );
 
     assert!(matches!(config.link_style, LinkStyle::Inline));
     assert!(matches!(
-        config.link_truncation,
+        config.link_overflow,
         LinkTruncationStyle::TableCut
     ));
 }
 
 #[test]
-fn config_rejects_legacy_pretty_list_boolean() {
+fn config_rejects_legacy_list_style_boolean() {
     let temp_dir = TempDir::new().expect("create temp dir");
     let config_path = temp_dir.path().join("config.yaml");
-    std::fs::write(&config_path, "pretty_list: true\n").expect("write config file");
+    std::fs::write(&config_path, "list_style: true\n").expect("write config file");
 
     assert!(Config::load_from_file(&config_path).is_err());
 }
 
 #[test]
-fn config_accepts_pretty_list_style_and_uniform_marker() {
+fn config_accepts_list_style_style_and_uniform_marker() {
     let _env_lock = env_lock();
     let config = parse_with_config(
-        "pretty_list: \"type:unicode;size:small\"\nuniform_list_marker: \"level:3\"\n",
+        "list_style: \"type:unicode;size:small\"\nuniform_list_marker: \"level:3\"\n",
     );
 
     assert_eq!(config.list_marker.resolve(1).unwrap().0, "⚬");
@@ -180,13 +180,13 @@ fn preset_overrides_config_and_cli_overrides_preset() {
     let temp_dir = TempDir::new().expect("create temp dir");
     std::fs::write(
         temp_dir.path().join("config.yaml"),
-        "cols: 100\ntheme: monokai\nsmart_indent: true\npretty_table: false\ncode_theme: monokai\ncolor_depth: 16\n",
+        "cols: 100\ntheme: monokai\nsmart_indent: true\ntable_borders: false\ncode_theme: monokai\ncolor_depth: 16\n",
     )
     .expect("write config file");
     write_preset(
         temp_dir.path(),
         "reader.yaml",
-        "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\npretty_table: true\ncode_theme: null\ncolor_depth: 256\n",
+        "name: reader\ncols: 45\ntheme: terminal\nsmart_indent: false\ntable_borders: true\ncode_theme: null\ncolor_depth: 256\n",
     );
 
     let (cli, matches) = parse_cli_from(vec![
@@ -205,7 +205,7 @@ fn preset_overrides_config_and_cli_overrides_preset() {
     assert_eq!(config.color_depth, ColorDepth::TrueColor);
     assert_eq!(config.theme, "terminal");
     assert!(!config.smart_indent);
-    assert!(config.pretty_table);
+    assert!(config.table_borders);
     assert!(config.code_theme.is_none());
 }
 

@@ -27,7 +27,7 @@
 >
 > - **Terminal-first rendering** - Syntax highlighted output, optional HTML export, and careful handling of inline formatting.
 > - **Reusable layouts** - Control width, wrapping strategy, heading indentation, and table behavior to match your workspace.
-> - **Link presentation control** - Switch between clickable, inline, or tabular links and choose how long URLs are truncated.
+> - **Link presentation control** - Switch between clickable, inline, or tabular links and choose how URLs wrap, shorten, or overflow.
 > - **Rich theming** - Built-in color schemes plus on-the-fly overrides for UI and syntax palettes.
 > - **Live monitoring** - Watch files with `--monitor` to refresh the view whenever the source changes.
 > - **Script friendly CLI** - Read from stdin, jump to sections with `--from`, and share configuration files across machines.
@@ -137,8 +137,8 @@ cat <FILE> | mdv
 
 ### Checkboxes
 
-- `-x, --pretty-checkbox <square|circle>` - renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers. Requires a Nerd Font in the terminal.
-- `--custom-checkbox <PAIRS>` - overrides built-in checkbox icons or adds new states (only with `--pretty-checkbox`). Each semicolon-separated pair is either `<char>:<icon>[:<color>]` or `<char>:<color>`. The color-only form keeps an existing icon or uses the default unchecked icon for a new state. Colors accept named, hex, rgb, and `ansi(N)` values.
+- `-x, --checkbox-style <square|circle>` - renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers. Requires a Nerd Font in the terminal.
+- `--custom-checkbox <PAIRS>` - overrides built-in checkbox icons or adds new states (only with `--checkbox-style`). Each semicolon-separated pair is either `<char>:<icon>[:<color>]` or `<char>:<color>`. The color-only form keeps an existing icon or uses the default unchecked icon for a new state. Colors accept named, hex, rgb, and `ansi(N)` values.
   - Override:  `--custom-checkbox ' :󰀦'`          replace the unchecked icon
   - Add:       `--custom-checkbox '*:󰞋'`          add a new `[*]` checkbox state
   - Color:     `--custom-checkbox ' :󰀦:yellow'`   or `#ff0000`, `128,1,1`, `ansi(200)`
@@ -147,11 +147,11 @@ cat <FILE> | mdv
 
 ### Lists
 
-- `-L, --pretty-list <style>` - replaces the default `-` unordered-list markers with a level-aware icon set. The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--pretty-list 'type:unicode;size:small'`.
+- `-L, --list-style <style>` - replaces the default `-` unordered-list markers with a level-aware icon set. The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--list-style 'type:unicode;size:small'`.
   - `size` changes only Nerd Font markers. Unicode accepts either value but renders the same markers; their spacing may vary by font. Verified with Nerd Font families, especially JetBrainsMono Nerd Font.
-- `-D, --pretty-definition <unicode|nerd-font>` - renders definition descriptions with a built-in Unicode or Nerd Font marker.
-- `--uniform-list-marker <level:1-4|icon:glyph>` - uses one marker at every nesting level (only with `--pretty-list`). `level:2` reuses level 2 from the selected set; `icon:*` uses a custom glyph.
-- `--custom-list <level>:<icon>[:<color>];...` - overrides the marker icon and/or color for specific nesting levels (only with `--pretty-list`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
+- `-D, --definition-marker-style <unicode|nerd-font>` - renders definition descriptions with a built-in Unicode or Nerd Font marker.
+- `--uniform-list-marker <level:1-4|icon:glyph>` - uses one marker at every nesting level (only with `--list-style`). `level:2` reuses level 2 from the selected set; `icon:*` uses a custom glyph.
+- `--custom-list <level>:<icon>[:<color>];...` - overrides the marker icon and/or color for specific nesting levels (only with `--list-style`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
   - Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
   - Icon only:     `--custom-list '1:>'`          marker `>` in theme color
   - Color only:    `--custom-list '1:red'`        keep built-in icon, red color
@@ -164,7 +164,7 @@ cat <FILE> | mdv
 - `-w, --wrap <char|word|none>` - selects the break strategy for text, code, callouts, and table cells (default `char`).
 - `--reflow` - collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.
 - `-W, --table-wrap <fit|wrap|none>` - chooses table geometry: fit cells, split columns into blocks, or allow overflow (default `fit`). Cell breaks still follow `--wrap`.
-- `-B, --pretty-table` - restores full rounded table borders.
+- `-B, --table-borders` - restores full rounded table borders.
 - `-S, --table-smart-indent` - automatic table indent adjustment based on available width.
 - `-H, --heading-layout <level|center|flat|none>` - controls heading indentation (default `level`).
 - `--show-heading-markers` - prefixes headings with markdown-style markers matching their level.
@@ -180,7 +180,7 @@ cat <FILE> | mdv
 ### Links
 
 - `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` - changes how links are displayed (default `clickable`).
-- `-l, --link-truncation <wrap|cut|tablecut|none>` - determines how long links are shortened (default `wrap`).
+- `-l, --link-overflow <wrap|cut|tablecut|none>` - controls whether links wrap, are shortened, or overflow the available width (default `wrap`).
 
 ### Footnotes
 
@@ -192,7 +192,8 @@ cat <FILE> | mdv
 ### Information
 
 - `mdv help` - opens the full `mdv --help` output in the selected pager. It uses `MDV_PAGER` when set and the built-in pager otherwise; when input or output is redirected, it prints the same help directly.
-- `-h, --help` - shows the help text.
+- `-h` - shows a concise option summary.
+- `--help` - shows full help with value descriptions, formats, and examples.
 - `-V, --version` - prints the current version.
 
 ## Configuration
@@ -215,13 +216,13 @@ code_theme: null
 inline_style: {}
 wrap: "char"
 table_wrap: "fit"
-pretty_table: false
+table_borders: false
 heading_layout: "level"
 smart_indent: false
 block_spacing: null
 code_wrap_indent: "double"
 link_style: "clickable"
-link_truncation: "wrap"
+link_overflow: "wrap"
 ```
 
 `inline_style` is merged per element and property instead of replacing the whole mapping. Its effective order is semantic defaults, user theme, main config, preset, then `--inline-style`.

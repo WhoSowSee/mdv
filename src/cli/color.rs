@@ -12,7 +12,7 @@ pub enum ColorMode {
     Auto,
     /// Enable styling for every output destination.
     Always,
-    /// Disable generated SGR styling and OSC 8 hyperlinks.
+    /// Disable terminal styling and hyperlinks.
     Never,
 }
 

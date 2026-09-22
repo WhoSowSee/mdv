@@ -20,6 +20,16 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 
 `Cli` retains `Option<T>` for values that may have Clap defaults. `arg_has_user_value(matches, id)` determines whether a value came from the user or from Clap.
 
+Help uses a concise action summary for every option in `-h`, explaining its
+purpose and scope even when this needs a longer sentence. Do not shorten a
+description to a technical term that assumes the reader already knows the feature.
+Long help adds
+syntax, value or option descriptions, constraints, and an `Examples:` block where
+needed. Compound values use `Format:` and single-quoted examples containing the
+option name. Enum value descriptions belong on the values themselves so Clap
+can render them without a second manually maintained list. `mdv help` displays
+the same long help as `--help`, using the selected pager when appropriate.
+
 ## Argument groups
 
 | Group | Examples | Consumer |
@@ -27,8 +37,8 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 | Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--color`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
 | Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing` | Runtime layout and the event renderer. |
 | Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--math-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, code-block, and math-block rendering. |
-| Callouts and lists | `--callout-style`, `--pretty-checkbox`, `--pretty-list`, custom overrides | Normalized maps and settings in `Config`. |
-| Links and footnotes | `--link-style`, `--link-truncation`, footnote options | Link and footnote event handlers. |
+| Callouts and lists | `--callout-style`, `--checkbox-style`, `--list-style`, custom overrides | Normalized maps and settings in `Config`. |
+| Links and footnotes | `--link-style`, `--link-overflow`, footnote options | Link and footnote event handlers. |
 | Configuration | `--config-file`, `--no-config`, `--preset`, `--init-config` | Configuration and preset loading. |
 
 `--wrap` selects breakpoints for prose, code, callouts, and table cells. `--table-wrap` is

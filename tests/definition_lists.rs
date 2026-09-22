@@ -27,7 +27,7 @@ fn renders_definition_lists_in_plain_and_pretty_modes() {
             "word",
         ]);
         if let Some(style) = style {
-            command.args(["--pretty-definition", style]);
+            command.args(["--definition-marker-style", style]);
         }
 
         let output = command.arg(markdown.path()).output().unwrap();

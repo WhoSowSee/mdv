@@ -43,13 +43,13 @@ fn test_default_table_uses_compact_borders() {
 }
 
 #[test]
-fn test_pretty_table_flag_restores_full_borders() {
+fn test_table_borders_flag_restores_full_borders() {
     let stdout = render_basic_table(|cmd| {
         cmd.args([
             "--no-config",
             "--color",
             "never",
-            "--pretty-table",
+            "--table-borders",
             "--cols",
             "80",
         ]);
@@ -70,11 +70,11 @@ fn test_pretty_table_flag_restores_full_borders() {
 }
 
 #[test]
-fn test_pretty_table_config_restores_full_borders() {
+fn test_table_borders_config_restores_full_borders() {
     let config_dir = tempfile::TempDir::new().unwrap();
     fs::write(
         config_dir.path().join("config.yaml"),
-        "pretty_table: true\ncolor: never\ncols: 80\n",
+        "table_borders: true\ncolor: never\ncols: 80\n",
     )
     .unwrap();
 
@@ -86,7 +86,7 @@ fn test_pretty_table_config_restores_full_borders() {
             && stdout.contains('╮')
             && stdout.contains('╰')
             && stdout.contains('╯'),
-        "pretty_table config must enable the rounded outer border: {stdout}"
+        "table_borders config must enable the rounded outer border: {stdout}"
     );
 }
 
@@ -113,7 +113,7 @@ fn render_wrapped_table(content: &str, width: &str, text_wrap: &str, table_wrap:
             "--no-config",
             "--color",
             "never",
-            "--pretty-table",
+            "--table-borders",
             "--cols",
             width,
             "--wrap",

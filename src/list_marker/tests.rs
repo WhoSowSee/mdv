@@ -2,7 +2,7 @@ use super::*;
 use crate::theme::Color;
 
 #[test]
-fn pretty_list_uses_large_nerd_font_icons_by_default() {
+fn list_style_uses_large_nerd_font_icons_by_default() {
     let cfg = ListMarkerConfig {
         style: Some(PrettyListStyle::default()),
         ..Default::default()
@@ -22,7 +22,7 @@ fn pretty_list_uses_large_nerd_font_icons_by_default() {
 }
 
 #[test]
-fn pretty_list_uses_small_nerd_font_icons() {
+fn list_style_uses_small_nerd_font_icons() {
     let cfg = ListMarkerConfig {
         style: Some(PrettyListStyle::parse("type:nerd-font;size:small").unwrap()),
         ..Default::default()
@@ -45,7 +45,7 @@ fn pretty_list_uses_small_nerd_font_icons() {
 }
 
 #[test]
-fn pretty_list_style_defaults_omitted_fields() {
+fn list_style_style_defaults_omitted_fields() {
     assert_eq!(
         PrettyListStyle::parse("size:small").unwrap(),
         PrettyListStyle {

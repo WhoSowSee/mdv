@@ -38,7 +38,7 @@ pub struct TableRenderer {
     terminal_width: usize,
     table_wrap: TableWrapMode,
     text_wrap: TextWrapMode,
-    pretty_table: bool,
+    table_borders: bool,
 }
 
 #[cfg(test)]

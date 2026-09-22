@@ -25,9 +25,9 @@ fn parse_link_style(value: &str) -> LinkStyle {
         .expect("link style parsed")
 }
 
-fn parse_link_truncation(value: &str) -> LinkTruncationStyle {
+fn parse_link_overflow(value: &str) -> LinkTruncationStyle {
     Cli::parse_from(["mdv", "-l", value])
-        .link_truncation
+        .link_overflow
         .expect("link truncation parsed")
 }
 
@@ -77,9 +77,9 @@ fn table_smart_indent_flag_parses() {
 }
 
 #[test]
-fn pretty_table_short_flag_parses() {
+fn table_borders_short_flag_parses() {
     let cli = Cli::parse_from(["mdv", "-B"]);
-    assert!(cli.pretty_table);
+    assert!(cli.table_borders);
 }
 
 #[test]
@@ -113,9 +113,9 @@ fn code_line_numbers_flags_parse() {
 }
 
 #[test]
-fn link_truncation_accepts_only_canonical_tablecut() {
+fn link_overflow_accepts_only_canonical_tablecut() {
     assert!(matches!(
-        parse_link_truncation("tablecut"),
+        parse_link_overflow("tablecut"),
         LinkTruncationStyle::TableCut
     ));
     assert!(Cli::try_parse_from(["mdv", "-l", "table-cut"]).is_err());

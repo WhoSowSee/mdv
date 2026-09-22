@@ -58,7 +58,7 @@ fn test_callout_table_gutter_does_not_depend_on_table_smart_indent() {
 }
 
 #[test]
-fn test_callout_pretty_table_keeps_frame_and_column_separator() {
+fn test_callout_table_borders_keeps_frame_and_column_separator() {
     let stdout = render_callout_table("pretty", false);
 
     let header_line = stdout

@@ -180,7 +180,7 @@ fn test_inline_table_reference_marker_stays_with_link_when_trailing_text_wraps()
             "64",
             "--link-style",
             "inlinetable",
-            "--pretty-table",
+            "--table-borders",
         ])
         .arg(temp_file.path())
         .output()
@@ -214,7 +214,7 @@ fn test_inline_table_reference_constraints_do_not_overflow_narrow_table() {
         .arg("30")
         .arg("--link-style")
         .arg("inlinetable")
-        .arg("--pretty-table")
+        .arg("--table-borders")
         .arg(temp_file.path())
         .output()
         .expect("run mdv for narrow inline table references");

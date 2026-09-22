@@ -1,4 +1,4 @@
-//! List marker icon + optional color override for `--custom-list` and `--pretty-list`.
+//! List marker icon + optional color override for `--custom-list` and `--list-style`.
 //!
 //! Maps a 1-based nesting level to an icon and an optional color. Falls back to
 //! the built-in pretty-list set or to the default `"- "` marker when no override

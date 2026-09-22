@@ -56,7 +56,7 @@ fn color_depth_limits_mixed_output_without_changing_text_or_links() {
         let output = render(
             mdv_cmd().args(RENDER_ARGS).args([
                 "--color=always",
-                "--pretty-table",
+                "--table-borders",
                 "--theme=tokyonight",
                 "--color-depth",
                 depth,

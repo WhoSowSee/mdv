@@ -210,9 +210,9 @@ fn html_table_markers_and_headings_use_configured_styles() {
 | List | <ul><li>First item<ul><li>Nested item</li></ul></li><li><input type="checkbox" checked> Completed task</li><li><input type="checkbox"> Pending task</li></ul> |
 "#,
         &[
-            "--pretty-list",
+            "--list-style",
             "type:unicode;size:small",
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
         ],
     );

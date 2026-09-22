@@ -5,10 +5,10 @@ use super::*;
 pub(super) fn arranged_column_content_widths(
     rendered: &str,
     column_count: usize,
-    pretty_table: bool,
+    table_borders: bool,
 ) -> Option<Vec<usize>> {
     let clean = strip_ansi(rendered);
-    let total_widths = if pretty_table {
+    let total_widths = if table_borders {
         let border = clean
             .lines()
             .find(|line| line.starts_with('╭') && line.ends_with('╮'))?;

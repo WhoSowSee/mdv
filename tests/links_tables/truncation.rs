@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
+fn test_link_overflow_tablecut_applies_to_inline_links_inside_tables() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(
         &temp_file,
@@ -16,7 +16,7 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
         .arg("46")
         .arg("--link-style")
         .arg("inline")
-        .arg("--link-truncation")
+        .arg("--link-overflow")
         .arg("cut")
         .arg(temp_file.path())
         .output()
@@ -31,7 +31,7 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
         .arg("46")
         .arg("--link-style")
         .arg("inline")
-        .arg("--link-truncation")
+        .arg("--link-overflow")
         .arg("tablecut")
         .arg(temp_file.path())
         .output()
@@ -62,7 +62,7 @@ fn test_link_truncation_tablecut_applies_to_inline_links_inside_tables() {
         .arg("46")
         .arg("--link-style")
         .arg("inline")
-        .arg("--link-truncation")
+        .arg("--link-overflow")
         .arg("tablecut")
         .arg(temp_file.path())
         .output()

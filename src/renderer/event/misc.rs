@@ -184,7 +184,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn checkbox_marker(&self, checked: bool) -> String {
-        if self.config.pretty_checkbox.is_some() {
+        if self.config.checkbox_style.is_some() {
             return self.styled_checkbox_marker(if checked { 'x' } else { ' ' });
         }
 
@@ -196,7 +196,7 @@ impl<'a> EventRenderer<'a> {
     pub(super) fn styled_checkbox_marker(&self, state: char) -> String {
         let shape = self
             .config
-            .pretty_checkbox
+            .checkbox_style
             .expect("pretty checkbox rendering is enabled");
 
         let (icon, custom_color) = match self.config.checkbox_overrides.get(&state) {

@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Copy, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TextWrapMode {
-    #[value(help = "Character-level wrapping")]
+    #[value(help = "Wrap at character boundaries")]
     Char,
     #[value(help = "Wrap at word boundaries")]
     Word,
@@ -16,7 +16,7 @@ pub enum TextWrapMode {
 pub enum TableWrapMode {
     #[value(help = "Fit table cells to terminal width")]
     Fit,
-    #[value(help = "Column wrapping: split table into blocks when too wide")]
+    #[value(help = "Split wide tables into blocks of columns")]
     Wrap,
     #[value(help = "Allow tables to overflow horizontally without cell wrapping")]
     None,
@@ -29,23 +29,23 @@ pub enum TableWrapMode {
 /// Visual container used for display and fenced math blocks.
 pub enum MathBlockStyle {
     #[default]
-    #[value(help = "Indented math block without a border")]
+    #[value(help = "Indent math without a border")]
     Basic,
-    #[value(help = "Math block with a single left border")]
+    #[value(help = "Show a single left border")]
     Simple,
-    #[value(help = "Box-drawn frame around math blocks")]
+    #[value(help = "Show a frame around the block")]
     Pretty,
 }
 
 #[derive(Debug, Clone, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum HeadingLayout {
-    #[value(help = "Level header indent, content indent = 1")]
+    #[value(help = "Indent headings by level and content one column further")]
     Level,
     #[value(help = "Center all headings, no content indentation")]
     Center,
-    #[value(help = "No header indentation, content indent = 1")]
+    #[value(help = "Align headings to the left and indent content by one column")]
     Flat,
-    #[value(help = "No indentation for headers and content")]
+    #[value(help = "Align headings and content to the left")]
     None,
 }

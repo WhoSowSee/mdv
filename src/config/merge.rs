@@ -32,8 +32,8 @@ impl Config {
         if !matches!(other.table_wrap, TableWrapMode::Fit) {
             self.table_wrap = other.table_wrap;
         }
-        if other.pretty_table {
-            self.pretty_table = true;
+        if other.table_borders {
+            self.table_borders = true;
         }
         if other.reflow {
             self.reflow = true;
@@ -86,17 +86,17 @@ impl Config {
         if other.callout_style != CalloutStyleConfig::default() {
             self.callout_style = other.callout_style;
         }
-        if other.pretty_checkbox.is_some() {
-            self.pretty_checkbox = other.pretty_checkbox;
+        if other.checkbox_style.is_some() {
+            self.checkbox_style = other.checkbox_style;
         }
         if other.custom_checkbox.is_some() {
             self.custom_checkbox = other.custom_checkbox.clone();
         }
-        if other.pretty_list.is_some() {
-            self.pretty_list = other.pretty_list;
+        if other.list_style.is_some() {
+            self.list_style = other.list_style;
         }
-        if other.pretty_definition.is_some() {
-            self.pretty_definition = other.pretty_definition;
+        if other.definition_marker_style.is_some() {
+            self.definition_marker_style = other.definition_marker_style;
         }
         if other.uniform_list_marker.is_some() {
             self.uniform_list_marker = other.uniform_list_marker.clone();
@@ -141,8 +141,8 @@ impl Config {
             self.link_style = other.link_style;
         }
 
-        if !matches!(other.link_truncation, LinkTruncationStyle::Wrap) {
-            self.link_truncation = other.link_truncation;
+        if !matches!(other.link_overflow, LinkTruncationStyle::Wrap) {
+            self.link_overflow = other.link_overflow;
         }
 
         if !matches!(other.footnote_style, FootnoteStyle::Endnotes) {

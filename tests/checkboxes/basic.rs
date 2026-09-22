@@ -1,8 +1,8 @@
 use super::*;
 
 #[test]
-fn test_pretty_checkbox_square_icons() {
-    let stdout = run(&["--pretty-checkbox", "square"], &checkbox_markdown());
+fn test_checkbox_style_square_icons() {
+    let stdout = run(&["--checkbox-style", "square"], &checkbox_markdown());
     let icons = [
         ('\u{F0131}', "unchecked"),
         ('\u{F0132}', "done"),
@@ -26,8 +26,8 @@ fn test_pretty_checkbox_square_icons() {
 }
 
 #[test]
-fn test_pretty_checkbox_circle_icons() {
-    let stdout = run(&["--pretty-checkbox", "circle"], &checkbox_markdown());
+fn test_checkbox_style_circle_icons() {
+    let stdout = run(&["--checkbox-style", "circle"], &checkbox_markdown());
     let expected = [
         ('\u{F0130}', "unchecked"),
         ('\u{F0133}', "done"),
@@ -56,7 +56,7 @@ fn test_custom_checkbox_overrides_default() {
     let md = "- [ ] overridden\n";
     let stdout = run(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             " :\u{F0026}",
@@ -74,7 +74,7 @@ fn test_custom_checkbox_adds_new_state() {
     let md = "- [*] starred\n";
     let stdout = run(
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
             "--custom-checkbox",
             "*:\u{F078B}",
@@ -90,7 +90,7 @@ fn test_custom_checkbox_adds_new_state() {
 
 #[test]
 fn test_custom_checkbox_ignored_without_pretty() {
-    // Without --pretty-checkbox, custom overrides must have no effect:
+    // Without --checkbox-style, custom overrides must have no effect:
     // `[*]` stays a literal marker, `[x]` stays `[✓]`.
     let md = "- [*] starred\n- [x] done\n";
     let stdout = run(&["--custom-checkbox", "*:\u{F078B}"], md);
@@ -110,7 +110,7 @@ fn test_custom_checkbox_ignored_without_pretty() {
 fn test_backslash_checkbox_both_writings() {
     // Both `- [\]` (single backslash) and `- [\\]` (escaped) must render the icon.
     let md = "- [\\] single\n- [\\\\] double\n";
-    let stdout = run(&["--pretty-checkbox", "square"], md);
+    let stdout = run(&["--checkbox-style", "square"], md);
     let single = stdout.lines().find(|l| l.contains("single")).unwrap();
     let double = stdout.lines().find(|l| l.contains("double")).unwrap();
     assert!(
@@ -166,11 +166,11 @@ fn test_unknown_checkbox_states_render_literal_without_list_marker() {
     let md = "- [*] starred\n- [z] custom\n";
     let modes: &[&[&str]] = &[
         &[],
-        &["--pretty-checkbox", "square"],
+        &["--checkbox-style", "square"],
         &[
-            "--pretty-checkbox",
+            "--checkbox-style",
             "square",
-            "--pretty-list",
+            "--list-style",
             "type:unicode;size:small",
         ],
     ];

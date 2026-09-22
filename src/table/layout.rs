@@ -13,12 +13,12 @@ impl TableRenderer {
             terminal_width,
             table_wrap,
             text_wrap: TextWrapMode::Word,
-            pretty_table: false,
+            table_borders: false,
         }
     }
 
-    pub fn with_pretty_table(mut self, pretty_table: bool) -> Self {
-        self.pretty_table = pretty_table;
+    pub fn with_table_borders(mut self, table_borders: bool) -> Self {
+        self.table_borders = table_borders;
         self
     }
 
@@ -28,7 +28,7 @@ impl TableRenderer {
     }
 
     pub(super) fn configure_table(&self, table: &mut Table) {
-        if self.pretty_table {
+        if self.table_borders {
             table.load_style(UTF8_FULL.with_rounded_corners());
         } else {
             table.load_style(COMPACT_TABLE_STYLE);
@@ -80,7 +80,7 @@ impl TableRenderer {
             return ReferenceLayout::Natural;
         }
 
-        let border_width = if self.pretty_table {
+        let border_width = if self.table_borders {
             headers.len().saturating_add(1)
         } else {
             headers.len().saturating_sub(1)

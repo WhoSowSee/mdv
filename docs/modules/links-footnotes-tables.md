@@ -97,7 +97,7 @@ is imposed and all three text modes leave cell lines unwrapped. Source spaces th
 a grapheme-wrap boundary are removed before the final layout pass, so following graphemes consume
 the released width while column geometry and alignment padding remain unchanged.
 
-`pretty_table=false` uses compact borders without a complete outer grid. `pretty_table=true` enables `UTF8_FULL` with rounded corners.
+`table_borders=false` uses compact borders without a complete outer grid. `table_borders=true` enables `UTF8_FULL` with rounded corners.
 
 ## Smart table indentation
 

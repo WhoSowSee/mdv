@@ -13,5 +13,5 @@ code_block_style: simple
 callout_style: simple
 code_wrap_indent: none
 link_style: endtable
-link_truncation: tablecut
+link_overflow: tablecut
 missing_footnote_style: hide

@@ -95,7 +95,7 @@ impl Config {
 
     pub(super) fn apply_checkbox_overrides(&mut self) -> Result<()> {
         self.checkbox_overrides.clear();
-        if self.pretty_checkbox.is_none() {
+        if self.checkbox_style.is_none() {
             return Ok(());
         }
         let Some(raw) = &self.custom_checkbox else {
@@ -127,8 +127,8 @@ impl Config {
     }
 
     pub(super) fn apply_list_markers(&mut self) -> Result<()> {
-        // `--custom-list` is a no-op without `--pretty-list`, mirroring `--custom-checkbox`.
-        let Some(style) = self.pretty_list else {
+        // `--custom-list` is a no-op without `--list-style`, mirroring `--custom-checkbox`.
+        let Some(style) = self.list_style else {
             self.list_marker = ListMarkerConfig::default();
             return Ok(());
         };
