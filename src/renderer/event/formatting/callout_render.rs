@@ -1,3 +1,4 @@
+use super::super::core::CalloutInfo;
 use super::*;
 
 impl<'a> EventRenderer<'a> {
@@ -5,11 +6,12 @@ impl<'a> EventRenderer<'a> {
         &mut self,
         callout_block: &str,
         callout_level: usize,
-        kind: CalloutKind,
-        label: &str,
-        label_override: Option<&str>,
-        fold: Option<CalloutFold>,
+        info: &CalloutInfo,
     ) -> bool {
+        let kind = info.kind;
+        let label = info.label.as_str();
+        let label_override = info.label_override.as_deref();
+        let fold = info.fold;
         let mut lines: Vec<&str> = callout_block.split('\n').collect();
         if lines.last().is_some_and(|line| line.is_empty()) {
             lines.pop();
@@ -66,14 +68,15 @@ impl<'a> EventRenderer<'a> {
             content_lines.pop();
         }
 
-        let label_inside = self.config.callout_style.label_inside;
+        let label_inside = self.config.callout_style.label_inside && !info.options.hide_title;
         if !label_inside && content_lines.is_empty() {
             content_lines.push(String::new());
         }
 
         if label_inside {
             let icon_spacing = self.callout_icon_spacing(true);
-            let label_text = self.callout_label_text(label, label_override, fold, icon_spacing);
+            let label_text =
+                self.callout_label_text(label, label_override, fold, icon_spacing, info.options);
             let mut styled_label = if label_text.is_empty() {
                 String::new()
             } else {
@@ -148,7 +151,7 @@ impl<'a> EventRenderer<'a> {
             String::new()
         } else {
             let icon_spacing = self.callout_icon_spacing(false);
-            self.callout_label_text(label, label_override, fold, icon_spacing)
+            self.callout_label_text(label, label_override, fold, icon_spacing, info.options)
         };
         let label_width = display_width(label_text.trim());
 

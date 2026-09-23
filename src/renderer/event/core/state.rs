@@ -75,6 +75,7 @@ pub(crate) enum CalloutFold {
 
 #[derive(Debug, Clone)]
 pub(crate) struct CalloutInfo {
+    pub(in crate::renderer::event) options: crate::markdown::CalloutOptions,
     pub(in crate::renderer::event) kind: CalloutKind,
     pub(in crate::renderer::event) label: String,
     pub(in crate::renderer::event) label_override: Option<String>,
@@ -87,7 +88,7 @@ pub(crate) struct CalloutInfo {
 
 #[derive(Debug, Clone)]
 pub(crate) enum CalloutState {
-    Pending,
+    Pending(crate::markdown::CalloutOptions),
     Active(CalloutInfo),
     None,
 }

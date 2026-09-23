@@ -2,6 +2,12 @@ use super::*;
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn process_event(&mut self, event: Event) -> Result<()> {
+        if let Some(options) = crate::markdown::callout_options_from_event(&event) {
+            if let Some(CalloutState::Pending(pending)) = self.callout_stack.last_mut() {
+                *pending = options;
+            }
+            return Ok(());
+        }
         if let Some(marker) = crate::markdown::source_line_from_event(&event) {
             match marker {
                 crate::markdown::SourceLineMarker::Content(source_line) => {

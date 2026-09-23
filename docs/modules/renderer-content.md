@@ -42,6 +42,7 @@ A callout passes through several stages:
 
 1. `markdown/admonitions.rs` converts alternative syntax into a blockquote marker.
 2. `text/callouts.rs` buffers initial characters and parses marker, type, fold state, and title.
+   A preceding internal presentation event supplies hidden-title and hidden-icon options for that blockquote.
 3. `core/callouts.rs` selects the semantic kind and color.
 4. `formatting/callout_label.rs` builds the label and selected Nerd Font or portable ASCII icon and applies case options.
 5. Ordinary text renders inside callout state.
@@ -56,6 +57,10 @@ A callout passes through several stages:
 A pretty callout first accumulates logical content and is framed afterward. Handlers must not print border segments directly in the middle of the block.
 
 A link inside a pending custom label collects its visible text and inline math in `current_link_text`. Link end appends that complete text to the pending label without emitting body content or registering URL references. The label keeps the original order of text around the link.
+
+Inline code inside a pending label follows the same collection contract. Hidden titles omit the simple header or the pretty-frame label without consuming body lines. Per-block icon suppression leaves the independently configured fold indicator available. Fold states never hide terminal content.
+
+A list starting inside a pending ordinary blockquote ends callout detection for that quote, so a list item's literal `[!note]` cannot become a callout header. A new blockquote inside the list establishes its own pending state. Block-spacing classification follows the same distinction.
 
 `show-icons` selects the Nerd Font icon map, while `show-simple-icons` selects bracketed ASCII markers. The options are mutually exclusive; custom callout icons continue to take precedence over either built-in map.
 

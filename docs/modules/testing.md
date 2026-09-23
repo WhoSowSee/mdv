@@ -64,12 +64,17 @@ Large topic files act as facades with explicit `#[path = "..."]` declarations:
 
 - `tests/cli_basic/`: general behavior, HTML content/semantics/lists, rendering options, configuration, and pager;
 - `tests/callouts/formatting/`: wrapping, rules, and headings;
+- `tests/callouts/dialects.rs`: all seven additional dialect families, nested blocks, metadata, structured bodies, title options, source numbering, and HTML export; reusable input lives in `tests/files/callout-dialects.md`;
+- `tests/callouts/regressions.rs`: quoted-list preservation, bounded completion with unmatched openers, multiline inline-code protection, and literal hashes in callout titles;
+- `tests/callouts/boundaries.rs`: code fences in list items, Quarto heading indentation, and parent delimiters around legacy bang blocks;
 - `tests/callouts/tables_links/`: tables, references, and inline links;
 - `tests/checkboxes/`: basic behavior, colors, custom states, and list layout;
 - `tests/code_blocks/tab_indent/`: fences, deep indentation, and paragraphs;
 - `tests/layout/spacing/`: backslashes, paragraphs, block spacing, and inline HTML;
 - `tests/links_tables/basic/` and `references/`: core table/link behavior and reference scopes.
 - `tests/math/contexts.rs`: table headers, source mapping, callout labels and nested frames, HTML scripts, and impossible-width timeout regressions.
+
+The callout dialect and regression modules share the CLI rendering helper in `tests/callouts.rs`. Syntax and boundary invariants use one terminal layout or HTML structure; layout-dependent options retain their style matrix. Source-number mapping is covered through the CLI after the full preprocessing pipeline.
 
 Shared helpers remain in the facade module and are imported by child tests through `use super::*`.
 

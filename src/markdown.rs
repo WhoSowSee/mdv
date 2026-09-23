@@ -29,6 +29,7 @@ pub(crate) struct FrontMatter {
 }
 
 mod admonitions;
+pub(crate) use admonitions::{CalloutOptions, options_from_event as callout_options_from_event};
 mod blockquotes;
 mod conversion;
 mod detection;

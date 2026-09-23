@@ -2,6 +2,14 @@ use super::*;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn handle_inline_code(&mut self, code: CowStr) -> Result<()> {
+        if self.pending_callout_label_override {
+            if self.in_link {
+                self.current_link_text.push_str(&code);
+            } else {
+                self.pending_callout_label_buffer.push_str(&code);
+            }
+            return Ok(());
+        }
         self.close_inline_backticks();
         let inline_style = self.theme.inline_style.get(InlineStyleKind::Code);
         let mut style = AnsiStyle::new().fg(self.theme.code.clone().into());

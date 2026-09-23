@@ -57,14 +57,7 @@ impl<'a> EventRenderer<'a> {
             if (has_visible_content || self.config.show_empty_elements)
                 && let Some(info) = callout_info
             {
-                let rendered = self.render_callout_pretty_block(
-                    &slice,
-                    callout_level,
-                    info.kind,
-                    &info.label,
-                    info.label_override.as_deref(),
-                    info.fold,
-                );
+                let rendered = self.render_callout_pretty_block(&slice, callout_level, &info);
 
                 if !rendered {
                     self.output.push_str(&slice);

@@ -15,7 +15,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [config.rs](../../src/config.rs) | Effective `Config`, defaults, and helpers. | [CLI/config](cli-configuration.md) |
 | [preset.rs](../../src/preset.rs) | Embedded and user presets. | [CLI/config](cli-configuration.md) |
 | [block_spacing.rs](../../src/block_spacing.rs) | Per-element blank-line settings. | [CLI/config](cli-configuration.md) |
-| [callout.rs](../../src/callout.rs) | Custom callout definitions. | [themes](themes-and-styling.md) |
+| [callout.rs](../../src/callout.rs) | Custom callout definitions and shared type-name validation. | [themes](themes-and-styling.md) |
 | [checkbox.rs](../../src/checkbox.rs) | Standard checkbox icons. | [themes](themes-and-styling.md) |
 | [checkbox_override.rs](../../src/checkbox_override.rs) | Custom checkbox states. | [themes](themes-and-styling.md) |
 | [custom_code_block.rs](../../src/custom_code_block.rs) | Custom code labels, icons, and aliases. | [renderer code](renderer-code.md) |
@@ -72,7 +72,15 @@ Color schema and migration checks: [color.rs](../../src/config/tests/color.rs).
 
 | File | Responsibility |
 |---|---|
-| [admonitions.rs](../../src/markdown/admonitions.rs) | Admonition-to-callout conversion. |
+| [admonitions.rs](../../src/markdown/admonitions.rs) | Admonition conversion facade, source positions, and presentation placeholders. |
+| [admonitions/attributes.rs](../../src/markdown/admonitions/attributes.rs) | Quoted attributes and balanced delimiters. |
+| [admonitions/boundaries.rs](../../src/markdown/admonitions/boundaries.rs) | Precomputed matched and unmatched block endpoints. |
+| [admonitions/containers.rs](../../src/markdown/admonitions/containers.rs) | Markdown quote and list contexts. |
+| [admonitions/metadata.rs](../../src/markdown/admonitions/metadata.rs) | Dialect options and private presentation events. |
+| [admonitions/protected.rs](../../src/markdown/admonitions/protected.rs) | Code/HTML protection, including multiline inline code. |
+| [admonitions/scanner.rs](../../src/markdown/admonitions/scanner.rs) | Block conversion, indentation, and source positions. |
+| [admonitions/syntax.rs](../../src/markdown/admonitions/syntax.rs) | Dialect header grammars. |
+| [admonitions/tests.rs](../../src/markdown/admonitions/tests.rs) | Literal-input and boundary invariants. |
 | [blockquotes.rs](../../src/markdown/blockquotes.rs) | Blockquote preprocessing. |
 | [conversion.rs](../../src/markdown/conversion.rs) | Owned events, tab expansion, and reverse mode. |
 | [detection.rs](../../src/markdown/detection.rs) | Code-language extraction and detection. |
@@ -271,7 +279,7 @@ Files: [blockquotes.rs](../../src/renderer/event/html/blockquotes.rs), [blocks.r
 
 Harness: [tests/integration.rs](../../tests/integration.rs).
 
-- Callouts: [callouts.rs](../../tests/callouts.rs), [basic.rs](../../tests/callouts/basic.rs), [customization.rs](../../tests/callouts/customization.rs), [formatting.rs](../../tests/callouts/formatting.rs), [heading_layout.rs](../../tests/callouts/heading_layout.rs), and [tables_links.rs](../../tests/callouts/tables_links.rs).
+- Callouts: [callouts.rs](../../tests/callouts.rs), [basic.rs](../../tests/callouts/basic.rs), [boundaries.rs](../../tests/callouts/boundaries.rs), [dialects.rs](../../tests/callouts/dialects.rs), [regressions.rs](../../tests/callouts/regressions.rs), [customization.rs](../../tests/callouts/customization.rs), [formatting.rs](../../tests/callouts/formatting.rs), [heading_layout.rs](../../tests/callouts/heading_layout.rs), and [tables_links.rs](../../tests/callouts/tables_links.rs).
 - Checkboxes: [checkboxes.rs](../../tests/checkboxes.rs) and files under [tests/checkboxes/](../../tests/checkboxes/basic.rs).
 - CLI: [cli_basic.rs](../../tests/cli_basic.rs) and files under [tests/cli_basic/](../../tests/cli_basic/general.rs).
 - Color: [color.rs](../../tests/color.rs) and shared [support.rs](../../tests/support.rs).

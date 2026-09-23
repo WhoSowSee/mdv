@@ -1,17 +1,51 @@
 use crate::support::mdv_cmd;
 use std::fs;
+use std::time::Duration;
 use tempfile::NamedTempFile;
 
 #[path = "callouts/basic.rs"]
 mod basic;
+#[path = "callouts/boundaries.rs"]
+mod boundaries;
 #[path = "callouts/customization.rs"]
 mod customization;
+#[path = "callouts/dialects.rs"]
+mod dialects;
 #[path = "callouts/formatting.rs"]
 mod formatting;
 #[path = "callouts/heading_layout.rs"]
 mod heading_layout;
+#[path = "callouts/regressions.rs"]
+mod regressions;
 #[path = "callouts/tables_links.rs"]
 mod tables_links;
+
+fn render(source: &str, style: &str, extra: &[&str]) -> String {
+    let file = NamedTempFile::new().unwrap();
+    fs::write(&file, source).unwrap();
+    let output = mdv_cmd()
+        .args([
+            "--color",
+            "never",
+            "--callout-style",
+            style,
+            "--no-code-guessing",
+        ])
+        .args(extra)
+        .arg(file.path())
+        .timeout(Duration::from_secs(5))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "style {style}, input of {} bytes starting with {:?}, status {}: {}",
+        source.len(),
+        source.lines().next(),
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap()
+}
 
 fn render_callout_table(callout_style: &str, table_smart_indent: bool) -> String {
     let temp_file = NamedTempFile::new().unwrap();

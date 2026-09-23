@@ -29,7 +29,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         let kind_raw = trimmed[2..closing].trim();
-        if kind_raw.is_empty() || !Self::is_valid_callout_kind(kind_raw) {
+        if !crate::callout::is_valid_callout_name(kind_raw) {
             return None;
         }
 
@@ -142,6 +142,10 @@ impl<'a> EventRenderer<'a> {
                     .unwrap_or(false);
                 let defer_label_override = marker.allow_label_override && !has_label_override;
                 let info = CalloutInfo {
+                    options: match state {
+                        CalloutState::Pending(options) => *options,
+                        _ => Default::default(),
+                    },
                     kind: marker.kind,
                     label: marker.label.clone(),
                     label_override: marker.label_override.clone(),
@@ -171,11 +175,6 @@ impl<'a> EventRenderer<'a> {
             }
             CalloutBufferEval::Pending => CalloutDecision::Pending,
         }
-    }
-
-    pub(super) fn is_valid_callout_kind(kind: &str) -> bool {
-        kind.chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
     }
 
     pub(in crate::renderer::event) fn in_properties_callout(&self) -> bool {

@@ -113,9 +113,11 @@ pub(crate) fn parse_custom_callouts(input: &str) -> Result<HashMap<String, Custo
     Ok(callouts)
 }
 
-fn is_valid_callout_name(name: &str) -> bool {
-    name.chars()
-        .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
+pub(crate) fn is_valid_callout_name(name: &str) -> bool {
+    !name.is_empty()
+        && name
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
 }
 
 fn parse_callout_options(values: &str) -> Result<Vec<(String, String)>> {

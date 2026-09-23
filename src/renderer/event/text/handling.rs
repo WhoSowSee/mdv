@@ -66,9 +66,8 @@ impl<'a> EventRenderer<'a> {
         }
         let mut callout_decision = None;
         if self.blockquote_level > 0
-            && self.list_stack.is_empty()
             && let Some(state) = self.callout_stack.last_mut()
-            && matches!(state, CalloutState::Pending)
+            && matches!(state, CalloutState::Pending(_))
         {
             if self.pending_callout_marker {
                 self.pending_callout_marker_buffer.push_str(raw_text);

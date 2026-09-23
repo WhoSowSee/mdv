@@ -39,19 +39,26 @@ flowchart LR
 4. Explicit `\` lines become blank-line markers.
 5. Task-list termination is repaired.
 6. Pretty-checkbox mode normalizes a backslash before a checkbox marker.
-7. Admonition syntax becomes a callout blockquote.
-8. Callout markers are separated from setext headings.
-9. Blockquote prefixes and blank lines inside quotes are normalized.
+7. Blockquote prefixes and blank lines inside quotes are normalized.
+8. Admonition syntax becomes a callout blockquote, with an explicit source-line map for retained lines and generated separators.
+9. Callout markers are separated from setext headings.
 10. For terminal rendering, `\(…\)` and `\[…\]` are normalized into protected math ranges after code, HTML, and link destinations are excluded.
 
-Every transformation goes through `source_lines::apply_transform`, keeping inserted and removed lines synchronized with the source-line map.
+Most transformations go through `source_lines::apply_transform`. Admonition conversion carries source positions directly through nested blocks, removed metadata, and generated separators; it does not infer those changes from a text diff.
 
 ## Module files
 
 | File | Responsibility |
 |---|---|
 | [src/markdown/parsing.rs](../../src/markdown/parsing.rs) | Constructor, front matter extraction, `parse`, preprocessing, and `--from` filtering. |
-| [src/markdown/admonitions.rs](../../src/markdown/admonitions.rs) | Convert `:::note`, `:::{note} Title`, and `!!! note` to a compatible callout marker. |
+| [src/markdown/admonitions.rs](../../src/markdown/admonitions.rs) | Normalize callout dialects, retain source positions, and restore per-block presentation events. |
+| [src/markdown/admonitions/syntax.rs](../../src/markdown/admonitions/syntax.rs) | Dialect headers, fence terminators, and type/title parsing. |
+| [src/markdown/admonitions/attributes.rs](../../src/markdown/admonitions/attributes.rs) | Balanced brackets and quoted attribute values. |
+| [src/markdown/admonitions/scanner.rs](../../src/markdown/admonitions/scanner.rs) | Block conversion, indentation, and source positions. |
+| [src/markdown/admonitions/boundaries.rs](../../src/markdown/admonitions/boundaries.rs) | Precomputed block endpoints, including unmatched openers. |
+| [src/markdown/admonitions/protected.rs](../../src/markdown/admonitions/protected.rs) | Protected code/HTML lines, including multiline inline code. |
+| [src/markdown/admonitions/containers.rs](../../src/markdown/admonitions/containers.rs) | Callouts inside Markdown blockquotes and list items. |
+| [src/markdown/admonitions/metadata.rs](../../src/markdown/admonitions/metadata.rs) | Directive options, Quarto headings, and internal presentation events. |
 | [src/markdown/blockquotes.rs](../../src/markdown/blockquotes.rs) | Parse `>` prefixes, nesting, and explicit blank lines inside blockquotes. |
 | [src/markdown/fences.rs](../../src/markdown/fences.rs) | Find fence markers and normalize tab-indented fences without losing inner indentation. |
 | [src/markdown/math.rs](../../src/markdown/math.rs) | Recognize extended TeX delimiters outside protected Markdown ranges. |
@@ -67,16 +74,15 @@ Every transformation goes through `source_lines::apply_transform`, keeping inser
 
 ## Admonitions and callouts
 
-`admonitions.rs` does not render a frame. It emits Markdown that `pulldown-cmark` sees as a blockquote with a `[!kind]` marker. Type, icon, fold state, and custom label are parsed later by `renderer/event/text/callouts.rs`.
+`admonitions.rs` does not render a frame. It emits Markdown blockquotes with `[!kind]` markers. Material for MkDocs, Docusaurus, VitePress, MyST/Sphinx, Quarto, PyMdown Blocks, and GitBook headers share this path; native GitHub/Obsidian markers retain their existing parser. See [syntax examples](../examples/callouts.md) for per-dialect contracts.
 
-Supported forms include:
+Fenced dialects require a matching closing delimiter. MkDocs bodies follow four-column indentation and retain blank paragraphs; the existing unindented `!!! type Title` paragraph form is still accepted. A containing fenced callout's closing delimiter also bounds the legacy paragraph form. Block endpoints are computed from the end of each scope and reused for nested lookups, including unmatched openers; boundary discovery does not recurse or retry failed nested searches. Parsed headers are passed to conversion alongside their endpoints rather than parsed again. Openers without any later closing marker of the same family are rejected without scanning their body. List and quote contexts are normalized recursively. Indentation uses the Markdown pipeline's shared tab-stop calculation, and type-name validation is shared with native callouts and custom-callout configuration.
 
-- `:::note` with a closing `:::`;
-- `:::{note} Title`;
-- `!!! note Title`;
-- the standard `> [!note] Title` form.
+Fenced code, indented code, HTML blocks, and multiline inline code are protected before either opening or closing callout markers are matched. Boundary protection includes code nested inside lists and quotes, while conversion traverses those containers to reach their actual callouts. Inline code within a callout title does not protect the preceding opener. Quarto promotes an initial ATX heading only at an indentation of zero to three columns; indented code remains in the body. Quarto and PyMdown ATX titles remove a closing hash sequence only when separated from the title by a space or tab, preserving text such as `C#` and escaped hashes.
 
-A marker without the required space before a custom title does not override the label.
+Each generated header includes a document-unique placeholder. After `pulldown-cmark` parsing, the placeholder becomes a private `InlineHtml` presentation event, before ordinary marker/title events. `CalloutOptions` carries hidden-title and hidden-icon flags; fold state remains the existing `+`/`-` marker. The renderer consumes the options only for the pending blockquote, and HTML export filters the private event. Placeholders never reach visible output. Inline title code and links contribute their visible text to the label.
+
+CSS classes and IDs are recognized as metadata; CSS, site configuration, JavaScript, and Quarto cross-reference numbering are outside the terminal renderer's scope. Native `[!kind]` still requires whitespace before a custom title.
 
 ## Code fences
 

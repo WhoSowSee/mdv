@@ -42,10 +42,12 @@ impl MarkdownProcessor {
             content,
             source_lines,
             math_placeholders,
+            admonitions,
         } = self.preprocess_content(document.body, document.body_start_line)?;
         let parser = Parser::new_ext(&content, self.options).into_offset_iter();
 
         let mut events: Vec<(Event, Range<usize>)> = parser.collect();
+        admonitions.restore_events(&mut events);
         if let Some(placeholders) = math_placeholders {
             placeholders.restore_events(&mut events);
         }
@@ -105,13 +107,16 @@ impl MarkdownProcessor {
             );
         }
         processed = source_lines::apply_transform(processed, source_lines.as_mut(), |content| {
-            self.convert_admonitions_to_callouts(content)
+            self.preprocess_blockquotes(content)
         });
+        let mut admonitions = admonitions::Admonitions::new(&processed);
+        processed = self.convert_admonitions_to_callouts(
+            &processed,
+            source_lines.as_mut(),
+            &mut admonitions,
+        );
         processed = source_lines::apply_transform(processed, source_lines.as_mut(), |content| {
             self.separate_callout_markers_from_setext(content)
-        });
-        processed = source_lines::apply_transform(processed, source_lines.as_mut(), |content| {
-            self.preprocess_blockquotes(content)
         });
         let math_placeholders = self
             .extended_math
@@ -127,6 +132,7 @@ impl MarkdownProcessor {
             content: processed,
             source_lines,
             math_placeholders,
+            admonitions,
         })
     }
 
@@ -155,6 +161,7 @@ struct PreprocessedContent {
     content: String,
     source_lines: Option<Vec<Option<usize>>>,
     math_placeholders: Option<math::MathPlaceholders>,
+    admonitions: admonitions::Admonitions,
 }
 
 struct SplitDocument<'a> {

@@ -71,6 +71,7 @@ impl<'a> EventRenderer<'a> {
                     Some(kind) => {
                         let (callout_kind, label) = blockquote_kind_info(kind);
                         CalloutState::Active(CalloutInfo {
+                            options: Default::default(),
                             kind: callout_kind,
                             label,
                             label_override: None,
@@ -81,7 +82,7 @@ impl<'a> EventRenderer<'a> {
                             inline_links: Vec::new(),
                         })
                     }
-                    None => CalloutState::Pending,
+                    None => CalloutState::Pending(Default::default()),
                 };
                 self.callout_stack.push(callout_state);
                 if matches!(self.config.callout_style.style, CalloutStyle::Pretty)
@@ -98,6 +99,9 @@ impl<'a> EventRenderer<'a> {
                 self.code_block_language = extract_code_language(&kind);
             }
             Tag::List(start_number) => {
+                if let Some(state @ CalloutState::Pending(_)) = self.callout_stack.last_mut() {
+                    *state = CalloutState::None;
+                }
                 let entering_top_level_list = self.list_stack.is_empty();
                 let block_start = self.output.len();
                 let spacing_element = self

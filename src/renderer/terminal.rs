@@ -237,7 +237,9 @@ impl TerminalRenderer {
 
     pub fn to_html(&self, events: Vec<Event<'static>>) -> Result<String> {
         let events = events.into_iter().filter_map(|event| {
-            if crate::markdown::source_line_from_event(&event).is_some() {
+            if crate::markdown::source_line_from_event(&event).is_some()
+                || crate::markdown::callout_options_from_event(&event).is_some()
+            {
                 return None;
             }
 

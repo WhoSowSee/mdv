@@ -11,6 +11,9 @@ impl EventRenderer<'_> {
         for event in events {
             match event {
                 Event::Start(Tag::List(start)) => {
+                    if let Some((_, marker_pending)) = blockquote_stack.last_mut() {
+                        *marker_pending = false;
+                    }
                     let element = if start.is_some() {
                         BlockElement::OrderedList
                     } else {

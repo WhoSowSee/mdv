@@ -46,16 +46,22 @@ impl<'a> EventRenderer<'a> {
         label_override: Option<&str>,
         fold: Option<CalloutFold>,
         icon_spacing: usize,
+        options: crate::markdown::CalloutOptions,
     ) -> String {
+        if options.hide_title {
+            return String::new();
+        }
         let base = self.callout_display_label(label, label_override);
         if !self.config.callout_style.icons_enabled() {
             return base;
         }
 
         let mut text = String::new();
-        text.push_str(self.callout_icon_for_label(label));
-        if icon_spacing > 0 {
-            text.push_str(&" ".repeat(icon_spacing));
+        if !options.hide_icon {
+            text.push_str(self.callout_icon_for_label(label));
+            if icon_spacing > 0 {
+                text.push_str(&" ".repeat(icon_spacing));
+            }
         }
         text.push_str(&base);
         if let Some(icon) = self.callout_fold_icon(fold) {
@@ -205,6 +211,19 @@ impl<'a> EventRenderer<'a> {
         label_override: Option<&str>,
         fold: Option<CalloutFold>,
     ) {
+        let options = match self.callout_stack.last() {
+            Some(CalloutState::Active(info)) => info.options,
+            _ => Default::default(),
+        };
+        if options.hide_title
+            && matches!(
+                self.config.callout_style.style,
+                crate::cli::CalloutStyle::Simple
+            )
+        {
+            self.suppress_next_paragraph_break = true;
+            return;
+        }
         let source_marker = self.take_pending_source_line_marker();
 
         let outer_level = self.blockquote_level.saturating_sub(1);
@@ -220,7 +239,16 @@ impl<'a> EventRenderer<'a> {
         }
 
         let icon_spacing = self.callout_icon_spacing(false);
-        let label_text = self.callout_label_text(label, label_override, fold, icon_spacing);
+        let label_text = self.callout_label_text(
+            label,
+            label_override,
+            fold,
+            icon_spacing,
+            crate::markdown::CalloutOptions {
+                hide_title: false,
+                ..options
+            },
+        );
         let display_label = if matches!(
             self.config.callout_style.style,
             crate::cli::CalloutStyle::Simple
