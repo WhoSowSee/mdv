@@ -58,6 +58,7 @@ code_background: null
 strikethrough_background: null
 background: "rgb(30,30,46)"
 border: grey
+horizontal_rule: "#8f93a2"
 
 # Inline decorations
 inline_style:

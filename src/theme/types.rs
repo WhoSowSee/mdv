@@ -54,6 +54,8 @@ pub struct Theme {
     pub strikethrough_background: Option<Color>,
     pub background: Option<Color>,
     pub border: Color,
+    #[serde(default = "default_horizontal_rule_color")]
+    pub horizontal_rule: Color,
     #[serde(default)]
     pub front_matter_title: Option<Color>,
     #[serde(default)]
@@ -158,4 +160,9 @@ impl Theme {
 
 fn default_line_number_color() -> Color {
     Color::Grey
+}
+
+pub(crate) fn default_horizontal_rule_color() -> Color {
+    let (r, g, b) = PRETTY_ACCENT_RGB;
+    Color::Rgb { r, g, b }
 }

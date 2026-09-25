@@ -89,7 +89,7 @@ A list starting inside a pending ordinary blockquote ends callout detection for 
 |---|---|
 | [event/soft_breaks.rs](../../src/renderer/event/soft_breaks.rs) | Preserve the source break or collapse it during reflow. |
 | `core/end_tags.rs` | Render a hard break with the active container prefix. |
-| [event/misc.rs](../../src/renderer/event/misc.rs) | Render a horizontal rule at the available width and nesting level. |
+| [event/misc.rs](../../src/renderer/event/misc.rs) | Render a horizontal rule at the available width and nesting level; `horizontal_rule_style` selects decorative endpoints or a continuous line, and the theme supplies `horizontal_rule` color. |
 
 Explicit blank-line markers are separate from soft and hard breaks and must not accumulate with block spacing.
 

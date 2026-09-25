@@ -2,9 +2,9 @@ use crate::block_spacing::BlockSpacingOverrides;
 use crate::callout::{CustomCalloutStyle, parse_custom_callouts};
 use crate::cli::{
     CalloutStyleConfig, CheckboxShape, Cli, CodeBlockStyleConfig, CodeWrapIndent, ColorDepth,
-    ColorMode, FootnoteStyle, FrontMatterMode, HeadingLayout, HorizontalMargins, LineNumberOptions,
-    LineNumberTarget, LinkStyle, LinkTruncationStyle, MathBlockStyle, MissingFootnoteStyle,
-    PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
+    ColorMode, FootnoteStyle, FrontMatterMode, HeadingLayout, HorizontalMargins,
+    HorizontalRuleStyle, LineNumberOptions, LineNumberTarget, LinkStyle, LinkTruncationStyle,
+    MathBlockStyle, MissingFootnoteStyle, PrettyDefinitionStyle, TableWrapMode, TextWrapMode,
 };
 use crate::custom_code_block::{CustomCodeBlock, parse_custom_code_blocks};
 use crate::error::MdvError;
@@ -167,6 +167,7 @@ define_config! {
     pub smart_indent: bool,
     pub table_smart_indent: bool,
     pub block_spacing: BlockSpacingOverrides,
+    pub horizontal_rule_style: HorizontalRuleStyle,
     pub hide_comments: bool,
     pub front_matter: FrontMatterMode,
     pub render_html: bool,
@@ -266,6 +267,7 @@ impl Default for Config {
             smart_indent: false,
             table_smart_indent: false,
             block_spacing: BlockSpacingOverrides::default(),
+            horizontal_rule_style: HorizontalRuleStyle::Pretty,
             hide_comments: false,
             front_matter: FrontMatterMode::Hidden,
             render_html: false,

@@ -52,6 +52,9 @@ impl Config {
             self.table_smart_indent = true;
         }
         self.block_spacing.merge(&other.block_spacing);
+        if other.horizontal_rule_style != HorizontalRuleStyle::default() {
+            self.horizontal_rule_style = other.horizontal_rule_style;
+        }
 
         if other.hide_comments {
             self.hide_comments = true;

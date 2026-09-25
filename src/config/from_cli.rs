@@ -164,6 +164,11 @@ impl Config {
         if let Some(spacing) = &cli.block_spacing {
             config.block_spacing.merge(spacing);
         }
+        if let Some(style) = cli.horizontal_rule_style
+            && arg_has_user_value(matches, "horizontal_rule_style")
+        {
+            config.horizontal_rule_style = style;
+        }
 
         if cli.hide_comments {
             config.hide_comments = true;

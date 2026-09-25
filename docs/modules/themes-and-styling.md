@@ -40,7 +40,7 @@ A complete theme contains:
 - `h1` through `h6`;
 - independent code, math content, math border, quote, link, and inline semantic colors;
 - optional foreground and background for combined inline styles;
-- document background and border colors plus optional front matter title, key, value, and border colors;
+- document background and border colors, a horizontal-rule color with a shared default, plus optional front matter title, key, value, and border colors;
 - list, table, error, and warning colors;
 - `SyntaxTheme` for code highlighting;
 - `pager_status_bar_transparent`.
@@ -59,7 +59,7 @@ User themes are read from `<config_dir>/themes/*.yaml|*.yml` in lexical order. `
 
 Unlike the partial user schema, an embedded theme must define every required color, its description, syntax palette, and status-bar transparency flag.
 
-`math` and `math_border` are optional in user themes for compatibility. When omitted they inherit from the selected base theme; legacy serialized themes fall back to `text` and `border`. All embedded themes define visibly distinct math colors.
+`math`, `math_border`, and `horizontal_rule` are optional in user themes. When omitted they inherit from the selected base theme. Legacy serialized themes fall back to `text` for math and `border` for math borders. All embedded themes use the historical `#8f93a2` horizontal-rule color; a user theme or `custom_theme` may override it.
 
 ## Application order
 

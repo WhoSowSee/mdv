@@ -46,7 +46,7 @@ Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [l
 | [color.rs](../../src/cli/color.rs) | Requested color modes and resolved styling policy. |
 | [color_depth.rs](../../src/cli/color_depth.rs) | Requested palette depth and YAML parsing. |
 | [help.rs](../../src/cli/help.rs) | Long-help constants. |
-| [layout.rs](../../src/cli/layout.rs) | Text/table wrapping, math-block style, and heading-layout enums. |
+| [layout.rs](../../src/cli/layout.rs) | Text/table wrapping, math-block and horizontal-rule styles, and heading-layout enums. |
 | [line_numbers.rs](../../src/cli/line_numbers.rs) | Line-number targets and options. |
 | [links.rs](../../src/cli/links.rs) | Link and footnote enums. |
 | [margins.rs](../../src/cli/margins.rs) | Horizontal-margin parser and serde support. |
@@ -166,7 +166,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [theme/color_parse.rs](../../src/theme/color_parse.rs) | Color parsing and luminosity. |
 | [theme/colors.rs](../../src/theme/colors.rs) | `Color`. |
 | [theme/display.rs](../../src/theme/display.rs) | Theme listing and style creation. |
-| [theme/element.rs](../../src/theme/element.rs) | `ThemeElement`. |
+| [theme/element.rs](../../src/theme/element.rs) | `ThemeElement` semantic roles, including horizontal rules. |
 | [theme/manager.rs](../../src/theme/manager.rs) | Theme registry. |
 | [theme/overrides.rs](../../src/theme/overrides.rs) | Terminal and code overrides. |
 | [theme/types.rs](../../src/theme/types.rs) | `Theme` and `SyntaxTheme`. |

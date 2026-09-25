@@ -1,6 +1,6 @@
-use super::{CowStr, EventRenderer, PRETTY_ACCENT_COLOR, Result, ThemeElement, create_style};
+use super::{CowStr, EventRenderer, Result, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
-use crate::terminal::AnsiStyle;
+use crate::cli::HorizontalRuleStyle;
 use crate::utils::{display_width, strip_ansi};
 
 impl<'a> EventRenderer<'a> {
@@ -106,14 +106,14 @@ impl<'a> EventRenderer<'a> {
             .effective_text_width()
             .saturating_sub(prefix_width)
             .max(1);
-        let rule = if width >= 2 {
-            format!("◈{}◈", "─".repeat(width.saturating_sub(2)))
-        } else {
-            "─".repeat(width)
+        let rule = match self.config.horizontal_rule_style {
+            HorizontalRuleStyle::Pretty if width >= 2 => {
+                format!("◈{}◈", "─".repeat(width - 2))
+            }
+            HorizontalRuleStyle::Pretty | HorizontalRuleStyle::Simple => "─".repeat(width),
         };
-        let styled_rule = AnsiStyle::new()
-            .fg(PRETTY_ACCENT_COLOR)
-            .apply(&rule, self.output_style);
+        let styled_rule =
+            create_style(self.theme, ThemeElement::HorizontalRule).apply(&rule, self.output_style);
         let spacing = self
             .config
             .block_spacing

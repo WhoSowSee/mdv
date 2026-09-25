@@ -53,6 +53,7 @@ pub(crate) struct ThemeFile {
     pub strikethrough_background: Option<ColorYaml>,
     pub background: Option<ColorYaml>,
     pub border: Option<ColorYaml>,
+    pub horizontal_rule: Option<ColorYaml>,
     pub front_matter_title: Option<ColorYaml>,
     pub front_matter_key: Option<ColorYaml>,
     pub front_matter_value: Option<ColorYaml>,
@@ -161,6 +162,7 @@ impl ThemeFile {
             ),
             background: pick_optional(&self.background, &base.background),
             border: pick(&self.border, &base.border),
+            horizontal_rule: pick(&self.horizontal_rule, &base.horizontal_rule),
             front_matter_title: pick_optional(&self.front_matter_title, &base.front_matter_title),
             front_matter_key: pick_optional(&self.front_matter_key, &base.front_matter_key),
             front_matter_value: pick_optional(&self.front_matter_value, &base.front_matter_value),
@@ -247,6 +249,11 @@ impl ThemeFile {
             strikethrough_background: self.strikethrough_background.take().map(|value| value.0),
             background: self.background.take().map(|value| value.0),
             border: color!(self, border),
+            horizontal_rule: self
+                .horizontal_rule
+                .take()
+                .map(|value| value.0)
+                .unwrap_or_else(crate::theme::default_horizontal_rule_color),
             front_matter_title: self.front_matter_title.take().map(|value| value.0),
             front_matter_key: self.front_matter_key.take().map(|value| value.0),
             front_matter_value: self.front_matter_value.take().map(|value| value.0),

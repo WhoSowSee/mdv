@@ -260,6 +260,10 @@ pub struct Cli {
     /// Set blank lines above and below block elements
     #[arg(long = "block-spacing", value_name = "SPACING", help_heading = "Layout and wrapping", display_order = 22, long_help = BLOCK_SPACING_LONG_HELP,)]
     pub block_spacing: Option<BlockSpacingOverrides>,
+
+    /// Set the visual style for Markdown horizontal rules
+    #[arg(long = "horizontal-rule-style", value_enum, value_name = "STYLE", default_value = "pretty", help_heading = "Layout and wrapping", display_order = 22)]
+    pub horizontal_rule_style: Option<HorizontalRuleStyle>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize)]
@@ -294,7 +298,7 @@ mod margins;
 pub use callouts::{CalloutStyle, CalloutStyleConfig, CheckboxShape, PrettyDefinitionStyle};
 pub use code_blocks::{CodeBlockStyle, CodeBlockStyleConfig, CodeWrapIndent};
 pub use commands::CliCommand;
-pub use layout::{HeadingLayout, MathBlockStyle, TableWrapMode, TextWrapMode};
+pub use layout::{HeadingLayout, HorizontalRuleStyle, MathBlockStyle, TableWrapMode, TextWrapMode};
 pub use line_numbers::{LineNumberOptions, LineNumberTarget};
 pub use links::{FootnoteStyle, LinkStyle, LinkTruncationStyle, MissingFootnoteStyle};
 pub use margins::HorizontalMargins;

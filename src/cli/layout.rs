@@ -37,6 +37,18 @@ pub enum MathBlockStyle {
     Pretty,
 }
 
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum, serde::Serialize, serde::Deserialize,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum HorizontalRuleStyle {
+    #[default]
+    #[value(help = "Draw a line with decorative endpoints")]
+    Pretty,
+    #[value(help = "Draw a continuous line without endpoints")]
+    Simple,
+}
+
 #[derive(Debug, Clone, ValueEnum, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum HeadingLayout {

@@ -35,7 +35,7 @@ the same long help as `--help`, using the selected pager when appropriate.
 | Group | Examples | Consumer |
 |---|---|---|
 | Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--color`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
-| Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing` | Runtime layout and the event renderer. |
+| Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing`, `--horizontal-rule-style` | Runtime layout and the event renderer. |
 | Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--math-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, code-block, and math-block rendering. |
 | Callouts and lists | `--callout-style`, `--checkbox-style`, `--list-style`, custom overrides | Normalized maps and settings in `Config`. |
 | Links and footnotes | `--link-style`, `--link-overflow`, footnote options | Link and footnote event handlers. |

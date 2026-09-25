@@ -34,6 +34,7 @@ fn structured_theme_overrides_load_from_config() {
         r##"
 custom_theme:
   text: "#010203"
+  horizontal_rule: "#070809"
   background: null
   pager_status_bar_transparent: true
 custom_code_theme:
@@ -59,6 +60,7 @@ custom_code_theme:
 
     assert!(matches!(theme.text, Color::Rgb { r: 1, g: 2, b: 3 }));
     assert!(theme.background.is_none());
+    assert_eq!(theme.horizontal_rule, Color::Rgb { r: 7, g: 8, b: 9 });
     assert!(theme.pager_status_bar_transparent);
     assert!(matches!(
         theme.syntax.keyword,

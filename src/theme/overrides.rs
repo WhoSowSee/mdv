@@ -101,6 +101,7 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         }
         "background" | "bg" => theme.background = parse_optional_color_spec(value)?,
         "border" => theme.border = parse_color_spec(value)?,
+        "horizontal_rule" | "horizontalrule" => theme.horizontal_rule = parse_color_spec(value)?,
         "front_matter_title" | "frontmattertitle" => {
             theme.front_matter_title = parse_optional_color_spec(value)?
         }
