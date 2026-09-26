@@ -38,7 +38,6 @@ pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
         ThemeElement::Strikethrough => &theme.strikethrough,
         ThemeElement::Underline => &theme.text,
         ThemeElement::Border => &theme.border,
-        ThemeElement::HorizontalRule => &theme.horizontal_rule,
         ThemeElement::FrontMatterKey => theme.front_matter_key_color(),
         ThemeElement::FrontMatterValue => theme.front_matter_value_color(),
         ThemeElement::FrontMatterBorder => theme.front_matter_border_color(),

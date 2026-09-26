@@ -17,8 +17,8 @@ fn horizontal_rule_styles_and_color() {
     let input = NamedTempFile::new().unwrap();
     fs::write(&input, "Before\n\n***\n\nMiddle\n\n---\n\nAfter\n").unwrap();
 
-    for (args, color, rule) in [
-        (vec![], "143;147;162", format!("◈{}◈", "─".repeat(10))),
+    for (args, expected) in [
+        (vec![], format!("◈{}◈", "─".repeat(10))),
         (
             vec![
                 "--horizontal-rule-style",
@@ -26,8 +26,7 @@ fn horizontal_rule_styles_and_color() {
                 "--custom-theme",
                 "horizontal_rule=#123456",
             ],
-            "18;52;86",
-            "─".repeat(12),
+            format!("\x1b[38;2;18;52;86m{}", "─".repeat(12)),
         ),
     ] {
         let output = mdv_cmd()
@@ -48,8 +47,14 @@ fn horizontal_rule_styles_and_color() {
             .expect("mdv renders horizontal rules");
         assert!(output.status.success());
         let stdout = String::from_utf8(output.stdout).unwrap();
-        let colored_rule = format!("\x1b[38;2;{color}m{rule}");
-        assert_eq!(stdout.matches(&colored_rule).count(), 2, "{stdout}");
+        assert_eq!(
+            stdout
+                .lines()
+                .filter(|line| line.starts_with(&expected))
+                .count(),
+            2,
+            "{stdout}"
+        );
     }
 }
 

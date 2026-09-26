@@ -58,7 +58,14 @@ code_background: null
 strikethrough_background: null
 background: "rgb(30,30,46)"
 border: grey
-horizontal_rule: "#8f93a2"
+code_block_border: null
+callout_border: null
+horizontal_rule: null
+footnote_separator: null
+front_matter_title: null
+front_matter_key: null
+front_matter_value: null
+front_matter_border: null
 
 # Inline decorations
 inline_style:

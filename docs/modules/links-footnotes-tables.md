@@ -43,6 +43,8 @@ content is removed after `comfy-table` has positioned the borders.
 
 ## Footnotes
 
+Footnote block separators use the optional `footnote_separator` theme color, independently of Markdown horizontal rules. Without it, they use the terminal text color.
+
 | File | Responsibility |
 |---|---|
 | [event/footnotes.rs](../../src/renderer/event/footnotes.rs) | Definition types, diagnostic messages, and the module facade. |
@@ -79,6 +81,7 @@ Math events are rendered before the accumulated cell reaches `TableRenderer`. Or
 |---|---|
 | [src/table.rs](../../src/table.rs) | `TableRenderer`, compact style, and the shared table-block type. |
 | [src/table/layout.rs](../../src/table/layout.rs) | Cells, maximum widths, total-width estimation, and column-block partitioning. |
+| [src/table/borders.rs](../../src/table/borders.rs) | Color structural vertical and horizontal borders without changing cell content. |
 | [src/table/rendering.rs](../../src/table/rendering.rs) | `fit`, `wrap`, and `none` modes, alignment, and pretty/compact borders. |
 | [src/table/whitespace.rs](../../src/table/whitespace.rs) | Recover arranged widths and remove spaces that land on automatic grapheme boundaries. |
 | [src/table/links.rs](../../src/table/links.rs) | Restore ANSI and OSC wrappers after table layout. |
@@ -98,6 +101,7 @@ a grapheme-wrap boundary are removed before the final layout pass, so following 
 the released width while column geometry and alignment padding remain unchanged.
 
 `table_borders=false` uses compact borders without a complete outer grid. `table_borders=true` enables `UTF8_FULL` with rounded corners.
+An explicit `table_border` theme color applies to vertical and horizontal structural lines in both layouts and to separators between wrapped table blocks. Without an override, all these lines use the terminal text color. Cell content retains its own styling.
 
 ## Smart table indentation
 

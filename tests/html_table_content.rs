@@ -169,12 +169,11 @@ fn html_structural_elements_keep_table_cell_boundaries() {
 
     let before_rule = line_index(&lines, "Before rule");
     let after_rule = line_index(&lines, "After rule");
-    assert!(!stdout.contains('◈'), "stdout:\n{stdout}");
     assert!(before_rule < after_rule, "stdout:\n{stdout}");
     assert!(
         lines[before_rule + 1..after_rule]
             .iter()
-            .any(|line| line.contains("───")),
+            .any(|line| line.contains("◈──") && line.contains("──◈")),
         "stdout:\n{stdout}"
     );
 
@@ -200,6 +199,26 @@ fn html_structural_elements_keep_table_cell_boundaries() {
     ] {
         assert!(stdout.contains(expected), "missing {expected:?}:\n{stdout}");
     }
+}
+
+#[test]
+fn html_table_rule_uses_the_horizontal_rule_style_and_color() {
+    let stdout = render_output(
+        "| Type | Content |\n| --- | --- |\n| Rule | <hr> |\n\n<hr>\n",
+        &[
+            "--horizontal-rule-style=simple",
+            "--custom-theme=horizontal_rule=#123456",
+            "--color-depth=truecolor",
+        ],
+        false,
+    );
+
+    assert_eq!(
+        stdout.matches("\x1b[38;2;18;52;86m──").count(),
+        2,
+        "{stdout}"
+    );
+    assert!(!strip_ansi(&stdout).contains('◈'), "{stdout}");
 }
 
 #[test]

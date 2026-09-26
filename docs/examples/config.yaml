@@ -133,7 +133,8 @@ from_text: null            # Render starting from the first line that contains t
 # code, math, math_border, quote, link, emphasis, strong, strong_emphasis, strikethrough, highlight,
 # highlight_background, emphasis_background, strong_background,
 # strong_emphasis_background, code_background, strikethrough_background,
-# background, border, horizontal_rule, list_marker,
+# background, border, code_block_border, callout_border, horizontal_rule,
+# footnote_separator, list_marker,
 # front_matter_title, front_matter_key, front_matter_value, front_matter_border,
 # table_header, table_border, error, warning
 

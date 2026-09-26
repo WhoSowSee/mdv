@@ -286,13 +286,18 @@ impl<'a> EventRenderer<'a> {
         let available = terminal_width;
 
         // Keep a visible separator even on very narrow widths.
-        if available <= 4 {
-            return "◇──◇".to_string();
+        let line = if available <= 4 {
+            "◇──◇".to_string()
+        } else {
+            let filler_width = available.saturating_sub(2).max(2);
+            format!("◇{}◇", "─".repeat(filler_width))
+        };
+        if let Some(color) = self.theme.footnote_separator.as_ref() {
+            AnsiStyle::new()
+                .fg(color.clone().into())
+                .apply(&line, self.output_style)
+        } else {
+            line
         }
-
-        let filler_width = available.saturating_sub(2).max(2);
-        let line = format!("◇{}◇", "─".repeat(filler_width));
-        let style = AnsiStyle::new().fg(PRETTY_ACCENT_COLOR);
-        style.apply(&line, self.output_style)
     }
 }

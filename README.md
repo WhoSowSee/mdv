@@ -171,7 +171,7 @@ cat <FILE> | mdv
 - `-I, --smart-indent` - smooths indentation jumps between heading levels in `level` mode.
 - `--code-wrap-indent <none|base|double>` - sets the hanging indent applied to wrapped code block lines (default `double`).
 - `--block-spacing <spec>` - overrides top and bottom blank lines per block. Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
-- `--horizontal-rule-style <pretty|simple>` - draws Markdown rules with decorative endpoints or as a continuous line.
+- `--horizontal-rule-style <pretty|simple>` - draws Markdown rules and HTML `<hr>` with decorative endpoints or as a continuous line.
 
 ### Content visibility
 
@@ -439,7 +439,8 @@ Field reference:
 - `description` (optional) - shown in `mdv --theme-info`; falls back to the base theme's description.
 - `extends` (optional) - names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
 - `pager_status_bar_transparent` (optional) - `false` keeps the filled pager status bar and Help panel; `true` removes both backgrounds and separates footer sections with `|`. It inherits from the base theme when omitted.
-- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `horizontal_rule`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. `strong_emphasis` falls back to `strong`, while an omitted `highlight` keeps the surrounding foreground.
+- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `code_block_border`, `callout_border`, `horizontal_rule`, `footnote_separator`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. `strong_emphasis` falls back to `strong`, while an omitted `highlight` keeps the surrounding foreground.
+
 - `inline_style:` (optional) - partially overrides `backticks`, `bold`, `italic`, `underline`, and `strikethrough` for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Omitted properties inherit from the base theme. The defaults are italic emphasis, bold strong, bold-italic strong emphasis, backticks around code, strikethrough decoration, and no extra highlight decoration.
 - `syntax:` (optional) - overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).

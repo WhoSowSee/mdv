@@ -20,7 +20,6 @@ pub enum ThemeElement {
     Strikethrough,
     Underline,
     Border,
-    HorizontalRule,
     FrontMatterKey,
     FrontMatterValue,
     FrontMatterBorder,

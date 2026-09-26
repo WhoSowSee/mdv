@@ -17,14 +17,11 @@ mod manager;
 mod overrides;
 mod types;
 
-pub(crate) const PRETTY_ACCENT_RGB: (u8, u8, u8) = (0x8f, 0x93, 0xa2);
-
 pub use colors::Color;
 pub use display::{create_style, list_themes};
 pub use element::ThemeElement;
 pub use manager::ThemeManager;
 pub use overrides::{apply_custom_code_theme, apply_custom_theme};
-pub(crate) use types::default_horizontal_rule_color;
 pub use types::{SyntaxTheme, Theme};
 
 pub(crate) use color_parse::parse_color_value;

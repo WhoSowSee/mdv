@@ -25,6 +25,7 @@ enum ReferenceLayout {
     ForcedBreak,
 }
 
+mod borders;
 mod layout;
 mod links;
 mod rendering;

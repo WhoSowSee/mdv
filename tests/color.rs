@@ -84,6 +84,77 @@ fn color_depth_limits_mixed_output_without_changing_text_or_links() {
 }
 
 #[test]
+fn block_borders_and_footnote_separator_use_independent_colors() {
+    let markdown = "```rust\nlet x = 1;\n```\n\n> Plain quote\n\n> [!note]\n> Callout body\n\nText[^a]\n\n[^a]: Footnote\n";
+    let colors =
+        "code_block_border=#010203;callout_border=#040506;footnote_separator=#070809;quote=#101112";
+
+    for (style, code_style, code_line, callout_line) in [
+        ("simple", "simple", "│", "┃"),
+        ("pretty", "pretty:show-name", "╭", "╭"),
+    ] {
+        let output = render(
+            mdv_cmd().args([
+                "--no-config",
+                "--color",
+                "always",
+                "--color-depth",
+                "truecolor",
+                "--code-block-style",
+                code_style,
+                "--callout-style",
+                style,
+                "--custom-theme",
+                colors,
+            ]),
+            markdown,
+        );
+        for (color, symbol) in [
+            ("1;2;3", code_line),
+            ("4;5;6", callout_line),
+            ("7;8;9", "◇"),
+            ("16;17;18", "│"),
+        ] {
+            assert!(
+                output.contains(&format!("\x1b[38;2;{color}m{symbol}")),
+                "{output}"
+            );
+        }
+    }
+
+    let default = render(
+        mdv_cmd().args([
+            "--no-config",
+            "--color",
+            "always",
+            "--heading-layout",
+            "none",
+            "--code-block-style",
+            "pretty:show-name",
+            "--callout-style",
+            "pretty",
+        ]),
+        markdown,
+    );
+    assert!(
+        default
+            .lines()
+            .any(|line| line.starts_with('╭') && line.contains("\x1b[38;2;143;147;162mRust")),
+        "{default}"
+    );
+    assert!(
+        default
+            .lines()
+            .any(|line| line.starts_with('│') && line.contains("Callout body")),
+        "{default}"
+    );
+    assert!(
+        default.lines().any(|line| line.starts_with('◇')),
+        "{default}"
+    );
+}
+
+#[test]
 fn pipe_modes_preserve_geometry_and_ignore_unrelated_color_environment() {
     let mut visible = String::new();
     for (mode, old_value) in [

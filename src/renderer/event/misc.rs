@@ -1,6 +1,7 @@
 use super::{CowStr, EventRenderer, Result, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
 use crate::cli::HorizontalRuleStyle;
+use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
 
 impl<'a> EventRenderer<'a> {
@@ -106,14 +107,7 @@ impl<'a> EventRenderer<'a> {
             .effective_text_width()
             .saturating_sub(prefix_width)
             .max(1);
-        let rule = match self.config.horizontal_rule_style {
-            HorizontalRuleStyle::Pretty if width >= 2 => {
-                format!("◈{}◈", "─".repeat(width - 2))
-            }
-            HorizontalRuleStyle::Pretty | HorizontalRuleStyle::Simple => "─".repeat(width),
-        };
-        let styled_rule =
-            create_style(self.theme, ThemeElement::HorizontalRule).apply(&rule, self.output_style);
+        let styled_rule = self.styled_horizontal_rule(width);
         let spacing = self
             .config
             .block_spacing
@@ -131,6 +125,22 @@ impl<'a> EventRenderer<'a> {
         self.ensure_contextual_blank_lines(spacing.bottom);
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
+    }
+
+    pub(in crate::renderer::event) fn styled_horizontal_rule(&self, width: usize) -> String {
+        let rule = match self.config.horizontal_rule_style {
+            HorizontalRuleStyle::Pretty if width >= 2 => {
+                format!("◈{}◈", "─".repeat(width - 2))
+            }
+            HorizontalRuleStyle::Pretty | HorizontalRuleStyle::Simple => "─".repeat(width),
+        };
+        if let Some(color) = self.theme.horizontal_rule.as_ref() {
+            AnsiStyle::new()
+                .fg(color.clone().into())
+                .apply(&rule, self.output_style)
+        } else {
+            rule
+        }
     }
 
     pub(super) fn handle_footnote_reference(&mut self, name: CowStr) -> Result<()> {

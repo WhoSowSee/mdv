@@ -147,7 +147,7 @@ fn extends_can_chain_user_themes() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("a.yaml"),
-        "name: a\nextends: monokai\nh1: red\nhorizontal_rule: '#010203'\n",
+        "name: a\nextends: monokai\nh1: red\nhorizontal_rule: '#010203'\ntable_border: '#0d0e0f'\n",
     )
     .unwrap();
     fs::write(themes.join("b.yaml"), "name: b\nextends: a\nh2: green\n").unwrap();
@@ -157,7 +157,16 @@ fn extends_can_chain_user_themes() {
     let b = loaded.iter().find(|t| t.name == "b").unwrap();
     assert_eq!(b.h2, Color::Green);
     assert_eq!(b.h1, Color::Red);
-    assert_eq!(b.horizontal_rule, Color::Rgb { r: 1, g: 2, b: 3 });
+    assert_eq!(b.horizontal_rule, Some(Color::Rgb { r: 1, g: 2, b: 3 }));
+    assert_eq!(
+        b.table_border,
+        Color::Rgb {
+            r: 13,
+            g: 14,
+            b: 15
+        }
+    );
+    assert!(b.table_border_overridden);
     assert_eq!(
         b.quote,
         Color::Rgb {

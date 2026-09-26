@@ -65,7 +65,7 @@ An unordered marker is selected from tag attributes or style. An HTML checkbox i
 
 An HTML table is first normalized to a rectangular structure. `thead`, `tbody`, `tfoot`, `tr`, `th`, and `td` populate the same `TableState` consumed by the shared `event/tables` renderer.
 
-Cells support headings, blockquotes, figures, preformatted blocks, and horizontal rules. The internal `HTML_TABLE_HORIZONTAL_RULE` marker carries a rule through the intermediate string model and expands before final table rendering.
+Cells support headings, blockquotes, figures, preformatted blocks, and horizontal rules. The internal `HTML_TABLE_HORIZONTAL_RULE` marker carries a rule through the intermediate string model and expands before final table rendering using the same `horizontal_rule_style` and theme color as rules outside tables.
 
 ## Media and forms
 

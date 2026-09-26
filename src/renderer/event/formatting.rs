@@ -1,10 +1,9 @@
 use super::core::{CalloutFold, CalloutKind, CalloutState};
-use super::{EventRenderer, PRETTY_ACCENT_COLOR, ThemeElement, create_style};
+use super::{EventRenderer, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
 use crate::inline_style::{InlineStyle, InlineStyleKind};
 use crate::terminal::AnsiStyle;
 use crate::utils::{WrapMode, display_width, strip_ansi, wrap_text_with_mode};
-use crossterm::style::Color as CrosstermColor;
 
 fn is_quote_prefix_char(ch: char) -> bool {
     matches!(ch, '│' | '┃')

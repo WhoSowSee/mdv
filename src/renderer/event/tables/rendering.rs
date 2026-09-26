@@ -178,10 +178,8 @@ impl<'a> EventRenderer<'a> {
                             .split_once(HTML_TABLE_HORIZONTAL_RULE)
                             .expect("horizontal rule marker must be present");
                         let fixed_width = display_width(&strip_ansi(&format!("{before}{after}")));
-                        let rule = "─".repeat(width.saturating_sub(fixed_width).max(3));
-                        let styled = AnsiStyle::new()
-                            .fg(PRETTY_ACCENT_COLOR)
-                            .apply(&rule, self.output_style);
+                        let styled =
+                            self.styled_horizontal_rule(width.saturating_sub(fixed_width).max(3));
                         format!("{before}{styled}{after}")
                     })
                     .collect::<Vec<_>>()

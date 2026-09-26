@@ -1,7 +1,7 @@
 use super::core::FootnoteTextState;
 use super::{
-    CapturedReferenceBlock, Event, EventRenderer, FootnoteStyle, MissingFootnoteStyle,
-    PRETTY_ACCENT_COLOR, Result, Tag, TagEnd, ThemeElement, create_style, wrap_text_with_mode,
+    CapturedReferenceBlock, Event, EventRenderer, FootnoteStyle, MissingFootnoteStyle, Result, Tag,
+    TagEnd, ThemeElement, create_style, wrap_text_with_mode,
 };
 use crate::block_spacing::BlockElement;
 use crate::terminal::AnsiStyle;

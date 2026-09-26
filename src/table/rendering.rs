@@ -23,8 +23,12 @@ impl TableRenderer {
 
                 let full_separator_text = format!("{}", inner_separator);
 
-                let border_style = create_style(&self.theme, ThemeElement::TableBorder);
-                let separator = border_style.apply(&full_separator_text, self.output_style);
+                let separator = if self.theme.table_border_overridden {
+                    create_style(&self.theme, ThemeElement::TableBorder)
+                        .apply(&full_separator_text, self.output_style)
+                } else {
+                    full_separator_text
+                };
                 result.push_str(&separator);
                 result.push('\n');
             }
@@ -125,10 +129,10 @@ impl TableRenderer {
             table.add_row(row_cells);
         }
 
-        Ok(Self::collapse_header_only_separator(
+        Ok(self.colorize_borders(Self::collapse_header_only_separator(
             table.to_string(),
             rows,
-        ))
+        )))
     }
 
     /// Render a single table block
@@ -142,26 +146,27 @@ impl TableRenderer {
         if !matches!(self.text_wrap, TextWrapMode::Char | TextWrapMode::None)
             || matches!(self.table_wrap, TableWrapMode::None)
         {
-            return Ok(rendered);
+            return Ok(self.colorize_borders(rendered));
         }
 
         let Some(widths) =
             arranged_column_content_widths(&rendered, headers.len(), self.table_borders)
         else {
-            return Ok(rendered);
+            return Ok(self.colorize_borders(rendered));
         };
         let Some((normalized_headers, normalized_rows)) =
             remove_wrapped_boundary_spaces(headers, rows, &widths)
         else {
-            return Ok(rendered);
+            return Ok(self.colorize_borders(rendered));
         };
 
-        self.render_single_table_block_once(
+        let rendered = self.render_single_table_block_once(
             &normalized_headers,
             &normalized_rows,
             alignments,
             Some(&widths),
-        )
+        )?;
+        Ok(self.colorize_borders(rendered))
     }
 
     fn render_single_table_block_once(

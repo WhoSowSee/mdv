@@ -171,7 +171,7 @@ cat <FILE> | mdv
 - `-I, --smart-indent` - сглаживание скачков отступов между уровнями заголовков в режиме `level`.
 - `--code-wrap-indent <none|base|double>` - управляет «висячим» отступом при переносе строк внутри блоков кода (по умолчанию `double`).
 - `--block-spacing <спецификация>` - переопределяет количество пустых строк сверху и снизу для отдельных блоков. Неуказанные стороны сохраняют стандартные значения, а отступы соседних блоков схлопываются до большего значения.
-- `--horizontal-rule-style <pretty|simple>` - рисует разделители Markdown с декоративными символами по краям или сплошной линией.
+- `--horizontal-rule-style <pretty|simple>` - рисует разделители Markdown и HTML `<hr>` с декоративными символами по краям или сплошной линией.
 
 ### Видимость элементов
 
@@ -439,7 +439,8 @@ syntax:
 - `description` (необязательно) - отображается в `mdv --theme-info`; если не задано, берётся описание базовой темы.
 - `extends` (необязательно) - имя встроенной темы или другой темы, загруженной раньше в этом же каталоге (в алфавитном порядке). Если не указано, недостающие поля подставляются из встроенной темы `terminal`.
 - `pager_status_bar_transparent` (необязательно) - `false` сохраняет фон статус-бара и панели Help; `true` убирает оба фона и разделяет секции footer символом `|`. Если поле не указано, значение наследуется от базовой темы.
-- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `horizontal_rule`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. Для `strong_emphasis` используется цвет `strong`, если отдельный цвет не задан; при отсутствии `highlight` сохраняется цвет окружающего текста.
+- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `code_background`, `strikethrough_background`, `background`, `border`, `code_block_border`, `callout_border`, `horizontal_rule`, `footnote_separator`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. Для `strong_emphasis` используется цвет `strong`, если отдельный цвет не задан; при отсутствии `highlight` сохраняется цвет окружающего текста.
+
 - `inline_style:` (необязательно) - частично переопределяет `backticks`, `bold`, `italic`, `underline` и `strikethrough` для `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough` и `highlight`. Пропущенные свойства наследуются от базовой темы. По умолчанию `emphasis` отображается курсивом, `strong` - жирным, `strong_emphasis` - жирным курсивом, `code` обрамляется обратными кавычками, `strikethrough` зачёркивается, а у `highlight` нет дополнительных начертаний.
 - `syntax:` (необязательно) - переопределение палитры подсветки синтаксиса; каждое поле необязательно и мерджится поверх базовой. Поля: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
 - Значения цвета используют тот же синтаксис, что и `--custom-theme`: именованные (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`) или 256-цветные (`ansi(42)` или просто `42`).

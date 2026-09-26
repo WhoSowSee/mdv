@@ -101,7 +101,18 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         }
         "background" | "bg" => theme.background = parse_optional_color_spec(value)?,
         "border" => theme.border = parse_color_spec(value)?,
-        "horizontal_rule" | "horizontalrule" => theme.horizontal_rule = parse_color_spec(value)?,
+        "code_block_border" | "codeblockborder" => {
+            theme.code_block_border = parse_optional_color_spec(value)?
+        }
+        "callout_border" | "calloutborder" => {
+            theme.callout_border = parse_optional_color_spec(value)?
+        }
+        "horizontal_rule" | "horizontalrule" => {
+            theme.horizontal_rule = parse_optional_color_spec(value)?
+        }
+        "footnote_separator" | "footnoteseparator" => {
+            theme.footnote_separator = parse_optional_color_spec(value)?
+        }
         "front_matter_title" | "frontmattertitle" => {
             theme.front_matter_title = parse_optional_color_spec(value)?
         }
@@ -116,7 +127,10 @@ fn apply_theme_override(theme: &mut Theme, key: &str, value: &str) -> Result<()>
         }
         "list_marker" | "listmarker" => theme.list_marker = parse_color_spec(value)?,
         "table_header" | "tableheader" => theme.table_header = parse_color_spec(value)?,
-        "table_border" | "tableborder" => theme.table_border = parse_color_spec(value)?,
+        "table_border" | "tableborder" => {
+            theme.table_border = parse_color_spec(value)?;
+            theme.table_border_overridden = true;
+        }
         "error" => theme.error = parse_color_spec(value)?,
         "warning" => theme.warning = parse_color_spec(value)?,
         other => bail!("Unknown key for custom theme: '{}'.", other),

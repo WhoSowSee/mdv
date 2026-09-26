@@ -166,7 +166,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [theme/color_parse.rs](../../src/theme/color_parse.rs) | Color parsing and luminosity. |
 | [theme/colors.rs](../../src/theme/colors.rs) | `Color`. |
 | [theme/display.rs](../../src/theme/display.rs) | Theme listing and style creation. |
-| [theme/element.rs](../../src/theme/element.rs) | `ThemeElement` semantic roles, including horizontal rules. |
+| [theme/element.rs](../../src/theme/element.rs) | `ThemeElement` semantic roles. |
 | [theme/manager.rs](../../src/theme/manager.rs) | Theme registry. |
 | [theme/overrides.rs](../../src/theme/overrides.rs) | Terminal and code overrides. |
 | [theme/types.rs](../../src/theme/types.rs) | `Theme` and `SyntaxTheme`. |
@@ -179,6 +179,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 
 | File | Responsibility |
 |---|---|
+| [borders.rs](../../src/table/borders.rs) | Color structural table borders. |
 | [layout.rs](../../src/table/layout.rs) | Cells, widths, and column blocks. |
 | [rendering.rs](../../src/table/rendering.rs) | Wrapping modes and borders. |
 | [whitespace.rs](../../src/table/whitespace.rs) | Boundary-space normalization using arranged column widths. |

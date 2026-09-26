@@ -70,6 +70,51 @@ fn test_table_borders_flag_restores_full_borders() {
 }
 
 #[test]
+fn table_border_color_applies_to_vertical_and_horizontal_lines_only() {
+    let markdown = "| A | B |\n| --- | --- |\n| X │ Q | Y |\n| P | Q |\n";
+    let render = |args: &[&str]| {
+        let output = mdv_cmd()
+            .args([
+                "--no-config",
+                "--color",
+                "always",
+                "--color-depth",
+                "truecolor",
+            ])
+            .args(args)
+            .arg("-")
+            .write_stdin(markdown)
+            .assert()
+            .success();
+        String::from_utf8(output.get_output().stdout.clone()).unwrap()
+    };
+
+    let default_stdout = render(&["--table-borders"]);
+    assert!(default_stdout.starts_with('╭'), "{default_stdout}");
+
+    for full_borders in [false, true] {
+        let args: &[&str] = if full_borders {
+            &["--custom-theme", "table_border=#123456", "--table-borders"]
+        } else {
+            &["--custom-theme", "table_border=#123456"]
+        };
+        let stdout = render(args);
+        let color = "\x1b[38;2;18;52;86m";
+        assert!(
+            stdout.lines().any(|line| {
+                line.starts_with(color) && (line.contains('─') || line.contains('═'))
+            }),
+            "{stdout}"
+        );
+        assert!(stdout.contains(&format!("{color}│")), "{stdout}");
+        assert!(stdout.contains("X │ Q"), "{stdout}");
+        if full_borders {
+            assert!(stdout.contains(&format!("{color}├╌")), "{stdout}");
+        }
+    }
+}
+
+#[test]
 fn test_table_borders_config_restores_full_borders() {
     let config_dir = tempfile::TempDir::new().unwrap();
     fs::write(

@@ -193,10 +193,11 @@ impl<'a> EventRenderer<'a> {
     ) -> String {
         let mut line = String::from("╭");
         if inner_box_width <= 1 {
-            return self.style_pretty_accent(&line);
+            return self.style_code_block_border(&line);
         }
 
         let mut middle_width = inner_box_width.saturating_sub(2);
+        let mut label_range = None;
 
         if middle_width > 0 {
             line.push('─');
@@ -218,7 +219,9 @@ impl<'a> EventRenderer<'a> {
 
                 let label_width = display_width(&label_text);
                 if label_width > 0 && label_width <= middle_width {
+                    let start = line.len();
                     line.push_str(&label_text);
+                    label_range = Some((start, line.len()));
                     middle_width = middle_width.saturating_sub(label_width);
                     if middle_width > 0 {
                         line.push(' ');
@@ -241,7 +244,16 @@ impl<'a> EventRenderer<'a> {
 
         line.push('╮');
 
-        self.style_pretty_accent(&line)
+        if let Some((start, end)) = label_range {
+            format!(
+                "{}{}{}",
+                self.style_code_block_border(&line[..start]),
+                self.style_pretty_accent(&line[start..end]),
+                self.style_code_block_border(&line[end..])
+            )
+        } else {
+            self.style_code_block_border(&line)
+        }
     }
 
     pub(super) fn render_pretty_bottom_border(&self, inner_box_width: usize) -> String {
@@ -256,7 +268,7 @@ impl<'a> EventRenderer<'a> {
             line.push('╯');
         }
 
-        self.style_pretty_accent(&line)
+        self.style_code_block_border(&line)
     }
 
     pub(super) fn render_pretty_content_line(&self, text_width: usize, part: &str) -> String {
@@ -266,7 +278,7 @@ impl<'a> EventRenderer<'a> {
         let trailing_pad = text_width.saturating_sub(inner_width);
 
         let mut line = String::new();
-        line.push_str(&self.style_pretty_accent("│"));
+        line.push_str(&self.style_code_block_border("│"));
         line.push(' ');
         line.push_str(part);
         if mandatory_right_pad > 0 {
@@ -275,7 +287,7 @@ impl<'a> EventRenderer<'a> {
         if trailing_pad > 0 {
             line.push_str(&" ".repeat(trailing_pad));
         }
-        line.push_str(&self.style_pretty_accent("│"));
+        line.push_str(&self.style_code_block_border("│"));
         line
     }
 

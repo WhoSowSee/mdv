@@ -22,23 +22,28 @@ impl<'a> EventRenderer<'a> {
             return String::new();
         }
 
+        if self.output_style.is_disabled() {
+            let mut prefix = String::with_capacity(level + 1);
+            for idx in 0..level {
+                prefix.push(match self.callout_stack.get(idx) {
+                    Some(CalloutState::Active(_)) => '┃',
+                    _ => '│',
+                });
+            }
+            prefix.push(' ');
+            return prefix;
+        }
+
         let mut prefix = String::new();
         for idx in 0..level {
-            let symbol = match self.callout_stack.get(idx) {
-                Some(CalloutState::Active(_)) => '┃',
-                _ => '│',
+            let styled = match self.callout_stack.get(idx) {
+                Some(CalloutState::Active(info)) => self.style_callout_border("┃", info.kind),
+                _ => create_style(self.theme, ThemeElement::Quote).apply("│", self.output_style),
             };
-            prefix.push(symbol);
+            prefix.push_str(&styled);
         }
         prefix.push(' ');
-
-        let element = match self.callout_stack.get(level.saturating_sub(1)) {
-            Some(CalloutState::Active(info)) if info.kind == CalloutKind::Properties => {
-                ThemeElement::FrontMatterBorder
-            }
-            _ => ThemeElement::Quote,
-        };
-        create_style(self.theme, element).apply(&prefix, self.output_style)
+        prefix
     }
 
     pub(in crate::renderer::event) fn should_indent_after_blockquote_prefix(

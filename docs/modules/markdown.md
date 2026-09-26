@@ -74,7 +74,7 @@ Most transformations go through `source_lines::apply_transform`. Admonition conv
 
 ## Admonitions and callouts
 
-`admonitions.rs` does not render a frame. It emits Markdown blockquotes with `[!kind]` markers. Material for MkDocs, Docusaurus, VitePress, MyST/Sphinx, Quarto, PyMdown Blocks, and GitBook headers share this path; native GitHub/Obsidian markers retain their existing parser. See [syntax examples](../examples/callouts.md) for per-dialect contracts.
+`admonitions.rs` does not render a frame. It emits Markdown blockquotes with `[!kind]` markers. Material for MkDocs, Docusaurus, VitePress, MyST/Sphinx, Quarto, PyMdown Blocks, and GitBook headers share this path; native GitHub/Obsidian markers retain their existing parser. Reusable dialect inputs live in [the test fixture](../../tests/files/callout-dialects.md).
 
 Fenced dialects require a matching closing delimiter. MkDocs bodies follow four-column indentation and retain blank paragraphs; the existing unindented `!!! type Title` paragraph form is still accepted. A containing fenced callout's closing delimiter also bounds the legacy paragraph form. Block endpoints are computed from the end of each scope and reused for nested lookups, including unmatched openers; boundary discovery does not recurse or retry failed nested searches. Parsed headers are passed to conversion alongside their endpoints rather than parsed again. Openers without any later closing marker of the same family are rejected without scanning their body. List and quote contexts are normalized recursively. Indentation uses the Markdown pipeline's shared tab-stop calculation, and type-name validation is shared with native callouts and custom-callout configuration.
 

@@ -41,6 +41,8 @@ Code rendering combines a language hint, optional heuristic detection, `syntect`
 
 `show-name` and `show-icon` are independent. A custom code-block definition can override the label, icon, and aliases for a language without changing its syntax definition.
 
+The optional `code_block_border` theme color applies to both vertical and horizontal frame pieces. Without it, both styles use the terminal text color.
+
 ## Code wrapping
 
 Code wraps as highlighted segments, preserving color on continuation lines. `CodeWrapIndent` controls hanging indentation, while available width accounts for:

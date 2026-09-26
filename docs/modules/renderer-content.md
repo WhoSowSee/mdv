@@ -56,6 +56,8 @@ A callout passes through several stages:
 
 A pretty callout first accumulates logical content and is framed afterward. Handlers must not print border segments directly in the middle of the block.
 
+The optional `callout_border` theme color applies to both `simple` callout markers and `pretty` frame pieces. Without it, standard callout borders use the terminal text color. Ordinary blockquotes use the separate `quote` color; the front matter properties panel retains `front_matter_border`.
+
 A link inside a pending custom label collects its visible text and inline math in `current_link_text`. Link end appends that complete text to the pending label without emitting body content or registering URL references. The label keeps the original order of text around the link.
 
 Inline code inside a pending label follows the same collection contract. Hidden titles omit the simple header or the pretty-frame label without consuming body lines. Per-block icon suppression leaves the independently configured fold indicator available. Fold states never hide terminal content.
@@ -89,7 +91,7 @@ A list starting inside a pending ordinary blockquote ends callout detection for 
 |---|---|
 | [event/soft_breaks.rs](../../src/renderer/event/soft_breaks.rs) | Preserve the source break or collapse it during reflow. |
 | `core/end_tags.rs` | Render a hard break with the active container prefix. |
-| [event/misc.rs](../../src/renderer/event/misc.rs) | Render a horizontal rule at the available width and nesting level; `horizontal_rule_style` selects decorative endpoints or a continuous line, and the theme supplies `horizontal_rule` color. |
+| [event/misc.rs](../../src/renderer/event/misc.rs) | Render a horizontal rule at the available width and nesting level; `horizontal_rule_style` selects decorative endpoints or a continuous line, and optional `horizontal_rule` sets its color. |
 
 Explicit blank-line markers are separate from soft and hard breaks and must not accumulate with block spacing.
 

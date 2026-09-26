@@ -3,23 +3,16 @@ use unicode_segmentation::UnicodeSegmentation;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn render_code_block_border(&self) -> String {
-        self.render_pipe_prefix(1, Some(CrosstermColor::White))
+        self.style_code_block_border("│ ")
     }
 
-    pub(in crate::renderer::event) fn render_pipe_prefix(
-        &self,
-        count: usize,
-        color: Option<CrosstermColor>,
-    ) -> String {
-        if count == 0 {
-            return String::new();
-        }
-        let prefix = format!("{} ", "│".repeat(count));
-        if let Some(color) = color {
-            let style = AnsiStyle::new().fg(color);
-            style.apply(&prefix, self.output_style)
+    pub(in crate::renderer::event) fn style_code_block_border(&self, text: &str) -> String {
+        if let Some(color) = self.theme.code_block_border.as_ref() {
+            AnsiStyle::new()
+                .fg(color.clone().into())
+                .apply(text, self.output_style)
         } else {
-            prefix
+            text.to_string()
         }
     }
 

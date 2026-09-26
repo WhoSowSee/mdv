@@ -1,9 +1,8 @@
 use super::{
-    EventRenderer, LinkStyle, LinkTruncationStyle, PRETTY_ACCENT_COLOR, Result,
-    TableInlineUrlTarget, TableRenderer, TableState,
+    EventRenderer, LinkStyle, LinkTruncationStyle, Result, TableInlineUrlTarget, TableRenderer,
+    TableState,
 };
 use crate::block_spacing::BlockElement;
-use crate::terminal::AnsiStyle;
 use crate::utils::{display_width, strip_ansi};
 use pulldown_cmark::Alignment;
 

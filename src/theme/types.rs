@@ -54,8 +54,14 @@ pub struct Theme {
     pub strikethrough_background: Option<Color>,
     pub background: Option<Color>,
     pub border: Color,
-    #[serde(default = "default_horizontal_rule_color")]
-    pub horizontal_rule: Color,
+    #[serde(default)]
+    pub code_block_border: Option<Color>,
+    #[serde(default)]
+    pub callout_border: Option<Color>,
+    #[serde(default)]
+    pub horizontal_rule: Option<Color>,
+    #[serde(default)]
+    pub footnote_separator: Option<Color>,
     #[serde(default)]
     pub front_matter_title: Option<Color>,
     #[serde(default)]
@@ -72,6 +78,8 @@ pub struct Theme {
     pub list_marker: Color,
     pub table_header: Color,
     pub table_border: Color,
+    #[serde(skip)]
+    pub(crate) table_border_overridden: bool,
 
     // Error and warning
     pub error: Color,
@@ -160,9 +168,4 @@ impl Theme {
 
 fn default_line_number_color() -> Color {
     Color::Grey
-}
-
-pub(crate) fn default_horizontal_rule_color() -> Color {
-    let (r, g, b) = PRETTY_ACCENT_RGB;
-    Color::Rgb { r, g, b }
 }

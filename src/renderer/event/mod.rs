@@ -39,7 +39,7 @@ pub(super) use syntect::easy::HighlightLines;
 pub(super) use syntect::parsing::SyntaxSet;
 
 pub(super) const PRETTY_ACCENT_COLOR: CrosstermColor = CrosstermColor::Rgb {
-    r: crate::theme::PRETTY_ACCENT_RGB.0,
-    g: crate::theme::PRETTY_ACCENT_RGB.1,
-    b: crate::theme::PRETTY_ACCENT_RGB.2,
+    r: 0x8f,
+    g: 0x93,
+    b: 0xa2,
 };
