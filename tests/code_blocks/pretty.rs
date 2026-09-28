@@ -6,6 +6,68 @@ use std::fs;
 use tempfile::NamedTempFile;
 
 #[test]
+fn syntax_styles_do_not_leak_into_code_borders() {
+    let markdown = "```yaml\n# a long comment that wraps across several terminal rows\nname: warm\n\nvalue: true\n```\n";
+    let tokens = regex::Regex::new(r"\x1b\[[0-9;]*m|[^\x1b]+").unwrap();
+    for style in ["simple", "pretty"] {
+        for wrap in ["none", "char", "word"] {
+            for custom in ["", "code_block_border=#010203"] {
+                let mut command = mdv_cmd();
+                command.args([
+                    "--no-config",
+                    "--color=always",
+                    "--theme=monokai",
+                    "--code-block-style",
+                    style,
+                    "--wrap",
+                    wrap,
+                    "--cols=30",
+                ]);
+                if !custom.is_empty() {
+                    command.args(["--custom-theme", custom]);
+                }
+                let output = command.write_stdin(markdown).assert().success();
+                let output = String::from_utf8(output.get_output().stdout.clone()).unwrap();
+                let mut foreground = "";
+                let mut italic = false;
+                let mut borders = 0;
+                for token in tokens.find_iter(&output).map(|token| token.as_str()) {
+                    match token {
+                        "\x1b[0m" => {
+                            foreground = "";
+                            italic = false;
+                        }
+                        "\x1b[3m" => italic = true,
+                        "\x1b[23m" => italic = false,
+                        sgr if sgr.starts_with("\x1b[38;") => foreground = sgr,
+                        text if !text.starts_with('\x1b') => {
+                            if text.chars().any(|ch| "│╭╮╰╯─".contains(ch)) {
+                                borders += 1;
+                                assert!(!italic, "italic border: {style}/{wrap}: {output:?}");
+                                assert_eq!(
+                                    foreground,
+                                    if custom.is_empty() {
+                                        ""
+                                    } else {
+                                        "\x1b[38;2;1;2;3m"
+                                    },
+                                    "{style}/{wrap}: {output:?}"
+                                );
+                            }
+                            if text.contains("name") {
+                                assert!(!italic, "comment style leaked into YAML key: {output:?}");
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                assert!(borders > 0);
+            }
+        }
+    }
+}
+
+#[test]
 fn test_code_language_pretty_style_named_block() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "```python\nprint(\"hello\")\n```\n").unwrap();

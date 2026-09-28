@@ -177,6 +177,10 @@ impl<'a> EventRenderer<'a> {
                 }
             }
 
+            // End syntax SGR before padding and borders, including on wrapped rows.
+            if self.output_style.is_enabled() && !segment.ends_with("\x1b[0m") {
+                segment.push_str("\x1b[0m");
+            }
             segments.push(WrappedCodeSegment {
                 text: segment,
                 visible_width,

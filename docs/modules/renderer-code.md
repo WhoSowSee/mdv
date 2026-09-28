@@ -129,6 +129,7 @@ TeX operators remain distinct from ordinary text in the tree. This lets display 
 
 - Raw code remains unchanged until the syntax/plaintext/math path is selected.
 - ANSI spans do not contribute to visible width.
+- Every rendered code row resets syntax styles before padding and container borders, including wrapped continuations.
 - Labels and icons do not affect syntax lookup.
 - References found in a plaintext Markdown code block must not escape their callout or table boundary.
 - A pretty border is at least as wide as every visible content line after wrapping.
