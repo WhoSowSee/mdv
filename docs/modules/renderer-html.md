@@ -23,11 +23,13 @@ Every HTML node passes through `render_html_node`; element dispatch selects the 
 | [html/text_helpers.rs](../../src/renderer/event/html/text_helpers.rs) | Preformatted-text normalization, escaping, and void elements. |
 | [html/styles.rs](../../src/renderer/event/html/styles.rs) | Alignment and CSS-like inline styles mapped to `ThemeElement`. |
 | [html/layout.rs](../../src/renderer/event/html/layout.rs) | Block boundaries, indentation/alignment spans, and table-cell line context. |
+| [html/spacing.rs](../../src/renderer/event/html/spacing.rs) | Map HTML blocks to shared spacing settings and preserve trailing spacing when leaving containers. |
 | [html/buffer.rs](../../src/renderer/event/html/buffer.rs) | Accumulate HTML containers that include Markdown events. |
 | [html/buffer_helpers.rs](../../src/renderer/event/html/buffer_helpers.rs) | Buffered-tag lists and block/inline-container classification. |
 | [html/blockquotes.rs](../../src/renderer/event/html/blockquotes.rs) | Render `<blockquote>` through the shared quote context. |
 | [html/definitions.rs](../../src/renderer/event/html/definitions.rs) | Render `<dl>`, `<dt>`, `<dd>`, `<figure>`, and `<figcaption>`. |
-| [html/lists.rs](../../src/renderer/event/html/lists.rs) | Render `<ol>`, `<ul>`, `<li>`, `<details>`, `<summary>`, and styled block lines. |
+| [html/lists.rs](../../src/renderer/event/html/lists.rs) | Render `<ol>`, `<ul>`, `<li>`, standalone `<summary>`, and styled block lines. |
+| [html/details.rs](../../src/renderer/event/html/details.rs) | Buffer nested `<details>` and render expanded compact trees. |
 | [html/list_helpers.rs](../../src/renderer/event/html/list_helpers.rs) | Checkbox detection plus `start`, `reversed`, `value`, alpha, and Roman markers. |
 | [html/forms.rs](../../src/renderer/event/html/forms.rs) | Static terminal representation of input, button, and select controls. |
 | [html/media.rs](../../src/renderer/event/html/media.rs) | Media markers and lines for image, video, audio, and source elements. |
@@ -41,6 +43,10 @@ Every HTML node passes through `render_html_node`; element dispatch selects the 
 Some HTML tags may contain ordinary Markdown events between opening and closing fragments. `HtmlBlockBuffer` temporarily stores both HTML and Markdown events, then `render_html_fragment_as_terminal` processes the complete container.
 
 This preserves context for alignment, `<details>`, definition lists, figures, and HTML tables. Printing an opening tag immediately would lose information from its closing element and descendants.
+
+`<details>` buffers Markdown events and HTML fragments across blank lines until the matching closing tag. Outside table cells, its first summary receives an expanded `` marker and code-colored bold text. Body lines use a border-colored `│` guide and two spaces, included in wrapping and table width calculations. Nested sections repeat the guide. Content blocks honor explicit and inherited HTML alignment within the available width after the guides; summary markers stay at the tree's left edge. Sections remain expanded regardless of `open`, with no interactive folding. The container adds no fixed blank lines: body blocks use the same `block_spacing` settings as outside the section, and trailing blank lines retain their count and source metadata when the guide ends. Table cells retain their existing plain summary/body representation.
+
+HTML `p`, `pre`, `blockquote`, `dl`, and top-level lists use paragraph, code-block, blockquote, definition-list, and ordered/unordered/task-list spacing respectively. Headings, tables, and horizontal rules already use their shared renderers' spacing. Generic layout containers such as `div` add no semantic block spacing, and table cells keep their compact layout.
 
 ## Text modes
 

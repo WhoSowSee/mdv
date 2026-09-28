@@ -1,7 +1,10 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(super) fn process_event(&mut self, event: Event) -> Result<()> {
+    pub(super) fn process_event(&mut self, event: Event<'static>) -> Result<()> {
+        let Some(event) = self.buffer_html_details_event(event)? else {
+            return Ok(());
+        };
         if let Some(options) = crate::markdown::callout_options_from_event(&event) {
             if let Some(CalloutState::Pending(pending)) = self.callout_stack.last_mut() {
                 *pending = options;

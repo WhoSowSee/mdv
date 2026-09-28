@@ -53,7 +53,7 @@ impl<'a> EventRenderer<'a> {
 
         // Add blockquote prefix if we're starting new content in a blockquote
         // Check if we're at the start of a line (after newline or any whitespace-only content)
-        if self.blockquote_level > 0 {
+        if self.blockquote_level > 0 || self.html_details_depth > 0 {
             let after_newline = self.output.ends_with('\n');
             let at_start = self.output.is_empty();
             let at_line_start = if let Some(last_newline_pos) = self.output.rfind('\n') {

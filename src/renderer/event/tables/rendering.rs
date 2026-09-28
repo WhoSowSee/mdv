@@ -26,13 +26,13 @@ impl<'a> EventRenderer<'a> {
         }
 
         let terminal_width = self.config.get_content_width();
-        let line_prefix = if self.blockquote_level > 0 {
+        let line_prefix = if self.blockquote_level > 0 || self.html_details_depth > 0 {
             self.current_line_prefix()
         } else {
             String::new()
         };
         let prefix_width = display_width(&strip_ansi(&line_prefix));
-        let table_indent = if self.blockquote_level > 0 {
+        let table_indent = if self.blockquote_level > 0 || self.html_details_depth > 0 {
             0
         } else {
             self.compute_table_indent(terminal_width, &table.headers, &table.rows)

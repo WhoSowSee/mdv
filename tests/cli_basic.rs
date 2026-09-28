@@ -18,6 +18,8 @@ mod config_and_pager;
 mod general;
 #[path = "cli_basic/html_content.rs"]
 mod html_content;
+#[path = "cli_basic/html_details.rs"]
+mod html_details;
 #[path = "cli_basic/html_lists_tables.rs"]
 mod html_lists_tables;
 #[path = "cli_basic/html_semantics.rs"]

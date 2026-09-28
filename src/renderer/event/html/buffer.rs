@@ -13,24 +13,27 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        if let Some(tag) = buffering_html_container_tag(html)
-            && !contains_html_tag(html, tag, true)
-        {
-            self.pending_html_block_buffer = Some(HtmlBlockBuffer {
-                tag,
-                content: html.to_string(),
-                captures_markdown_events: self.table_state.is_some(),
+        let details_depth = html_details_balance(html, 0);
+        let container = if details_depth > 0 {
+            Some("details")
+        } else {
+            buffering_html_container_tag(html)
+        };
+        let pending = container
+            .filter(|tag| details_depth > 0 || !contains_html_tag(html, tag, true))
+            .map(|tag| (tag, self.table_state.is_some()))
+            .or_else(|| {
+                buffering_inline_html_container_tag(html)
+                    .filter(|tag| !contains_html_tag(html, tag, true))
+                    .map(|tag| (tag, true))
             });
-            return Ok(());
-        }
-
-        if let Some(tag) = buffering_inline_html_container_tag(html)
-            && !contains_html_tag(html, tag, true)
-        {
+        if let Some((tag, captures_markdown_events)) = pending {
             self.pending_html_block_buffer = Some(HtmlBlockBuffer {
                 tag,
                 content: html.to_string(),
-                captures_markdown_events: true,
+                captures_markdown_events,
+                details_events: Vec::new(),
+                details_depth,
             });
             return Ok(());
         }
@@ -39,10 +42,11 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(in crate::renderer::event) fn flush_pending_html_block_buffer(&mut self) -> Result<()> {
-        let Some(buffer) = self.pending_html_block_buffer.take() else {
+        let Some(mut buffer) = self.pending_html_block_buffer.take() else {
             return Ok(());
         };
 
+        pulldown_cmark::html::push_html(&mut buffer.content, buffer.details_events.into_iter());
         if buffer.content.trim().is_empty() {
             return Ok(());
         }
@@ -101,6 +105,7 @@ impl<'a> EventRenderer<'a> {
         for node in fragment.tree.root().children() {
             self.render_html_node(node, HtmlContext::default())?;
         }
+        self.pending_html_source_line = None;
         self.commit_pending_heading_placeholder_if_content();
         self.flush_html_inline_table_references();
         Ok(())

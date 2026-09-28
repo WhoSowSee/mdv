@@ -41,6 +41,10 @@ impl<'a> EventRenderer<'a> {
         let child_context = context.with_alignment(alignment);
         let formatting_stack_len = self.formatting_stack.len();
         self.push_html_inline_style_elements(&element);
+        let spacing = self.html_block_spacing(element, context);
+        if let Some(spacing) = spacing {
+            self.ensure_contextual_blank_lines(spacing.top);
+        }
 
         let result = match name.as_str() {
             "html" | "body" => self.render_html_children(element, child_context),
@@ -133,6 +137,11 @@ impl<'a> EventRenderer<'a> {
         };
 
         self.formatting_stack.truncate(formatting_stack_len);
+        if result.is_ok()
+            && let Some(spacing) = spacing
+        {
+            self.ensure_contextual_blank_lines(spacing.bottom);
+        }
         result
     }
 

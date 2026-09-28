@@ -66,35 +66,6 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    pub(super) fn render_html_details(
-        &mut self,
-        element: ElementRef<'_>,
-        context: HtmlContext,
-    ) -> Result<()> {
-        if self.table_state.is_some() {
-            return self.render_html_children(element, context);
-        }
-
-        self.begin_html_block();
-        let content_start = self.output.len();
-        let mut rendered_summary = false;
-        for child in element.children() {
-            if let Some(child_element) = ElementRef::wrap(child)
-                && child_element.value().name().eq_ignore_ascii_case("summary")
-                && !rendered_summary
-            {
-                self.render_html_summary_label(child_element, context)?;
-                rendered_summary = true;
-                continue;
-            }
-            self.render_html_node(child, context)?;
-        }
-        self.align_rendered_html_span(content_start, context.alignment);
-        self.end_html_block();
-        self.flush_html_inline_table_references();
-        Ok(())
-    }
-
     pub(super) fn render_html_summary_label(
         &mut self,
         element: ElementRef<'_>,

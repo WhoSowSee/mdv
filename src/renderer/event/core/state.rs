@@ -29,6 +29,8 @@ pub(crate) struct HtmlBlockBuffer {
     pub(in crate::renderer::event) tag: &'static str,
     pub(in crate::renderer::event) content: String,
     pub(in crate::renderer::event) captures_markdown_events: bool,
+    pub(in crate::renderer::event) details_events: Vec<Event<'static>>,
+    pub(in crate::renderer::event) details_depth: usize,
 }
 
 #[derive(Debug, Clone)]

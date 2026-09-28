@@ -19,6 +19,8 @@ impl<'a> EventRenderer<'a> {
             output: String::new(),
             current_indent: 0,
             blockquote_level: 0,
+            html_details_depth: 0,
+            pending_html_source_line: None,
             blockquote_starts: Vec::new(),
             callout_stack: Vec::new(),
             callout_palette: build_callout_palette(theme),

@@ -26,6 +26,10 @@ impl<'a> EventRenderer<'a> {
         let separator = media_marker_leading_separator(&self.output);
         self.output.push_str(separator);
         self.output.push_str(&styled_marker);
+        if let Some(line) = self.pending_html_source_line.take() {
+            self.output
+                .push_str(&crate::renderer::line_numbers::encode_internal_marker(line));
+        }
         if !label.is_empty() {
             self.process_segment_with_wrapping_and_formatting(&label, false, false)?;
         }

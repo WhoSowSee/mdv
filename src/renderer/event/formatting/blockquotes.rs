@@ -112,6 +112,7 @@ impl<'a> EventRenderer<'a> {
                 prefix.push_str(&" ".repeat(base_indent));
             }
         }
+        self.append_html_details_prefix(&mut prefix);
         prefix
     }
 
@@ -134,6 +135,18 @@ impl<'a> EventRenderer<'a> {
                 prefix.push_str(&" ".repeat(list_content_indent));
             }
         }
+        self.append_html_details_prefix(&mut prefix);
         prefix
+    }
+
+    fn append_html_details_prefix(&self, prefix: &mut String) {
+        if self.html_details_depth > 0 {
+            let guide =
+                create_style(self.theme, ThemeElement::Border).apply("│", self.output_style);
+            for _ in 0..self.html_details_depth {
+                prefix.push_str(&guide);
+                prefix.push_str("  ");
+            }
+        }
     }
 }

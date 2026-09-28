@@ -3,20 +3,33 @@ use crate::math::convert_html_script;
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn render_html_text(&mut self, text: &str, context: HtmlContext) -> Result<()> {
+        let (text, source_line) = crate::renderer::line_numbers::strip_internal_markers(text);
+        if let Some(line) = source_line {
+            self.pending_html_source_line = Some(line);
+        }
         let text = if context.preserve_whitespace {
             text.replace("\r\n", "\n").replace('\r', "\n")
         } else {
-            self.collapse_html_text(text)
+            self.collapse_html_text(&text)
         };
 
         if text.is_empty() {
             return Ok(());
         }
 
-        let text = context
+        let mut text = context
             .script
             .map(|script| convert_html_script(&text, script))
             .unwrap_or(text);
+
+        if !text.trim().is_empty()
+            && let Some(line) = self.pending_html_source_line.take()
+        {
+            text.insert_str(
+                0,
+                &crate::renderer::line_numbers::encode_internal_marker(line),
+            );
+        }
 
         if context.highlighted {
             self.note_paragraph_content();

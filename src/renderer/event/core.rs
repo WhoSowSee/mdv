@@ -43,6 +43,8 @@ pub(crate) struct EventRenderer<'a> {
     pub(crate) output: String,
     pub(crate) current_indent: usize,
     pub(crate) blockquote_level: usize,
+    pub(crate) html_details_depth: usize,
+    pub(crate) pending_html_source_line: Option<usize>,
     pub(crate) blockquote_starts: Vec<usize>,
     pub(crate) callout_stack: Vec<CalloutState>,
     pub(crate) callout_palette: HashMap<CalloutKind, Color>,

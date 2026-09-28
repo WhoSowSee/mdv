@@ -184,36 +184,6 @@ fn test_render_html_formats_semantic_tags_inside_markdown_paragraph() {
 }
 
 #[test]
-fn test_render_html_details_summary_static_output() {
-    let temp_file = NamedTempFile::new().unwrap();
-    fs::write(
-        &temp_file,
-        r#"<details>
-  <summary>Install</summary>
-  <p>Run <code>cargo install mdv</code>.</p>
-</details>
-"#,
-    )
-    .unwrap();
-
-    let output = mdv_cmd()
-        .args(["--color", "never"])
-        .arg("-E")
-        .arg(temp_file.path())
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    let clean = strip_ansi(&stdout);
-    let summary_pos = clean.find("Install").expect("summary missing");
-    let body_pos = clean
-        .find("Run `cargo install mdv`.")
-        .expect("details body missing");
-    assert!(summary_pos < body_pos, "stdout:\n{}", stdout);
-}
-
-#[test]
 fn test_render_html_preserves_pre_and_textarea_whitespace() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

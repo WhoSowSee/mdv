@@ -159,6 +159,12 @@ impl<'a> EventRenderer<'a> {
             }
             let formatted = self.apply_formatting_with_highlight(line, context.highlighted);
             self.output.push_str(&formatted);
+            if let Some(source_line) = self.pending_html_source_line.take() {
+                self.output
+                    .push_str(&crate::renderer::line_numbers::encode_internal_marker(
+                        source_line,
+                    ));
+            }
         }
         self.commit_pending_heading_placeholder_if_content();
         Ok(())
