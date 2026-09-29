@@ -1,7 +1,12 @@
 use super::*;
 use crate::cli::OutputStyle;
+mod layout;
 
 pub(crate) struct PagerDocument {
+    reflow: Option<super::rendering::Reflow>,
+    layout_width: Option<usize>,
+    width_limit: Option<usize>,
+    cached_layouts: std::collections::VecDeque<(usize, PagerContent)>,
     content: PagerContent,
     pub(in crate::pager) source: String,
     pub(in crate::pager) title: Option<String>,
@@ -20,6 +25,7 @@ pub(in crate::pager) struct PagerDisplay {
 }
 
 pub(in crate::pager) struct PagerLineNumberViews {
+    toc: Vec<minus::TocEntry>,
     mode: PagerLineNumberMode,
     unnumbered: PagerDisplay,
     rendered: PagerDisplay,
@@ -61,6 +67,7 @@ impl PagerLineNumberViews {
     ) -> Self {
         Self {
             mode,
+            toc: Vec::new(),
             unnumbered,
             rendered,
             source,
@@ -73,6 +80,16 @@ impl PagerLineNumberViews {
             PagerLineNumberMode::Rendered => &self.rendered,
             PagerLineNumberMode::Source => &self.source,
         }
+    }
+
+    pub(super) fn with_toc(mut self, mut entries: Vec<minus::TocEntry>) -> Self {
+        entries.retain(|entry| {
+            self.unnumbered
+                .source_lines
+                .contains(&Some(entry.source_line))
+        });
+        self.toc = super::toc::visible_levels(entries);
+        self
     }
 
     fn cycle(&mut self) {
@@ -92,7 +109,10 @@ impl PagerLineNumberViews {
                 )
             }
         });
-        (current.output.clone(), navigation)
+        (
+            current.output.clone(),
+            navigation.map(|nav| nav.with_toc(self.toc.clone())),
+        )
     }
 
     fn into_output(self) -> String {
@@ -132,6 +152,10 @@ impl PagerDocument {
     ) -> Self {
         Self {
             content,
+            reflow: None,
+            layout_width: None,
+            width_limit: None,
+            cached_layouts: std::collections::VecDeque::new(),
             source,
             title: None,
             status_bar_transparent: false,
@@ -142,6 +166,31 @@ impl PagerDocument {
     pub(crate) fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
         self
+    }
+
+    pub(super) fn with_reflow(
+        mut self,
+        reflow: Option<super::rendering::Reflow>,
+        width: Option<usize>,
+        limit: Option<usize>,
+    ) -> Self {
+        self.reflow = reflow;
+        self.layout_width = width;
+        self.width_limit = limit;
+        self
+    }
+
+    pub(super) fn can_reflow(&self) -> bool {
+        self.reflow.is_some()
+    }
+
+    pub(super) fn has_line_navigation(&self) -> bool {
+        match &self.content {
+            PagerContent::Static(_) => false,
+            PagerContent::LineNumbers(views) => {
+                views.current().source_lines.iter().any(Option::is_some)
+            }
+        }
     }
 
     pub(crate) const fn with_status_bar_transparent(mut self, transparent: bool) -> Self {
@@ -183,14 +232,12 @@ impl PagerDocument {
         }
     }
 
-    pub(in crate::pager) fn cycle_line_number_mode(
-        &mut self,
-    ) -> Option<(String, Option<LineNavigation>)> {
+    pub(in crate::pager) fn cycle_line_number_mode(&mut self) -> bool {
         let PagerContent::LineNumbers(views) = &mut self.content else {
-            return None;
+            return false;
         };
         views.cycle();
-        Some(views.snapshot())
+        true
     }
 }
 

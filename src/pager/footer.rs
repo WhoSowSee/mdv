@@ -63,6 +63,14 @@ impl PagerFooter {
     }
 
     pub(super) fn render(&self, context: &PromptContext<'_>) -> Result<PromptLine, PromptError> {
+        if context.toc_hint_visible() && context.message().is_none() {
+            return build_toc_footer(
+                &self.title,
+                FooterProgress::from_context(context),
+                self.transparent,
+                context.columns(),
+            );
+        }
         let content = context.message().unwrap_or(&self.title);
         build_footer(
             content,
@@ -70,6 +78,43 @@ impl PagerFooter {
             self.transparent,
         )
     }
+}
+
+fn build_toc_footer(
+    title: &str,
+    progress: FooterProgress,
+    transparent: bool,
+    columns: usize,
+) -> Result<PromptLine, PromptError> {
+    use unicode_width::UnicodeWidthStr;
+    let mut style = PromptStyle::default().foreground(MAIN_FOREGROUND);
+    if !transparent {
+        style = style.background(MAIN_BACKGROUND);
+    }
+    let hint = if columns >= 72 {
+        "Alt+↑↓ move · ? keys"
+    } else {
+        "? keys"
+    };
+    let footer = add_progress(
+        PromptLine::new(),
+        progress,
+        style.foreground(PROGRESS_FOREGROUND),
+    )?
+    .right(PromptSpan::new("| ? Help ", style)?);
+    let right = footer.render_plain(columns);
+    let available = columns.saturating_sub(right.trim_start().width());
+    let hint_start = ((columns.saturating_sub(hint.width())) / 2)
+        .min(available.saturating_sub(hint.width() + 1));
+    let label = PromptLine::new()
+        .left(PromptSpan::new(format!(" MDV | {title}"), style)?)
+        .truncation_indicator(PromptSpan::new("…", style)?)
+        .render_plain(hint_start.saturating_sub(1));
+    let left = format!("{label} {hint}");
+    Ok(footer
+        .left(PromptSpan::new(left, style)?)
+        .fill_style(style)
+        .truncation_indicator(PromptSpan::new("…", style)?))
 }
 
 fn build_footer(
@@ -163,6 +208,22 @@ mod tests {
         assert_eq!(plain.width(), 80);
         assert!(plain.starts_with(" MDV  AGENTS.md"));
         assert!(plain.ends_with("  22%  ? Help "));
+        for transparent in [false, true] {
+            for width in [60, 80, 120] {
+                let hint = build_toc_footer("README.md", progress(22), transparent, width).unwrap();
+                let text = hint.render_plain(width);
+                assert_eq!(text.width(), width);
+                assert!(text.contains("MDV | README.md") && text.contains("? keys"));
+                assert!(!text.contains("TOC:"));
+                assert!(text.ends_with("22% | ? Help "));
+                if width >= 72 {
+                    assert!(text.contains("Alt+↑↓ move · ? keys"));
+                }
+                if transparent {
+                    assert!(!hint.render(width).contains("48;"));
+                }
+            }
+        }
     }
 
     #[test]

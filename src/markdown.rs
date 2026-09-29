@@ -18,11 +18,13 @@ pub struct MarkdownProcessor {
     extended_math: bool,
 }
 
+#[derive(Clone)]
 pub(crate) struct ParsedDocument {
     pub(crate) events: Vec<Event<'static>>,
     pub(crate) front_matter: Option<FrontMatter>,
 }
 
+#[derive(Clone)]
 pub(crate) struct FrontMatter {
     pub(crate) raw: String,
     pub(crate) properties: Mapping,

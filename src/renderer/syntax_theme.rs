@@ -19,6 +19,7 @@ pub(crate) fn default_theme_set() -> &'static ThemeSet {
 
 /// Syntect theme plus a reverse RGB→Color map so the escaper restores palette
 /// codes instead of truecolor. External `.tmTheme` themes use an empty map.
+#[derive(Clone)]
 pub(crate) struct CodeHighlightTheme {
     pub syntect: SyntectTheme,
     palette: HashMap<(u8, u8, u8), Color>,

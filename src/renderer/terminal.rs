@@ -18,6 +18,7 @@ mod pager;
 pub(crate) use pager::{PagerRender, PagerRenderView};
 
 /// Terminal renderer for markdown content
+#[derive(Clone)]
 pub struct TerminalRenderer {
     pub(super) config: Config,
     theme: Theme,
@@ -27,6 +28,13 @@ pub struct TerminalRenderer {
 }
 
 impl TerminalRenderer {
+    pub(crate) fn with_layout_width(&self, width: usize) -> Self {
+        let mut renderer = self.clone();
+        let limit = self.config.cols.filter(|_| self.config.cols_from_cli);
+        renderer.config.cols = Some(limit.map_or(width, |limit| limit.min(width)).max(1));
+        renderer.config.cols_from_cli = true;
+        renderer
+    }
     /// Prepare a renderer with an explicitly resolved styling policy.
     ///
     /// The caller decides whether its destination is a terminal; construction

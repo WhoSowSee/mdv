@@ -35,19 +35,15 @@ fn modified_question_mark_does_not_open_help() {
 }
 
 #[test]
-fn escape_routing_respects_help_and_search_state() {
+fn escape_closes_help_before_forwarding() {
     let event = Event::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
     assert_eq!(
-        help_input_action(&event, true, false, false),
+        help_input_action(&event, true, false),
         HelpInputAction::Dismiss
     );
     assert_eq!(
-        help_input_action(&event, false, false, false),
-        HelpInputAction::Forward
-    );
-    assert_eq!(
-        help_input_action(&event, true, true, false),
+        help_input_action(&event, false, false),
         HelpInputAction::Forward
     );
 }
@@ -57,11 +53,11 @@ fn input_prompts_close_visible_help_before_reaching_minus() {
     let event = Event::Key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
 
     assert_eq!(
-        help_input_action(&event, true, false, true),
+        help_input_action(&event, true, true),
         HelpInputAction::DismissAndForward
     );
     assert_eq!(
-        help_input_action(&event, false, false, false),
+        help_input_action(&event, false, false),
         HelpInputAction::Forward
     );
 }
@@ -71,11 +67,11 @@ fn question_mark_always_toggles_help() {
     let event = Event::Key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::SHIFT));
 
     assert_eq!(
-        help_input_action(&event, false, false, false),
+        help_input_action(&event, false, false),
         HelpInputAction::Toggle
     );
     assert_eq!(
-        help_input_action(&event, true, false, false),
+        help_input_action(&event, true, false),
         HelpInputAction::Toggle
     );
 }
@@ -109,7 +105,7 @@ fn line_number_modes_advance_from_the_active_starting_mode() {
     for (initial, expected) in cases {
         let mut document = numbered_document(initial, "initial");
 
-        assert!(document.cycle_line_number_mode().is_some());
+        assert!(document.cycle_line_number_mode());
         assert_eq!(document.line_number_mode(), Some(expected));
     }
 }

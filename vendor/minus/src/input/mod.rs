@@ -26,6 +26,27 @@ pub use hashed_event_register::HashedEventRegister;
 #[allow(clippy::module_name_repetitions)]
 #[non_exhaustive]
 pub enum InputEvent {
+    /// Shows or hides the document outline.
+    #[cfg(feature = "search")]
+    ToggleToc,
+    /// Moves between top-level outline entries.
+    #[cfg(feature = "search")]
+    MoveToc(i8),
+    /// Moves to the adjacent outline entry, including subsections.
+    #[cfg(feature = "search")]
+    MoveTocEntry(i8),
+    /// Scrolls the outline using a keyboard shortcut.
+    #[cfg(feature = "search")]
+    ScrollTocKeyboard(isize),
+    /// Selects a visible outline entry.
+    #[cfg(feature = "search")]
+    SelectToc(usize),
+    /// Scrolls the outline independently of the document.
+    #[cfg(feature = "search")]
+    ScrollToc(isize),
+    /// Cycles a numbered outline section and its subsections.
+    #[cfg(feature = "search")]
+    CycleToc(u8),
     /// `Ctrl+C` or `Q`, exits the application.
     Exit,
     /// The terminal was resized. Contains the new number of rows.

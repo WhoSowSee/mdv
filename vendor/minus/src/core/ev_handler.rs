@@ -33,9 +33,42 @@ pub fn handle_event(
 ) -> Result<(), PromptError> {
     match ev {
         #[cfg(feature = "search")]
+        Command::SetLayoutRenderer(renderer) => {
+            p.layout_renderer = Some(renderer);
+            p.refresh_layout()?;
+            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        }
+        #[cfg(feature = "search")]
+        Command::UserInput(
+            action @ (InputEvent::ToggleToc
+            | InputEvent::MoveToc(_)
+            | InputEvent::MoveTocEntry(_)
+            | InputEvent::ScrollTocKeyboard(_)
+            | InputEvent::SelectToc(_)
+            | InputEvent::ScrollToc(_)
+            | InputEvent::CycleToc(_)),
+        ) => {
+            p.handle_toc_action(action)?;
+            let redraw = if matches!(
+                action,
+                InputEvent::ScrollToc(_) | InputEvent::ScrollTocKeyboard(_)
+            ) {
+                IoCommand::RedrawToc
+            } else {
+                IoCommand::RedrawDisplay
+            };
+            command_queue.push_back(Command::Io(redraw));
+        }
+        #[cfg(feature = "search")]
         Command::SetMappedData(text, navigation) => {
             p.replace_mapped_text(text, navigation)?;
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        }
+        #[cfg(feature = "search")]
+        Command::RefreshLayout => {
+            if p.refresh_layout()? {
+                command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+            }
         }
         Command::SetData(text) => {
             #[cfg(feature = "search")]
@@ -51,6 +84,8 @@ pub fn handle_event(
             is_exited.store(true, std::sync::atomic::Ordering::SeqCst);
         }
         Command::UserInput(InputEvent::UpdateUpperMark(um)) => {
+            #[cfg(feature = "search")]
+            p.toc.reset_position();
             command_queue.push_back(Command::Io(IoCommand::SetUpperMark(um)));
         }
         Command::UserInput(InputEvent::UpdateLeftMark(lm)) if !p.screen.line_wrapping => {
@@ -150,6 +185,11 @@ pub fn handle_event(
         Command::UserInput(InputEvent::UpdateTermArea(c, r)) => {
             p.rows = r;
             p.cols = c;
+            #[cfg(feature = "search")]
+            if p.refresh_layout()? {
+                command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+                return Ok(());
+            }
             p.reformat_display()?;
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
         }
@@ -164,6 +204,10 @@ pub fn handle_event(
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::Search(m)) => {
+            if p.toc_visible() {
+                p.handle_toc_action(InputEvent::ToggleToc)?;
+                command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+            }
             dismiss_timed_message(p);
             p.search_mode = m;
             p.search_state.search_mode = m;
@@ -172,6 +216,9 @@ pub fn handle_event(
         }
         #[cfg(feature = "search")]
         Command::UserInput(InputEvent::GoToLine) => {
+            if p.toc_visible() {
+                p.handle_toc_action(InputEvent::ToggleToc)?;
+            }
             if p.begin_line_navigation()? {
                 dismiss_timed_message(p);
                 command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
@@ -572,6 +619,8 @@ pub fn handle_io_command(
         IoCommand::RedrawDisplay => {
             display::draw_full(&mut out, p)?;
         }
+        #[cfg(feature = "search")]
+        IoCommand::RedrawToc => display::draw_toc_update(out, p)?,
         IoCommand::RedrawSelection(start, end) => {
             display::draw_selection_rows(&mut out, p, start, end)?;
         }

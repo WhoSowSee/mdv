@@ -65,14 +65,27 @@ pub(crate) fn render_document(
         output.push('\n');
     }
     if prepare_pager_views {
-        return pager::render_terminal_document(
+        let rendered = pager::render_terminal_document(
             &renderer,
-            document,
-            output,
+            document.clone(),
+            output.clone(),
             pager_status_bar_transparent,
-        );
+        )?;
+        let width = config.get_terminal_width();
+        let limit = config.cols.filter(|_| config.cols_from_cli);
+        return Ok(rendered.with_reflow(
+            std::sync::Arc::new(move |width| {
+                pager::render_terminal_document(
+                    &renderer.with_layout_width(width),
+                    document.clone(),
+                    output.clone(),
+                    pager_status_bar_transparent,
+                )
+            }),
+            width,
+            limit,
+        ));
     }
-
     output.push_str(&renderer.render_document(document)?);
     Ok(pager::RenderedOutput::new(
         output,

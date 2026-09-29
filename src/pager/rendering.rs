@@ -5,7 +5,12 @@ use crate::renderer::TerminalRenderer;
 use crate::renderer::terminal::PagerRenderView;
 use anyhow::Result;
 
+pub(crate) type Reflow = std::sync::Arc<dyn Fn(usize) -> Result<RenderedOutput> + Send + Sync>;
+
 pub(crate) struct RenderedOutput {
+    reflow: Option<Reflow>,
+    layout_width: Option<usize>,
+    width_limit: Option<usize>,
     content: PagerContent,
     status_bar_transparent: bool,
     output_style: OutputStyle,
@@ -18,6 +23,9 @@ impl RenderedOutput {
         output_style: OutputStyle,
     ) -> Self {
         Self {
+            reflow: None,
+            layout_width: None,
+            width_limit: None,
             content: PagerContent::Static(output),
             status_bar_transparent,
             output_style,
@@ -30,6 +38,9 @@ impl RenderedOutput {
         output_style: OutputStyle,
     ) -> Self {
         Self {
+            reflow: None,
+            layout_width: None,
+            width_limit: None,
             content: PagerContent::LineNumbers(views),
             status_bar_transparent,
             output_style,
@@ -40,9 +51,26 @@ impl RenderedOutput {
         self.content.output()
     }
 
+    pub(in crate::pager) fn into_content(self) -> PagerContent {
+        self.content
+    }
+
     pub(crate) fn into_pager_document(self, source: String) -> PagerDocument {
         PagerDocument::from_content(self.content, source, self.output_style)
             .with_status_bar_transparent(self.status_bar_transparent)
+            .with_reflow(self.reflow, self.layout_width, self.width_limit)
+    }
+
+    pub(crate) fn with_reflow(
+        mut self,
+        reflow: Reflow,
+        width: usize,
+        limit: Option<usize>,
+    ) -> Self {
+        self.reflow = Some(reflow);
+        self.layout_width = Some(width);
+        self.width_limit = limit;
+        self
     }
 }
 
@@ -53,6 +81,7 @@ pub(crate) fn render_terminal_document(
     status_bar_transparent: bool,
 ) -> Result<RenderedOutput> {
     let prefix_lines = prefix.lines().count();
+    let toc = super::toc::headings(&document.events);
     let rendered = renderer.render_document_for_pager(document)?;
     let mode = match rendered.initial_target {
         None => PagerLineNumberMode::Off,
@@ -64,7 +93,8 @@ pub(crate) fn render_terminal_document(
         prefixed_display(&prefix, prefix_lines, rendered.unnumbered),
         prefixed_display(&prefix, prefix_lines, rendered.rendered),
         prefixed_display(&prefix, prefix_lines, rendered.source),
-    );
+    )
+    .with_toc(toc);
     Ok(RenderedOutput::for_pager(
         views,
         status_bar_transparent,

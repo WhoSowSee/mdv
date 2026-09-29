@@ -61,6 +61,18 @@ impl Pager {
         Ok(self.tx.send(Command::SetMappedData(text, navigation))?)
     }
 
+    /// Installs a renderer for document width changes and mapped-text updates.
+    #[cfg(feature = "search")]
+    pub fn set_layout_renderer(&self, renderer: crate::LayoutRenderer) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::SetLayoutRenderer(renderer))?)
+    }
+
+    /// Refreshes content using the installed layout renderer and current width.
+    #[cfg(feature = "search")]
+    pub fn refresh_layout(&self) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::RefreshLayout)?)
+    }
+
     /// Appends content without requiring a mutable handle.
     pub fn push_str(&self, s: impl Into<String>) -> Result<(), MinusError> {
         Ok(self.tx.send(Command::AppendData(s.into()))?)

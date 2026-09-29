@@ -10,6 +10,7 @@ use std::time::Duration;
 /// Source-line maps and optional alternate source-numbered pager content.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LineNavigation {
+    pub(crate) toc: Vec<crate::TocEntry>,
     /// Source line for each logical line in the normal pager content.
     display_source_lines: Vec<Option<usize>>,
     source_view: SourceView,
@@ -43,6 +44,7 @@ impl LineNavigation {
         navigation_source_lines: Vec<Option<usize>>,
     ) -> Self {
         Self {
+            toc: Vec::new(),
             display_source_lines,
             source_view: SourceView::Alternate {
                 text: source_text.into(),
@@ -55,9 +57,17 @@ impl LineNavigation {
     #[must_use]
     pub const fn from_current(source_lines: Vec<Option<usize>>) -> Self {
         Self {
+            toc: Vec::new(),
             display_source_lines: source_lines,
             source_view: SourceView::Current,
         }
+    }
+
+    /// Attaches an outline whose targets are one-based source lines.
+    #[must_use]
+    pub fn with_toc(mut self, entries: Vec<crate::TocEntry>) -> Self {
+        self.toc = entries;
+        self
     }
 }
 
@@ -85,6 +95,7 @@ impl PagerState {
             })
         });
         self.line_navigation_session = None;
+        self.toc.reset_position();
         self.line_navigation = navigation;
         self.screen.orig_text = text;
         self.screen.line_count = self.screen.orig_text.lines().count();
@@ -265,7 +276,11 @@ impl PagerState {
         line_map.get(line_index).copied().flatten()
     }
 
-    fn row_for_source_line(&self, source_line: usize, navigation_view: bool) -> Option<usize> {
+    pub(crate) fn row_for_source_line(
+        &self,
+        source_line: usize,
+        navigation_view: bool,
+    ) -> Option<usize> {
         let line_map = self.source_line_map(navigation_view)?;
         let line_index = line_map
             .iter()

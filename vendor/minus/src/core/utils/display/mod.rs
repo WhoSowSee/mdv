@@ -33,12 +33,12 @@ pub fn draw_for_change(
     *new_upper_mark = (*new_upper_mark).min(ps.max_upper_mark());
     let new_lower_bound = new_upper_mark.saturating_add(writable_rows).min(line_count);
 
-    if ps.prompt_panel_rows() > 0 || ps.search_is_active() {
+    if ps.prompt_panel_rows() > 0 || ps.search_is_active() || ps.toc_visible() {
         if *new_upper_mark == ps.upper_mark {
             return Ok(());
         }
         ps.upper_mark = *new_upper_mark;
-        out.sync_update(|out| draw_full(out, ps))??;
+        draw_full(out, ps)?;
         return Ok(());
     }
 
@@ -128,11 +128,33 @@ pub fn write_prompt_view(out: &mut impl Write, ps: &PagerState) -> Result<(), Mi
 }
 
 pub fn draw_full(out: &mut impl Write, ps: &mut PagerState) -> Result<(), MinusError> {
+    let mut frame = Vec::new();
+    encode_full(&mut frame, ps)?;
+    out.sync_update(|out| out.write_all(&frame))??;
+    Ok(())
+}
+
+#[cfg(feature = "search")]
+pub fn draw_toc_update(out: &mut impl Write, ps: &mut PagerState) -> Result<(), MinusError> {
+    ps.format_prompt()?;
+    let mut frame = Vec::new();
+    ps.draw_toc(&mut frame)?;
+    if ps.show_prompt {
+        write_prompt_view(&mut frame, ps)?;
+    }
+    out.sync_update(|out| out.write_all(&frame))??;
+    Ok(())
+}
+
+fn encode_full(out: &mut impl Write, ps: &mut PagerState) -> Result<(), MinusError> {
     ps.format_prompt()?;
     super::term::move_cursor(out, 0, 0, false)?;
     queue!(out, Clear(ClearType::All))?;
 
     write_from_pagerstate(out, ps)?;
+
+    #[cfg(feature = "search")]
+    ps.draw_toc(out)?;
 
     if ps.show_prompt {
         write_prompt_view(out, ps)?;
@@ -166,6 +188,8 @@ pub fn draw_selection_rows(
             queue!(out, MoveTo(0, screen_row), Clear(ClearType::CurrentLine))?;
             write!(out, "\r{row}")?;
         }
+        #[cfg(feature = "search")]
+        ps.draw_toc(out)?;
         Ok(())
     })??;
     Ok(())

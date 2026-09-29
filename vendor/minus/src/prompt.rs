@@ -15,6 +15,8 @@ pub type PromptRenderer = Arc<
 
 #[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
 pub enum PromptError {
+    #[error("document layout failed: {0}")]
+    Layout(String),
     #[error("prompt content must fit on one line")]
     MultilineText,
     #[error("prompt content contains unsupported control character {0:?}")]
@@ -38,6 +40,13 @@ impl<'a> PromptContext<'a> {
     #[must_use]
     pub fn message(&self) -> Option<&'a str> {
         self.state.message.as_deref()
+    }
+
+    /// Whether the outline navigation hint has not yet been acknowledged.
+    #[cfg(feature = "search")]
+    #[must_use]
+    pub const fn toc_hint_visible(&self) -> bool {
+        self.state.toc_hint_visible()
     }
 
     #[must_use]

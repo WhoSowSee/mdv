@@ -9,9 +9,7 @@ pub(super) fn apply_refreshed_document(
         .write()
         .map_err(|_| anyhow!("Pager document lock poisoned"))?;
     replace_preserving_line_number_mode(&mut current, refreshed);
-    let (output, line_navigation) = current.display_snapshot();
-    pager.set_mapped_text(output, line_navigation)?;
-    Ok(())
+    update_display(pager, &current)
 }
 
 pub(super) fn replace_document(
@@ -37,11 +35,21 @@ pub(super) fn cycle_line_number_mode(
     let mut document = document
         .write()
         .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-    let Some((output, line_navigation)) = document.cycle_line_number_mode() else {
+    if !document.cycle_line_number_mode() {
         return Ok(false);
-    };
-    pager.set_mapped_text(output, line_navigation)?;
+    }
+    update_display(pager, &document)?;
     Ok(true)
+}
+
+fn update_display(pager: &Pager, document: &PagerDocument) -> Result<()> {
+    if document.can_reflow() {
+        pager.refresh_layout()?;
+    } else {
+        let (output, navigation) = document.display_snapshot();
+        pager.set_mapped_text(output, navigation)?;
+    }
+    Ok(())
 }
 
 pub(super) fn copy_document_contents(

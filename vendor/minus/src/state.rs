@@ -90,6 +90,10 @@ pub struct Selection {
 /// Runtime pager state exposed to [`InputClassifier`](input::InputClassifier) implementations.
 #[allow(clippy::module_name_repetitions)]
 pub struct PagerState {
+    #[cfg(feature = "search")]
+    pub(crate) layout_renderer: Option<crate::LayoutRenderer>,
+    #[cfg(feature = "search")]
+    pub(crate) toc: crate::toc::TocState,
     /// Line-number visibility and toggle behavior.
     pub line_numbers: LineNumbers,
     /// Message displayed in the prompt row.
@@ -141,6 +145,21 @@ pub struct PagerState {
 }
 
 impl PagerState {
+    pub(crate) fn content_columns(&self) -> usize {
+        self.cols.saturating_sub(self.content_left()).max(1)
+    }
+
+    pub(crate) fn content_left(&self) -> usize {
+        #[cfg(feature = "search")]
+        if self.toc_visible() && self.cols >= 72 {
+            return self.toc_width();
+        }
+        0
+    }
+    #[cfg(not(feature = "search"))]
+    pub(crate) const fn toc_visible(&self) -> bool {
+        false
+    }
     pub(crate) fn new() -> Result<Self, TermError> {
         let (cols, rows) = if cfg!(test) {
             (80, 10)
@@ -162,6 +181,10 @@ impl PagerState {
             .unwrap_or_else(|_| String::from("minus"));
 
         let mut state = Self {
+            #[cfg(feature = "search")]
+            layout_renderer: None,
+            #[cfg(feature = "search")]
+            toc: crate::toc::TocState::default(),
             line_numbers: LineNumbers::Disabled,
             upper_mark: 0,
             prompt,
@@ -228,11 +251,12 @@ impl PagerState {
     }
 
     pub(crate) fn reformat_display(&mut self) -> Result<(), PromptError> {
+        let columns = self.content_columns();
         let format_result = screen::format_lines_into(
             &mut self.screen.formatted_lines,
             &self.screen.orig_text,
             self.line_numbers,
-            self.cols,
+            columns,
             self.screen.line_wrapping,
             #[cfg(feature = "search")]
             self.search_state.search_term.as_ref(),
@@ -462,9 +486,12 @@ impl PagerState {
         };
         let visible_row = strip_ansi(&displayed_row);
         let prefix_chars = char_index_at_display_column(&visible_row, prefix_width);
-        let col = char_index_at_display_column(&visible_row, usize::from(x))
-            .saturating_sub(prefix_chars)
-            .saturating_add(skipped_content_chars);
+        let col = char_index_at_display_column(
+            &visible_row,
+            usize::from(x).saturating_sub(self.content_left()),
+        )
+        .saturating_sub(prefix_chars)
+        .saturating_add(skipped_content_chars);
 
         Some(Selection { absolute_row, col })
     }
@@ -605,13 +632,18 @@ impl PagerState {
             row
         };
 
-        Some(self.color_depth.adapt(row))
+        let row = self.color_depth.adapt(row);
+        if self.content_left() > 0 {
+            Some(format!("{}{}", " ".repeat(self.content_left()), row).into())
+        } else {
+            Some(row)
+        }
     }
 
     fn horizontal_scroll_view<'a>(&self, row: &'a str) -> (Cow<'a, str>, usize) {
         let (first_end, second_start, second_end) = display::get_horizontal_scroll_bounds(
             row,
-            self.cols,
+            self.content_columns(),
             self.left_mark,
             self.line_numbers.is_on(),
             self.screen.line_count(),
@@ -707,22 +739,23 @@ impl PagerState {
         preceding_chars.saturating_add(selection.col)
     }
 
-    const fn wrapped_cols_available(&self) -> usize {
+    fn wrapped_cols_available(&self) -> usize {
         if self.line_numbers.is_on() {
-            self.cols
+            self.content_columns()
                 .saturating_sub(self.line_number_padding().saturating_add(1))
         } else {
-            self.cols
+            self.content_columns()
         }
     }
 
     pub(crate) fn append_str(&mut self, text: &str) -> Result<AppendStyle, PromptError> {
+        let columns = self.content_columns();
         let old_lc = self.screen.line_count();
         let old_lc_dgts = minus_core::utils::digits(old_lc);
         let mut append_result = self.screen.push_screen_buf(
             text,
             self.line_numbers,
-            self.cols.try_into().unwrap(),
+            columns.try_into().unwrap(),
             #[cfg(feature = "search")]
             self.search_state.search_term.as_ref(),
         );

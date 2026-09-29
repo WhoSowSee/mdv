@@ -15,9 +15,7 @@ pub(crate) fn page(
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
         let (
-            output,
             title,
-            line_navigation,
             line_navigation_enabled,
             line_number_toggle_enabled,
             status_bar_transparent,
@@ -26,13 +24,9 @@ pub(crate) fn page(
             let document = document
                 .read()
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-            let (output, line_navigation) = document.display_snapshot();
-            let line_navigation_enabled = line_navigation.is_some();
             (
-                output,
                 document.title.clone(),
-                line_navigation,
-                line_navigation_enabled,
+                document.has_line_navigation(),
                 document.line_number_mode().is_some(),
                 document.status_bar_transparent(),
                 document.output_style(),
@@ -49,7 +43,26 @@ pub(crate) fn page(
         pager.set_output_styling(output_style.is_enabled())?;
         pager.set_color_depth(output_style.color_depth())?;
         pager.set_line_numbers(LineNumbers::AlwaysOff)?;
-        pager.set_mapped_text(output, line_navigation)?;
+        if document
+            .read()
+            .map_err(|_| anyhow!("Pager document lock poisoned"))?
+            .can_reflow()
+        {
+            let document = document.clone();
+            pager.set_layout_renderer(Arc::new(move |width| {
+                document
+                    .write()
+                    .map_err(|_| "Pager document lock poisoned".to_owned())?
+                    .layout_snapshot(width)
+                    .map_err(|error| format!("{error:#}"))
+            }))?;
+        } else {
+            let (output, line_navigation) = document
+                .read()
+                .map_err(|_| anyhow!("Pager document lock poisoned"))?
+                .display_snapshot();
+            pager.set_mapped_text(output, line_navigation)?;
+        }
         pager.set_prompt_renderer(move |context| footer.render(context))?;
         pager.set_search_prompt("Find: ")?;
         pager.remove_hook(Hook::PostPagerExit, 1)?;
@@ -77,6 +90,10 @@ pub(crate) fn page(
             )?),
             _ => None,
         };
+
+        if let Ok((columns, _)) = crossterm::terminal::size() {
+            PagerDocument::prepare_sidebar(document.clone(), usize::from(columns));
+        }
 
         match screen {
             PagerScreen::Alternate => minus::dynamic_paging(pager)?,

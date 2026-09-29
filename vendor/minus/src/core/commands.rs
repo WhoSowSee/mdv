@@ -14,6 +14,8 @@ use crate::{LineNavigation, search::SearchOpts};
 pub enum IoCommand {
     RedrawPrompt,
     RedrawDisplay,
+    #[cfg(feature = "search")]
+    RedrawToc,
     DrawAppendedText(usize, usize, AppendStyle),
     SetUpperMark(usize),
     RedrawSelection(usize, usize),
@@ -26,6 +28,10 @@ pub enum IoCommand {
 #[non_exhaustive]
 #[allow(private_interfaces)]
 pub enum Command {
+    #[cfg(feature = "search")]
+    SetLayoutRenderer(crate::LayoutRenderer),
+    #[cfg(feature = "search")]
+    RefreshLayout,
     UserInput(InputEvent),
     AppendData(String),
     SetData(String),
@@ -116,6 +122,10 @@ impl PartialEq for Command {
 impl Debug for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            #[cfg(feature = "search")]
+            Self::SetLayoutRenderer(_) => write!(f, "SetLayoutRenderer"),
+            #[cfg(feature = "search")]
+            Self::RefreshLayout => write!(f, "RefreshLayout"),
             Self::SetData(text) => write!(f, "SetData({text:?})"),
             #[cfg(feature = "search")]
             Self::SetMappedData(_, _) => write!(f, "SetMappedData"),

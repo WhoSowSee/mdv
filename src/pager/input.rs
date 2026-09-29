@@ -13,9 +13,14 @@ pub(super) struct PagerInputClassifier {
 }
 
 impl PagerInputClassifier {
-    fn set_help_visible(&self, visible: bool, width: usize) {
+    fn set_help_visible(&self, visible: bool, width: usize, toc: bool) {
         let result = if visible {
-            super::help::fit_help_panel(&self.help_panel, width, self.help_transparent)
+            let lines = if toc {
+                super::help::build_toc_help_panel(width, self.help_transparent)
+            } else {
+                super::help::fit_help_panel(&self.help_panel, width, self.help_transparent)
+            };
+            lines
                 .map_err(minus::error::MinusError::from)
                 .and_then(|lines| self.pager.set_prompt_panel(lines))
         } else {
@@ -26,10 +31,6 @@ impl PagerInputClassifier {
                 "Failed to update help: {error}"
             )));
         }
-    }
-
-    fn toggle_help(&self, visible: bool, width: usize) {
-        self.set_help_visible(!visible, width);
     }
 
     fn copy_contents(&self, selected_text: Option<String>) {
@@ -89,29 +90,33 @@ impl InputClassifier for PagerInputClassifier {
     ) -> Option<InputEvent> {
         let help_visible = state.prompt_panel_rows() > 0;
         if help_visible && let minus::input::crossterm_event::Event::Resize(width, _) = &event {
-            self.set_help_visible(true, usize::from(*width));
+            self.set_help_visible(true, usize::from(*width), state.toc_visible());
         }
         let default_action = self.default.classify_input(event.clone(), state);
         let opens_input_prompt = matches!(
             default_action,
             Some(InputEvent::Search(_) | InputEvent::GoToLine)
         );
-        match help_input_action(
-            &event,
-            help_visible,
-            state.search_is_active(),
-            opens_input_prompt,
-        ) {
+        match help_input_action(&event, help_visible, opens_input_prompt) {
             HelpInputAction::Toggle => {
-                self.toggle_help(help_visible, state.cols);
+                self.set_help_visible(!help_visible, state.cols, state.toc_visible());
                 return None;
             }
             HelpInputAction::Dismiss => {
-                self.set_help_visible(false, state.cols);
+                self.set_help_visible(false, state.cols, state.toc_visible());
                 return None;
             }
-            HelpInputAction::DismissAndForward => self.set_help_visible(false, state.cols),
+            HelpInputAction::DismissAndForward => {
+                self.set_help_visible(false, state.cols, state.toc_visible())
+            }
             HelpInputAction::Forward => {}
+        }
+
+        if let Some(action) = state.toc_input(&event) {
+            if help_visible {
+                self.set_help_visible(false, state.cols, state.toc_visible());
+            }
+            return Some(action);
         }
 
         if is_line_number_key(&event) && self.cycle_line_numbers() {
@@ -166,12 +171,11 @@ pub(super) enum HelpInputAction {
 pub(super) fn help_input_action(
     event: &minus::input::crossterm_event::Event,
     help_visible: bool,
-    search_active: bool,
     opens_input_prompt: bool,
 ) -> HelpInputAction {
     if is_help_key(event) {
         HelpInputAction::Toggle
-    } else if help_visible && is_escape_key(event) && !search_active {
+    } else if help_visible && is_escape_key(event) {
         HelpInputAction::Dismiss
     } else if help_visible && opens_input_prompt {
         HelpInputAction::DismissAndForward

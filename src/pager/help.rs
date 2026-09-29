@@ -14,6 +14,91 @@ const HELP_BACKGROUND: PromptColor = PromptColor::Rgb {
 };
 const HELP_COLUMN_WIDTH: usize = 26;
 
+fn help_style(transparent: bool) -> PromptStyle {
+    let style = PromptStyle::default().foreground(HELP_FOREGROUND);
+    if transparent {
+        style
+    } else {
+        style.background(HELP_BACKGROUND)
+    }
+}
+
+pub(super) fn build_toc_help_panel(
+    width: usize,
+    transparent: bool,
+) -> Result<Vec<PromptLine>, PromptError> {
+    let style = help_style(transparent);
+    let groups = [
+        [
+            ("1–9", "select / cycle"),
+            ("Alt+↑/↓", "entries"),
+            ("Shift+↑/↓ or J/K", "sections"),
+            ("Mouse click", "select"),
+        ],
+        [
+            ("Alt+Shift+↑/↓ or U/D", "scroll"),
+            ("Mouse wheel", "scroll"),
+            ("t", "close contents"),
+            ("? / Esc", "close help"),
+        ],
+    ];
+    let groups = groups.map(|group| {
+        let key_width = group
+            .iter()
+            .map(|(keys, _)| keys.width())
+            .max()
+            .unwrap_or(0);
+        group.map(|(keys, description)| {
+            format!(
+                "{keys}{}{description}",
+                " ".repeat(key_width - keys.width() + 2)
+            )
+        })
+    });
+    let mut lines = vec![help_line(None, style)?];
+    let required_width = groups
+        .iter()
+        .flatten()
+        .map(|text| text.width())
+        .max()
+        .unwrap_or(0)
+        * 2
+        + 4;
+    let texts = if width >= required_width {
+        let column = width.saturating_sub(4) / 2;
+        groups[0]
+            .iter()
+            .zip(groups[1].iter())
+            .map(|(left, right)| {
+                format!(
+                    "  {left}{}  {right}",
+                    " ".repeat(column.saturating_sub(left.width()))
+                )
+            })
+            .collect::<Vec<_>>()
+    } else {
+        groups
+            .into_iter()
+            .flatten()
+            .map(|text| format!("  {text}"))
+            .collect()
+    };
+    for text in texts {
+        for part in
+            crate::utils::wrap_text_with_mode(&text, width.max(1), crate::utils::WrapMode::Word)
+                .lines()
+        {
+            lines.push(
+                PromptLine::new()
+                    .left(PromptSpan::new(part, style)?)
+                    .fill_style(style),
+            );
+        }
+    }
+    lines.push(help_line(None, style)?);
+    Ok(lines)
+}
+
 pub(super) fn fit_help_panel(
     lines: &[PromptLine],
     width: usize,
@@ -22,10 +107,7 @@ pub(super) fn fit_help_panel(
     if width >= 78 {
         return Ok(lines.to_vec());
     }
-    let mut style = PromptStyle::default().foreground(HELP_FOREGROUND);
-    if !transparent {
-        style = style.background(HELP_BACKGROUND);
-    }
+    let style = help_style(transparent);
     let columns = if width >= 52 { 2 } else { 1 };
     let mut items = Vec::new();
     for column in 0..3 {
@@ -64,12 +146,7 @@ pub(super) fn build_help_panel(
     line_number_toggle_enabled: bool,
     transparent: bool,
 ) -> Result<Vec<PromptLine>, PromptError> {
-    let style = PromptStyle::default().foreground(HELP_FOREGROUND);
-    let style = if transparent {
-        style
-    } else {
-        style.background(HELP_BACKGROUND)
-    };
+    let style = help_style(transparent);
     let scrolling = longest_shortcuts_first([
         "k/↑      up",
         "j/↓      down",
@@ -83,6 +160,7 @@ pub(super) fn build_help_panel(
             Some("g/home   go to top"),
             Some("G/end    go to bottom"),
             Some("/        search"),
+            line_navigation_enabled.then_some("t        contents"),
             line_navigation_enabled.then_some(":        source line"),
             line_number_toggle_enabled.then_some("l        line numbers"),
         ]
@@ -197,6 +275,42 @@ mod tests {
             2 + HELP_COLUMN_WIDTH * 2
         );
         assert!(rendered_lines[4].contains("r       reload document"));
+        assert!(!text.contains("TOC entries"));
+        let toc_rows = build_toc_help_panel(80, true).unwrap();
+        let toc = toc_rows
+            .iter()
+            .map(|line| line.render_plain(80))
+            .collect::<Vec<_>>()
+            .join("\n");
+        for keys in [
+            "1–9",
+            "Alt+↑/↓",
+            "Shift+↑/↓ or J/K",
+            "Alt+Shift+↑/↓ or U/D",
+            "? / Esc",
+        ] {
+            assert!(toc.contains(keys), "{toc}");
+        }
+        assert!(!toc.contains("reload document") && !toc.contains("copy contents"));
+        let first = toc_rows[1].render_plain(80);
+        assert_eq!(toc_rows.len(), 6);
+        assert!(first.contains("1–9") && first.contains("Alt+Shift+↑/↓"));
+        for (index, left, right) in [
+            (1, "select / cycle", "scroll"),
+            (2, "entries", "scroll"),
+            (3, "sections", "close contents"),
+            (4, "select", "close help"),
+        ] {
+            let row = toc_rows[index].render_plain(80);
+            assert_eq!(
+                display_column(&row, left),
+                display_column(&first, "select / cycle")
+            );
+            assert_eq!(
+                display_column(&row, right),
+                display_column(&first, "scroll")
+            );
+        }
     }
 
     #[test]

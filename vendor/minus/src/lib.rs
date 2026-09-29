@@ -21,7 +21,11 @@ pub mod error;
 pub mod hooks;
 pub mod input;
 #[cfg(feature = "search")]
+mod layout;
+#[cfg(feature = "search")]
 mod line_navigation;
+#[cfg(feature = "search")]
+pub use layout::LayoutRenderer;
 #[path = "core/mod.rs"]
 mod minus_core;
 mod pager;
@@ -31,6 +35,10 @@ pub mod screen;
 #[cfg_attr(docsrs, doc(cfg(feature = "search")))]
 pub mod search;
 mod selection;
+#[cfg(feature = "search")]
+mod toc;
+#[cfg(feature = "search")]
+pub use toc::TocEntry;
 pub mod state;
 #[cfg(feature = "static_output")]
 mod static_pager;

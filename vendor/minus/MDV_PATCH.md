@@ -10,6 +10,10 @@ minus = { package = "mdv-minus", version = "5.7.3" }
 
 mdv adds a typed prompt-rendering API:
 
+- `Pager::set_layout_renderer` supplies width-aware mapped content for sidebar toggles and terminal resizes. `Pager::refresh_layout` explicitly requests an update after application state changes; `set_mapped_text` remains a direct content replacement.
+
+- `LineNavigation::with_toc` attaches source-mapped outline entries to document updates. `PagerState::toc_input` routes outline controls; the panel docks beside content in wide terminals, overlays narrow content, follows scrolling, and preserves the current numbering view when jumping.
+
 - `Pager::set_mapped_text` atomically replaces text and source navigation, anchors the viewport to the source position, and clears stale selection and navigation highlights.
 - `Pager::set_output_styling` disables decorative ANSI in custom/default prompts, prompt panels, search matches, selections, and source-line navigation while preserving pager terminal-control commands.
 

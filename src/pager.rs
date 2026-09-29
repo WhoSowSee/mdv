@@ -20,6 +20,7 @@ mod interrupt;
 mod operations;
 mod page;
 mod rendering;
+mod toc;
 mod watcher;
 
 pub(crate) use command::PagerBackend;
