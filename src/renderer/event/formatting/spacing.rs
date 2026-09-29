@@ -69,13 +69,29 @@ impl<'a> EventRenderer<'a> {
 
     pub(in crate::renderer::event) fn effective_text_width(&self) -> usize {
         let mut width = self.config.get_content_width();
-        if self.callout_is_pretty() {
-            width = width.saturating_sub(2);
+        if matches!(
+            self.config.callout_style.style,
+            crate::cli::CalloutStyle::Pretty
+        ) {
+            for (index, state) in self.callout_stack.iter().enumerate() {
+                if matches!(state, CalloutState::Active(_)) {
+                    let outer_indent = self.blockquote_indent_stack[index].0;
+                    // Framing replaces one quote prefix and restores the saved outer indentation.
+                    let frame_overhead = if index == 0 { 2 } else { 3 };
+                    width = width.saturating_sub(outer_indent + frame_overhead);
+                }
+            }
         }
         if self.active_backtick_style.is_some() {
             width = width.saturating_sub(1);
         }
         width
+    }
+
+    pub(in crate::renderer::event) fn should_wrap_inline_text(&self) -> bool {
+        self.config.is_text_wrapping_enabled()
+            && self.current_heading_start.is_none()
+            && !self.in_properties_callout()
     }
 
     pub(in crate::renderer::event) fn ensure_contextual_blank_line_for_blockquote_level(

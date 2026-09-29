@@ -48,7 +48,7 @@ impl<'a> EventRenderer<'a> {
                 let url_part = format!("({})", url);
 
                 // Check if URL needs wrapping or truncation
-                let should_wrap = self.config.is_text_wrapping_enabled();
+                let should_wrap = self.should_wrap_inline_text();
 
                 if should_wrap {
                     let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {

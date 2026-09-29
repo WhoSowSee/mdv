@@ -46,7 +46,7 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        if !self.config.is_text_wrapping_enabled() {
+        if !self.should_wrap_inline_text() {
             return;
         }
 

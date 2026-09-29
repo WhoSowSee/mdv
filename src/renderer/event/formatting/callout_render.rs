@@ -94,7 +94,7 @@ impl<'a> EventRenderer<'a> {
             content_lines = lines_with_label;
         }
 
-        let terminal_width = self.config.get_content_width();
+        let terminal_width = self.effective_text_width();
         let context_width = self.compute_line_start_context_width();
         let available_frame_width = terminal_width.saturating_sub(context_width);
         if available_frame_width <= 4 {

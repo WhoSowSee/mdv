@@ -74,7 +74,7 @@ impl<'a> EventRenderer<'a> {
 
         // Check if we need to wrap text. When no explicit cols are provided,
         // wrap to the detected terminal width (unless --no-wrap is set).
-        let should_wrap = self.config.is_text_wrapping_enabled() && !self.in_properties_callout();
+        let should_wrap = self.should_wrap_inline_text();
 
         if should_wrap && !self.formatting_stack.is_empty() {
             // For styled text, prefer continuous decoration for strike-through

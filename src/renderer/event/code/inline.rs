@@ -34,8 +34,7 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
-        let terminal_width = self.config.get_content_width();
-        self.push_styled_inline_atom(&raw_code, &style, terminal_width);
+        self.push_styled_inline_atom(&raw_code, &style);
         Ok(())
     }
 }

@@ -43,8 +43,7 @@ impl<'a> EventRenderer<'a> {
 
         let style = create_style(self.theme, ThemeElement::Math);
         self.note_paragraph_content();
-        let terminal_width = self.effective_text_width();
-        self.push_styled_inline_atom(&rendered, &style, terminal_width);
+        self.push_styled_inline_atom(&rendered, &style);
         Ok(())
     }
 

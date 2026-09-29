@@ -20,17 +20,7 @@ impl<'a> EventRenderer<'a> {
         text: &str,
         highlighted: bool,
     ) -> Result<()> {
-        let should_wrap = self.config.is_text_wrapping_enabled();
-
-        if !should_wrap {
-            // No wrapping - apply full formatting (including strikethrough) to entire text
-            let formatted_text = self.apply_formatting_with_highlight(text, highlighted);
-            self.output.push_str(&formatted_text);
-            return Ok(());
-        }
-
-        let terminal_width = self.effective_text_width();
-        let effective_width = terminal_width;
+        let effective_width = self.effective_text_width();
 
         // Determine wrap mode based on config
         let wrap_mode = self.config.text_wrap_mode();
@@ -114,10 +104,8 @@ impl<'a> EventRenderer<'a> {
                 };
                 self.output.push_str(&formatted_fragment);
 
-                if wrap_mode != crate::utils::WrapMode::None {
-                    self.push_newline_with_context();
-                    fragment_start_line_width = self.compute_line_start_context_width();
-                }
+                self.push_newline_with_context();
+                fragment_start_line_width = self.compute_line_start_context_width();
 
                 current_fragment = unit.clone();
             } else {

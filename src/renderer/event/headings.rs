@@ -229,32 +229,29 @@ impl<'a> EventRenderer<'a> {
                 } else {
                     clean_header_text.to_string()
                 };
-                let wrapped_header = if !self.config.is_text_wrapping_enabled() {
-                    display_header_text
-                } else {
-                    self.wrap_text_for_output(&display_header_text)
-                };
+                let available_width = self
+                    .effective_text_width()
+                    .saturating_sub(crate::utils::display_width(&line_prefix))
+                    .max(1);
+                let wrapped_header = crate::utils::wrap_text_with_mode(
+                    &display_header_text,
+                    available_width,
+                    self.config.text_wrap_mode(),
+                );
 
                 let style = create_style(self.theme, element);
                 let styled_header = match self.config.heading_layout {
-                    crate::cli::HeadingLayout::Center => {
-                        let terminal_width = self.effective_text_width();
-                        wrapped_header
-                            .lines()
-                            .map(|line| {
-                                let clean = crate::utils::strip_ansi(line);
-                                let line_width = crate::utils::display_width(&clean);
-                                let pad = if terminal_width > line_width {
-                                    (terminal_width - line_width) / 2
-                                } else {
-                                    0
-                                };
-                                let styled = style.apply(line, self.output_style);
-                                format!("{}{}", " ".repeat(pad), styled)
-                            })
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    }
+                    crate::cli::HeadingLayout::Center => wrapped_header
+                        .lines()
+                        .map(|line| {
+                            let clean = crate::utils::strip_ansi(line);
+                            let line_width = crate::utils::display_width(&clean);
+                            let pad = available_width.saturating_sub(line_width) / 2;
+                            let styled = style.apply(line, self.output_style);
+                            format!("{}{}", " ".repeat(pad), styled)
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n"),
                     _ => style.apply(&wrapped_header, self.output_style),
                 };
 

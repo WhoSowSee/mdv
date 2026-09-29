@@ -69,6 +69,9 @@ impl<'a> EventRenderer<'a> {
     /// Ensure the last visual line does not exceed the terminal width.
     /// If it does, break the line at the last space and add proper indentation/prefixes.
     pub(in crate::renderer::event) fn enforce_width_on_current_line(&mut self) {
+        if !self.should_wrap_inline_text() {
+            return;
+        }
         let terminal_width = self.effective_text_width();
         let start = self.output.rfind('\n').map(|i| i + 1).unwrap_or(0);
         let current_line_raw = &self.output[start..];

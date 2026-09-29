@@ -9,6 +9,8 @@ mod blockquotes;
 mod headings;
 #[path = "layout/margins.rs"]
 mod margins;
+#[path = "layout/narrow_wrapping.rs"]
+mod narrow_wrapping;
 #[path = "layout/spacing.rs"]
 mod spacing;
 

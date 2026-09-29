@@ -5,14 +5,14 @@ impl<'a> EventRenderer<'a> {
         &mut self,
         text: &str,
         style: &AnsiStyle,
-        terminal_width: usize,
     ) {
-        if !self.config.is_text_wrapping_enabled() {
+        if !self.should_wrap_inline_text() {
             self.output.push_str(&style.apply(text, self.output_style));
             self.commit_pending_heading_placeholder_if_content();
             return;
         }
 
+        let terminal_width = self.effective_text_width();
         let wrap_mode = self.config.text_wrap_mode();
         let mut remaining = text.to_string();
         while !remaining.is_empty() {
@@ -57,9 +57,7 @@ impl<'a> EventRenderer<'a> {
                 break;
             }
             remaining = rest;
-            if !remaining.is_empty() {
-                self.push_newline_with_context();
-            }
+            self.push_newline_with_context();
         }
 
         self.commit_pending_heading_placeholder_if_content();

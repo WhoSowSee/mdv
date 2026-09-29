@@ -36,6 +36,10 @@ This section covers ordinary text, inline formatting, wrapping, headings, lists,
 
 Word mode extracts words and oversized units; character mode splits on Unicode characters. Visible width is measured with `unicode-width` after ANSI and OSC sequences are removed.
 
+Inline heading content is collected without wrapping. Heading finalization wraps it once, after adding optional Markdown markers and subtracting the actual heading prefix width; continuation lines receive that prefix exactly once.
+
+Pretty-callout text reserves the frame overhead and the outer indentation saved at each active callout level. Nested frame rendering uses the remaining width of its parent, so framing does not wrap already fitted text again.
+
 ## Callout pipeline
 
 A callout passes through several stages:

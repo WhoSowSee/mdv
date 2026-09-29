@@ -83,7 +83,7 @@ impl<'a> EventRenderer<'a> {
             let current_line_width = crate::utils::display_width(&current_line_clean);
             let reference_width = crate::utils::display_width(&reference_text);
 
-            if self.config.is_text_wrapping_enabled()
+            if self.should_wrap_inline_text()
                 && current_line_width + reference_width > terminal_width
             {
                 self.push_newline_with_context();
@@ -125,7 +125,7 @@ impl<'a> EventRenderer<'a> {
             let current_line_width = crate::utils::display_width(&current_line_clean);
             let reference_width = crate::utils::display_width(&reference_text);
 
-            if self.config.is_text_wrapping_enabled()
+            if self.should_wrap_inline_text()
                 && current_line_width + reference_width > terminal_width
             {
                 self.push_newline_with_context();
