@@ -52,29 +52,11 @@ fn update_display(pager: &Pager, document: &PagerDocument) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn copy_document_contents(
-    document: &RwLock<PagerDocument>,
-    selected_text: Option<String>,
-) -> Result<()> {
-    let text = clipboard_text(document, selected_text)?;
+pub(super) fn copy_document_contents(text: String) -> Result<()> {
     let mut clipboard = arboard::Clipboard::new().context("Failed to access system clipboard")?;
     clipboard
         .set_text(text)
         .context("Failed to write system clipboard")
-}
-
-pub(super) fn clipboard_text(
-    document: &RwLock<PagerDocument>,
-    selected_text: Option<String>,
-) -> Result<String> {
-    match selected_text {
-        Some(text) => Ok(text),
-        None => Ok(document
-            .read()
-            .map_err(|_| anyhow!("Pager document lock poisoned"))?
-            .source
-            .clone()),
-    }
 }
 
 pub(super) fn report_operation_result(

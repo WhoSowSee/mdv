@@ -55,8 +55,8 @@ impl RenderedOutput {
         self.content
     }
 
-    pub(crate) fn into_pager_document(self, source: String) -> PagerDocument {
-        PagerDocument::from_content(self.content, source, self.output_style)
+    pub(crate) fn into_pager_document(self) -> PagerDocument {
+        PagerDocument::from_content(self.content, self.output_style)
             .with_status_bar_transparent(self.status_bar_transparent)
             .with_reflow(self.reflow, self.layout_width, self.width_limit)
     }

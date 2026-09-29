@@ -496,6 +496,22 @@ impl PagerState {
         Some(Selection { absolute_row, col })
     }
 
+    pub(crate) fn select_all(&mut self) {
+        self.clear_selection();
+        if let Some(absolute_row) = self.screen.formatted_lines_count().checked_sub(1) {
+            self.selection_anchor = Some(Selection {
+                absolute_row: 0,
+                col: 0,
+            });
+            self.selection = Some(Selection {
+                absolute_row,
+                col: strip_ansi(&self.screen.formatted_lines[absolute_row])
+                    .chars()
+                    .count(),
+            });
+        }
+    }
+
     pub(crate) const fn clear_selection(&mut self) {
         self.selection = None;
         self.selection_anchor = None;
@@ -882,6 +898,22 @@ mod tests {
         });
 
         assert_eq!(ps.selected_text().as_deref(), Some("cdefghi\njklm"));
+    }
+
+    #[test]
+    fn select_all_includes_offscreen_wrapped_unicode_text() {
+        let mut ps = PagerState::new().unwrap();
+        ps.cols = 6;
+        ps.rows = 2;
+        ps.screen.orig_text = "\x1b[31mabcdefghi\x1b[0m\n界e\u{301}\nlast".to_string();
+        ps.reformat_display().unwrap();
+        ps.upper_mark = 1;
+        ps.select_all();
+        assert_eq!(
+            ps.selected_text().as_deref(),
+            Some("abcdefghi\n界e\u{301}\nlast")
+        );
+        assert_eq!(ps.upper_mark, 1);
     }
 
     #[test]

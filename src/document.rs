@@ -117,7 +117,7 @@ pub(crate) fn render_document_file(
             prepare_pager_views,
         },
     )?;
-    Ok(rendered.into_pager_document(content))
+    Ok(rendered.into_pager_document())
 }
 
 pub(crate) fn format_current_themes(config: &Config) -> String {

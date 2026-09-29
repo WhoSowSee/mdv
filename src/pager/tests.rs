@@ -77,12 +77,38 @@ fn question_mark_always_toggles_help() {
 }
 
 #[test]
-fn copy_key_accepts_only_unmodified_c() {
+fn copy_key_accepts_c_and_control_c() {
     let event = Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE));
     let modified = Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
 
-    assert!(is_copy_key(&event));
-    assert!(!is_copy_key(&modified));
+    assert!(is_copy_event(&event));
+    assert!(is_copy_event(&modified));
+    assert!(!is_copy_event(&Event::Key(KeyEvent::new(
+        KeyCode::Char('c'),
+        KeyModifiers::ALT,
+    ))));
+}
+
+#[test]
+fn copy_accepts_right_mouse_press_but_not_release_or_drag() {
+    use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+
+    for (kind, expected) in [
+        (MouseEventKind::Down(MouseButton::Right), true),
+        (MouseEventKind::Up(MouseButton::Right), false),
+        (MouseEventKind::Drag(MouseButton::Right), false),
+        (MouseEventKind::Down(MouseButton::Left), false),
+    ] {
+        assert_eq!(
+            is_copy_event(&Event::Mouse(MouseEvent {
+                kind,
+                column: 3,
+                row: 2,
+                modifiers: KeyModifiers::NONE,
+            })),
+            expected
+        );
+    }
 }
 
 #[test]
@@ -165,7 +191,6 @@ fn numbered_document(mode: PagerLineNumberMode, label: &str) -> PagerDocument {
             PagerDisplay::new(format!("1 {label} rendered\n"), vec![Some(1)]),
             PagerDisplay::new(format!("1 {label} source\n"), vec![Some(1)]),
         )),
-        format!("# {label}"),
         OutputStyle::Disabled,
     )
 }
@@ -196,31 +221,6 @@ fn pager_messages_are_single_line() {
 }
 
 #[test]
-fn clipboard_text_prefers_the_selection() {
-    let document = RwLock::new(PagerDocument::new(
-        "rendered output".to_string(),
-        "whole source".to_string(),
-        OutputStyle::Disabled,
-    ));
-
-    assert_eq!(
-        clipboard_text(&document, Some("selected text".to_string())).unwrap(),
-        "selected text"
-    );
-}
-
-#[test]
-fn clipboard_text_uses_the_source_without_a_selection() {
-    let document = RwLock::new(PagerDocument::new(
-        "rendered output".to_string(),
-        "whole source".to_string(),
-        OutputStyle::Disabled,
-    ));
-
-    assert_eq!(clipboard_text(&document, None).unwrap(), "whole source");
-}
-
-#[test]
 fn active_watcher_refreshes_modified_file() {
     let temp_dir = TempDir::new().unwrap();
     let file = temp_dir.path().join("watched.md");
@@ -229,14 +229,12 @@ fn active_watcher_refreshes_modified_file() {
     let callback_count = refresh_count.clone();
     let document = Arc::new(std::sync::RwLock::new(PagerDocument::new(
         "rendered before".to_string(),
-        "# Before".to_string(),
         OutputStyle::Disabled,
     )));
     let refresh = Arc::new(move || {
         callback_count.fetch_add(1, Ordering::SeqCst);
         Ok(PagerDocument::new(
             "rendered after".to_string(),
-            "# After".to_string(),
             OutputStyle::Disabled,
         ))
     });
@@ -250,5 +248,8 @@ fn active_watcher_refreshes_modified_file() {
 
     drop(watcher);
     assert!(refresh_count.load(Ordering::SeqCst) >= 1);
-    assert_eq!(document.read().unwrap().source, "# After");
+    assert_eq!(
+        document.read().unwrap().display_snapshot().0,
+        "rendered after"
+    );
 }

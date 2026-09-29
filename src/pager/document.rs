@@ -8,7 +8,6 @@ pub(crate) struct PagerDocument {
     width_limit: Option<usize>,
     cached_layouts: std::collections::VecDeque<(usize, PagerContent)>,
     content: PagerContent,
-    pub(in crate::pager) source: String,
     pub(in crate::pager) title: Option<String>,
     status_bar_transparent: bool,
     output_style: OutputStyle,
@@ -141,22 +140,17 @@ impl PagerContent {
 }
 
 impl PagerDocument {
-    pub(crate) fn new(output: String, source: String, output_style: OutputStyle) -> Self {
-        Self::from_content(PagerContent::Static(output), source, output_style)
+    pub(crate) fn new(output: String, output_style: OutputStyle) -> Self {
+        Self::from_content(PagerContent::Static(output), output_style)
     }
 
-    pub(in crate::pager) fn from_content(
-        content: PagerContent,
-        source: String,
-        output_style: OutputStyle,
-    ) -> Self {
+    pub(in crate::pager) fn from_content(content: PagerContent, output_style: OutputStyle) -> Self {
         Self {
             content,
             reflow: None,
             layout_width: None,
             width_limit: None,
             cached_layouts: std::collections::VecDeque::new(),
-            source,
             title: None,
             status_bar_transparent: false,
             output_style,

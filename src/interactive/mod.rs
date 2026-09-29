@@ -222,7 +222,7 @@ fn open_source_in_pager(
         },
     )?;
     pager::page(
-        rendered.into_pager_document(source),
+        rendered.into_pager_document(),
         None,
         None,
         PagerScreen::Alternate,

@@ -15,6 +15,20 @@ fn handle_input(ev: Event, p: &PagerState) -> Option<InputEvent> {
 }
 
 #[test]
+fn control_a_selects_all_in_both_classifiers() {
+    let pager = PagerState::new().unwrap();
+    let event = Event::Key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL));
+    assert_eq!(
+        handle_input(event.clone(), &pager),
+        Some(InputEvent::SelectAll)
+    );
+    assert_eq!(
+        DefaultInputClassifier.classify_input(event, &pager),
+        Some(InputEvent::SelectAll)
+    );
+}
+
+#[test]
 #[allow(clippy::too_many_lines)]
 fn test_kb_nav() {
     let mut pager = PagerState::new().unwrap();

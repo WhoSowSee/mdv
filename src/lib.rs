@@ -135,7 +135,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             }) as pager::RefreshCallback
         });
         pager::page(
-            rendered.into_pager_document(content),
+            rendered.into_pager_document(),
             pager_file,
             refresh,
             pager::PagerScreen::Alternate,
@@ -189,7 +189,7 @@ fn build_help_document(
     help: String,
 ) -> Result<pager::PagerDocument> {
     let status_bar_transparent = renderer::terminal::pager_status_bar_transparent(config)?;
-    Ok(pager::PagerDocument::new(help.clone(), help, output_style)
+    Ok(pager::PagerDocument::new(help, output_style)
         .with_title("Help")
         .with_status_bar_transparent(status_bar_transparent))
 }

@@ -57,10 +57,8 @@ pub(super) fn page(
 
 #[cfg(test)]
 use input::{
-    HelpInputAction, help_input_action, is_copy_key, is_editor_key, is_help_key, is_reload_key,
+    HelpInputAction, help_input_action, is_copy_event, is_editor_key, is_help_key, is_reload_key,
 };
-#[cfg(test)]
-use operations::clipboard_text;
 #[cfg(test)]
 use watcher::{comparable_path, event_targets_file};
 

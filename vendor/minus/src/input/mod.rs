@@ -68,6 +68,8 @@ pub enum InputEvent {
     StartSelection { x: u16, y: u16 },
     /// Update the current mouse selection to the given screen coordinates.
     UpdateSelection { x: u16, y: u16 },
+    /// Select the entire document, including rows outside the viewport.
+    SelectAll,
     /// Clear the current mouse selection.
     ClearSelection,
     /// Copy the current selection.
@@ -250,6 +252,8 @@ where
         };
         InputEvent::UpdateSelection { x: column, y: row }
     });
+
+    map.add_key_events(&["c-a"], |_, _| InputEvent::SelectAll);
 
     #[cfg(feature = "clipboard")]
     {
@@ -448,6 +452,12 @@ impl InputClassifier for DefaultInputClassifier {
                 modifiers: KeyModifiers::NONE,
                 ..
             }) if ps.search_is_active() => Some(InputEvent::CancelSearch),
+
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('a'),
+                modifiers: KeyModifiers::CONTROL,
+                ..
+            }) => Some(InputEvent::SelectAll),
 
             Event::Key(KeyEvent {
                 code: KeyCode::Char('q'),

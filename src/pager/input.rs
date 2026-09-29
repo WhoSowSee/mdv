@@ -34,12 +34,14 @@ impl PagerInputClassifier {
     }
 
     fn copy_contents(&self, selected_text: Option<String>) {
+        let Some(text) = selected_text.filter(|text| !text.is_empty()) else {
+            return;
+        };
         let pager = self.pager.clone();
-        let document = self.document.clone();
         thread::spawn(move || {
             report_operation_result(
                 &pager,
-                copy_document_contents(&document, selected_text),
+                copy_document_contents(text),
                 "Copied contents",
                 "Failed to copy contents",
             );
@@ -121,7 +123,7 @@ impl InputClassifier for PagerInputClassifier {
 
         if is_line_number_key(&event) && self.cycle_line_numbers() {
             None
-        } else if is_copy_key(&event) {
+        } else if is_copy_event(&event) {
             self.copy_contents(state.selected_text());
             None
         } else if self.refresh.is_some() && is_reload_key(&event) {
@@ -196,8 +198,23 @@ pub(super) fn is_escape_key(event: &minus::input::crossterm_event::Event) -> boo
     )
 }
 
-pub(super) fn is_copy_key(event: &minus::input::crossterm_event::Event) -> bool {
-    is_plain_character_key(event, 'c')
+pub(super) fn is_copy_event(event: &minus::input::crossterm_event::Event) -> bool {
+    use minus::input::crossterm_event::{
+        Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind,
+    };
+
+    match event {
+        Event::Key(key) => {
+            key.kind == KeyEventKind::Press
+                && key.code == KeyCode::Char('c')
+                && matches!(key.modifiers, KeyModifiers::NONE | KeyModifiers::CONTROL)
+        }
+        Event::Mouse(mouse) => {
+            mouse.kind == MouseEventKind::Down(MouseButton::Right)
+                && mouse.modifiers == KeyModifiers::NONE
+        }
+        _ => false,
+    }
 }
 
 pub(super) fn is_reload_key(event: &minus::input::crossterm_event::Event) -> bool {

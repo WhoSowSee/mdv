@@ -132,12 +132,13 @@ For the built-in backend, the document stores these values separately:
 
 - unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
 - the active line-number mode;
-- `source`: original Markdown for the clipboard;
 - optional `title`;
 - `status_bar_transparent` from the selected theme.
 - the resolved `OutputStyle` shared by document rendering and pager UI.
 
-This separation is required: copying without a selection uses Markdown, while `pager.set_text` receives the active rendered view. Source-line navigation data is derived from that view and the prepared source-numbered view.
+Copying uses only selected rendered text, with ANSI and OSC sequences removed.
+Without a selection, copy commands do not access the clipboard or update the status.
+Source-line navigation data is derived from the active view and the prepared source-numbered view.
 
 ## Input classifier
 
@@ -146,7 +147,8 @@ The custom classifier extends the default `minus` classifier with:
 - `?` to show or hide the help panel;
 - `Esc` to close help without losing search state;
 - `/` or `Ctrl+F` to search;
-- `c` to copy a selection or the complete source;
+- `c`, `Ctrl+C`, or right-click to copy selected text;
+- `Ctrl+A` to select the entire rendered document, including offscreen rows;
 - `r` to refresh when a callback exists;
 - `l` to cycle the mdv line-number views;
 - `:` to open the source-line navigation prompt when source metadata is available;

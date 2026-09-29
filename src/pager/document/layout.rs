@@ -104,7 +104,7 @@ mod tests {
             ))
         });
         let document = Arc::new(RwLock::new(
-            PagerDocument::new("old".into(), "old".into(), OutputStyle::Disabled).with_reflow(
+            PagerDocument::new("old".into(), OutputStyle::Disabled).with_reflow(
                 Some(reflow),
                 Some(100),
                 None,
@@ -112,8 +112,7 @@ mod tests {
         ));
         let worker = PagerDocument::prepare_sidebar(document.clone(), 100).unwrap();
         ready_rx.recv_timeout(Duration::from_secs(5)).unwrap();
-        *document.write().unwrap() =
-            PagerDocument::new("new".into(), "new".into(), OutputStyle::Disabled);
+        *document.write().unwrap() = PagerDocument::new("new".into(), OutputStyle::Disabled);
         continue_tx.send(()).unwrap();
         worker.join().unwrap();
         let current = document.read().unwrap();
@@ -137,7 +136,7 @@ mod tests {
             },
         )
         .unwrap()
-        .into_pager_document(source.into());
+        .into_pager_document();
         let count = Arc::new(AtomicUsize::new(0));
         let renders = count.clone();
         let reflow = document.reflow.take().unwrap();

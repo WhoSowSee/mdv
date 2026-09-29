@@ -158,6 +158,11 @@ pub fn handle_event(
                 queue_selection_redraw(command_queue, previous_span, p.selection_row_span());
             }
         }
+        Command::UserInput(InputEvent::SelectAll) => {
+            let previous_span = p.selection_row_span();
+            p.select_all();
+            queue_selection_redraw(command_queue, previous_span, p.selection_row_span());
+        }
         Command::UserInput(InputEvent::ClearSelection) => {
             if p.selection.is_some() || p.selection_anchor.is_some() {
                 let previous_span = p.selection_row_span();
