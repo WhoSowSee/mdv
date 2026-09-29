@@ -36,7 +36,9 @@ pub fn cleanup(
     use_alternate_screen: bool,
 ) -> std::result::Result<(), CleanupError> {
     if cleanup_screen {
-        execute!(out, cursor::Show).map_err(|e| CleanupError::ShowCursor(e.into()))?;
+        if use_alternate_screen {
+            execute!(out, cursor::Show).map_err(|e| CleanupError::ShowCursor(e.into()))?;
+        }
         execute!(out, event::DisableMouseCapture)
             .map_err(|e| CleanupError::DisableMouseCapture(e.into()))?;
         terminal::disable_raw_mode().map_err(|e| CleanupError::DisableRawMode(e.into()))?;

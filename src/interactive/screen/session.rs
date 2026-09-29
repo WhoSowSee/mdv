@@ -106,7 +106,7 @@ impl Drop for TerminalSession {
 }
 
 pub(super) fn write_pager_pause(output: &mut impl Write) -> std::io::Result<()> {
-    execute!(output, DisableBracketedPaste, ResetColor, Show)
+    execute!(output, DisableBracketedPaste, ResetColor, Hide)
 }
 
 pub(super) fn write_pager_resume(output: &mut impl Write) -> std::io::Result<()> {

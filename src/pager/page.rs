@@ -108,6 +108,7 @@ pub(crate) fn page(
         let Some(file) = &file else {
             return Ok(());
         };
+        crossterm::execute!(std::io::stdout(), crossterm::cursor::Show)?;
         let editor_opened = match &editor {
             Ok(Some(editor)) => match editor.open(file) {
                 Ok(()) => true,

@@ -339,13 +339,18 @@ fn mini_help_reserves_a_bottom_row() {
 }
 
 #[test]
-fn pager_handoff_keeps_the_current_screen_buffer() {
+fn pager_handoff_keeps_the_current_screen_buffer_and_hides_the_cursor() {
     let mut output = Vec::new();
 
     write_pager_pause(&mut output).unwrap();
+    let pause = String::from_utf8(output.clone()).unwrap();
+    assert!(pause.contains("\x1b[?25l"));
+    assert!(!pause.contains("\x1b[?25h"));
+
     write_pager_resume(&mut output).unwrap();
 
     let output = String::from_utf8(output).unwrap();
     assert!(!output.contains("\x1b[?1049h"));
     assert!(!output.contains("\x1b[?1049l"));
+    assert!(!output.contains("\x1b[?25h"));
 }

@@ -121,7 +121,10 @@ their own interface colors.
 When the browser opens an external pager, mdv fully suspends the browser session,
 then restores the alternate screen and raw mode after the child exits. The
 built-in pager uses the lighter in-place pause path because it shares mdv's
-terminal session.
+terminal session. This pause explicitly hides the cursor while the selected file
+is read and rendered, including when the browser's filter prompt was visible.
+The in-place pager does not show the cursor on exit to the browser. Returning to
+the shell or launching an editor restores cursor visibility.
 
 ## `PagerDocument`
 
