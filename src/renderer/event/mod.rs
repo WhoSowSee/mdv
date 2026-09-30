@@ -20,7 +20,7 @@ pub(super) use core::EventRenderer;
 pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock};
 pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
 use definition_lists::DefinitionListState;
-pub(super) use footnotes::FootnoteDefinition;
+use footnotes::FootnoteDefinitions;
 
 pub(super) use crate::cli::{
     CalloutStyle, CodeBlockStyle, CodeWrapIndent, FootnoteStyle, LinkStyle, LinkTruncationStyle,

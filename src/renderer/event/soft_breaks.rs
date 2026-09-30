@@ -16,9 +16,8 @@ impl<'a> EventRenderer<'a> {
         }
 
         let collapse = self.config.reflow && self.config.is_text_wrapping_enabled();
-        if self.in_link {
-            self.current_link_text
-                .push(if collapse { ' ' } else { '\n' });
+        if let Some(link) = self.links.current.as_mut() {
+            link.text.push(if collapse { ' ' } else { '\n' });
         } else if let Some(ref mut table) = self.table_state {
             table.current_cell.push(if collapse { ' ' } else { '\n' });
         } else if collapse {

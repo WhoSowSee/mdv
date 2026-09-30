@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::error::{CleanupError, MinusError, SetupError};
 use crossterm::{
     cursor, event, execute, queue,

@@ -120,6 +120,6 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn record_code_line_number_width(&mut self, layout: &CodeLineLayout) {
-        self.max_code_line_number_width = self.max_code_line_number_width.max(layout.number_width);
+        self.code.max_line_number_width = self.code.max_line_number_width.max(layout.number_width);
     }
 }

@@ -14,6 +14,7 @@ mod list_marker;
 pub mod markdown;
 pub mod math;
 pub mod monitor;
+mod output;
 mod pager;
 mod preset;
 mod process_command;
@@ -44,7 +45,7 @@ use terminal::OutputStyle;
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     if cli.init_config.is_some() {
         let path = Config::write_default_config(&cli, matches)?;
-        println!("Created config file: {}", path.display());
+        output::write_stdout(&format!("Created config file: {}\n", path.display()))?;
         return Ok(());
     }
 
@@ -64,18 +65,17 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     }
 
     if cli.preset_info && cli.filename.is_none() {
-        print!(
-            "{}",
-            preset::format_available_presets(&config, cli.preset.as_deref())?
-        );
+        output::write_stdout(&preset::format_available_presets(
+            &config,
+            cli.preset.as_deref(),
+        )?)?;
         return Ok(());
     }
 
     if matches!(cli.theme_info, Some(None)) {
         let theme_manager = renderer::terminal::build_theme_manager(&config);
-        print!("{}", format_current_themes(&config));
-        println!();
-        theme::list_themes(&theme_manager);
+        output::write_stdout(&format!("{}\n", format_current_themes(&config)))?;
+        theme::list_themes(&theme_manager)?;
         return Ok(());
     }
 
@@ -85,10 +85,12 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     let stdin_is_terminal = io::stdin().is_terminal();
     if let Some(target) = interactive::select_interactive_target(
         cli.filename.as_deref(),
-        cli.interactive,
-        cli.pager.is_some(),
-        stdin_is_terminal,
-        stdout_is_terminal,
+        interactive::InteractiveOptions {
+            requested: cli.interactive,
+            pager_requested: cli.pager.is_some(),
+            stdin_is_terminal,
+            stdout_is_terminal,
+        },
     )? {
         return interactive::run(target, config, output_style, pager_backend);
     }
@@ -151,7 +153,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             &pager_backend,
         )?;
     } else {
-        print!("{}", rendered.output()?);
+        output::write_stdout(rendered.output()?)?;
     }
 
     Ok(())
@@ -180,7 +182,7 @@ fn show_help(
             pager_backend,
         )
     } else {
-        print!("{help}");
+        output::write_stdout(&help)?;
         Ok(())
     }
 }

@@ -17,17 +17,22 @@ pub fn load_user_themes(config_dir: &Path, manager: &ThemeManager) -> Result<Vec
         );
     }
 
-    let mut paths: Vec<PathBuf> = fs::read_dir(&themes_dir)
+    let mut paths = Vec::new();
+    for entry in fs::read_dir(&themes_dir)
         .with_context(|| format!("Failed to read themes directory: {}", themes_dir.display()))?
-        .filter_map(|entry| entry.ok().map(|e| e.path()))
-        .filter(|path| {
-            path.is_file()
-                && path
-                    .extension()
-                    .and_then(|s| s.to_str())
-                    .is_some_and(|ext| ext == THEME_EXT_YAML || ext == THEME_EXT_YML)
-        })
-        .collect();
+    {
+        let path = entry
+            .with_context(|| format!("Failed to read entry in {}", themes_dir.display()))?
+            .path();
+        if path.is_file()
+            && path
+                .extension()
+                .and_then(|s| s.to_str())
+                .is_some_and(|ext| ext == THEME_EXT_YAML || ext == THEME_EXT_YML)
+        {
+            paths.push(path);
+        }
+    }
     paths.sort();
 
     let mut loaded: Vec<Theme> = Vec::with_capacity(paths.len());

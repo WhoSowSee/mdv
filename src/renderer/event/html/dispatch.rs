@@ -26,6 +26,18 @@ impl<'a> EventRenderer<'a> {
         node: NodeRef<'_, HtmlNode>,
         context: HtmlContext,
     ) -> Result<()> {
+        const MAX_HTML_DEPTH: usize = 64;
+        let context = if matches!(node.value(), HtmlNode::Element(_)) {
+            if context.depth >= MAX_HTML_DEPTH {
+                anyhow::bail!("HTML nesting exceeds the limit of {MAX_HTML_DEPTH} elements");
+            }
+            HtmlContext {
+                depth: context.depth + 1,
+                ..context
+            }
+        } else {
+            context
+        };
         match node.value() {
             HtmlNode::Text(text) => self.render_html_text(text.as_ref(), context)?,
             HtmlNode::Element(_) => {

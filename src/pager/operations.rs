@@ -46,12 +46,12 @@ pub(super) fn cycle_line_number_mode(
     pager: &Pager,
     document: &RwLock<PagerDocument>,
 ) -> Result<bool> {
-    let mut document = document
-        .write()
-        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-    if !document.cycle_line_number_mode()? {
+    if !PagerDocument::shared_cycle_line_number_mode(document)? {
         return Ok(false);
     }
+    let document = document
+        .read()
+        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
     update_display(pager, &document)?;
     Ok(true)
 }

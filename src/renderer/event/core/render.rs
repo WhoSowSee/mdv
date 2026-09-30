@@ -2,23 +2,16 @@ use super::*;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer) const fn max_code_line_number_width(&self) -> usize {
-        self.max_code_line_number_width
+        self.code.max_line_number_width
     }
 
     pub(in crate::renderer) fn render_events(
         &mut self,
-        events: Vec<Event<'static>>,
+        events: &[Event<'static>],
     ) -> Result<String> {
-        let (events, mut definitions) = self.extract_footnote_definitions(events);
-
-        if !self.footnote_definitions.is_empty() {
-            for existing in self.footnote_definitions.iter() {
-                if !definitions.iter().any(|def| def.name == existing.name) {
-                    definitions.push(existing.clone());
-                }
-            }
-        }
-        self.footnote_definitions = definitions;
+        let (events, definitions) =
+            self.extract_footnote_definitions(events.iter().map(borrow_event));
+        self.footnotes.definitions.merge(definitions);
         self.prepare_block_spacing_elements(&events);
 
         if matches!(self.config.heading_layout, crate::cli::HeadingLayout::Level)
@@ -37,7 +30,7 @@ impl<'a> EventRenderer<'a> {
         self.flush_pending_html_block_buffer()?;
         self.finalize_pending_heading_placeholder();
         if matches!(self.config.footnote_style, FootnoteStyle::Attached)
-            && !self.current_inline_footnotes.is_empty()
+            && !self.footnotes.inline.is_empty()
         {
             self.finalize_inline_footnotes(true, false)?;
         }
@@ -149,5 +142,26 @@ impl<'a> EventRenderer<'a> {
             6 => Some(HeadingLevel::H6),
             _ => None,
         }
+    }
+}
+
+fn borrow_event<'e>(event: &'e Event<'static>) -> Event<'e> {
+    match event {
+        Event::Text(text) => Event::Text(pulldown_cmark::CowStr::Borrowed(text.as_ref())),
+        Event::Code(text) => Event::Code(pulldown_cmark::CowStr::Borrowed(text.as_ref())),
+        Event::Html(text) => Event::Html(pulldown_cmark::CowStr::Borrowed(text.as_ref())),
+        Event::InlineHtml(text) => {
+            Event::InlineHtml(pulldown_cmark::CowStr::Borrowed(text.as_ref()))
+        }
+        Event::InlineMath(text) => {
+            Event::InlineMath(pulldown_cmark::CowStr::Borrowed(text.as_ref()))
+        }
+        Event::DisplayMath(text) => {
+            Event::DisplayMath(pulldown_cmark::CowStr::Borrowed(text.as_ref()))
+        }
+        Event::FootnoteReference(text) => {
+            Event::FootnoteReference(pulldown_cmark::CowStr::Borrowed(text.as_ref()))
+        }
+        other => other.clone(),
     }
 }

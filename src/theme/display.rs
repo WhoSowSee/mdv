@@ -1,18 +1,21 @@
 use super::*;
 
 /// Lists all available themes from the given manager.
-pub fn list_themes(manager: &ThemeManager) {
+/// Returns stdout write or flush failures.
+pub fn list_themes(manager: &ThemeManager) -> std::io::Result<()> {
+    use std::io::Write;
     let themes = manager.get_themes_by_luminosity();
-
-    println!("Available themes:");
-    println!();
+    let mut output = std::io::stdout().lock();
+    writeln!(output, "Available themes:\n")?;
 
     for (name, theme, luminosity) in themes {
-        println!(
+        writeln!(
+            output,
             "  {:<20} - {} (luminosity: {:.3})",
             name, theme.description, luminosity
-        );
+        )?;
     }
+    output.flush()
 }
 
 /// Create a style from theme colors

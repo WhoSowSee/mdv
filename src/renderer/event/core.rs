@@ -1,7 +1,7 @@
 use super::{
-    Alignment, CalloutStyle, Config, DefinitionListState, Event, FootnoteDefinition, FootnoteStyle,
-    HashMap, HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme, ThemeElement,
-    create_style, extract_code_language,
+    Alignment, CalloutStyle, Config, DefinitionListState, Event, FootnoteDefinitions,
+    FootnoteStyle, HashMap, HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme,
+    ThemeElement, create_style, extract_code_language,
 };
 use crate::block_spacing::BlockElement;
 use crate::inline_style::InlineStyleKind;
@@ -24,6 +24,10 @@ mod process;
 mod render;
 mod start_tags;
 mod state;
+mod subsystems;
+pub(super) use subsystems::{
+    CodeBlock, CodeState, CurrentLink, FootnoteState, LinkDestination, LinkState,
+};
 
 pub(crate) use state::{
     CalloutFold, CalloutInfo, CalloutKind, CalloutState, CapturedReferenceBlock,
@@ -55,28 +59,9 @@ pub(in crate::renderer) struct EventRenderer<'a> {
     pub(super) definition_list_stack: Vec<DefinitionListState>,
     pub(super) table_state: Option<TableState>,
     pub(super) pending_html_block_buffer: Option<HtmlBlockBuffer>,
-    pub(super) link_references: HashMap<String, String>,
-    pub(super) link_counter: usize,
-    pub(super) current_link_text: String,
-    pub(super) in_link: bool,
-    pub(super) paragraph_link_counter: usize,
-    pub(super) paragraph_links: Vec<(String, String)>,
-    pub(super) document_links: Vec<(String, String)>,
-    pub(super) in_code_block: bool,
-    pub(super) code_block_content: String,
-    pub(super) math_code_block_source_line: Option<usize>,
-    pub(super) code_block_language: Option<String>,
-    pub(super) max_code_line_number_width: usize,
-    pub(super) plaintext_code_block_depth: usize,
-    pub(super) captured_reference_blocks: Vec<CapturedReferenceBlock>,
-    pub(super) deferred_reference_blocks: Vec<DeferredLinkReferenceBlock>,
-    pub(super) footnote_definitions: Vec<FootnoteDefinition>,
-    pub(super) footnote_order: Vec<String>,
-    pub(super) current_inline_footnotes: Vec<String>,
-    pub(super) footnote_use_count: HashMap<String, usize>,
-    pub(super) suppress_footnote_output: bool,
-    pub(super) footnote_text_state: FootnoteTextState,
-    pub(super) footnote_text_buffer: String,
+    pub(super) links: LinkState,
+    pub(super) code: CodeState,
+    pub(super) footnotes: FootnoteState,
     pub(super) last_header_level: HeadingLevel,
     pub(super) formatting_stack: Vec<ThemeElement>,
     pub(super) active_backtick_style: Option<InlineStyleKind>,

@@ -38,10 +38,15 @@ impl<'a> EventRenderer<'a> {
 
         // Split text into wrappable units (words or characters)
         let units = match wrap_mode {
-            crate::utils::WrapMode::Word => self
-                .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
-            crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-            crate::utils::WrapMode::None => vec![Cow::Borrowed(text)],
+            crate::utils::WrapMode::Word => TextUnits::Words(
+                self.split_text_into_words_styled(
+                    text,
+                    self.word_wrap_content_width(effective_width),
+                )
+                .into_iter(),
+            ),
+            crate::utils::WrapMode::Character => TextUnits::characters(text),
+            crate::utils::WrapMode::None => TextUnits::Single(Some(text)),
         };
 
         // Process units in groups - each group becomes one continuous struck fragment
@@ -62,7 +67,8 @@ impl<'a> EventRenderer<'a> {
             fragment_start_line_width = self.compute_line_start_context_width();
         }
 
-        for (i, unit) in units.iter().enumerate() {
+        for (i, unit) in units.enumerate() {
+            let unit = unit.as_ref();
             let is_ws = unit.trim().is_empty();
             let unit_width = crate::utils::display_width(unit);
             let current_fragment_width = crate::utils::display_width(&current_fragment);

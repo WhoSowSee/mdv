@@ -1,4 +1,36 @@
 use super::*;
+
+#[test]
+fn malformed_editor_commands_preserve_their_diagnostic() {
+    for (mdv_editor, editor, variable) in [
+        (Some("editor \"unterminated"), None, "MDV_EDITOR"),
+        (None, Some("editor \"unterminated"), "EDITOR"),
+        (Some("\"\""), None, "MDV_EDITOR"),
+    ] {
+        let error = EditorCommand::from_values(mdv_editor, editor, None).unwrap_err();
+        assert!(error.to_string().contains(variable), "{error:#}");
+    }
+}
+
+#[test]
+fn non_unicode_editor_value_is_an_error() {
+    #[cfg(windows)]
+    let value = {
+        use std::os::windows::ffi::OsStringExt;
+        std::ffi::OsString::from_wide(&[0xd800])
+    };
+    #[cfg(unix)]
+    let value = {
+        use std::os::unix::ffi::OsStringExt;
+        std::ffi::OsString::from_vec(vec![0xff])
+    };
+    let error = unicode_environment_value("MDV_EDITOR", value).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("MDV_EDITOR is not valid Unicode")
+    );
+}
 use std::collections::HashSet;
 
 #[test]

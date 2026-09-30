@@ -1,10 +1,10 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(in crate::renderer::event) fn extract_footnote_definitions(
+    pub(in crate::renderer::event) fn extract_footnote_definitions<'e>(
         &self,
-        events: Vec<Event<'static>>,
-    ) -> (Vec<Event<'static>>, Vec<FootnoteDefinition>) {
+        events: impl IntoIterator<Item = Event<'e>>,
+    ) -> (Vec<Event<'e>>, Vec<FootnoteDefinition>) {
         let mut cleaned = Vec::new();
         let mut definitions = Vec::new();
         let mut current: Option<FootnoteDefinition> = None;
@@ -28,7 +28,7 @@ impl<'a> EventRenderer<'a> {
                 }
                 other => {
                     if let Some(def) = current.as_mut() {
-                        def.events.push(other);
+                        def.events.push(other.into_static());
                     } else {
                         cleaned.push(other);
                     }
@@ -47,14 +47,14 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(in crate::renderer::event) fn register_footnote_reference(&mut self, name: &str) {
-        if self.suppress_footnote_output {
+        if self.footnotes.suppress_output {
             return;
         }
 
-        self.footnote_order.push(name.to_string());
+        self.footnotes.order.push(name.to_string());
 
         if matches!(self.config.footnote_style, FootnoteStyle::Attached) {
-            self.current_inline_footnotes.push(name.to_string());
+            self.footnotes.inline.push(name.to_string());
         }
     }
 

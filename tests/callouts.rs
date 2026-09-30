@@ -33,7 +33,7 @@ fn render(source: &str, style: &str, extra: &[&str]) -> String {
         ])
         .args(extra)
         .arg(file.path())
-        .timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(10))
         .output()
         .unwrap();
     assert!(

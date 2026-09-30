@@ -43,5 +43,7 @@ mod callouts;
 mod handling;
 mod segments;
 mod styled;
+mod units;
 mod wrapping;
 use std::borrow::Cow;
+use units::TextUnits;

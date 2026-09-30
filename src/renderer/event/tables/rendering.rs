@@ -9,7 +9,7 @@ impl<'a> EventRenderer<'a> {
 
         // Add accumulated link references for InlineTable mode at the end of the table
         if matches!(self.config.link_style, LinkStyle::InlineTable)
-            && !self.paragraph_links.is_empty()
+            && !self.links.paragraph.is_empty()
         {
             self.add_paragraph_link_references_for_table(table_indent);
         }

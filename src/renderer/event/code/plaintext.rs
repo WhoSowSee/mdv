@@ -13,7 +13,7 @@ impl<'a> EventRenderer<'a> {
         &self,
         language_hint: Option<&str>,
     ) -> bool {
-        if self.plaintext_code_block_depth > 0 {
+        if self.code.plaintext_depth > 0 {
             return false;
         }
 
@@ -58,22 +58,22 @@ impl<'a> EventRenderer<'a> {
             self.output_style,
             self.math_diagnostics.clone(),
         );
-        nested_renderer.plaintext_code_block_depth = self.plaintext_code_block_depth + 1;
-        nested_renderer.suppress_footnote_output = true;
+        nested_renderer.code.plaintext_depth = self.code.plaintext_depth + 1;
+        nested_renderer.footnotes.suppress_output = true;
         if matches!(self.config.link_style, LinkStyle::EndTable) {
-            nested_renderer.paragraph_link_counter = self.paragraph_link_counter;
+            nested_renderer.links.paragraph_counter = self.links.paragraph_counter;
         }
 
-        let mut rendered = nested_renderer.render_events(events)?;
+        let mut rendered = nested_renderer.render_events(&events)?;
         rendered = rendered
             .trim_end_matches('\n')
             .trim_start_matches('\n')
             .to_string();
 
-        let references = std::mem::take(&mut nested_renderer.captured_reference_blocks);
-        let deferred_references = std::mem::take(&mut nested_renderer.deferred_reference_blocks);
-        let document_links = std::mem::take(&mut nested_renderer.document_links);
-        let reference_counter = nested_renderer.paragraph_link_counter;
+        let references = std::mem::take(&mut nested_renderer.code.captured_references);
+        let deferred_references = std::mem::take(&mut nested_renderer.code.deferred_references);
+        let document_links = std::mem::take(&mut nested_renderer.links.document);
+        let reference_counter = nested_renderer.links.paragraph_counter;
 
         Ok(PlaintextRenderResult {
             body: rendered,

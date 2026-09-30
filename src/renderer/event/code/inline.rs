@@ -3,8 +3,8 @@ use super::*;
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn handle_inline_code(&mut self, code: CowStr) -> Result<()> {
         if self.pending_callout_label_override {
-            if self.in_link {
-                self.current_link_text.push_str(&code);
+            if let Some(link) = self.links.current.as_mut() {
+                link.text.push_str(&code);
             } else {
                 self.pending_callout_label_buffer.push_str(&code);
             }

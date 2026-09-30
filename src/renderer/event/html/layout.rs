@@ -46,7 +46,7 @@ impl<'a> EventRenderer<'a> {
         if matches!(self.config.link_style, LinkStyle::InlineTable)
             && self.table_state.is_none()
             && self.current_paragraph_start.is_none()
-            && !self.paragraph_links.is_empty()
+            && !self.links.paragraph.is_empty()
         {
             self.add_paragraph_link_references();
             self.ensure_contextual_blank_line();

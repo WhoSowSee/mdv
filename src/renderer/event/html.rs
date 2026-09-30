@@ -21,6 +21,7 @@ enum HtmlAlignment {
 
 #[derive(Clone, Copy, Debug)]
 struct HtmlContext {
+    depth: usize,
     alignment: HtmlAlignment,
     preserve_whitespace: bool,
     highlighted: bool,
@@ -73,6 +74,7 @@ impl HtmlListMarkerState {
 impl Default for HtmlContext {
     fn default() -> Self {
         Self {
+            depth: 0,
             alignment: HtmlAlignment::Left,
             preserve_whitespace: false,
             highlighted: false,

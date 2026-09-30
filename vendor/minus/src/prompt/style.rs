@@ -78,14 +78,12 @@ impl PromptStyle {
     }
 
     pub(super) fn write_styled(self, output: &mut String, text: &str) {
-        let mut styled = false;
+        let mut styled = self.foreground.is_some() || self.background.is_some();
         if let Some(color) = self.foreground {
             write_prompt_color(output, color, false);
-            styled = true;
         }
         if let Some(color) = self.background {
             write_prompt_color(output, color, true);
-            styled = true;
         }
         for attribute in PromptAttribute::ALL {
             if self.attributes & attribute.bit() != 0 {

@@ -1,5 +1,5 @@
 use crate::process_command::split_command;
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -207,9 +207,14 @@ pub(crate) struct EditorCommand {
 
 impl EditorCommand {
     pub fn from_env() -> Result<Option<Self>> {
-        let mdv_editor = std::env::var("MDV_EDITOR").ok();
-        let editor = std::env::var("EDITOR").ok();
-        let mode = std::env::var("MDV_EDITOR_MODE").ok();
+        let read = |key| {
+            std::env::var_os(key)
+                .map(|value| unicode_environment_value(key, value))
+                .transpose()
+        };
+        let mdv_editor = read("MDV_EDITOR")?;
+        let editor = read("EDITOR")?;
+        let mode = read("MDV_EDITOR_MODE")?;
 
         Self::from_values(mdv_editor.as_deref(), editor.as_deref(), mode.as_deref())
     }
@@ -219,20 +224,22 @@ impl EditorCommand {
         editor: Option<&str>,
         mode: Option<&str>,
     ) -> Result<Option<Self>> {
-        let raw = [mdv_editor, editor]
+        let command = [("MDV_EDITOR", mdv_editor), ("EDITOR", editor)]
             .into_iter()
-            .flatten()
-            .find(|value| !value.trim().is_empty());
-        let Some(raw) = raw else {
+            .find_map(|(key, value)| {
+                value
+                    .filter(|value| !value.trim().is_empty())
+                    .map(|value| (key, value))
+            });
+        let Some((key, raw)) = command else {
             return Ok(None);
         };
-        let Ok(parts) = split_command(raw) else {
-            return Ok(None);
-        };
+        let parts = split_command(raw).with_context(|| format!("Invalid {key} command"))?;
         let mut parts = parts.into_iter();
-        let Some(program) = parts.next() else {
-            return Ok(None);
-        };
+        let program = parts
+            .next()
+            .filter(|program| !program.trim().is_empty())
+            .with_context(|| format!("Invalid {key} command: missing executable"))?;
         let args: Vec<String> = parts.collect();
         let kind = resolve_editor_kind(&program, &args, mode)?;
 
@@ -271,6 +278,12 @@ impl EditorCommand {
 
         Ok(())
     }
+}
+
+fn unicode_environment_value(key: &str, value: std::ffi::OsString) -> Result<String> {
+    value
+        .into_string()
+        .map_err(|_| anyhow::anyhow!("Environment variable {key} is not valid Unicode"))
 }
 
 fn detect_editor(program: &str, args: &[String]) -> Option<EditorKind> {

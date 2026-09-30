@@ -13,6 +13,10 @@ This module serves `--render-html`: HTML fragments embedded in Markdown become t
 
 Every HTML node passes through `render_html_node`; element dispatch selects the specialized renderer for its tag.
 
+`HtmlContext` carries the DOM depth through every traversal path. Terminal HTML
+rendering rejects nesting beyond 64 elements with a regular error before another
+recursive call, including lists, details, definition lists, and table cells.
+
 ## Module files
 
 | File | Responsibility |

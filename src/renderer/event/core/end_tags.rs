@@ -11,7 +11,7 @@ impl<'a> EventRenderer<'a> {
             TagEnd::CodeBlock => {
                 self.handle_code_block_end()?;
                 if matches!(self.config.footnote_style, FootnoteStyle::Attached)
-                    && !self.current_inline_footnotes.is_empty()
+                    && !self.footnotes.inline.is_empty()
                 {
                     self.finalize_inline_footnotes(true, false)?;
                 }
@@ -23,7 +23,7 @@ impl<'a> EventRenderer<'a> {
             TagEnd::Table => {
                 self.handle_table_end()?;
                 if matches!(self.config.footnote_style, FootnoteStyle::Attached)
-                    && !self.current_inline_footnotes.is_empty()
+                    && !self.footnotes.inline.is_empty()
                 {
                     self.finalize_inline_footnotes(true, false)?;
                 }
@@ -31,14 +31,14 @@ impl<'a> EventRenderer<'a> {
             TagEnd::TableHead => {
                 if let Some(ref mut table) = self.table_state {
                     table.in_header = false;
-                    table.headers = table.current_row.clone();
+                    table.headers = std::mem::take(&mut table.current_row);
                 }
             }
             TagEnd::TableRow => {
                 if let Some(ref mut table) = self.table_state
                     && !table.in_header
                 {
-                    table.rows.push(table.current_row.clone());
+                    table.rows.push(std::mem::take(&mut table.current_row));
                 }
             }
             TagEnd::TableCell => {

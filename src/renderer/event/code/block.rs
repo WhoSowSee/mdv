@@ -2,17 +2,20 @@ use super::*;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn handle_code_block_end(&mut self) -> Result<()> {
-        self.in_code_block = false;
-
         self.reset_explicit_blank_line_streak();
 
-        let mut raw_code = std::mem::take(&mut self.code_block_content);
-        let math_source_line = self.math_code_block_source_line.take();
-        let language_hint = self.code_block_language.clone();
+        let block = self
+            .code
+            .active
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("Code block end without a matching start"))?;
+        let mut raw_code = block.content;
+        let math_source_line = block.source_line;
+        let language_hint = block.language;
         if Self::is_markdown_language_hint(language_hint.as_deref()) {
             let (cleaned, definitions) = self.extract_markdown_code_footnote_definitions(&raw_code);
             if !definitions.is_empty() {
-                self.footnote_definitions.extend(definitions);
+                self.footnotes.definitions.extend(definitions);
             }
             raw_code = cleaned;
         }
@@ -20,14 +23,12 @@ impl<'a> EventRenderer<'a> {
 
         let is_empty = raw_code.trim().is_empty();
         if is_empty && !self.config.show_empty_elements {
-            self.code_block_language = None;
             return Ok(());
         }
 
         if let Some(hint) = language_hint.as_deref()
             && is_math_language_hint(hint)
         {
-            self.code_block_language = None;
             let source_marker =
                 math_source_line.map(crate::renderer::line_numbers::encode_internal_marker);
             return self.handle_math_code_block(&raw_code, source_marker.as_deref());
@@ -61,15 +62,15 @@ impl<'a> EventRenderer<'a> {
                 Vec::new(),
                 Vec::new(),
                 Vec::new(),
-                self.paragraph_link_counter,
+                self.links.paragraph_counter,
             )
         };
 
         if matches!(self.config.link_style, LinkStyle::EndTable) {
             if !collected_document_links.is_empty() {
-                self.document_links.extend(collected_document_links);
+                self.links.document.extend(collected_document_links);
             }
-            self.paragraph_link_counter = reference_counter;
+            self.links.paragraph_counter = reference_counter;
         }
 
         if !captured_reference_blocks.is_empty() {
@@ -82,7 +83,6 @@ impl<'a> EventRenderer<'a> {
         let highlighted_is_empty = strip_ansi(&highlighted).trim().is_empty();
         if highlighted_is_empty {
             if !self.config.show_empty_elements {
-                self.code_block_language = None;
                 return Ok(());
             }
 
@@ -115,8 +115,6 @@ impl<'a> EventRenderer<'a> {
             } else {
                 None
             };
-
-        self.code_block_language = None;
 
         let should_wrap = self.config.is_text_wrapping_enabled();
         let wrap_mode = self.config.text_wrap_mode();

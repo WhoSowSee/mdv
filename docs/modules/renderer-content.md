@@ -38,6 +38,10 @@ Word mode extracts words and oversized units; character mode splits on Unicode c
 
 Wrapping units borrow slices from their text event; only oversized words that need rewriting allocate new strings. ANSI removal preserves its two-stage contract (SGR first, then OSC 8), and visible width uses the complete resulting Unicode string so emoji sequences remain intact across style boundaries.
 
+Character units stream from `CharIndices` through `text/units.rs` without an
+intermediate vector. The ANSI word splitter borrows plain tokens and owns only
+tokens whose escape sequences need rearranging.
+
 Inline heading content is collected without wrapping. Heading finalization wraps it once, after adding optional Markdown markers and subtracting the actual heading prefix width; continuation lines receive that prefix exactly once.
 
 Heading finalization replaces only the current heading span in the output buffer. It does not copy the preceding document for each heading.

@@ -1,4 +1,4 @@
-use super::core::CalloutState;
+use super::core::{CalloutState, CurrentLink, LinkDestination};
 use super::{
     CapturedReferenceBlock, CowStr, DeferredLinkReferenceBlock, EventRenderer, LinkStyle,
     LinkTruncationStyle, Result, TableInlineUrlSegment, TableInlineUrlTarget, TableState,

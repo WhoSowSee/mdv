@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(super) fn process_event(&mut self, event: Event<'static>) -> Result<()> {
+    pub(super) fn process_event(&mut self, event: Event<'_>) -> Result<()> {
         let Some(event) = self.buffer_html_details_event(event)? else {
             return Ok(());
         };
@@ -89,20 +89,19 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn push_source_line_marker(&mut self, source_line: usize) {
-        if self.in_code_block
-            && self
-                .code_block_language
+        let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
+        if let Some(block) = self.code.active.as_mut() {
+            if block
+                .language
                 .as_deref()
                 .is_some_and(crate::math::is_math_language_hint)
-        {
-            self.math_code_block_source_line.get_or_insert(source_line);
-            return;
-        }
-        let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
-        if self.in_code_block {
-            self.code_block_content.push_str(&marker);
-        } else if self.in_link {
-            self.current_link_text.push_str(&marker);
+            {
+                block.source_line.get_or_insert(source_line);
+                return;
+            }
+            block.content.push_str(&marker);
+        } else if let Some(link) = self.links.current.as_mut() {
+            link.text.push_str(&marker);
         } else if let Some(table) = self.table_state.as_mut() {
             table.current_cell.push_str(&marker);
         } else if let Some(buffer) = self.pending_html_block_buffer.as_mut() {

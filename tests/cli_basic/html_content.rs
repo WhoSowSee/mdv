@@ -1,6 +1,35 @@
 use super::*;
 
 #[test]
+fn deeply_nested_html_reports_an_error_without_overflowing_the_stack() {
+    for (opening, closing) in [
+        ("<span>", "</span>"),
+        ("<div>", "</div>"),
+        ("<details><summary>Title</summary>", "</details>"),
+    ] {
+        let source = format!("{}sentinel{}", opening.repeat(1024), closing.repeat(1024));
+        mdv_cmd()
+            .args(["--render-html", "--color", "never", "-"])
+            .write_stdin(source)
+            .timeout(Duration::from_secs(5))
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains("HTML nesting exceeds the limit"))
+            .stderr(predicate::str::contains("overflowed its stack").not());
+    }
+    mdv_cmd()
+        .args(["--render-html", "--color", "never", "-"])
+        .write_stdin(format!(
+            "{}sentinel{}",
+            "<span>".repeat(32),
+            "</span>".repeat(32)
+        ))
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("sentinel"));
+}
+
+#[test]
 fn test_render_html_definition_lists() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

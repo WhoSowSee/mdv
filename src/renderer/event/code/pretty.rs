@@ -139,9 +139,9 @@ impl<'a> EventRenderer<'a> {
 
         let continuation_indent = match self.config.code_wrap_indent {
             CodeWrapIndent::None => String::new(),
-            CodeWrapIndent::Base => base_indent.clone(),
+            CodeWrapIndent::Base => base_indent,
             CodeWrapIndent::Double => {
-                let mut indent = base_indent.clone();
+                let mut indent = base_indent;
                 indent.push_str("  ");
                 indent
             }

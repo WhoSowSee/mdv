@@ -142,4 +142,8 @@ The pager has a separate watcher in `src/pager/watcher.rs`. These mechanisms int
 
 ## Errors
 
+`output.rs` performs fallible stdout writes and flushes. The binary treats
+`BrokenPipe` as successful completion when a downstream reader exits early;
+other output errors remain errors. `theme::list_themes` returns `io::Result<()>`.
+
 `MdvError` supplies user-facing error categories, while public application boundaries return `anyhow::Result`. File, theme, or operation context is attached where that information becomes available. Low-level helpers must propagate failures instead of substituting plausible-looking output.

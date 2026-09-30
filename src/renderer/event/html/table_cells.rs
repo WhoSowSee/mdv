@@ -97,8 +97,11 @@ impl<'a> EventRenderer<'a> {
             self.output_style,
             self.math_diagnostics.clone(),
         );
-        renderer.code_block_content = text;
-        renderer.code_block_language = language;
+        renderer.code.active = Some(super::super::core::CodeBlock {
+            content: text,
+            language,
+            source_line: None,
+        });
         renderer.handle_code_block_end()?;
 
         let rendered = renderer.output.trim_matches('\n');

@@ -4,7 +4,7 @@ use crate::theme::{Color, SyntaxTheme, Theme, ThemeManager, parse_color_value};
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 const THEMES_DIR: &str = "themes";
 const THEME_EXT_YAML: &str = "yaml";

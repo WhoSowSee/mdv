@@ -14,15 +14,15 @@ impl<'a> EventRenderer<'a> {
         self.suppress_next_paragraph_break = false;
 
         if matches!(self.config.link_style, LinkStyle::InlineTable)
-            && !self.paragraph_links.is_empty()
+            && !self.links.paragraph.is_empty()
         {
             self.add_paragraph_link_references();
         }
 
         let inline_footnotes_rendered =
             matches!(self.config.footnote_style, FootnoteStyle::Attached)
-                && self.has_renderable_footnotes(&self.current_inline_footnotes)
-                && !self.suppress_footnote_output;
+                && self.has_renderable_footnotes(&self.footnotes.inline)
+                && !self.footnotes.suppress_output;
 
         self.finalize_inline_footnotes(true, !self.list_stack.is_empty())?;
 

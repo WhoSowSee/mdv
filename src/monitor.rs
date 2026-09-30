@@ -41,8 +41,10 @@ pub(crate) fn watch_file_with_options(
         .map_err(|e| MdvError::MonitorError(e.to_string()))?;
 
     print_document(initial_content, config, &renderer, options)?;
-    println!("Monitoring file: {} (Press Ctrl+C to stop)", filename);
-    io::stdout().flush()?;
+    crate::output::write_stdout(&format!(
+        "Monitoring file: {} (Press Ctrl+C to stop)\n",
+        filename
+    ))?;
 
     let debounce_duration = Duration::from_millis(100);
     let mut next_render = None;
@@ -57,9 +59,15 @@ pub(crate) fn watch_file_with_options(
 
         if next_render.is_some_and(|deadline| Instant::now() >= deadline) {
             next_render = None;
-            println!("\n--- File changed, re-rendering ---\n");
+            crate::output::write_stdout("\n--- File changed, re-rendering ---\n\n")?;
             if let Err(error) = render_file(path, config, &renderer, options) {
-                eprintln!("Error rendering file: {}", error);
+                if error
+                    .downcast_ref::<io::Error>()
+                    .is_some_and(|error| error.kind() == io::ErrorKind::BrokenPipe)
+                {
+                    return Err(error);
+                }
+                writeln!(io::stderr().lock(), "Error rendering file: {}", error)?;
             }
         }
     }
@@ -97,6 +105,5 @@ fn print_document(
     options: RenderOptions<'_>,
 ) -> Result<()> {
     let rendered = render_document_with_renderer(content, config, renderer, options)?;
-    print!("{}", rendered.output()?);
-    Ok(io::stdout().flush()?)
+    Ok(crate::output::write_stdout(rendered.output()?)?)
 }

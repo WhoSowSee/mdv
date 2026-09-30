@@ -282,8 +282,8 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(in crate::renderer::event) fn push_inline_backtick(&mut self) {
-        if self.in_link {
-            self.current_link_text.push('`');
+        if let Some(link) = self.links.current.as_mut() {
+            link.text.push('`');
         } else if let Some(table) = self.table_state.as_mut() {
             table.current_cell.push('`');
         } else {

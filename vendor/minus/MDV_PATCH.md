@@ -53,3 +53,14 @@ The hue conversion uses Björn Ottosson's public-domain
 The fork adds direct `unicode-segmentation` and `unicode-width` dependencies for grapheme-safe prompt layout and selection geometry.
 
 The extension exists because upstream `minus` 5.7.2 hardcodes its prompt colors and does not expose a dynamic status-line renderer.
+
+Pager sessions restore the preceding process panic hook on normal completion and
+after unwinding. Search cursor positions and word indices use `usize`; screen
+coordinates are bounded when drawing. Code using `SearchOpts` positions should
+use text indices rather than `u16` terminal coordinates.
+
+Runtime state is split into `state/{layout,prompt,selection}.rs`; search uses
+`search/{input,incremental,highlighting}.rs`; command handling uses
+`core/ev_handler/{dispatch,io,search_actions}.rs`. Companion tests preserve the
+existing behavior coverage. The root package CI checks this fork independently
+with `dynamic_output,search`.

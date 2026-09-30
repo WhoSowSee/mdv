@@ -60,10 +60,10 @@ pub(super) fn remap_callout_palette(
 
     let mut palette = HashMap::new();
     palette.insert(CalloutKind::Note, note.clone());
-    palette.insert(CalloutKind::Info, note.clone());
+    palette.insert(CalloutKind::Info, note);
 
     palette.insert(CalloutKind::Abstract, abstract_color.clone());
-    palette.insert(CalloutKind::Example, abstract_color.clone());
+    palette.insert(CalloutKind::Example, abstract_color);
 
     palette.insert(CalloutKind::Todo, todo);
     palette.insert(CalloutKind::Tip, tip);

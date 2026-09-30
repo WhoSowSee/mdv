@@ -1,6 +1,28 @@
 use super::*;
 
 #[test]
+fn closing_stdout_early_finishes_without_a_panic() {
+    use std::io::Read;
+    use std::process::Stdio;
+
+    let file = NamedTempFile::new().unwrap();
+    fs::write(file.path(), "Readable paragraph.\n\n".repeat(20000)).unwrap();
+    let mut child = crate::support::mdv_process_command()
+        .args(["--color", "never", "--no-code-guessing"])
+        .arg(file.path())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut output = child.stdout.take().unwrap();
+    output.read_exact(&mut [0; 32]).unwrap();
+    drop(output);
+    let result = child.wait_with_output().unwrap();
+    assert!(result.status.success(), "{:?}", result);
+    assert!(result.stderr.is_empty(), "{:?}", result);
+}
+
+#[test]
 fn test_help_command() {
     let mut cmd = mdv_cmd();
     cmd.arg("--help");

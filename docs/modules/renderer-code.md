@@ -82,6 +82,9 @@ Syntax selection follows this order:
 
 An unsupported user `.sublime-syntax` file produces a diagnosable loading error.
 
+The embedded dump is decoded through a fallible shared cache. Invalid embedded
+data fails renderer construction instead of substituting syntect defaults.
+
 ## Math
 
 Math rendering does not depend on `syntect`, although fenced blocks with `math`, `latex`, `tex`, `katex`, or `mathjax` hints enter through the code-block handler.

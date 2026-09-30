@@ -59,6 +59,10 @@ User themes are read from `<config_dir>/themes/*.yaml|*.yml` in lexical order. `
 
 Unlike the partial user schema, an embedded theme must define every required color, its description, syntax palette, and status-bar transparency flag.
 
+Errors while enumerating individual directory entries propagate with directory
+context; they are distinct from the documented warning-and-skip policy for an
+invalid theme file. Theme-name getters return borrowed `&str` values.
+
 `math`, `math_border`, `code_block_border`, `callout_border`, `horizontal_rule`, and `footnote_separator` are optional in user themes. When omitted they inherit from the selected base theme. Legacy serialized themes fall back to `text` for math and `border` for math borders. By default, code and callout borders, horizontal rules, footnote separators, and table lines emit no foreground color and use the terminal text color. Each explicit border override colors vertical and horizontal pieces together; explicit `table_border` also colors separators between wrapped table blocks. Ordinary quote markers retain their separate `quote` color.
 
 ## Application order

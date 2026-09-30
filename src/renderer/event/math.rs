@@ -15,12 +15,14 @@ pub(in crate::renderer::event) fn has_protected_math_layout(text: &str) -> bool 
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_inline_math(&mut self, math: CowStr) -> Result<()> {
-        if self.in_link {
+        if self.links.current.is_some() {
             let rendered = self.render_math(math.as_ref(), MathMode::Inline);
             if rendered.trim().is_empty() {
                 return Ok(());
             }
-            self.current_link_text.push_str(&rendered);
+            if let Some(link) = self.links.current.as_mut() {
+                link.text.push_str(&rendered);
+            }
             return Ok(());
         }
 

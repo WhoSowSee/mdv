@@ -6,17 +6,13 @@ impl<'a> EventRenderer<'a> {
         code: &str,
     ) -> (String, Vec<FootnoteDefinition>) {
         let mut definitions = Vec::new();
-        let mut known_names: HashSet<String> = self
-            .footnote_definitions
-            .iter()
-            .map(|definition| definition.name.clone())
-            .collect();
+        let mut known_names = HashSet::new();
         let mut cleaned_lines = Vec::new();
 
         for line in code.lines() {
             let trimmed = line.trim();
             if let Some((name, kind)) = Self::parse_placeholder_footnote_line(trimmed) {
-                if known_names.contains(&name) {
+                if self.footnotes.definitions.contains(&name) || known_names.contains(&name) {
                     continue;
                 }
                 definitions.push(FootnoteDefinition {
@@ -38,11 +34,11 @@ impl<'a> EventRenderer<'a> {
         (cleaned, definitions)
     }
 
-    pub(super) fn extract_placeholder_footnote_definitions(
+    pub(super) fn extract_placeholder_footnote_definitions<'e>(
         &self,
-        events: Vec<Event<'static>>,
+        events: Vec<Event<'e>>,
         mut definitions: Vec<FootnoteDefinition>,
-    ) -> (Vec<Event<'static>>, Vec<FootnoteDefinition>) {
+    ) -> (Vec<Event<'e>>, Vec<FootnoteDefinition>) {
         let mut cleaned = Vec::with_capacity(events.len());
         let mut known_names: HashSet<String> = definitions
             .iter()
@@ -78,7 +74,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn extract_bare_footnote_paragraph(
-        events: &[Event<'static>],
+        events: &[Event<'_>],
         start_idx: usize,
     ) -> Option<(usize, Vec<(String, FootnoteDefinitionKind)>)> {
         let mut end_idx = start_idx + 1;

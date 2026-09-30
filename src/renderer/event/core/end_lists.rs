@@ -17,7 +17,7 @@ impl<'a> EventRenderer<'a> {
 
         if matches!(self.config.link_style, LinkStyle::InlineTable)
             && closed_top_level_list
-            && !self.paragraph_links.is_empty()
+            && !self.links.paragraph.is_empty()
         {
             self.add_paragraph_link_references();
         } else if !self.output.ends_with('\n') {
@@ -50,7 +50,7 @@ impl<'a> EventRenderer<'a> {
         }
 
         if matches!(self.config.footnote_style, FootnoteStyle::Attached)
-            && !self.current_inline_footnotes.is_empty()
+            && !self.footnotes.inline.is_empty()
         {
             self.finalize_inline_footnotes(true, true)?;
         }

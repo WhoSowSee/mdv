@@ -10,8 +10,8 @@ impl<'a> EventRenderer<'a> {
                 self.current_paragraph_has_leading_break = false;
 
                 if matches!(self.config.link_style, LinkStyle::InlineTable) {
-                    self.paragraph_link_counter = 0;
-                    self.paragraph_links.clear();
+                    self.links.paragraph_counter = 0;
+                    self.links.paragraph.clear();
                 }
 
                 if self.list_stack.is_empty() {
@@ -93,10 +93,10 @@ impl<'a> EventRenderer<'a> {
                 }
             }
             Tag::CodeBlock(kind) => {
-                self.in_code_block = true;
-                self.code_block_content.clear();
-                self.math_code_block_source_line = None;
-                self.code_block_language = extract_code_language(&kind);
+                self.code.active = Some(CodeBlock {
+                    language: extract_code_language(&kind),
+                    ..Default::default()
+                });
             }
             Tag::List(start_number) => {
                 if let Some(state @ CalloutState::Pending(_)) = self.callout_stack.last_mut() {
@@ -112,8 +112,8 @@ impl<'a> EventRenderer<'a> {
                     let spacing = self.config.block_spacing.spacing(spacing_element);
                     self.ensure_contextual_blank_lines(spacing.top);
                     if matches!(self.config.link_style, LinkStyle::InlineTable) {
-                        self.paragraph_link_counter = 0;
-                        self.paragraph_links.clear();
+                        self.links.paragraph_counter = 0;
+                        self.links.paragraph.clear();
                     }
                 }
 
@@ -205,8 +205,8 @@ impl<'a> EventRenderer<'a> {
             Tag::DefinitionListDefinition => self.handle_definition_description_start(),
             Tag::Table(alignments) => {
                 if matches!(self.config.link_style, LinkStyle::InlineTable) {
-                    self.paragraph_link_counter = 0;
-                    self.paragraph_links.clear();
+                    self.links.paragraph_counter = 0;
+                    self.links.paragraph.clear();
                 }
 
                 self.table_state = Some(TableState {

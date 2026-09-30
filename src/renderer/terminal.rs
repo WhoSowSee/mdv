@@ -81,13 +81,13 @@ impl TerminalRenderer {
 
     pub fn render(&self, events: Vec<Event<'static>>) -> Result<String> {
         Ok(self
-            .render_with_options(events, self.config.line_numbers, false, &Rc::default())?
+            .render_with_options(&events, self.config.line_numbers, false, &Rc::default())?
             .output)
     }
 
     fn render_with_options(
         &self,
-        events: Vec<Event<'static>>,
+        events: &[Event<'static>],
         line_numbers: Option<LineNumberOptions>,
         collect_source_lines: bool,
         math_diagnostics: &Rc<crate::math::MathDiagnostics>,
@@ -128,7 +128,7 @@ impl TerminalRenderer {
     fn render_events(
         &self,
         config: &Config,
-        events: Vec<Event<'static>>,
+        events: &[Event<'static>],
         math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<String> {
         if config.code_line_numbers.is_none() {
@@ -142,7 +142,7 @@ impl TerminalRenderer {
             let mut render_config = config.clone();
             render_config.code_line_number_width = number_width;
             let (output, required_width) =
-                self.render_events_once(&render_config, events.clone(), math_diagnostics)?;
+                self.render_events_once(&render_config, events, math_diagnostics)?;
             if required_width <= number_width {
                 return Ok(output);
             }
@@ -153,7 +153,7 @@ impl TerminalRenderer {
     fn render_events_once(
         &self,
         config: &Config,
-        events: Vec<Event<'static>>,
+        events: &[Event<'static>],
         math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<(String, usize)> {
         config.validate_horizontal_margins()?;
@@ -171,12 +171,12 @@ impl TerminalRenderer {
 
     fn render_with_source_line_numbers(
         &self,
-        events: Vec<Event<'static>>,
+        events: &[Event<'static>],
         options: LineNumberOptions,
         collect_source_lines: bool,
         math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<super::line_numbers::SourceMappedOutput> {
-        let Some(max_line) = super::line_numbers::max_source_line(&events) else {
+        let Some(max_line) = super::line_numbers::max_source_line(events) else {
             let output = self.render_events(&self.config, events, math_diagnostics)?;
             return Ok(mapped_output(output, collect_source_lines));
         };
@@ -191,7 +191,7 @@ impl TerminalRenderer {
 
     fn render_with_rendered_line_numbers(
         &self,
-        events: Vec<Event<'static>>,
+        events: &[Event<'static>],
         options: LineNumberOptions,
         collect_source_lines: bool,
         math_diagnostics: &Rc<crate::math::MathDiagnostics>,
@@ -203,7 +203,7 @@ impl TerminalRenderer {
             render_config.line_numbers = Some(options);
             render_config.line_number_gutter_width =
                 super::line_numbers::gutter_width_for_number_width(number_width, options);
-            let output = self.render_events(&render_config, events.clone(), math_diagnostics)?;
+            let output = self.render_events(&render_config, events, math_diagnostics)?;
             let rendered_lines = super::line_numbers::rendered_line_count(&output);
 
             if rendered_lines == 0 {

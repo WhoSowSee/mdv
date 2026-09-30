@@ -9,10 +9,12 @@ fn directory_arguments_open_the_browser_without_an_explicit_flag() {
     let directory = TempDir::new().unwrap();
     let target = select_interactive_target(
         Some(directory.path().to_string_lossy().as_ref()),
-        false,
-        false,
-        true,
-        true,
+        crate::interactive::InteractiveOptions {
+            requested: false,
+            pager_requested: false,
+            stdin_is_terminal: true,
+            stdout_is_terminal: true,
+        },
     )
     .unwrap();
 
@@ -30,11 +32,29 @@ fn regular_files_require_the_interactive_flag() {
     let filename = file.path().to_string_lossy();
 
     assert_eq!(
-        select_interactive_target(Some(filename.as_ref()), false, false, true, true).unwrap(),
+        select_interactive_target(
+            Some(filename.as_ref()),
+            crate::interactive::InteractiveOptions {
+                requested: false,
+                pager_requested: false,
+                stdin_is_terminal: true,
+                stdout_is_terminal: true
+            }
+        )
+        .unwrap(),
         None
     );
     assert_eq!(
-        select_interactive_target(Some(filename.as_ref()), true, false, true, true).unwrap(),
+        select_interactive_target(
+            Some(filename.as_ref()),
+            crate::interactive::InteractiveOptions {
+                requested: true,
+                pager_requested: false,
+                stdin_is_terminal: true,
+                stdout_is_terminal: true
+            }
+        )
+        .unwrap(),
         Some(InteractiveTarget::File(file.path().canonicalize().unwrap()))
     );
 }
@@ -42,7 +62,16 @@ fn regular_files_require_the_interactive_flag() {
 #[test]
 fn pager_mode_never_selects_an_interactive_target() {
     assert_eq!(
-        select_interactive_target(None, false, true, true, true).unwrap(),
+        select_interactive_target(
+            None,
+            crate::interactive::InteractiveOptions {
+                requested: false,
+                pager_requested: true,
+                stdin_is_terminal: true,
+                stdout_is_terminal: true
+            }
+        )
+        .unwrap(),
         None
     );
 }
@@ -51,17 +80,44 @@ fn pager_mode_never_selects_an_interactive_target() {
 fn automatic_browser_requires_terminal_input_and_output() {
     assert!(
         matches!(
-            select_interactive_target(None, false, false, true, true).unwrap(),
+            select_interactive_target(
+                None,
+                crate::interactive::InteractiveOptions {
+                    requested: false,
+                    pager_requested: false,
+                    stdin_is_terminal: true,
+                    stdout_is_terminal: true
+                }
+            )
+            .unwrap(),
             Some(InteractiveTarget::Directory(_))
         ),
         "a fully interactive terminal should open the current directory"
     );
     assert_eq!(
-        select_interactive_target(None, false, false, true, false).unwrap(),
+        select_interactive_target(
+            None,
+            crate::interactive::InteractiveOptions {
+                requested: false,
+                pager_requested: false,
+                stdin_is_terminal: true,
+                stdout_is_terminal: false
+            }
+        )
+        .unwrap(),
         None
     );
     assert_eq!(
-        select_interactive_target(None, false, false, false, true).unwrap(),
+        select_interactive_target(
+            None,
+            crate::interactive::InteractiveOptions {
+                requested: false,
+                pager_requested: false,
+                stdin_is_terminal: false,
+                stdout_is_terminal: true
+            }
+        )
+        .unwrap(),
         None
     );
 }

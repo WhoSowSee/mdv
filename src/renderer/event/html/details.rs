@@ -21,10 +21,10 @@ pub(super) fn html_details_balance(html: &str, mut depth: usize) -> usize {
 }
 
 impl<'a> EventRenderer<'a> {
-    pub(in crate::renderer::event) fn buffer_html_details_event(
+    pub(in crate::renderer::event) fn buffer_html_details_event<'e>(
         &mut self,
-        event: Event<'static>,
-    ) -> Result<Option<Event<'static>>> {
+        event: Event<'e>,
+    ) -> Result<Option<Event<'e>>> {
         let Some(buffer) = self
             .pending_html_block_buffer
             .as_mut()
@@ -46,7 +46,7 @@ impl<'a> EventRenderer<'a> {
             }
             buffer.details_depth = html_details_balance(html, buffer.details_depth);
         }
-        buffer.details_events.push(event);
+        buffer.details_events.push(event.into_static());
         if buffer.details_depth == 0 {
             self.flush_pending_html_block_buffer()?;
         }

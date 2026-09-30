@@ -9,6 +9,19 @@ use std::ffi::OsString;
 mod version;
 
 fn main() -> Result<()> {
+    match run_cli() {
+        Err(error)
+            if error
+                .downcast_ref::<std::io::Error>()
+                .is_some_and(|error| error.kind() == std::io::ErrorKind::BrokenPipe) =>
+        {
+            Ok(())
+        }
+        result => result,
+    }
+}
+
+fn run_cli() -> Result<()> {
     env_logger::Builder::from_default_env()
         .write_style(env_logger::WriteStyle::Never)
         .init();
@@ -19,6 +32,10 @@ fn main() -> Result<()> {
         Ok(matches) => matches,
         Err(error) if error.kind() == clap::error::ErrorKind::DisplayVersion => {
             version::print()?;
+            return Ok(());
+        }
+        Err(error) if error.kind() == clap::error::ErrorKind::DisplayHelp => {
+            error.print()?;
             return Ok(());
         }
         Err(error) => error.exit(),

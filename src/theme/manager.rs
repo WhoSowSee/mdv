@@ -24,8 +24,8 @@ impl ThemeManager {
             .ok_or_else(|| MdvError::ThemeError(format!("Theme '{}' not found", name)).into())
     }
 
-    pub fn list_themes(&self) -> Vec<&String> {
-        let mut names: Vec<&String> = self.themes.keys().collect();
+    pub fn list_themes(&self) -> Vec<&str> {
+        let mut names: Vec<&str> = self.themes.keys().map(String::as_str).collect();
         names.sort();
         names
     }
@@ -54,13 +54,13 @@ impl ThemeManager {
     }
 
     /// Get themes sorted by luminosity (for theme browsing)
-    pub fn get_themes_by_luminosity(&self) -> Vec<(&String, &Theme, f64)> {
-        let mut themes_with_lum: Vec<(&String, &Theme, f64)> = self
+    pub fn get_themes_by_luminosity(&self) -> Vec<(&str, &Theme, f64)> {
+        let mut themes_with_lum: Vec<(&str, &Theme, f64)> = self
             .themes
             .iter()
             .map(|(name, theme)| {
                 let lum = calculate_theme_luminosity(theme);
-                (name, theme, lum)
+                (name.as_str(), theme, lum)
             })
             .collect();
 

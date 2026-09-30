@@ -107,8 +107,9 @@ pub(crate) struct DeferredLinkReferenceBlock {
     pub(in crate::renderer::event) add_trailing_newline: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum FootnoteTextState {
+    #[default]
     Idle,
     SawOpenBracket,
     Collecting,

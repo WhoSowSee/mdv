@@ -6,28 +6,27 @@ impl<'a> EventRenderer<'a> {
         add_trailing_newline: bool,
         in_list: bool,
     ) -> Result<()> {
-        if self.suppress_footnote_output {
-            self.current_inline_footnotes.clear();
+        if self.footnotes.suppress_output {
+            self.footnotes.inline.clear();
             return Ok(());
         }
 
         if !matches!(self.config.footnote_style, FootnoteStyle::Attached) {
-            self.current_inline_footnotes.clear();
+            self.footnotes.inline.clear();
             return Ok(());
         }
 
-        if self.current_inline_footnotes.is_empty() {
+        if self.footnotes.inline.is_empty() {
             return Ok(());
         }
 
-        let inline_notes = self.current_inline_footnotes.clone();
+        let inline_notes = std::mem::take(&mut self.footnotes.inline);
         self.render_footnote_block(&inline_notes, add_trailing_newline, in_list)?;
-        self.current_inline_footnotes.clear();
         Ok(())
     }
 
     pub(in crate::renderer::event) fn finalize_document_footnotes(&mut self) -> Result<()> {
-        if self.suppress_footnote_output {
+        if self.footnotes.suppress_output {
             return Ok(());
         }
 
@@ -37,12 +36,12 @@ impl<'a> EventRenderer<'a> {
 
         self.ensure_placeholder_footnotes_in_order();
 
-        if self.footnote_order.is_empty() {
+        if self.footnotes.order.is_empty() {
             return Ok(());
         }
 
-        self.render_footnote_block(&self.footnote_order.clone(), true, false)?;
-        self.footnote_order.clear();
+        let footnotes = std::mem::take(&mut self.footnotes.order);
+        self.render_footnote_block(&footnotes, true, false)?;
         Ok(())
     }
 
@@ -67,8 +66,8 @@ impl<'a> EventRenderer<'a> {
             block_lines.push(separator);
         }
 
-        if self.plaintext_code_block_depth > 0 {
-            self.captured_reference_blocks.push(CapturedReferenceBlock {
+        if self.code.plaintext_depth > 0 {
+            self.code.captured_references.push(CapturedReferenceBlock {
                 lines: block_lines,
                 add_trailing_newline,
             });
@@ -120,7 +119,11 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn next_footnote_occurrence(&mut self, name: &str) -> usize {
-        let entry = self.footnote_use_count.entry(name.to_string()).or_insert(0);
+        let entry = self
+            .footnotes
+            .use_count
+            .entry(name.to_string())
+            .or_insert(0);
         let current = *entry;
         *entry += 1;
         current
@@ -131,25 +134,7 @@ impl<'a> EventRenderer<'a> {
         name: &str,
         occurrence: usize,
     ) -> Result<Option<String>> {
-        let mut seen = 0usize;
-        let mut fallback: Option<FootnoteDefinition> = None;
-        let mut definition: Option<FootnoteDefinition> = None;
-
-        for def in self.footnote_definitions.iter() {
-            if def.name != name {
-                continue;
-            }
-            fallback = Some(def.clone());
-            if seen == occurrence {
-                definition = Some(def.clone());
-                break;
-            }
-            seen += 1;
-        }
-
-        let definition = definition.or(fallback);
-
-        let Some(definition) = definition else {
+        let Some(definition) = self.footnotes.definitions.get(name, occurrence) else {
             if self.should_render_missing_footnote() {
                 return Ok(Some(MISSING_FOOTNOTE_PLACEHOLDER.to_string()));
             }
@@ -183,10 +168,10 @@ impl<'a> EventRenderer<'a> {
             self.output_style,
             self.math_diagnostics.clone(),
         );
-        nested_renderer.suppress_footnote_output = true;
-        nested_renderer.footnote_definitions = self.footnote_definitions.clone();
+        nested_renderer.footnotes.suppress_output = true;
+        nested_renderer.footnotes.definitions = self.footnotes.definitions.clone();
 
-        let rendered = nested_renderer.render_events(definition.events)?;
+        let rendered = nested_renderer.render_events(&definition.events)?;
         let trimmed = rendered.trim_end_matches('\n').to_string();
         if trimmed.is_empty() {
             if !self.should_render_missing_footnote() {
@@ -198,16 +183,11 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn has_footnote_definition(&self, name: &str) -> bool {
-        self.footnote_definitions
-            .iter()
-            .any(|definition| definition.name == name)
+        self.footnotes.definitions.contains(name)
     }
 
     pub(super) fn should_render_footnote_entry(&self, name: &str) -> bool {
-        let definition = self
-            .footnote_definitions
-            .iter()
-            .find(|definition| definition.name == name);
+        let definition = self.footnotes.definitions.get(name, 0);
 
         match definition.map(|def| def.kind) {
             Some(FootnoteDefinitionKind::InvalidSyntax | FootnoteDefinitionKind::EmptyBody) => {

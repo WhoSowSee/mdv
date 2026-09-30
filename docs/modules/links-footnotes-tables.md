@@ -65,6 +65,12 @@ Footnote block separators use the optional `footnote_separator` theme color, ind
 
 `FootnoteStyle::Attached` flushes accumulated footnotes at a paragraph or container boundary. `Endnotes` defers them to document end. `MissingFootnoteStyle` controls whether diagnostic entries are visible.
 
+`FootnoteDefinitions` shares immutable definitions through an `Arc` and indexes
+each name to its ordered occurrences. Nested renderers borrow the selected body
+and share the definition store. An occurrence beyond the defined range retains
+the existing last-definition behavior. Mutation detaches a shared store only
+when new definitions actually arrive.
+
 ## Event-level tables
 
 | File | Responsibility |

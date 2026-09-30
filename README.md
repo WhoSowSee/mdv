@@ -96,7 +96,7 @@ cat <FILE> | mdv
 ### Output and workflow
 
 - `--html` - prints HTML instead of terminal formatting.
-- `-E, --render-html` - renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally.
+- `-E, --render-html` - renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally. HTML nesting is limited to 64 DOM elements.
 - `-N, --line-numbers [<MODE>]` - prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
 - `--color <auto|always|never>` - controls terminal styling. `auto` enables ANSI and OSC 8 only when stdout is a terminal, `always` preserves styling through pipes, and `never` emits plain rendered output.
 - `--color-depth <auto|16|256|truecolor>` - detects the terminal palette or sets its limit explicitly. Applies to document colors and the interactive interface; default `auto`.
@@ -265,7 +265,7 @@ Every preset accepts the same keys and values as [`docs/examples/config.yaml`](d
 ## Environment variables
 
 - `MDV_CONFIG_PATH` - custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
-- `MDV_EDITOR` - editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors.
+- `MDV_EDITOR` - editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors. Malformed commands and non-Unicode editor settings are reported as errors.
 - `MDV_EDITOR_MODE` - optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
 - `MDV_PAGER` - pager command, optionally with quoted paths and arguments (for example, `less -R`). It selects the backend for `--pager`, `mdv help`, and documents opened from the interactive browser, but does not enable paging for ordinary output by itself. An explicit `--pager=<COMMAND>` has higher priority; `default` selects the default backend (currently built-in `minus`), while `builtin` explicitly selects `minus`. Empty, malformed, non-Unicode, and recursive `mdv` commands are errors. Commands are split into a program and arguments and run directly without shell interpretation.
 - `MDV_COLOR` - sets `auto`, `always`, or `never`; an explicit `--color` has higher priority.

@@ -27,7 +27,9 @@ pub(crate) struct FootnoteDefinition {
     pub kind: FootnoteDefinitionKind,
 }
 
+mod definitions;
 mod extraction;
+pub(super) use definitions::FootnoteDefinitions;
 mod markdown;
 mod rendering;
 mod scanning;

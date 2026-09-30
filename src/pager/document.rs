@@ -1,10 +1,12 @@
 use super::*;
 use crate::terminal::OutputStyle;
 mod layout;
+mod shared;
 mod views;
 pub(in crate::pager) use views::PagerLineNumberViews;
 
 pub(crate) struct PagerDocument {
+    identity: Arc<()>,
     warmup: Option<super::warmup::WarmupHandle>,
     reflow: Option<super::rendering::Reflow>,
     layout_width: Option<usize>,
@@ -16,6 +18,7 @@ pub(crate) struct PagerDocument {
     output_style: OutputStyle,
 }
 
+#[derive(Clone)]
 pub(in crate::pager) enum PagerContent {
     Static(String),
     LineNumbers(PagerLineNumberViews),
@@ -53,6 +56,13 @@ impl PagerDisplay {
 }
 
 impl PagerContent {
+    fn snapshot(&self) -> Result<(String, Option<LineNavigation>)> {
+        match self {
+            Self::Static(output) => Ok((output.clone(), None)),
+            Self::LineNumbers(views) => views.snapshot(),
+        }
+    }
+
     pub(in crate::pager) fn output(&self) -> Result<&str> {
         match self {
             Self::Static(output) => Ok(output),
@@ -75,6 +85,7 @@ impl PagerDocument {
 
     pub(in crate::pager) fn from_content(content: PagerContent, output_style: OutputStyle) -> Self {
         Self {
+            identity: Arc::new(()),
             content,
             warmup: None,
             reflow: None,
@@ -131,15 +142,14 @@ impl PagerDocument {
     }
 
     pub(in crate::pager) fn display_snapshot(&self) -> Result<(String, Option<LineNavigation>)> {
-        match &self.content {
-            PagerContent::Static(output) => Ok((output.clone(), None)),
-            PagerContent::LineNumbers(views) => {
-                let snapshot = views.snapshot()?;
-                if let Some(warmup) = &self.warmup {
-                    warmup.schedule(views.clone());
-                }
-                Ok(snapshot)
-            }
+        let snapshot = self.content.snapshot()?;
+        self.schedule_warmup();
+        Ok(snapshot)
+    }
+
+    fn schedule_warmup(&self) {
+        if let (Some(warmup), PagerContent::LineNumbers(views)) = (&self.warmup, &self.content) {
+            warmup.schedule(views.clone());
         }
     }
 
@@ -177,6 +187,7 @@ impl PagerDocument {
         }
     }
 
+    #[cfg(test)]
     pub(in crate::pager) fn cycle_line_number_mode(&mut self) -> Result<bool> {
         let PagerContent::LineNumbers(views) = &mut self.content else {
             return Ok(false);

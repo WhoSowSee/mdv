@@ -33,6 +33,12 @@ jobs:
       - name: Test Debian package validation
         run: python3 .github/scripts/test_verify_deb.py
 
+      - name: Verify vendored pager
+        run: |
+          cargo fmt --manifest-path vendor/minus/Cargo.toml --all -- --check
+          cargo clippy --manifest-path vendor/minus/Cargo.toml --lib --features dynamic_output,search -- -D warnings
+          cargo test --manifest-path vendor/minus/Cargo.toml --lib --features dynamic_output,search
+
       - name: Validate release version
         if: startsWith(github.ref, 'refs/tags/')
         run: |

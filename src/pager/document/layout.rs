@@ -1,13 +1,13 @@
 use super::*;
 
 impl PagerDocument {
-    fn effective_width(&self, width: usize) -> usize {
+    pub(super) fn effective_width(&self, width: usize) -> usize {
         self.width_limit
             .map_or(width, |limit| limit.min(width))
             .max(1)
     }
 
-    fn cache_layout(&mut self, width: usize, content: PagerContent) {
+    pub(super) fn cache_layout(&mut self, width: usize, content: PagerContent) {
         self.cached_layouts.retain(|(cached, _)| *cached != width);
         self.cached_layouts.push_back((width, content));
         while self.cached_layouts.len() > 2 {
@@ -15,6 +15,7 @@ impl PagerDocument {
         }
     }
 
+    #[cfg(test)]
     pub(in crate::pager) fn layout_snapshot(
         &mut self,
         width: usize,

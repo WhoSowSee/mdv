@@ -34,6 +34,11 @@ The package job checks formatting, Clippy, Debian validator tests, and
 `cargo publish --dry-run --locked`. Publishing waits for this job and every
 platform job, including Nix. Only the release job receives `contents: write`.
 
+The package job also runs formatting, Clippy with `-D warnings`, and unit tests
+against `vendor/minus/Cargo.toml` with `dynamic_output,search`. The fork is a
+path dependency rather than a workspace member, so the root command does not
+replace these checks. No runner, action version, matrix, or artifact name changes.
+
 ## Debian runtime dependencies
 
 Cargo.toml declares standard cargo-deb variants. The Linux matrix selects one

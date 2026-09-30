@@ -40,7 +40,7 @@ impl TerminalRenderer {
                 let options = target.map(|target| LineNumberOptions { target, separator });
                 let diagnostics = std::rc::Rc::new(math_diagnostics.clone());
                 renderer
-                    .render_with_options(events.clone(), options, true, &diagnostics)
+                    .render_with_options(&events, options, true, &diagnostics)
                     .map(Into::into)
             }),
         }

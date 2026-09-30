@@ -26,13 +26,23 @@ pub(crate) enum InteractiveTarget {
     Stdin,
 }
 
+pub(crate) struct InteractiveOptions {
+    pub(crate) requested: bool,
+    pub(crate) pager_requested: bool,
+    pub(crate) stdin_is_terminal: bool,
+    pub(crate) stdout_is_terminal: bool,
+}
+
 pub(crate) fn select_interactive_target(
     filename: Option<&str>,
-    requested: bool,
-    pager_requested: bool,
-    stdin_is_terminal: bool,
-    stdout_is_terminal: bool,
+    options: InteractiveOptions,
 ) -> Result<Option<InteractiveTarget>> {
+    let InteractiveOptions {
+        requested,
+        pager_requested,
+        stdin_is_terminal,
+        stdout_is_terminal,
+    } = options;
     if pager_requested {
         return Ok(None);
     }

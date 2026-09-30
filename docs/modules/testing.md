@@ -38,6 +38,13 @@ After large source files were split, large inline `mod tests` blocks moved into 
 
 Unit tests cover parsers, semantic defaults, width helpers, state transitions, and internal invariants that are difficult to observe through the CLI alone.
 
+All structured configuration tests acquire the existing environment mutex
+before invoking the environment-dependent loader. Cold pager layout/numbering
+regressions coordinate render workers with channels and check document-lock
+availability during rendering. Subprocess tests cover HTML depth errors and
+an early stdout close. The fork isolates panic-hook regression tests in a child
+process and covers search positions beyond 65,535 characters.
+
 ## Integration harness
 
 [tests/integration.rs](../../tests/integration.rs) explicitly includes topic modules because `Cargo.toml` defines one `integration` target and disables automatic creation of separate test crates.

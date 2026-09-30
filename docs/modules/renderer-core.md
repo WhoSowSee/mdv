@@ -100,6 +100,16 @@ required by the facade's iterative layout without exposing mutable state.
 
 ## Document lifecycle
 
+`core/subsystems.rs` groups `LinkState`, `CodeState`, and `FootnoteState` under
+the same event renderer. Active links and fenced code blocks use `Option`;
+link destinations distinguish direct URLs, scoped references, and callout
+labels. Temporary string keys such as `current_N` are no longer used.
+
+Internal rendering borrows the original event slice and its text payloads.
+Repeated gutter/layout passes do not clone the full owned event stream. Only
+events that outlive the current pass, such as captured HTML details and footnote
+bodies, become owned.
+
 `render_events` runs these operations in order:
 
 1. Extract footnote definitions from the primary event stream.

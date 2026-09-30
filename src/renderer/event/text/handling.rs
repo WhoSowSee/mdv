@@ -7,17 +7,17 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(in crate::renderer::event) fn handle_text(&mut self, text: CowStr) -> Result<()> {
-        if !self.in_code_block && !self.in_link {
+        if self.code.active.is_none() && self.links.current.is_none() {
             self.scan_footnotes_in_text_stream(&text);
         }
 
-        if self.in_code_block {
+        if let Some(block) = self.code.active.as_mut() {
             self.pending_task_marker = false;
             self.pending_task_marker_buffer.clear();
-            self.code_block_content.push_str(&text);
+            block.content.push_str(&text);
             return Ok(());
-        } else if self.in_link {
-            self.current_link_text.push_str(&text);
+        } else if let Some(link) = self.links.current.as_mut() {
+            link.text.push_str(&text);
             return Ok(());
         }
 

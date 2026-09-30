@@ -52,19 +52,20 @@ impl<'a> EventRenderer<'a> {
             .saturating_add(pretty_callout_padding);
         let styled_blocks = self.build_styled_reference_blocks(links, reference_wrap_padding);
 
-        if self.plaintext_code_block_depth > 0 {
+        if self.code.plaintext_depth > 0 {
             if in_table {
                 let captured_lines: Vec<String> = styled_blocks
                     .iter()
                     .flat_map(|lines| lines.clone())
                     .collect();
 
-                self.captured_reference_blocks.push(CapturedReferenceBlock {
+                self.code.captured_references.push(CapturedReferenceBlock {
                     lines: captured_lines,
                     add_trailing_newline,
                 });
             } else {
-                self.deferred_reference_blocks
+                self.code
+                    .deferred_references
                     .push(DeferredLinkReferenceBlock {
                         links: links.to_vec(),
                         add_trailing_newline,
@@ -108,12 +109,12 @@ impl<'a> EventRenderer<'a> {
         in_table: bool,
         table_indent: usize,
     ) {
-        if self.paragraph_links.is_empty() {
+        if self.links.paragraph.is_empty() {
             return;
         }
 
-        let links = std::mem::take(&mut self.paragraph_links);
-        self.paragraph_link_counter = 0;
+        let links = std::mem::take(&mut self.links.paragraph);
+        self.links.paragraph_counter = 0;
         self.render_link_reference_blocks(&links, add_trailing_newline, in_table, table_indent);
     }
 
@@ -230,17 +231,17 @@ impl<'a> EventRenderer<'a> {
             return;
         }
 
-        if self.document_links.is_empty() {
+        if self.links.document.is_empty() {
             return;
         }
 
-        if self.plaintext_code_block_depth > 0 {
+        if self.code.plaintext_depth > 0 {
             // Nested plaintext renderers defer formatting to the parent renderer.
             return;
         }
 
         let styled_blocks =
-            self.build_styled_reference_blocks(&self.document_links, self.content_indent);
+            self.build_styled_reference_blocks(&self.links.document, self.content_indent);
 
         let spacing = self
             .config
@@ -270,7 +271,7 @@ impl<'a> EventRenderer<'a> {
             self.output.push('\n');
         }
         self.ensure_contextual_blank_lines(spacing.bottom);
-        self.document_links.clear();
+        self.links.document.clear();
         self.commit_pending_heading_placeholder_if_content();
     }
 }

@@ -11,13 +11,19 @@ impl<'a> EventRenderer<'a> {
 
         // Split text into wrappable units (words or characters) while preserving formatting
         let units = match wrap_mode {
-            crate::utils::WrapMode::Word => self
-                .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
-            crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-            crate::utils::WrapMode::None => vec![Cow::Borrowed(text)],
+            crate::utils::WrapMode::Word => TextUnits::Words(
+                self.split_text_into_words_styled(
+                    text,
+                    self.word_wrap_content_width(effective_width),
+                )
+                .into_iter(),
+            ),
+            crate::utils::WrapMode::Character => TextUnits::characters(text),
+            crate::utils::WrapMode::None => TextUnits::Single(Some(text)),
         };
 
-        for (i, unit) in units.iter().enumerate() {
+        for (i, unit) in units.enumerate() {
+            let unit = unit.as_ref();
             let current_line = self
                 .output
                 .rsplit_once('\n')
@@ -31,7 +37,7 @@ impl<'a> EventRenderer<'a> {
                     let formatted_unit = if highlighted {
                         self.apply_formatting_with_highlight(unit, true)
                     } else {
-                        Cow::Borrowed(unit.as_ref())
+                        Cow::Borrowed(unit)
                     };
                     self.output.push_str(&formatted_unit);
                 }
@@ -41,7 +47,7 @@ impl<'a> EventRenderer<'a> {
             let unit_width = crate::utils::display_width(unit);
 
             // For InlineTable links, account for the reference number that will be added
-            let additional_width = if self.in_link
+            let additional_width = if self.links.current.is_some()
                 && matches!(
                     self.config.link_style,
                     LinkStyle::InlineTable | LinkStyle::EndTable
@@ -50,10 +56,10 @@ impl<'a> EventRenderer<'a> {
                 let reference_index = if matches!(self.config.link_style, LinkStyle::InlineTable) {
                     match self.callout_stack.last() {
                         Some(CalloutState::Active(info)) => info.inline_link_counter,
-                        _ => self.paragraph_link_counter,
+                        _ => self.links.paragraph_counter,
                     }
                 } else {
-                    self.paragraph_link_counter
+                    self.links.paragraph_counter
                 };
                 let ref_num_str = format!("[{}]", reference_index);
                 crate::utils::display_width(&ref_num_str)
@@ -133,12 +139,6 @@ impl<'a> EventRenderer<'a> {
             .max(1)
     }
 
-    pub(super) fn split_text_into_characters_styled<'t>(&self, text: &'t str) -> Vec<Cow<'t, str>> {
-        text.char_indices()
-            .map(|(index, ch)| Cow::Borrowed(&text[index..index + ch.len_utf8()]))
-            .collect()
-    }
-
     /// Calculate proper indentation for list content continuation lines
     pub(in crate::renderer::event) fn calculate_list_content_indent(&self) -> usize {
         let mut total_indent = 0;
@@ -201,10 +201,15 @@ impl<'a> EventRenderer<'a> {
         let effective_width = self.effective_text_width();
         let wrap_mode = self.config.text_wrap_mode();
         let units = match wrap_mode {
-            crate::utils::WrapMode::Word => self
-                .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
-            crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-            crate::utils::WrapMode::None => vec![Cow::Borrowed(text)],
+            crate::utils::WrapMode::Word => TextUnits::Words(
+                self.split_text_into_words_styled(
+                    text,
+                    self.word_wrap_content_width(effective_width),
+                )
+                .into_iter(),
+            ),
+            crate::utils::WrapMode::Character => TextUnits::characters(text),
+            crate::utils::WrapMode::None => TextUnits::Single(Some(text)),
         };
 
         let mut current_fragment = String::new();
@@ -221,7 +226,8 @@ impl<'a> EventRenderer<'a> {
             fragment_start_line_width = self.compute_line_start_context_width();
         }
 
-        for (i, unit) in units.iter().enumerate() {
+        for (i, unit) in units.enumerate() {
+            let unit = unit.as_ref();
             let is_ws = unit.trim().is_empty();
             let unit_width = crate::utils::display_width(unit);
             let current_fragment_width = crate::utils::display_width(&current_fragment);

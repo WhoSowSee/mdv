@@ -21,8 +21,8 @@ impl<'a> EventRenderer<'a> {
 
         let parent_table = self.table_state.take();
         if !embedded && matches!(self.config.link_style, LinkStyle::InlineTable) {
-            self.paragraph_link_counter = 0;
-            self.paragraph_links.clear();
+            self.links.paragraph_counter = 0;
+            self.links.paragraph.clear();
         }
 
         self.table_state = Some(TableState {
@@ -64,7 +64,7 @@ impl<'a> EventRenderer<'a> {
         let table_indent = self.render_table(table)?;
 
         if matches!(self.config.link_style, LinkStyle::InlineTable)
-            && !self.paragraph_links.is_empty()
+            && !self.links.paragraph.is_empty()
         {
             self.add_paragraph_link_references_for_table(table_indent);
         }

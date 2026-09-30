@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crossterm::{
     SynchronizedUpdate,
     cursor::MoveTo,
@@ -121,7 +119,7 @@ pub fn write_prompt_view(out: &mut impl Write, ps: &PagerState) -> Result<(), Mi
         .iter()
         .take(ps.prompt_panel_rows())
     {
-        write!(out, "\n\r{line}")?;
+        write!(out, "\r\n\r{line}")?;
     }
     out.flush()?;
     Ok(())
@@ -222,7 +220,7 @@ pub fn draw_append_text<L: Display + AsRef<str>>(
             crossterm::execute!(out, crossterm::terminal::Clear(ClearType::CurrentLine))?;
         }
         for line in &fmt_text[0..num_appendable] {
-            write!(out, "{line}\n\r")?;
+            write!(out, "{line}\r\n\r")?;
         }
         out.flush()?;
     }

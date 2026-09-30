@@ -2,7 +2,7 @@ use super::{Event, EventRenderer, Tag, TagEnd};
 use crate::block_spacing::BlockElement;
 
 impl EventRenderer<'_> {
-    pub(super) fn prepare_block_spacing_elements(&mut self, events: &[Event<'static>]) {
+    pub(super) fn prepare_block_spacing_elements(&mut self, events: &[Event<'_>]) {
         let mut list_elements = Vec::new();
         let mut list_stack = Vec::new();
         let mut blockquote_elements = Vec::new();

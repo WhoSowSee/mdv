@@ -30,7 +30,7 @@ pub(crate) use rendering::{RenderedOutput, render_terminal_document};
 
 use document::{PagerContent, PagerDisplay, PagerLineNumberMode, PagerLineNumberViews};
 use footer::PagerFooter;
-use help::build_help_panel;
+use help::{PagerCapabilities, build_help_panel};
 use input::PagerInputClassifier;
 use operations::{
     apply_refreshed_document, copy_document_contents, cycle_line_number_mode, replace_document,

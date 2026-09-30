@@ -93,7 +93,7 @@ pub enum LineNumbers {
 impl LineNumbers {
     const EXTRA_PADDING: usize = 5;
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     const fn is_invertible(self) -> bool {
         matches!(self, Self::Enabled | Self::Disabled)
     }

@@ -130,6 +130,15 @@ the shell or launching an editor restores cursor visibility.
 
 ## `PagerDocument`
 
+Cold width and numbering views are prepared through `document/shared.rs`
+outside the document lock. Installation validates the document identity and
+current numbering mode, discarding work from a refreshed document. Named
+`InteractiveOptions` and `PagerCapabilities` carry routing and help settings.
+
+The vendored pager restores the preceding panic hook at the end of every
+session, including unwinding paths. Search text positions and word indices use
+`usize`; only final cursor coordinates are bounded to the terminal dimensions.
+
 For the built-in backend, the document stores these values separately:
 
 - lazily prepared unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
@@ -204,7 +213,11 @@ The refresh callback re-reads the document and prepares the selected line-number
 
 - The browser opens an editor after suspending the terminal session.
 - The pager exits, runs the editor, and may refresh the file when the editor returns.
-- An unknown or invalid command is an error; no hidden editor is selected.
+- Invalid commands produce an error; unregistered commands retain terminal-editor classification.
+
+Empty editor settings retain their existing disabled/secondary-variable
+behavior. Malformed quoting, a missing executable, and non-Unicode settings
+return an error with the responsible variable name.
 
 ## Invariants
 

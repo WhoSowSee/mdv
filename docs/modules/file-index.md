@@ -10,6 +10,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [version.rs](../../src/version.rs) | Build-information output for both CLI version flags; metadata is collected by [build/version.rs](../../build/version.rs). | [application](application.md) |
 | [lib.rs](../../src/lib.rs) | Root API and execution-mode routing. | [application](application.md) |
 | [document.rs](../../src/document.rs) | Shared rendering, prepared-resource reuse, refresh options, and BOM-normalized input. | [application](application.md) |
+| [output.rs](../../src/output.rs) | Fallible stdout writes and flushing. | [application](application.md) |
 | [error.rs](../../src/error.rs) | `MdvError` categories. | [application](application.md) |
 | [cli.rs](../../src/cli.rs) | `Cli` structure and module facade. | [CLI/config](cli-configuration.md) |
 | [config.rs](../../src/config.rs) | Effective `Config`, defaults, and helpers. | [CLI/config](cli-configuration.md) |
@@ -150,6 +151,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [command.rs](../../src/pager/command.rs) | Pager backend selection, external command parsing, and process lifecycle. |
 | [document.rs](../../src/pager/document.rs) | Pager document, line-number views, screen, and callback types. |
 | [document/layout.rs](../../src/pager/document/layout.rs) | Width-specific reflow, bounded layout caching, and refresh coordination. |
+| [document/shared.rs](../../src/pager/document/shared.rs) | Cold layout and numbering preparation outside document locks, with identity validation. |
 | [document/views.rs](../../src/pager/document/views.rs) | Deferred numbering views, shared cache, and source navigation. |
 | [document/views/tests.rs](../../src/pager/document/views/tests.rs) | Lazy rendering, switching, refresh, and width-cache regressions. |
 | [warmup.rs](../../src/pager/warmup.rs) | Delayed background numbering preparation and pager lifetime cancellation. |
@@ -198,6 +200,11 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [tests/links.rs](../../src/table/tests/links.rs) | OSC and reference-replacement tests. |
 
 ## `src/renderer/`
+
+The event renderer also owns [core/subsystems.rs](../../src/renderer/event/core/subsystems.rs)
+for link/code/footnote state, [footnotes/definitions.rs](../../src/renderer/event/footnotes/definitions.rs)
+for shared indexed definitions, and [text/units.rs](../../src/renderer/event/text/units.rs)
+for streamed character units. Pager help tests live in [help/tests.rs](../../src/pager/help/tests.rs).
 
 | File | Responsibility |
 |---|---|

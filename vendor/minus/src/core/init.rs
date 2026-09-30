@@ -84,21 +84,17 @@ pub fn init_core(
     let is_exited = Arc::new(AtomicBool::new(false));
     let is_exited2 = is_exited.clone();
 
-    {
-        let panic_hook = panic::take_hook();
-        panic::set_hook(Box::new(move |pinfo| {
-            is_exited2.store(true, std::sync::atomic::Ordering::SeqCst);
-            // Panic hooks use an isolated test buffer instead of terminal output.
-            #[cfg(test)]
-            let mut out2 = Vec::new();
-            #[cfg(not(test))]
-            let mut out2 = stdout();
+    let panic_cleanup = move || {
+        is_exited2.store(true, std::sync::atomic::Ordering::SeqCst);
+        // Panic hooks use an isolated test buffer instead of terminal output.
+        #[cfg(test)]
+        let mut out2 = Vec::new();
+        #[cfg(not(test))]
+        let mut out2 = stdout();
 
-            // Cleanup failures cannot supersede the active panic.
-            drop(term::cleanup(&mut out2, true, use_alternate_screen));
-            panic_hook(pinfo);
-        }));
-    }
+        // Cleanup failures cannot supersede the active panic.
+        drop(term::cleanup(&mut out2, true, use_alternate_screen));
+    };
 
     let ps_mutex = Arc::new(Mutex::new(ps));
 
@@ -110,59 +106,65 @@ pub fn init_core(
     #[cfg(feature = "search")]
     let input_thread_running2 = input_thread_running.clone();
 
-    std::thread::scope(|s| -> crate::Result {
-        let is_exited3 = is_exited.clone();
-        let is_exited4 = is_exited.clone();
+    super::panic_hook::with_cleanup(panic_cleanup, || {
+        std::thread::scope(|s| -> crate::Result {
+            let is_exited3 = is_exited.clone();
+            let is_exited4 = is_exited.clone();
 
-        #[cfg(test)]
-        let mut out2 = Vec::new();
-        #[cfg(not(test))]
-        let mut out2 = stdout();
+            #[cfg(test)]
+            let mut out2 = Vec::new();
+            #[cfg(not(test))]
+            let mut out2 = stdout();
 
-        let t1 = s.spawn(move || {
-            let res = event_reader(
-                &evtx,
-                &p1,
-                #[cfg(feature = "search")]
-                &input_thread_running2,
-                &is_exited3,
-            );
+            let t1 = s.spawn(move || {
+                let res = event_reader(
+                    &evtx,
+                    &p1,
+                    #[cfg(feature = "search")]
+                    &input_thread_running2,
+                    &is_exited3,
+                );
 
-            if res.is_err() {
-                is_exited3.store(true, std::sync::atomic::Ordering::SeqCst);
+                if res.is_err() {
+                    is_exited3.store(true, std::sync::atomic::Ordering::SeqCst);
+                }
+                res
+            });
+            let t2 = s.spawn(move || {
+                let res = start_reactor(
+                    &rx,
+                    &ps_mutex,
+                    &mut out2,
+                    #[cfg(feature = "search")]
+                    pager,
+                    #[cfg(feature = "search")]
+                    &input_thread_running,
+                    &is_exited4,
+                    use_alternate_screen,
+                );
+
+                if res.is_err() {
+                    is_exited4.store(true, std::sync::atomic::Ordering::SeqCst);
+                }
+                res
+            });
+
+            let r1 = t1
+                .join()
+                .unwrap_or_else(|payload| panic::resume_unwind(payload));
+            let r2 = t2
+                .join()
+                .unwrap_or_else(|payload| panic::resume_unwind(payload));
+
+            if r1.is_err() || r2.is_err() {
+                *RUNMODE.lock() = RunMode::Uninitialized;
+                term::cleanup(&mut out, true, use_alternate_screen)?;
             }
-            res
-        });
-        let t2 = s.spawn(move || {
-            let res = start_reactor(
-                &rx,
-                &ps_mutex,
-                &mut out2,
-                #[cfg(feature = "search")]
-                pager,
-                #[cfg(feature = "search")]
-                &input_thread_running,
-                &is_exited4,
-                use_alternate_screen,
-            );
 
-            if res.is_err() {
-                is_exited4.store(true, std::sync::atomic::Ordering::SeqCst);
-            }
-            res
-        });
-
-        let r1 = t1.join().unwrap();
-        let r2 = t2.join().unwrap();
-
-        if r1.is_err() || r2.is_err() {
-            *RUNMODE.lock() = RunMode::Uninitialized;
-            term::cleanup(&mut out, true, use_alternate_screen)?;
-        }
-
-        r1?;
-        r2?;
-        Ok(())
+            r1?;
+            r2?;
+            Ok(())
+        })
     })
 }
 

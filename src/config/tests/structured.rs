@@ -30,6 +30,7 @@ fn parse_with_structured_preset(
 
 #[test]
 fn structured_theme_overrides_load_from_config() {
+    let _environment = env_lock();
     let config = parse_with_config(
         r##"
 custom_theme:
@@ -71,6 +72,7 @@ custom_code_theme:
 
 #[test]
 fn structured_block_spacing_and_callout_style_load_from_config() {
+    let _environment = env_lock();
     let config = parse_with_config(
         r#"
 block_spacing:
@@ -101,6 +103,7 @@ callout_style:
 
 #[test]
 fn preset_and_cli_override_math_block_style() {
+    let _environment = env_lock();
     let preset = parse_with_structured_preset(
         "math_block_style: pretty\n",
         "math_block_style: basic\n",
@@ -118,6 +121,7 @@ fn preset_and_cli_override_math_block_style() {
 
 #[test]
 fn structured_callout_and_code_block_overrides_load_from_config() {
+    let _environment = env_lock();
     let config = parse_with_config(
         r##"
 custom_callout:
@@ -167,6 +171,7 @@ custom_code_block:
 
 #[test]
 fn structured_checkbox_and_list_overrides_load_from_config() {
+    let _environment = env_lock();
     let config = parse_with_config(
         r#"
 checkbox_style: square
@@ -210,6 +215,7 @@ custom_list:
 
 #[test]
 fn structured_preset_and_cli_keep_field_level_priority() {
+    let _environment = env_lock();
     let config_contents = "custom_callout:\n  config:\n    icon: C\n  retained:\n    icon: R\n";
     let preset_settings = "custom_callout:\n  preset:\n    icon: P\n";
 
@@ -228,6 +234,7 @@ fn structured_preset_and_cli_keep_field_level_priority() {
 
 #[test]
 fn structured_block_spacing_keeps_preset_and_cli_priority() {
+    let _environment = env_lock();
     let config = parse_with_structured_preset(
         "block_spacing:\n  paragraph:\n    top: 2\n    bottom: 3\n  callout:\n    top: 4\n",
         "block_spacing:\n  paragraph:\n    top: 1\n",
@@ -242,6 +249,7 @@ fn structured_block_spacing_keeps_preset_and_cli_priority() {
 
 #[test]
 fn structured_settings_keep_legacy_scalar_forms() {
+    let _environment = env_lock();
     let config = parse_with_config(
         r##"
 custom_theme: "text=#010203"
@@ -273,6 +281,7 @@ custom_code_block: "rust:icon=R,label=Rust,aliases=rs|rustlang"
 
 #[test]
 fn empty_structured_preset_values_clear_lower_priority_settings() {
+    let _environment = env_lock();
     let config = parse_with_structured_preset(
         "custom_callout:\n  config:\n    icon: C\nblock_spacing:\n  paragraph:\n    top: 2\n",
         "custom_callout: {}\nblock_spacing: {}\n",

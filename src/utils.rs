@@ -277,7 +277,25 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
 }
 
 /// Split line into words while preserving ANSI codes
-fn split_line_into_words_with_ansi(line: &str) -> Vec<(String, bool)> {
+fn split_line_into_words_with_ansi(line: &str) -> Vec<(std::borrow::Cow<'_, str>, bool)> {
+    use std::borrow::Cow;
+    if !line.contains('') {
+        let mut words = Vec::new();
+        let mut start = 0;
+        let mut whitespace = false;
+        for (index, character) in line.char_indices() {
+            let next = character.is_whitespace();
+            if next != whitespace && index > start {
+                words.push((Cow::Borrowed(&line[start..index]), whitespace));
+                start = index;
+            }
+            whitespace = next;
+        }
+        if start < line.len() {
+            words.push((Cow::Borrowed(&line[start..]), whitespace));
+        }
+        return words;
+    }
     let mut result = Vec::new();
     let mut current_word = String::new();
     let mut pending_ansi = String::new();
@@ -290,8 +308,7 @@ fn split_line_into_words_with_ansi(line: &str) -> Vec<(String, bool)> {
             pending_ansi.push_str(&sequence);
         } else if ch.is_whitespace() {
             if !in_whitespace && !current_word.is_empty() {
-                result.push((current_word.clone(), false));
-                current_word.clear();
+                result.push((Cow::Owned(std::mem::take(&mut current_word)), false));
             }
             current_word.push_str(&pending_ansi);
             pending_ansi.clear();
@@ -299,8 +316,7 @@ fn split_line_into_words_with_ansi(line: &str) -> Vec<(String, bool)> {
             in_whitespace = true;
         } else {
             if in_whitespace && !current_word.is_empty() {
-                result.push((current_word.clone(), true));
-                current_word.clear();
+                result.push((Cow::Owned(std::mem::take(&mut current_word)), true));
             }
             current_word.push_str(&pending_ansi);
             pending_ansi.clear();
@@ -311,7 +327,7 @@ fn split_line_into_words_with_ansi(line: &str) -> Vec<(String, bool)> {
 
     current_word.push_str(&pending_ansi);
     if !current_word.is_empty() {
-        result.push((current_word, in_whitespace));
+        result.push((Cow::Owned(current_word), in_whitespace));
     }
 
     result

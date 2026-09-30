@@ -4,6 +4,28 @@ use super::{IncrementalSearchOpts, incremental_preview};
 use crate::PagerState;
 
 #[test]
+fn long_unicode_queries_preserve_text_positions_beyond_terminal_coordinates() {
+    use super::*;
+    let mut state = PagerState::new().unwrap();
+    state.search_state.search_mode = SearchMode::Forward;
+    state.search_state.last_search_query = "😀".repeat(65535);
+    let mut options = SearchOpts::from(&state);
+    assert_eq!(options.cursor_position, 65536);
+    assert_eq!(options.word_index.last(), Some(&65535));
+    assert_eq!(
+        byte_index_at_character_position(&options.string, 65536),
+        options.string.len()
+    );
+    options.ev = Some(Event::Key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE)));
+    handle_key_press(&mut Vec::new(), &mut options, |_| false).unwrap();
+    assert_eq!(options.cursor_position, 65536);
+    assert_eq!(
+        options.terminal_cursor_column(),
+        options.cols.saturating_sub(1)
+    );
+}
+
+#[test]
 fn unstyled_preview_and_selected_query_keep_search_behavior() {
     let mut state = PagerState::new().unwrap();
     state.output_styling = false;

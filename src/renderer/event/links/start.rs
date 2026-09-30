@@ -3,8 +3,7 @@ use super::*;
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn handle_link_start(&mut self, dest_url: CowStr) -> Result<()> {
         if self.pending_callout_label_override {
-            self.current_link_text.clear();
-            self.in_link = true;
+            self.links.current = Some(CurrentLink::new(LinkDestination::Label));
             return Ok(());
         }
         // If we are at visual line start (after a soft break or paragraph start),
@@ -21,23 +20,18 @@ impl<'a> EventRenderer<'a> {
 
         match self.config.link_style {
             LinkStyle::Clickable | LinkStyle::ClickableForced | LinkStyle::Inline => {
-                self.link_counter += 1;
-                self.link_references.insert(
-                    format!("current_{}", self.link_counter),
-                    dest_url.to_string(),
-                );
-                self.current_link_text.clear();
-                self.in_link = true;
+                self.links.current = Some(CurrentLink::new(LinkDestination::Url(
+                    dest_url.into_string(),
+                )));
             }
-            // Hide leaves in_link unset so the link text flows through the normal text path.
             LinkStyle::Hide => {}
             LinkStyle::InlineTable => {
                 let in_table = self.table_state.is_some();
                 if let Some(CalloutState::Active(info)) = self.callout_stack.last_mut() {
                     if in_table {
-                        self.paragraph_link_counter += 1;
-                        self.paragraph_links.push((
-                            format!("[{}]", self.paragraph_link_counter),
+                        self.links.paragraph_counter += 1;
+                        self.links.paragraph.push((
+                            format!("[{}]", self.links.paragraph_counter),
                             dest_url.to_string(),
                         ));
                     } else {
@@ -47,24 +41,22 @@ impl<'a> EventRenderer<'a> {
                     }
                 } else {
                     // Store URL for paragraph-scoped references and start collecting link text
-                    self.paragraph_link_counter += 1;
-                    self.paragraph_links.push((
-                        format!("[{}]", self.paragraph_link_counter),
+                    self.links.paragraph_counter += 1;
+                    self.links.paragraph.push((
+                        format!("[{}]", self.links.paragraph_counter),
                         dest_url.to_string(),
                     ));
                 }
-                self.current_link_text.clear();
-                self.in_link = true;
+                self.links.current = Some(CurrentLink::new(LinkDestination::Reference));
             }
             LinkStyle::EndTable => {
                 // Store URL for document-scoped references and start collecting link text
-                self.paragraph_link_counter += 1;
-                self.document_links.push((
-                    format!("[{}]", self.paragraph_link_counter),
+                self.links.paragraph_counter += 1;
+                self.links.document.push((
+                    format!("[{}]", self.links.paragraph_counter),
                     dest_url.to_string(),
                 ));
-                self.current_link_text.clear();
-                self.in_link = true;
+                self.links.current = Some(CurrentLink::new(LinkDestination::Reference));
             }
         }
         Ok(())

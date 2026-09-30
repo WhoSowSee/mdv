@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::{MODIFIERS, Token};
 use std::{collections::HashMap, sync::LazyLock};
 

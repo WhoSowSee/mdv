@@ -33,10 +33,12 @@ pub(crate) fn page(
             )
         };
         let help_panel = build_help_panel(
-            editor_enabled,
-            refresh.is_some(),
-            line_navigation_enabled,
-            line_number_toggle_enabled,
+            PagerCapabilities {
+                editor_enabled,
+                reload_enabled: refresh.is_some(),
+                line_navigation_enabled,
+                line_number_toggle_enabled,
+            },
             status_bar_transparent,
         )?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
@@ -53,10 +55,7 @@ pub(crate) fn page(
         {
             let document = document.clone();
             pager.set_layout_renderer(Arc::new(move |width| {
-                document
-                    .write()
-                    .map_err(|_| "Pager document lock poisoned".to_owned())?
-                    .layout_snapshot(width)
+                PagerDocument::shared_layout_snapshot(&document, width)
                     .map_err(|error| format!("{error:#}"))
             }))?;
         } else {
