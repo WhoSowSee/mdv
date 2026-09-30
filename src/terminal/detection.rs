@@ -1,4 +1,5 @@
-use crate::cli::{ColorDepth, OutputStyle};
+use super::OutputStyle;
+use crate::cli::ColorDepth;
 use minus::ColorDepth as Depth;
 
 pub(crate) fn resolve(style: OutputStyle, requested: ColorDepth) -> OutputStyle {

@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-    cli::OutputStyle,
     pager::{PagerContent, PagerDisplay},
+    terminal::OutputStyle,
 };
 use PagerLineNumberMode::{Off, Rendered, Source};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError};

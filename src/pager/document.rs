@@ -1,5 +1,5 @@
 use super::*;
-use crate::cli::OutputStyle;
+use crate::terminal::OutputStyle;
 mod layout;
 mod views;
 pub(in crate::pager) use views::PagerLineNumberViews;

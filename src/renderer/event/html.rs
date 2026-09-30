@@ -134,18 +134,14 @@ mod layout;
 mod list_helpers;
 mod lists;
 mod media;
-mod media_helpers;
 mod spacing;
 mod styles;
 mod table_helpers;
 mod tables;
 mod text;
-mod text_helpers;
 
 use buffer_helpers::*;
 use details::html_details_balance;
 use list_helpers::*;
-use media_helpers::*;
 use styles::*;
 use table_helpers::*;
-use text_helpers::*;

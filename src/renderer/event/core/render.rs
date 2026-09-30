@@ -1,7 +1,14 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(crate) fn render_events(&mut self, events: Vec<Event<'static>>) -> Result<String> {
+    pub(in crate::renderer) const fn max_code_line_number_width(&self) -> usize {
+        self.max_code_line_number_width
+    }
+
+    pub(in crate::renderer) fn render_events(
+        &mut self,
+        events: Vec<Event<'static>>,
+    ) -> Result<String> {
         let (events, mut definitions) = self.extract_footnote_definitions(events);
 
         if !self.footnote_definitions.is_empty() {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::cli::OutputStyle;
+use crate::terminal::OutputStyle;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use notify::{EventKind, event::CreateKind};
 use std::sync::atomic::AtomicUsize;

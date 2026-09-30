@@ -17,10 +17,9 @@ Every HTML node passes through `render_html_node`; element dispatch selects the 
 
 | File | Responsibility |
 |---|---|
-| [html/dispatch.rs](../../src/renderer/event/html/dispatch.rs) | Traverse nodes, elements, and children and dispatch by tag. |
-| [html/blocks.rs](../../src/renderer/event/html/blocks.rs) | Common block, heading, link, code, abbreviation, literal, `pre`, and `textarea` elements. |
+| [html/dispatch.rs](../../src/renderer/event/html/dispatch.rs) | Traverse nodes, elements, and children, classify void elements, and dispatch by tag. |
+| [html/blocks.rs](../../src/renderer/event/html/blocks.rs) | Common block, heading, link, code, abbreviation, literal, `pre`, and `textarea` elements, including preformatted-text normalization. |
 | [html/text.rs](../../src/renderer/event/html/text.rs) | Text collapsing, separators, and `<br>`. |
-| [html/text_helpers.rs](../../src/renderer/event/html/text_helpers.rs) | Preformatted-text normalization, escaping, and void elements. |
 | [html/styles.rs](../../src/renderer/event/html/styles.rs) | Alignment and CSS-like inline styles mapped to `ThemeElement`. |
 | [html/layout.rs](../../src/renderer/event/html/layout.rs) | Block boundaries, indentation/alignment spans, and table-cell line context. |
 | [html/spacing.rs](../../src/renderer/event/html/spacing.rs) | Map HTML blocks to shared spacing settings and preserve trailing spacing when leaving containers. |
@@ -32,8 +31,7 @@ Every HTML node passes through `render_html_node`; element dispatch selects the 
 | [html/details.rs](../../src/renderer/event/html/details.rs) | Buffer nested `<details>` and render expanded compact trees. |
 | [html/list_helpers.rs](../../src/renderer/event/html/list_helpers.rs) | Checkbox detection plus `start`, `reversed`, `value`, alpha, and Roman markers. |
 | [html/forms.rs](../../src/renderer/event/html/forms.rs) | Static terminal representation of input, button, and select controls. |
-| [html/media.rs](../../src/renderer/event/html/media.rs) | Media markers and lines for image, video, audio, and source elements. |
-| [html/media_helpers.rs](../../src/renderer/event/html/media_helpers.rs) | Extract `src`, `srcset`, labels, and filenames. |
+| [html/media.rs](../../src/renderer/event/html/media.rs) | Extract sources and labels and render markers and lines for image, video, audio, and source elements. |
 | [html/tables.rs](../../src/renderer/event/html/tables.rs) | HTML table sections, rows, and cells. |
 | [html/table_cells.rs](../../src/renderer/event/html/table_cells.rs) | Nested block elements inside table cells. |
 | [html/table_helpers.rs](../../src/renderer/event/html/table_helpers.rs) | Alignment attributes/styles and rectangular-table normalization. |

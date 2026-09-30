@@ -44,7 +44,7 @@ Unit tests cover parsers, semantic defaults, width helpers, state transitions, a
 
 | Group | Primary coverage |
 |---|---|
-| `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, and pager routing. |
+| `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, pager routing, and monitor snapshots. |
 | `tests/color.rs` | Color settings reaching the renderer, loader diagnostics, pipe/redirection, HTML, and fast commands. |
 | `tests/callouts*` | Syntax, custom styles, wrapping, frames, headings, tables, and links. |
 | `tests/checkboxes*` | Shapes, custom states/colors, lists, and nested indentation. |
@@ -94,12 +94,21 @@ document output matrix also verifies that unrelated color environment variables
 have no effect. Pager unit regressions keep prompt, search-preview, selection,
 and source-navigation formatting paths covered independently.
 
-`tests/support.rs` isolates `MDV_COLOR` and uses an empty temporary configuration
+`tests/support.rs` supplies both assert-command and streaming-process constructors
+with the same environment. It isolates `MDV_COLOR` and uses an empty temporary configuration
 directory for child processes. Tests requesting real configuration override that
 directory explicitly. The common helper does not force a color mode: ANSI/OSC
 tests request `--color always`, plain-output tests request `--color never`, and
 default behavior is verified with captured non-TTY stdout. Unit environment
 tests use the existing mutex and restoring guards.
+
+`tests/cli_basic/monitor.rs` waits for watcher readiness before updating an
+in-place temporary file. One terminal/HTML matrix checks explicit initial and
+refreshed output, including front matter, BOM handling, and a single initial
+rendering. A separate regression checks reuse of a prepared theme after its source
+file is removed. Refresh counts depend on native filesystem events; assertions
+cover document content instead. Process and stdout-reader cleanup runs on assertion
+failures as well as successful tests.
 
 The shared CLI helper supplies a deterministic True Color terminal environment.
 Color-depth coverage checks configuration priority, explicit detection snapshots,

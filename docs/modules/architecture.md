@@ -47,7 +47,7 @@ flowchart LR
 - `--interactive`, or an implicitly selected interactive target, enters `interactive::run`;
 - an ordinary file or standard input goes through `render_document`;
 - `--pager[=<COMMAND>]` with terminal output passes a `PagerDocument` to the selected built-in or external backend through `pager::page`;
-- `--monitor` starts only after ordinary initial output and never shares an active pager.
+- `--monitor` with a file and no active pager owns one initial snapshot and later refreshes through the shared document pipeline, reusing its prepared renderer.
 
 ## State ownership
 
@@ -66,6 +66,7 @@ flowchart LR
 |---|---|---|
 | `Cli` | `src/cli.rs` | Stable Clap surface and raw argument values. |
 | `Config` | `src/config.rs` | Runtime settings after all sources and overrides are applied. |
+| `OutputStyle` | `src/terminal.rs` | Resolved terminal styling and palette; the original `cli::OutputStyle` path remains a public re-export. |
 | `MarkdownProcessor` | `src/markdown.rs` | Converts `&str` into a `ParsedDocument` with optional YAML front matter and normalized events. |
 | `ParsedDocument` | `src/markdown.rs` | Owns document metadata and the Markdown body event stream. |
 | `TerminalRenderer` | `src/renderer/terminal.rs` | Facade for rendering one document to ANSI or HTML. |
@@ -78,6 +79,8 @@ flowchart LR
 
 - Renderers receive a normalized `Config`; event handlers never read the environment or YAML.
 - Handlers under `renderer/event/` mutate one `EventRenderer` and do not create competing pipelines.
+- `EventRenderer` fields are visible only inside `renderer::event`; the outer facade obtains code-gutter width through a renderer-scoped method.
+- Ordinary and monitored documents share front matter handling, backend selection, and leading-BOM normalization.
 - Visible width is calculated after ANSI and OSC metadata is removed; byte length is never treated as terminal width.
 - Source-line markers are internal and must disappear before output reaches the user.
 - Table links restore ANSI and OSC sequences after `comfy-table` layout, because escape sequences would corrupt width calculation.
@@ -91,4 +94,5 @@ flowchart LR
 - `renderer` depends on `Config`, `theme`, `table`, `terminal`, `utils`, and specialized parsers.
 - `theme` uses `user_themes` for embedded and user YAML; the renderer builds the final `ThemeManager`.
 - `interactive` and `pager` reuse the library render path through callbacks instead of duplicating the Markdown pipeline.
+- `monitor` uses the prepared-renderer entry point of that same document pipeline.
 - Integration tests exercise the public binary contract; unit tests protect local module invariants.

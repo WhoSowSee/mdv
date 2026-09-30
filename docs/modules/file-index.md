@@ -9,7 +9,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [main.rs](../../src/main.rs) | Binary entry point and Clap bootstrap. | [application](application.md) |
 | [version.rs](../../src/version.rs) | Build-information output for both CLI version flags; metadata is collected by [build/version.rs](../../build/version.rs). | [application](application.md) |
 | [lib.rs](../../src/lib.rs) | Root API and execution-mode routing. | [application](application.md) |
-| [document.rs](../../src/document.rs) | Shared document rendering and refresh options. | [application](application.md) |
+| [document.rs](../../src/document.rs) | Shared rendering, prepared-resource reuse, refresh options, and BOM-normalized input. | [application](application.md) |
 | [error.rs](../../src/error.rs) | `MdvError` categories. | [application](application.md) |
 | [cli.rs](../../src/cli.rs) | `Cli` structure and module facade. | [CLI/config](cli-configuration.md) |
 | [config.rs](../../src/config.rs) | Effective `Config`, defaults, and helpers. | [CLI/config](cli-configuration.md) |
@@ -27,7 +27,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [pager.rs](../../src/pager.rs) | Pager facade. | [interactive/pager](interactive-and-pager.md) |
 | [process_command.rs](../../src/process_command.rs) | Cross-platform splitting of user-supplied process commands. | [interactive/pager](interactive-and-pager.md) |
 | [table.rs](../../src/table.rs) | Low-level table facade. | [links/tables](links-footnotes-tables.md) |
-| [terminal.rs](../../src/terminal.rs) | ANSI styling and color conversion. | [themes](themes-and-styling.md) |
+| [terminal.rs](../../src/terminal.rs) | Resolved `OutputStyle`, ANSI styling, and color conversion. | [themes](themes-and-styling.md) |
 | [terminal/detection.rs](../../src/terminal/detection.rs) | Environment and Unix terminfo color-depth detection. | [CLI/config](cli-configuration.md) |
 | [theme.rs](../../src/theme.rs) | Theme facade and public re-exports. | [themes](themes-and-styling.md) |
 | [user_themes.rs](../../src/user_themes.rs) | User-theme facade. | [themes](themes-and-styling.md) |
@@ -44,7 +44,7 @@ Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [l
 | [callouts.rs](../../src/cli/callouts.rs) | Callout, checkbox, and definition-list CLI types. |
 | [code_blocks.rs](../../src/cli/code_blocks.rs) | Code-block style and wrap-indent types. |
 | [commands.rs](../../src/cli/commands.rs) | CLI subcommands. |
-| [color.rs](../../src/cli/color.rs) | Requested color modes and resolved styling policy. |
+| [color.rs](../../src/cli/color.rs) | Requested color modes and resolution to terminal-owned styling. |
 | [color_depth.rs](../../src/cli/color_depth.rs) | Requested palette depth and YAML parsing. |
 | [help.rs](../../src/cli/help.rs) | Long-help constants. |
 | [layout.rs](../../src/cli/layout.rs) | Text/table wrapping, math-block and horizontal-rule styles, and heading-layout enums. |
@@ -149,6 +149,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 |---|---|
 | [command.rs](../../src/pager/command.rs) | Pager backend selection, external command parsing, and process lifecycle. |
 | [document.rs](../../src/pager/document.rs) | Pager document, line-number views, screen, and callback types. |
+| [document/layout.rs](../../src/pager/document/layout.rs) | Width-specific reflow, bounded layout caching, and refresh coordination. |
 | [document/views.rs](../../src/pager/document/views.rs) | Deferred numbering views, shared cache, and source navigation. |
 | [document/views/tests.rs](../../src/pager/document/views/tests.rs) | Lazy rendering, switching, refresh, and width-cache regressions. |
 | [warmup.rs](../../src/pager/warmup.rs) | Delayed background numbering preparation and pager lifetime cancellation. |
@@ -157,6 +158,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [page.rs](../../src/pager/page.rs) | `minus` pager setup and event loop. |
 | [rendering.rs](../../src/pager/rendering.rs) | Pager view factories, prefixes, and source-line maps. |
 | [input.rs](../../src/pager/input.rs) | Custom keys and classifier. |
+| [toc.rs](../../src/pager/toc.rs) | Source-mapped headings and normalized table-of-contents entries. |
 | [interrupt.rs](../../src/pager/interrupt.rs) | Parent and child interrupt handling for external pager processes. |
 | [operations.rs](../../src/pager/operations.rs) | Refresh, clipboard, and messages. |
 | [watcher.rs](../../src/pager/watcher.rs) | Targeted file watcher. |
@@ -218,7 +220,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [core.rs](../../src/renderer/event/core.rs) | `EventRenderer` state owner. |
 | [core/state.rs](../../src/renderer/event/core/state.rs) | Internal state types. |
 | [core/constructor.rs](../../src/renderer/event/core/constructor.rs) | Constructor. |
-| [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle. |
+| [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle and facade-visible code-gutter measurement. |
 | [core/process.rs](../../src/renderer/event/core/process.rs) | Event dispatcher. |
 | [core/output.rs](../../src/renderer/event/core/output.rs) | Spacing edits and open-block output positions. |
 | [core/start_tags.rs](../../src/renderer/event/core/start_tags.rs) | Start tags. |
@@ -267,7 +269,7 @@ Table facade: [tables.rs](../../src/renderer/event/tables.rs). Files: [layout.rs
 
 Facade: [html.rs](../../src/renderer/event/html.rs).
 
-Files: [blockquotes.rs](../../src/renderer/event/html/blockquotes.rs), [blocks.rs](../../src/renderer/event/html/blocks.rs), [buffer.rs](../../src/renderer/event/html/buffer.rs), [buffer_helpers.rs](../../src/renderer/event/html/buffer_helpers.rs), [definitions.rs](../../src/renderer/event/html/definitions.rs), [dispatch.rs](../../src/renderer/event/html/dispatch.rs), [forms.rs](../../src/renderer/event/html/forms.rs), [layout.rs](../../src/renderer/event/html/layout.rs), [list_helpers.rs](../../src/renderer/event/html/list_helpers.rs), [lists.rs](../../src/renderer/event/html/lists.rs), [media.rs](../../src/renderer/event/html/media.rs), [media_helpers.rs](../../src/renderer/event/html/media_helpers.rs), [styles.rs](../../src/renderer/event/html/styles.rs), [table_cells.rs](../../src/renderer/event/html/table_cells.rs), [table_helpers.rs](../../src/renderer/event/html/table_helpers.rs), [tables.rs](../../src/renderer/event/html/tables.rs), [text.rs](../../src/renderer/event/html/text.rs), and [text_helpers.rs](../../src/renderer/event/html/text_helpers.rs).
+Files: [blockquotes.rs](../../src/renderer/event/html/blockquotes.rs), [blocks.rs](../../src/renderer/event/html/blocks.rs), [buffer.rs](../../src/renderer/event/html/buffer.rs), [buffer_helpers.rs](../../src/renderer/event/html/buffer_helpers.rs), [definitions.rs](../../src/renderer/event/html/definitions.rs), [details.rs](../../src/renderer/event/html/details.rs), [dispatch.rs](../../src/renderer/event/html/dispatch.rs), [forms.rs](../../src/renderer/event/html/forms.rs), [layout.rs](../../src/renderer/event/html/layout.rs), [list_helpers.rs](../../src/renderer/event/html/list_helpers.rs), [lists.rs](../../src/renderer/event/html/lists.rs), [media.rs](../../src/renderer/event/html/media.rs), [spacing.rs](../../src/renderer/event/html/spacing.rs), [styles.rs](../../src/renderer/event/html/styles.rs), [table_cells.rs](../../src/renderer/event/html/table_cells.rs), [table_helpers.rs](../../src/renderer/event/html/table_helpers.rs), [tables.rs](../../src/renderer/event/html/tables.rs), and [text.rs](../../src/renderer/event/html/text.rs).
 
 ## Other event handlers
 
@@ -303,11 +305,11 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Callout formatting: [headings.rs](../../tests/callouts/formatting/headings.rs), [rules.rs](../../tests/callouts/formatting/rules.rs), and [wrapping.rs](../../tests/callouts/formatting/wrapping.rs).
 - Callout tables and links: [inline_links.rs](../../tests/callouts/tables_links/inline_links.rs), [references.rs](../../tests/callouts/tables_links/references.rs), and [tables.rs](../../tests/callouts/tables_links/tables.rs).
 - Checkboxes: [basic.rs](../../tests/checkboxes/basic.rs), [colors.rs](../../tests/checkboxes/colors.rs), [custom_states.rs](../../tests/checkboxes/custom_states.rs), and [layout_and_lists.rs](../../tests/checkboxes/layout_and_lists.rs).
-- CLI: [general.rs](../../tests/cli_basic/general.rs), [config_and_pager.rs](../../tests/cli_basic/config_and_pager.rs), [html_content.rs](../../tests/cli_basic/html_content.rs), [html_lists_tables.rs](../../tests/cli_basic/html_lists_tables.rs), [html_semantics.rs](../../tests/cli_basic/html_semantics.rs), and [rendering_options.rs](../../tests/cli_basic/rendering_options.rs).
+- CLI: [general.rs](../../tests/cli_basic/general.rs), [config_and_pager.rs](../../tests/cli_basic/config_and_pager.rs), [html_content.rs](../../tests/cli_basic/html_content.rs), [html_details.rs](../../tests/cli_basic/html_details.rs), [html_lists_tables.rs](../../tests/cli_basic/html_lists_tables.rs), [html_semantics.rs](../../tests/cli_basic/html_semantics.rs), [monitor.rs](../../tests/cli_basic/monitor.rs), and [rendering_options.rs](../../tests/cli_basic/rendering_options.rs).
 - Code blocks: [basic.rs](../../tests/code_blocks/basic.rs), [blockquotes.rs](../../tests/code_blocks/blockquotes.rs), [icons.rs](../../tests/code_blocks/icons.rs), [line_numbers.rs](../../tests/code_blocks/line_numbers.rs), [pretty.rs](../../tests/code_blocks/pretty.rs), [spacing.rs](../../tests/code_blocks/spacing.rs), [tab_indent.rs](../../tests/code_blocks/tab_indent.rs), and [wrap_indent.rs](../../tests/code_blocks/wrap_indent.rs).
 - Tab-indented code blocks: [deep_indent.rs](../../tests/code_blocks/tab_indent/deep_indent.rs), [fences.rs](../../tests/code_blocks/tab_indent/fences.rs), and [paragraphs.rs](../../tests/code_blocks/tab_indent/paragraphs.rs).
 - Footnotes: [attached.rs](../../tests/footnotes/attached.rs), [ordering.rs](../../tests/footnotes/ordering.rs), [placement.rs](../../tests/footnotes/placement.rs), and [validation.rs](../../tests/footnotes/validation.rs).
-- Layout: [blockquotes.rs](../../tests/layout/blockquotes.rs), [headings.rs](../../tests/layout/headings.rs), [margins.rs](../../tests/layout/margins.rs), and [spacing.rs](../../tests/layout/spacing.rs).
+- Layout: [blockquotes.rs](../../tests/layout/blockquotes.rs), [headings.rs](../../tests/layout/headings.rs), [margins.rs](../../tests/layout/margins.rs), [narrow_wrapping.rs](../../tests/layout/narrow_wrapping.rs), and [spacing.rs](../../tests/layout/spacing.rs).
 - Layout spacing: [backslash_basic.rs](../../tests/layout/spacing/backslash_basic.rs), [backslash_blocks.rs](../../tests/layout/spacing/backslash_blocks.rs), [block_spacing.rs](../../tests/layout/spacing/block_spacing.rs), [inline_html.rs](../../tests/layout/spacing/inline_html.rs), and [paragraphs.rs](../../tests/layout/spacing/paragraphs.rs).
 - Links and tables: [basic.rs](../../tests/links_tables/basic.rs), [code_blocks.rs](../../tests/links_tables/code_blocks.rs), [references.rs](../../tests/links_tables/references.rs), [smart_indent.rs](../../tests/links_tables/smart_indent.rs), and [truncation.rs](../../tests/links_tables/truncation.rs).
 - Basic links and tables: [links.rs](../../tests/links_tables/basic/links.rs) and [tables.rs](../../tests/links_tables/basic/tables.rs).

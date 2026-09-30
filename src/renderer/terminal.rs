@@ -1,8 +1,9 @@
 use super::event::EventRenderer;
 use super::syntax_set::load_full_syntax_set;
 use super::syntax_theme::{CodeHighlightTheme, build_syntect_theme, default_theme_set};
-use crate::cli::{LineNumberOptions, LineNumberTarget, OutputStyle};
+use crate::cli::{LineNumberOptions, LineNumberTarget};
 use crate::config::Config;
+use crate::terminal::OutputStyle;
 use crate::theme::{
     Theme, ThemeElement, ThemeManager, apply_custom_code_theme, apply_custom_theme, create_style,
 };
@@ -41,7 +42,7 @@ impl TerminalRenderer {
     /// does not inspect process output or environment variables for color policy.
     ///
     /// ```rust
-    /// use mdv::{cli::OutputStyle, config::Config, renderer::TerminalRenderer};
+    /// use mdv::{config::Config, renderer::TerminalRenderer, terminal::OutputStyle};
     /// let config = Config::default();
     /// let renderer = TerminalRenderer::new(&config, OutputStyle::Disabled)?;
     /// # Ok::<(), anyhow::Error>(())
@@ -165,7 +166,7 @@ impl TerminalRenderer {
             Rc::clone(math_diagnostics),
         );
         let output = renderer.render_events(events)?;
-        Ok((output, renderer.max_code_line_number_width))
+        Ok((output, renderer.max_code_line_number_width()))
     }
 
     fn render_with_source_line_numbers(

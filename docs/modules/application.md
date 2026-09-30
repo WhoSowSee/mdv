@@ -8,9 +8,9 @@
 | [src/version.rs](../../src/version.rs) | Plain build-information output for `--version` and `-V`. |
 | [build/version.rs](../../build/version.rs) | Compile-time package revision, target triple, and Rust compiler version. |
 | [src/lib.rs](../../src/lib.rs) | Crate root, module declarations, and routing for every execution mode. |
-| [src/document.rs](../../src/document.rs) | Shared document rendering options, metadata prefixes, and refresh rendering. |
+| [src/document.rs](../../src/document.rs) | Shared document rendering, prepared-resource entry point, metadata prefixes, and BOM-normalized file reading. |
 | [src/error.rs](../../src/error.rs) | Typed `MdvError` variants for configuration, themes, Markdown, rendering, monitoring, I/O, and syntax highlighting. |
-| [src/monitor.rs](../../src/monitor.rs) | Standalone file-monitoring mode used after ordinary output. |
+| [src/monitor.rs](../../src/monitor.rs) | Standalone file monitoring with one initial snapshot and shared refresh rendering. |
 
 ## `main.rs`
 
@@ -53,10 +53,10 @@ The crate publicly exposes reusable modules such as `cli`, `config`, `markdown`,
 4. `--preset-info` without a file prints the preset catalog.
 5. `--theme-info` without a file prints active theme information.
 6. `interactive::select_interactive_target` decides whether to open the document browser or page a specific file or standard input.
-7. The ordinary path reads input and calls `render_document`.
-8. With `--pager[=<COMMAND>]` and terminal output, the result is wrapped in `PagerDocument` and sent to the selected backend.
-9. Otherwise, the result is written directly.
-10. `--monitor` starts only for ordinary file output without an active pager.
+7. The ordinary path reads input and builds one `RenderOptions` value.
+8. `--monitor` with a file and no active pager enters `watch_file_with_options`, which prints the initial document once and owns refresh output.
+9. Other paths call `render_document`; with an active pager the result becomes `PagerDocument` and is sent to the selected backend.
+10. Without an active pager or monitor, the result is written directly.
 
 This ordering prevents metadata and setup commands from opening input or initializing a renderer unnecessarily.
 
@@ -67,15 +67,20 @@ This ordering prevents metadata and setup commands from opening input or initial
 | `show_help` | Selects regular Clap help or the full-screen help view. |
 | `build_help_document` | Builds themed Markdown/ANSI content for pager help. |
 | `render_document` | Runs the shared `MarkdownProcessor` → `TerminalRenderer` → ANSI/HTML pipeline. |
+| `render_document_with_renderer` | Runs that pipeline with prepared theme and syntax resources. |
 | `render_document_file` | Re-reads a file for the pager refresh callback. |
+| `read_document_source` | Reads a UTF-8 file and removes its leading BOM. |
 | `format_current_themes` | Formats the active terminal and code themes. |
 | `get_input_content` | Selects a file, `-`, piped standard input, or `--from` and returns its text. |
 | `strip_leading_bom` | Removes a UTF-8 BOM only when it occurs at the beginning of input. |
 | `RenderedOutput` | Carries rendered text, optional line-navigation data, styling policy, and pager status-bar transparency. |
 
-`render_document`, `render_document_file`, `RenderOptions`, and
-`format_current_themes` live in `document.rs`. Input selection and mode routing
-remain in `lib.rs`.
+`RenderOptions`, the document render entry points, `read_document_source`, and
+`format_current_themes` live in `document.rs`. Both render entry points share
+parsing and presentation; ordinary rendering creates resources after parsing,
+while monitor supplies its prepared renderer. Pager reflow owns its renderer;
+borrowing a prepared renderer does not clone resources for ordinary snapshots.
+Input selection and mode routing remain in `lib.rs`.
 
 ## Input handling
 
@@ -86,6 +91,10 @@ The application accepts three input sources:
 - a Markdown file selected by the interactive browser.
 
 Input is converted to one UTF-8 `String` before the Markdown pipeline starts, so files and pipes receive identical preprocessing.
+
+File input and refreshes use `read_document_source`; stdin uses the same
+leading-BOM normalization before rendering. Front matter recognition therefore
+does not depend on whether a document was just opened or refreshed.
 
 Pager rendering retains source-line metadata and prepares unnumbered, rendered-numbered, and source-numbered views. The configured mode selects the initial view; ordinary output still renders only that one configured line-number mode.
 
@@ -116,12 +125,18 @@ Fast Clap help/version/errors and stderr diagnostics are always plain.
 
 [src/monitor.rs](../../src/monitor.rs) uses `notify` and observes `Modify` and `Create` events for one file.
 
-- The initial render completes before event waiting begins.
-- Events use a 100 ms debounce interval.
+- The watcher is registered before the initial snapshot is printed. The monitoring message follows that snapshot and confirms readiness for updates.
+- The CLI supplies its already-read source and output options, so the initial document is printed once.
+- Changes are coalesced until 100 ms after the last relevant event, including changes immediately after startup.
 - A new `MarkdownProcessor` is created for each refresh.
 - The `TerminalRenderer` is reused because configuration and themes do not change.
-- Initial and repeated rendering share the same resolved `OutputStyle`.
+- Initial and repeated rendering use `render_document_with_renderer`, preserving front matter, HTML export, metadata prefixes, and resolved `OutputStyle`.
 - An individual refresh error is written to standard error without terminating the watcher loop.
+
+The public `monitor::watch_file(filename, config, output_style)` signature is
+unchanged. It reads the initial file with BOM normalization and uses the same
+watch loop with default terminal-output options. Application routing uses the
+crate-private `watch_file_with_options` to retain its CLI-specific options.
 
 The pager has a separate watcher in `src/pager/watcher.rs`. These mechanisms intentionally remain separate: ordinary monitor mode prints successive snapshots, while the pager replaces the current document in place.
 

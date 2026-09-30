@@ -1,7 +1,6 @@
-use crate::cli::OutputStyle;
 use crate::cli::{LineNumberOptions, LineNumberTarget};
 use crate::markdown::{SourceLineMarker, source_line_from_event};
-use crate::terminal::AnsiStyle;
+use crate::terminal::{AnsiStyle, OutputStyle};
 use pulldown_cmark::Event;
 
 // unicode-width counts C0 controls in strings, so metadata uses zero-width default-ignorable code points.
@@ -213,8 +212,8 @@ pub(super) fn strip_internal_markers(line: &str) -> (String, Option<usize>) {
 #[cfg(test)]
 mod tests {
     use super::{apply_line_numbers, encode_internal_marker, strip_internal_markers};
-    use crate::cli::{LineNumberOptions, LineNumberTarget, OutputStyle};
-    use crate::terminal::AnsiStyle;
+    use crate::cli::{LineNumberOptions, LineNumberTarget};
+    use crate::terminal::{AnsiStyle, OutputStyle};
     use crate::utils::display_width;
     use crossterm::style::Color;
 

@@ -31,13 +31,14 @@ pub use list_marker::{PrettyListStyle, UniformListMarker};
 
 use anyhow::Result;
 use clap::{ArgMatches, CommandFactory};
-use cli::{Cli, CliCommand, OutputStyle};
+use cli::{Cli, CliCommand};
 use config::Config;
 use document::{RenderOptions, format_current_themes, render_document, render_document_file};
 use std::io::IsTerminal;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use terminal::OutputStyle;
 
 /// Main entry point for the mdv application
 pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
@@ -95,18 +96,26 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
     let content = get_input_content(&cli)?;
     let pager_active = cli.pager.is_some() && stdout_is_terminal;
     let builtin_pager = pager_backend.is_builtin();
-    let rendered = render_document(
-        &content,
-        &config,
-        output_style,
-        RenderOptions {
-            do_html: cli.do_html,
-            show_current_theme,
-            current_preset,
-            add_leading_blank: stdout_is_terminal,
-            prepare_pager_views: pager_active && builtin_pager,
-        },
-    )?;
+    let render_options = RenderOptions {
+        do_html: cli.do_html,
+        show_current_theme,
+        current_preset,
+        add_leading_blank: stdout_is_terminal,
+        prepare_pager_views: pager_active && builtin_pager,
+    };
+    if cli.monitor_file
+        && !pager_active
+        && let Some(filename) = &cli.filename
+    {
+        return monitor::watch_file_with_options(
+            filename,
+            &config,
+            output_style,
+            render_options,
+            &content,
+        );
+    }
+    let rendered = render_document(&content, &config, output_style, render_options)?;
 
     if pager_active {
         let pager_file = if builtin_pager {
@@ -143,13 +152,6 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
         )?;
     } else {
         print!("{}", rendered.output()?);
-    }
-
-    if cli.monitor_file
-        && !pager_active
-        && let Some(filename) = &cli.filename
-    {
-        monitor::watch_file(filename, &config, output_style)?;
     }
 
     Ok(())
@@ -206,7 +208,7 @@ fn get_input_content(cli: &Cli) -> Result<String> {
             if !path.exists() {
                 anyhow::bail!("File not found: {}", filename);
             }
-            std::fs::read_to_string(path)?
+            return document::read_document_source(path);
         }
         None => {
             if io::stdin().is_terminal() {

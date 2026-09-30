@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(crate) fn new(
+    pub(in crate::renderer) fn new(
         config: &'a Config,
         theme: &'a Theme,
         syntax_set: &'a SyntaxSet,

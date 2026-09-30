@@ -5,8 +5,8 @@ use super::{
     ThemeElement, create_style, wrap_text_with_mode,
 };
 use crate::block_spacing::BlockElement;
-use crate::cli::OutputStyle;
 use crate::table::TABLE_REFERENCE_WRAP_MARKER;
+use crate::terminal::OutputStyle;
 
 fn style_underlined_table_link(link_text: &str, output_style: OutputStyle) -> String {
     if output_style.is_disabled() {

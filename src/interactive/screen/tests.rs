@@ -1,6 +1,6 @@
 use super::super::discovery::DocumentEntry;
 use super::*;
-use crate::cli::OutputStyle;
+use crate::terminal::OutputStyle;
 
 #[test]
 fn pagination_dots_are_adjacent() {

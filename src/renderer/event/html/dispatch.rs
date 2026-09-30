@@ -1,5 +1,25 @@
 use super::*;
 
+fn is_void_html_element(name: &str) -> bool {
+    matches!(
+        name,
+        "area"
+            | "base"
+            | "br"
+            | "col"
+            | "embed"
+            | "hr"
+            | "img"
+            | "input"
+            | "link"
+            | "meta"
+            | "param"
+            | "source"
+            | "track"
+            | "wbr"
+    )
+}
+
 impl<'a> EventRenderer<'a> {
     pub(super) fn render_html_node(
         &mut self,

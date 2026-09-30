@@ -1,5 +1,6 @@
-//! User-selected color modes and resolved terminal styling.
+//! User-selected color modes.
 
+use crate::terminal::OutputStyle;
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
@@ -27,45 +28,10 @@ impl ColorMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum OutputStyle {
-    /// Generate terminal styling and hyperlinks where requested by the theme.
-    Enabled,
-    /// Limit styling to the 16 standard and bright ANSI colors.
-    Ansi16,
-    /// Limit styling to the 256-color ANSI palette.
-    Ansi256,
-    /// Preserve rendered text without generated terminal styling or hyperlinks.
-    Disabled,
-}
-
-impl OutputStyle {
-    /// Return whether terminal styling is enabled.
-    pub const fn is_enabled(self) -> bool {
-        !self.is_disabled()
-    }
-
-    /// Return whether terminal styling is disabled.
-    pub const fn is_disabled(self) -> bool {
-        matches!(self, Self::Disabled)
-    }
-
-    pub(crate) const fn color_depth(self) -> minus::ColorDepth {
-        match self {
-            Self::Ansi16 => minus::ColorDepth::Ansi16,
-            Self::Ansi256 => minus::ColorDepth::Ansi256,
-            Self::Enabled | Self::Disabled => minus::ColorDepth::TrueColor,
-        }
-    }
-
-    pub(crate) fn adapt_owned(self, text: String) -> String {
-        self.color_depth().adapt(text).into_owned()
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::ColorMode;
+    use crate::cli::OutputStyle;
 
     #[test]
     fn resolves_every_mode_for_terminal_and_pipe() {

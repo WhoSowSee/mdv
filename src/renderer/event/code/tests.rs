@@ -20,7 +20,7 @@ fn test_renderer<'a>(
         theme,
         syntax_set,
         code_theme,
-        crate::cli::OutputStyle::Enabled,
+        crate::terminal::OutputStyle::Enabled,
         Default::default(),
     )
 }

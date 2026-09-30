@@ -8,7 +8,7 @@ CLI arguments and YAML converge into one `Config` value. Every downstream module
 |---|---|
 | [src/cli.rs](../../src/cli.rs) | `Cli`: arguments, aliases, conflicts, help groups, and Clap defaults. |
 | [src/cli/commands.rs](../../src/cli/commands.rs) | `CliCommand`, including full-format help. |
-| [src/cli/color.rs](../../src/cli/color.rs) | `ColorMode` settings and resolved `OutputStyle`. |
+| [src/cli/color.rs](../../src/cli/color.rs) | `ColorMode` settings and resolution to `terminal::OutputStyle`. |
 | [src/cli/color_depth.rs](../../src/cli/color_depth.rs) | `ColorDepth` CLI values and YAML string/numeric parsing. |
 | [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, `MathBlockStyle`, and `HeadingLayout`. |
 | [src/cli/links.rs](../../src/cli/links.rs) | `LinkStyle`, `LinkTruncationStyle`, `FootnoteStyle`, and `MissingFootnoteStyle`. |
@@ -101,6 +101,9 @@ separately to renderers and TUI. Configuration serialization retains the selecte
 mode and does not include resolved styling. Removed `no_colors` YAML keys are
 errors in both configuration and presets; removed color environment variables are
 ignored. Generic variables such as `NO_COLOR` do not influence this policy.
+
+`OutputStyle` is defined in [src/terminal.rs](../../src/terminal.rs). The public
+`cli::OutputStyle` re-export preserves the original library import path.
 
 `color_depth` / `--color-depth` accepts `auto`, `16`, `256`, and `truecolor`.
 YAML accepts 16 and 256 as numbers or strings. Its precedence is explicit CLI,

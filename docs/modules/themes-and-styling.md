@@ -91,7 +91,10 @@ An unknown name, invalid component count, or out-of-range component returns an e
 
 ## Low-level ANSI output
 
-[src/terminal.rs](../../src/terminal.rs) contains `AnsiStyle` and color helpers.
+[src/terminal.rs](../../src/terminal.rs) owns `OutputStyle`, `AnsiStyle`, and color
+helpers. Runtime consumers import `terminal::OutputStyle`; `cli::OutputStyle`
+remains a public re-export for existing library callers. `ColorMode` remains a
+CLI/configuration value and resolves to the terminal-owned runtime policy.
 
 `AnsiStyle` accumulates foreground, background, bold, italic, underline, and strikethrough. `apply` emits one coherent escape sequence when the resolved `OutputStyle` is enabled and returns the original text when it is disabled.
 

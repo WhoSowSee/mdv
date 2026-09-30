@@ -24,5 +24,7 @@ mod html_details;
 mod html_lists_tables;
 #[path = "cli_basic/html_semantics.rs"]
 mod html_semantics;
+#[path = "cli_basic/monitor.rs"]
+mod monitor;
 #[path = "cli_basic/rendering_options.rs"]
 mod rendering_options;

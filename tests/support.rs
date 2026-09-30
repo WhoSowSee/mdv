@@ -3,9 +3,13 @@ use std::sync::OnceLock;
 use tempfile::TempDir;
 
 pub(crate) fn mdv_cmd() -> Command {
+    Command::from_std(mdv_process_command())
+}
+
+pub(crate) fn mdv_process_command() -> std::process::Command {
     static CONFIG_DIR: OnceLock<TempDir> = OnceLock::new();
     let config_dir = CONFIG_DIR.get_or_init(|| TempDir::new().expect("isolated config directory"));
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
+    let mut command = std::process::Command::new(assert_cmd::cargo::cargo_bin!("mdv"));
     command
         .env_remove("MDV_COLOR")
         .env_remove("MDV_PAGER")

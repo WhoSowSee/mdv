@@ -23,7 +23,7 @@ Rendering is split between an outer document facade and one stateful `EventRende
 - the selected terminal `Theme`;
 - an `Arc<SyntaxSet>`;
 - a `CodeHighlightTheme`;
-- a resolved `OutputStyle`, separate from the serialized `Config.color` mode.
+- a resolved `terminal::OutputStyle`, separate from the serialized `Config.color` mode; `cli::OutputStyle` remains a compatible public re-export.
 
 ### Construction
 
@@ -76,7 +76,11 @@ In reverse mode, front matter follows the reversed Markdown body so it remains a
 | Inline formatting | semantic formatting stack and active backtick style. |
 | Paragraph spacing | content flags, blank-line streak, and soft-break suppression. |
 
-Fields are crate-visible because inherent `impl EventRenderer` blocks are physically distributed across sibling files. They are not independent public state.
+Fields use `pub(super)` in `event/core.rs`, so sibling handlers within
+`renderer::event` can share state while the outer facade cannot read its fields.
+The type, constructor, render entry point, and `max_code_line_number_width()`
+accessor are scoped to `renderer`. The accessor supplies the gutter measurement
+required by the facade's iterative layout without exposing mutable state.
 
 ## `event/core` files
 
@@ -84,7 +88,7 @@ Fields are crate-visible because inherent `impl EventRenderer` blocks are physic
 |---|---|
 | [core/state.rs](../../src/renderer/event/core/state.rs) | `ListState`, `TableState`, and callout, footnote, link, and HTML state types. |
 | [core/constructor.rs](../../src/renderer/event/core/constructor.rs) | Complete initialization in `EventRenderer::new`. |
-| [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle and smart-indent pre-analysis. |
+| [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle, gutter measurement, and smart-indent pre-analysis. |
 | [core/process.rs](../../src/renderer/event/core/process.rs) | Dispatch one `Event` and process source markers. |
 | [core/output.rs](../../src/renderer/event/core/output.rs) | Replace output spacing while rebasing positions held by open blocks. |
 | [core/start_tags.rs](../../src/renderer/event/core/start_tags.rs) | Route `Event::Start(Tag)` to specialized handlers. |

@@ -16,7 +16,8 @@ mod text;
 
 use crossterm::style::Color as CrosstermColor;
 
-pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock, EventRenderer};
+pub(super) use core::EventRenderer;
+pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock};
 pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
 use definition_lists::DefinitionListState;
 pub(super) use footnotes::FootnoteDefinition;

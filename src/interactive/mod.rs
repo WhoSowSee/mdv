@@ -3,10 +3,10 @@ pub(crate) mod browser;
 pub(crate) mod discovery;
 pub(crate) mod screen;
 
-use crate::cli::OutputStyle;
 use crate::config::Config;
 use crate::editor::EditorCommand;
 use crate::pager::{self, PagerBackend, PagerScreen, RefreshCallback};
+use crate::terminal::OutputStyle;
 use anyhow::{Result, anyhow, ensure};
 use app::{App, AppAction};
 use crossterm::event::{self, Event};

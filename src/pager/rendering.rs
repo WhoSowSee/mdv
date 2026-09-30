@@ -1,8 +1,9 @@
 use super::{PagerContent, PagerDisplay, PagerDocument, PagerLineNumberMode, PagerLineNumberViews};
-use crate::cli::{LineNumberTarget, OutputStyle};
+use crate::cli::LineNumberTarget;
 use crate::markdown::ParsedDocument;
 use crate::renderer::TerminalRenderer;
 use crate::renderer::terminal::PagerRenderView;
+use crate::terminal::OutputStyle;
 use anyhow::Result;
 
 pub(crate) type Reflow = std::sync::Arc<dyn Fn(usize) -> Result<RenderedOutput> + Send + Sync>;

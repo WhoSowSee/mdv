@@ -9,7 +9,8 @@ use comfy_table::{
 };
 use pulldown_cmark::Alignment;
 
-use crate::cli::{OutputStyle, TableWrapMode, TextWrapMode};
+use crate::cli::{TableWrapMode, TextWrapMode};
+use crate::terminal::OutputStyle;
 
 pub(crate) const TABLE_REFERENCE_WRAP_MARKER: char = '\u{200B}';
 const TABLE_GRAPHEME_WRAP_DELIMITER: char = '\0';

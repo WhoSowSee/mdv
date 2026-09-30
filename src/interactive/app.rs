@@ -1,5 +1,5 @@
 use super::browser::{BrowserState, FilterState};
-use crate::cli::OutputStyle;
+use crate::terminal::OutputStyle;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind};
 use std::path::PathBuf;

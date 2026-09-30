@@ -9,7 +9,8 @@ use std::path::PathBuf;
 mod color;
 mod color_depth;
 mod help;
-pub use color::{ColorMode, OutputStyle};
+pub use crate::terminal::OutputStyle;
+pub use color::ColorMode;
 pub use color_depth::ColorDepth;
 use help::*;
 
