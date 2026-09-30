@@ -3,7 +3,7 @@ use super::{EventRenderer, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
 use crate::inline_style::{InlineStyle, InlineStyleKind};
 use crate::terminal::AnsiStyle;
-use crate::utils::{WrapMode, display_width, strip_ansi, wrap_text_with_mode};
+use crate::utils::{WrapMode, display_width, display_width_ansi, strip_ansi, wrap_text_with_mode};
 
 fn is_quote_prefix_char(ch: char) -> bool {
     matches!(ch, '│' | '┃')

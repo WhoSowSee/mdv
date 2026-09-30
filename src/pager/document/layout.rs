@@ -43,7 +43,7 @@ impl PagerDocument {
             }
             self.layout_width = Some(width);
         }
-        Ok(self.display_snapshot())
+        self.display_snapshot()
     }
 
     pub(in crate::pager) fn prepare_sidebar(
@@ -64,11 +64,19 @@ impl PagerDocument {
             return None;
         }
         let reflow = current.reflow.clone()?;
+        let mode = current.line_number_mode();
         drop(current);
         Some(thread::spawn(move || {
             let Ok(rendered) = reflow(width) else {
                 return;
             };
+            let mut content = rendered.into_content();
+            if let (Some(mode), PagerContent::LineNumbers(views)) = (mode, &mut content) {
+                views.mode = mode;
+            }
+            if content.output().is_err() {
+                return;
+            }
             let Ok(mut current) = document.write() else {
                 return;
             };
@@ -78,7 +86,7 @@ impl PagerDocument {
                     .as_ref()
                     .is_some_and(|active| Arc::ptr_eq(active, &reflow))
             {
-                current.cache_layout(width, rendered.into_content());
+                current.cache_layout(width, content);
             }
         }))
     }
@@ -117,7 +125,7 @@ mod tests {
         worker.join().unwrap();
         let current = document.read().unwrap();
         assert!(current.cached_layouts.is_empty());
-        assert_eq!(current.content.output(), "new");
+        assert_eq!(current.content.output().unwrap(), "new");
     }
 
     #[test]
@@ -169,24 +177,25 @@ mod tests {
         }
         assert_eq!(document.layout_snapshot(100).unwrap().0, full);
         for _ in 0..3 {
-            assert!(document.cycle_line_number_mode());
+            assert!(document.cycle_line_number_mode().unwrap());
             let mode = document.line_number_mode();
             let PagerContent::LineNumbers(views) = &document.content else {
                 panic!("pager views missing");
             };
-            let entries = views
-                .toc
+            let toc = views.visible_toc().unwrap();
+            let entries = toc
                 .iter()
                 .map(|e| (e.title.as_str(), e.source_line))
                 .collect::<Vec<_>>();
             assert_eq!(entries, [("First", 3), ("Child", 7), ("Second", 9)]);
-            assert!(
+            assert!(toc.iter().all(|e| {
                 views
-                    .toc
-                    .iter()
-                    .all(|e| views.current().source_lines.contains(&Some(e.source_line)))
-            );
-            assert!(document.display_snapshot().1.is_some());
+                    .current()
+                    .unwrap()
+                    .source_lines
+                    .contains(&Some(e.source_line))
+            }));
+            assert!(document.display_snapshot().unwrap().1.is_some());
             for width in [64, 100] {
                 document.layout_snapshot(width).unwrap();
                 assert_eq!(document.line_number_mode(), mode);

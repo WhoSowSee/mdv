@@ -4,6 +4,12 @@ use super::{
 };
 
 pub(super) fn convert(lines: &[Line], context: &mut Admonitions) -> Vec<Line> {
+    if !lines
+        .iter()
+        .any(|line| super::Opening::may_occur_in(&line.text))
+    {
+        return lines.to_vec();
+    }
     let protected = ProtectedLines::new(lines);
     let mut blocks = boundaries::index(lines, &protected);
     let mut output = Vec::new();

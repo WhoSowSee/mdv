@@ -1,18 +1,12 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
-    pub(super) fn process_styled_text_with_wrapping(
+    pub(super) fn process_text_units_with_wrapping(
         &mut self,
         text: &str,
         highlighted: bool,
     ) -> Result<()> {
-        let terminal_width = self.effective_text_width();
-
-        // The effective width is the full terminal width since current_line_width
-        // already includes any indentation that's been added to the current line
-        let effective_width = terminal_width;
-
-        // Determine wrap mode based on config
+        let effective_width = self.effective_text_width();
         let wrap_mode = self.config.text_wrap_mode();
 
         // Split text into wrappable units (words or characters) while preserving formatting
@@ -20,19 +14,16 @@ impl<'a> EventRenderer<'a> {
             crate::utils::WrapMode::Word => self
                 .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
             crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-            crate::utils::WrapMode::None => vec![text.to_string()],
+            crate::utils::WrapMode::None => vec![Cow::Borrowed(text)],
         };
 
-        // Process each unit individually with formatting
         for (i, unit) in units.iter().enumerate() {
-            if unit.trim().is_empty() && i > 0 {
-                // Handle whitespace between units
-                let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-                    crate::utils::strip_ansi(&self.output[last_newline + 1..])
-                } else {
-                    crate::utils::strip_ansi(&self.output)
-                };
-                let current_line_width = crate::utils::display_width(&current_line_clean);
+            let current_line = self
+                .output
+                .rsplit_once('\n')
+                .map_or(self.output.as_str(), |(_, line)| line);
+            let current_line_width = crate::utils::display_width_ansi(current_line);
+            if unit.trim().is_empty() && (i > 0 || self.formatting_stack.is_empty()) {
                 let space_width = crate::utils::display_width(unit);
                 if current_line_width + space_width > effective_width {
                     self.push_newline_with_context();
@@ -40,21 +31,13 @@ impl<'a> EventRenderer<'a> {
                     let formatted_unit = if highlighted {
                         self.apply_formatting_with_highlight(unit, true)
                     } else {
-                        unit.to_string()
+                        Cow::Borrowed(unit.as_ref())
                     };
                     self.output.push_str(&formatted_unit);
                 }
                 continue;
             }
 
-            // Check if adding this unit would exceed line width
-            let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-                crate::utils::strip_ansi(&self.output[last_newline + 1..])
-            } else {
-                crate::utils::strip_ansi(&self.output)
-            };
-
-            let current_line_width = crate::utils::display_width(&current_line_clean);
             let unit_width = crate::utils::display_width(unit);
 
             // For InlineTable links, account for the reference number that will be added
@@ -83,13 +66,12 @@ impl<'a> EventRenderer<'a> {
             // Force line break if needed (but not for the first unit on a line)
             if would_exceed
                 && current_line_width > 0
-                && Self::line_has_visible_text(&current_line_clean)
+                && Self::line_has_visible_text(&crate::utils::strip_ansi(current_line))
                 && wrap_mode != crate::utils::WrapMode::None
             {
                 self.push_newline_with_context();
             }
 
-            // Apply formatting and add to output
             let formatted_unit = self.apply_formatting_with_highlight(unit, highlighted);
 
             // Add content indentation for new lines if needed
@@ -97,19 +79,7 @@ impl<'a> EventRenderer<'a> {
             let should_add_indent = (self.output.ends_with('\n') || self.output.is_empty())
                 && !formatted_unit.trim().is_empty();
 
-            // Check if we're immediately after content that shouldn't get extra indentation
-            let after_inline_content = if let Some(last_newline) = self.output.rfind('\n') {
-                let line_content = &self.output[last_newline + 1..];
-                // If the line has content (not just whitespace), we're continuing on the same line
-                !line_content.trim().is_empty()
-            } else {
-                // No newlines, check if we have any content
-                !self.output.trim().is_empty()
-            };
-
-            // Don't add indentation if we're continuing on the same line OR
-            // if we just processed a link (which may have wrapped URLs)
-            if should_add_indent && !after_inline_content {
+            if should_add_indent {
                 self.push_indent_for_line_start();
             }
 
@@ -119,49 +89,42 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    /// Split text into words for word-based wrapping (for styled text)
-    pub(super) fn split_text_into_words_styled(&self, text: &str, max_width: usize) -> Vec<String> {
+    pub(super) fn split_text_into_words_styled<'t>(
+        &self,
+        text: &'t str,
+        max_width: usize,
+    ) -> Vec<Cow<'t, str>> {
         let mut words = Vec::new();
-        let mut current_word = String::new();
+        let mut start = 0;
         let mut in_whitespace = false;
-
-        for ch in text.chars() {
-            if ch.is_whitespace() {
-                if !in_whitespace && !current_word.is_empty() {
-                    words.push(current_word.clone());
-                    current_word.clear();
-                }
-                current_word.push(ch);
-                in_whitespace = true;
-            } else {
-                if in_whitespace && !current_word.is_empty() {
-                    words.push(current_word.clone());
-                    current_word.clear();
-                }
-                current_word.push(ch);
-                in_whitespace = false;
+        for (index, ch) in text.char_indices() {
+            let whitespace = ch.is_whitespace();
+            if whitespace != in_whitespace && index > start {
+                self.push_word_unit(&mut words, &text[start..index], max_width);
+                start = index;
             }
+            in_whitespace = whitespace;
         }
-
-        if !current_word.is_empty() {
-            words.push(current_word);
+        if start < text.len() {
+            self.push_word_unit(&mut words, &text[start..], max_width);
         }
-
         words
-            .into_iter()
-            .flat_map(|word| self.split_oversized_word_unit(word, max_width))
-            .collect()
     }
 
-    pub(super) fn split_oversized_word_unit(&self, unit: String, max_width: usize) -> Vec<String> {
-        if unit.trim().is_empty() || crate::utils::display_width(&unit) <= max_width {
-            return vec![unit];
+    fn push_word_unit<'t>(&self, words: &mut Vec<Cow<'t, str>>, unit: &'t str, max_width: usize) {
+        if unit.trim().is_empty() || crate::utils::display_width(unit) <= max_width {
+            words.push(Cow::Borrowed(unit));
+        } else {
+            words.extend(
+                crate::utils::wrap_text_with_mode(
+                    unit,
+                    max_width,
+                    crate::utils::WrapMode::Character,
+                )
+                .split('\n')
+                .map(|part| Cow::Owned(part.to_string())),
+            );
         }
-
-        crate::utils::wrap_text_with_mode(&unit, max_width, crate::utils::WrapMode::Character)
-            .split('\n')
-            .map(str::to_string)
-            .collect()
     }
 
     pub(super) fn word_wrap_content_width(&self, effective_width: usize) -> usize {
@@ -170,9 +133,10 @@ impl<'a> EventRenderer<'a> {
             .max(1)
     }
 
-    /// Split text into characters for character-based wrapping (for styled text)
-    pub(super) fn split_text_into_characters_styled(&self, text: &str) -> Vec<String> {
-        text.chars().map(|c| c.to_string()).collect()
+    pub(super) fn split_text_into_characters_styled<'t>(&self, text: &'t str) -> Vec<Cow<'t, str>> {
+        text.char_indices()
+            .map(|(index, ch)| Cow::Borrowed(&text[index..index + ch.len_utf8()]))
+            .collect()
     }
 
     /// Calculate proper indentation for list content continuation lines
@@ -240,16 +204,16 @@ impl<'a> EventRenderer<'a> {
             crate::utils::WrapMode::Word => self
                 .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
             crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-            crate::utils::WrapMode::None => vec![text.to_string()],
+            crate::utils::WrapMode::None => vec![Cow::Borrowed(text)],
         };
 
         let mut current_fragment = String::new();
-        let initial_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-            crate::utils::strip_ansi(&self.output[last_newline + 1..])
+        let initial_line = if let Some(last_newline) = self.output.rfind('\n') {
+            &self.output[last_newline + 1..]
         } else {
-            crate::utils::strip_ansi(&self.output)
+            self.output.as_str()
         };
-        let mut fragment_start_line_width = crate::utils::display_width(&initial_line_clean);
+        let mut fragment_start_line_width = crate::utils::display_width_ansi(initial_line);
 
         if effective_width.saturating_sub(fragment_start_line_width) <= 1 && !text.trim().is_empty()
         {
@@ -285,7 +249,7 @@ impl<'a> EventRenderer<'a> {
                     fragment_start_line_width = self.compute_line_start_context_width();
                 }
 
-                current_fragment = unit.clone();
+                current_fragment = unit.to_string();
             } else {
                 if would_exceed {
                     self.push_newline_with_context();

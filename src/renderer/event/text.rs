@@ -44,3 +44,4 @@ mod handling;
 mod segments;
 mod styled;
 mod wrapping;
+use std::borrow::Cow;

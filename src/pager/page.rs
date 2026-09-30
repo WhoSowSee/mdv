@@ -26,7 +26,7 @@ pub(crate) fn page(
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?;
             (
                 document.title.clone(),
-                document.has_line_navigation(),
+                document.has_line_navigation()?,
                 document.line_number_mode().is_some(),
                 document.status_bar_transparent(),
                 document.output_style(),
@@ -40,6 +40,9 @@ pub(crate) fn page(
             status_bar_transparent,
         )?;
         let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
+        let warmup = line_number_toggle_enabled
+            .then(|| super::warmup::ViewWarmup::install(&pager, &document))
+            .transpose()?;
         pager.set_output_styling(output_style.is_enabled())?;
         pager.set_color_depth(output_style.color_depth())?;
         pager.set_line_numbers(LineNumbers::AlwaysOff)?;
@@ -60,7 +63,7 @@ pub(crate) fn page(
             let (output, line_navigation) = document
                 .read()
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?
-                .display_snapshot();
+                .display_snapshot()?;
             pager.set_mapped_text(output, line_navigation)?;
         }
         pager.set_prompt_renderer(move |context| footer.render(context))?;
@@ -99,6 +102,7 @@ pub(crate) fn page(
             PagerScreen::Alternate => minus::dynamic_paging(pager)?,
             PagerScreen::InPlace => minus::dynamic_paging_in_place(pager)?,
         }
+        drop(warmup);
         drop(watcher);
 
         if !editor_requested.load(Ordering::SeqCst) {

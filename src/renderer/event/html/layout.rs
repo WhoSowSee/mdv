@@ -124,8 +124,8 @@ impl<'a> EventRenderer<'a> {
             ("", line)
         };
         let content = content.trim();
-        let content_width = display_width(&strip_ansi(content));
-        let prefix_width = display_width(&strip_ansi(line_prefix));
+        let content_width = display_width_ansi(content);
+        let prefix_width = display_width_ansi(line_prefix);
         let available_width = self.effective_text_width().saturating_sub(prefix_width);
         let padding = match alignment {
             HtmlAlignment::Left => 0,

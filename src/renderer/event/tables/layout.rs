@@ -43,7 +43,7 @@ impl<'a> EventRenderer<'a> {
                 continue;
             };
 
-            let cell_width = display_width(&strip_ansi(cell));
+            let cell_width = display_width_ansi(cell);
             let url_part_width = display_width(&segment.url_part);
             if url_part_width == 0 {
                 continue;
@@ -98,12 +98,12 @@ impl<'a> EventRenderer<'a> {
         let mut widths = vec![1usize; columns];
 
         for (idx, header) in headers.iter().enumerate() {
-            widths[idx] = widths[idx].max(display_width(&strip_ansi(header)).max(1));
+            widths[idx] = widths[idx].max(display_width_ansi(header).max(1));
         }
 
         for row in rows {
             for (idx, cell) in row.iter().enumerate().take(columns) {
-                widths[idx] = widths[idx].max(display_width(&strip_ansi(cell)).max(1));
+                widths[idx] = widths[idx].max(display_width_ansi(cell).max(1));
             }
         }
 

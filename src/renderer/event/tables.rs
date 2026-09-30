@@ -3,7 +3,7 @@ use super::{
     TableState,
 };
 use crate::block_spacing::BlockElement;
-use crate::utils::{display_width, strip_ansi};
+use crate::utils::{display_width, display_width_ansi, strip_ansi};
 use pulldown_cmark::Alignment;
 
 const TABLE_COLUMN_OVERHEAD: usize = 3;

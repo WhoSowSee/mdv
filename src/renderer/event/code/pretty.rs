@@ -163,15 +163,12 @@ impl<'a> EventRenderer<'a> {
 
         let mut segments = Vec::with_capacity(segments_raw.len());
         for (idx, mut segment) in segments_raw.into_iter().enumerate() {
-            let mut visible_width = display_width(&strip_ansi(&segment));
+            let mut visible_width = display_width_ansi(&segment);
 
             if idx > 0 && !continuation_indent.is_empty() {
                 let candidate = format!("{}{}", continuation_indent, segment);
-                let candidate_width = display_width(&strip_ansi(&candidate));
-                if should_wrap && width > 0 && candidate_width > width {
-                    // Not enough room to apply hanging indent - retain original segment.
-                    visible_width = display_width(&strip_ansi(&segment));
-                } else {
+                let candidate_width = display_width_ansi(&candidate);
+                if !should_wrap || width == 0 || candidate_width <= width {
                     segment = candidate;
                     visible_width = candidate_width;
                 }
@@ -276,7 +273,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn render_pretty_content_line(&self, text_width: usize, part: &str) -> String {
-        let content_width = display_width(&strip_ansi(part));
+        let content_width = display_width_ansi(part);
         let inner_width = (1 + content_width).max(2);
         let mandatory_right_pad = inner_width - (1 + content_width);
         let trailing_pad = text_width.saturating_sub(inner_width);

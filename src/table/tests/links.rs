@@ -96,3 +96,17 @@ fn test_styled_wrapper_prefers_visible_text_for_osc8_links() {
     );
     assert_eq!(format!("{}{}{}", prefix, plain, suffix), styled);
 }
+#[test]
+fn fragmented_link_skips_multibyte_matches_in_other_columns() {
+    let url = "https://example.com/guide";
+    for tail in ["éé", "界界", "😀😀", "\u{200d}é"] {
+        let input = format!("│ abc ┆ {tail} │\n│ {tail} ┆ end │");
+        let plain = format!("abc{tail}");
+        let wrap = |text: &str| format!("\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\");
+        let expected = format!("│ {} ┆ {tail} │\n│ {} ┆ end │", wrap("abc"), wrap(tail));
+        let output =
+            apply_clickable_link_replacements(input.clone(), &[(plain.clone(), wrap(&plain))]);
+        assert_eq!(strip_ansi(&output), input);
+        assert_eq!(output, expected);
+    }
+}

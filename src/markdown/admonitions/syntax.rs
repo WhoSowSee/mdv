@@ -25,6 +25,14 @@ pub(super) struct Opening {
 }
 
 impl Opening {
+    pub fn may_occur_in(line: &str) -> bool {
+        ["!!!", "???", "///", ":::"]
+            .iter()
+            .any(|marker| line.contains(marker))
+            || line.contains("{%")
+            || (line.contains('{') && (line.contains("```") || line.contains("~~~")))
+    }
+
     pub fn parse(line: &str) -> Option<Self> {
         let line = line.trim_end();
         if let Some(rest) = line

@@ -109,7 +109,7 @@ impl<'a> EventRenderer<'a> {
 
         let mut max_content_width = 0usize;
         for line in &content_lines {
-            max_content_width = max_content_width.max(display_width(&strip_ansi(line)));
+            max_content_width = max_content_width.max(display_width_ansi(line));
         }
 
         let wrap_mode = match (kind, self.config.text_wrap_mode()) {
@@ -124,7 +124,7 @@ impl<'a> EventRenderer<'a> {
                     wrapped_lines.push(line);
                     continue;
                 }
-                let line_width = display_width(&strip_ansi(&line));
+                let line_width = display_width_ansi(&line);
                 if line_width <= available_content_width {
                     wrapped_lines.push(line);
                     continue;
@@ -144,7 +144,7 @@ impl<'a> EventRenderer<'a> {
 
         max_content_width = 0usize;
         for line in &content_lines {
-            max_content_width = max_content_width.max(display_width(&strip_ansi(line)));
+            max_content_width = max_content_width.max(display_width_ansi(line));
         }
 
         let label_text = if label_inside {

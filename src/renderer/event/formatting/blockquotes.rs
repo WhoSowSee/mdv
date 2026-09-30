@@ -3,12 +3,12 @@ use super::*;
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn compute_line_start_context_width(&self) -> usize {
         let prefix = self.current_line_prefix();
-        display_width(&strip_ansi(&prefix))
+        display_width_ansi(&prefix)
     }
 
     pub(in crate::renderer::event) fn compute_indented_block_context_width(&self) -> usize {
         let prefix = self.current_indented_block_prefix();
-        display_width(&strip_ansi(&prefix))
+        display_width_ansi(&prefix)
     }
     pub(in crate::renderer::event) fn render_blockquote_prefix(&self) -> String {
         self.render_blockquote_prefix_for_level(self.blockquote_level)

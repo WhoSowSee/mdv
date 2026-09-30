@@ -55,7 +55,7 @@ pub use search::SearchMode;
 pub use color::{ColorDepth, ansi256_to_rgb};
 pub use error::MinusError;
 #[cfg(feature = "search")]
-pub use line_navigation::LineNavigation;
+pub use line_navigation::{LineNavigation, SourceViewRenderer};
 pub use pager::Pager;
 pub use prompt::{
     PromptAttribute, PromptColor, PromptContext, PromptError, PromptLine, PromptRenderer,

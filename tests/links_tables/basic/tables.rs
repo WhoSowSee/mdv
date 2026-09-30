@@ -1,6 +1,29 @@
 use super::*;
 
 #[test]
+fn source_numbered_table_links_preserve_utf8_output_positions() {
+    let source = "| ID | Name | Link | Command | Status |\n| ---: | --- | --- | --- | --- |\n| 104 | notify | [alerts](https://example.com/services/notify/alerts/rules) | `cargo test -p notify` | active |\n";
+    let output = mdv_cmd()
+        .args([
+            "-",
+            "--color",
+            "always",
+            "--cols",
+            "40",
+            "--render-html",
+            "--line-numbers=source",
+        ])
+        .write_stdin(source)
+        .assert()
+        .success();
+    let output = std::str::from_utf8(&output.get_output().stdout).unwrap();
+    assert!(output.contains("\x1b]8;;https://example.com/services/notify/alerts/rules\x1b\\"));
+    let clean = mdv::utils::strip_ansi(output);
+    assert!(clean.contains("104"), "{clean:?}");
+    assert!(!clean.contains("MDV_SOURCE"), "{clean:?}");
+}
+
+#[test]
 fn test_table_rendering() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

@@ -1,6 +1,17 @@
 use super::*;
 
 impl<'a> EventRenderer<'a> {
+    fn push_strikethrough_fragment(&mut self, fragment: &str, highlighted: bool) {
+        let content = if highlighted {
+            fragment
+        } else {
+            fragment.trim_end()
+        };
+        let formatted = self.apply_formatting_with_highlight(content, highlighted);
+        self.output.push_str(&formatted);
+        self.output.push_str(&fragment[content.len()..]);
+    }
+
     pub(in crate::renderer::event) fn process_underlined_text_with_wrapping(
         &mut self,
         text: &str,
@@ -30,19 +41,19 @@ impl<'a> EventRenderer<'a> {
             crate::utils::WrapMode::Word => self
                 .split_text_into_words_styled(text, self.word_wrap_content_width(effective_width)),
             crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-            crate::utils::WrapMode::None => vec![text.to_string()],
+            crate::utils::WrapMode::None => vec![Cow::Borrowed(text)],
         };
 
         // Process units in groups - each group becomes one continuous struck fragment
         let mut current_fragment = String::new();
 
         // Initial line width (without ANSI)
-        let initial_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-            crate::utils::strip_ansi(&self.output[last_newline + 1..])
+        let initial_line = if let Some(last_newline) = self.output.rfind('\n') {
+            &self.output[last_newline + 1..]
         } else {
-            crate::utils::strip_ansi(&self.output)
+            self.output.as_str()
         };
-        let mut fragment_start_line_width = crate::utils::display_width(&initial_line_clean);
+        let mut fragment_start_line_width = crate::utils::display_width_ansi(initial_line);
 
         // If little space left on the current line, move to a new one before adding any struck text
         if effective_width.saturating_sub(fragment_start_line_width) <= 1 && !text.trim().is_empty()
@@ -62,20 +73,7 @@ impl<'a> EventRenderer<'a> {
             if is_ws && i > 0 {
                 if would_exceed && !current_fragment.trim().is_empty() {
                     // Flush current fragment and break line; drop whitespace at new line start
-                    let fragment_to_format = current_fragment.trim_end();
-                    let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-
-                    // Apply full formatting (includes strike) to the fragment; keep spaces highlighted when needed
-                    let formatted_fragment = if highlighted {
-                        self.apply_formatting_with_highlight(&current_fragment, true)
-                    } else {
-                        format!(
-                            "{}{}",
-                            self.apply_formatting(fragment_to_format),
-                            trailing_spaces
-                        )
-                    };
-                    self.output.push_str(&formatted_fragment);
+                    self.push_strikethrough_fragment(&current_fragment, highlighted);
 
                     // Start new visual line with correct context indentation
                     self.push_newline_with_context();
@@ -91,23 +89,12 @@ impl<'a> EventRenderer<'a> {
 
             if would_exceed && !current_fragment.trim().is_empty() {
                 // Break: output current fragment first
-                let fragment_to_format = current_fragment.trim_end();
-                let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-                let formatted_fragment = if highlighted {
-                    self.apply_formatting_with_highlight(&current_fragment, true)
-                } else {
-                    format!(
-                        "{}{}",
-                        self.apply_formatting(fragment_to_format),
-                        trailing_spaces
-                    )
-                };
-                self.output.push_str(&formatted_fragment);
+                self.push_strikethrough_fragment(&current_fragment, highlighted);
 
                 self.push_newline_with_context();
                 fragment_start_line_width = self.compute_line_start_context_width();
 
-                current_fragment = unit.clone();
+                current_fragment = unit.to_string();
             } else {
                 if would_exceed {
                     // Nothing in fragment yet, but unit would exceed -> break line first
@@ -121,18 +108,7 @@ impl<'a> EventRenderer<'a> {
 
         // Output remaining fragment if any
         if !current_fragment.is_empty() {
-            let fragment_to_format = current_fragment.trim_end();
-            let trailing_spaces = &current_fragment[fragment_to_format.len()..];
-            let formatted_fragment = if highlighted {
-                self.apply_formatting_with_highlight(&current_fragment, true)
-            } else {
-                format!(
-                    "{}{}",
-                    self.apply_formatting(fragment_to_format),
-                    trailing_spaces
-                )
-            };
-            self.output.push_str(&formatted_fragment);
+            self.push_strikethrough_fragment(&current_fragment, highlighted);
         }
 
         Ok(())
@@ -143,145 +119,17 @@ impl<'a> EventRenderer<'a> {
         should_wrap: bool,
         highlighted: bool,
     ) -> Result<()> {
-        // Use the same word-by-word logic as styled text for consistent behavior
         if should_wrap {
-            let terminal_width = self.effective_text_width();
-
-            // Use full terminal width as effective width since current_line_width already includes indents
-            let effective_width = terminal_width;
-
-            // Determine wrap mode based on config
-            let wrap_mode = self.config.text_wrap_mode();
-
-            // Split text into wrappable units (words or characters)
-            let units = match wrap_mode {
-                crate::utils::WrapMode::Word => self.split_text_into_words_styled(
-                    text,
-                    self.word_wrap_content_width(effective_width),
-                ),
-                crate::utils::WrapMode::Character => self.split_text_into_characters_styled(text),
-                crate::utils::WrapMode::None => vec![text.to_string()],
-            };
-
-            // Process each unit individually
-            for unit in units.iter() {
-                if unit.trim().is_empty() {
-                    // Handle whitespace cautiously: don't let a trailing space overflow the line
-                    let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-                        crate::utils::strip_ansi(&self.output[last_newline + 1..])
-                    } else {
-                        crate::utils::strip_ansi(&self.output)
-                    };
-                    let current_line_width = crate::utils::display_width(&current_line_clean);
-                    let space_width = crate::utils::display_width(unit);
-                    if current_line_width + space_width > effective_width {
-                        // Break visual line and skip adding whitespace at start of next line
-                        self.push_newline_with_context();
-                    } else {
-                        let formatted_unit = if highlighted {
-                            self.apply_formatting_with_highlight(unit, true)
-                        } else {
-                            unit.to_string()
-                        };
-                        self.output.push_str(&formatted_unit);
-                    }
-                    continue;
-                }
-
-                // Check if adding this unit would exceed line width
-                let current_line_clean = if let Some(last_newline) = self.output.rfind('\n') {
-                    crate::utils::strip_ansi(&self.output[last_newline + 1..])
-                } else {
-                    crate::utils::strip_ansi(&self.output)
-                };
-
-                let current_line_width = crate::utils::display_width(&current_line_clean);
-                let unit_width = crate::utils::display_width(unit);
-
-                // For InlineTable links, account for the reference number that will be added
-                let additional_width = if self.in_link
-                    && matches!(
-                        self.config.link_style,
-                        LinkStyle::InlineTable | LinkStyle::EndTable
-                    ) {
-                    // Calculate the width of the reference number like [1], [2], etc.
-                    let reference_index =
-                        if matches!(self.config.link_style, LinkStyle::InlineTable) {
-                            match self.callout_stack.last() {
-                                Some(CalloutState::Active(info)) => info.inline_link_counter,
-                                _ => self.paragraph_link_counter,
-                            }
-                        } else {
-                            self.paragraph_link_counter
-                        };
-                    let ref_num_str = format!("[{}]", reference_index);
-                    crate::utils::display_width(&ref_num_str)
-                } else {
-                    0
-                };
-
-                let would_exceed =
-                    current_line_width + unit_width + additional_width > effective_width;
-
-                // Force line break if needed (but not for the first unit on a line)
-                if would_exceed
-                    && current_line_width > 0
-                    && Self::line_has_visible_text(&current_line_clean)
-                    && wrap_mode != crate::utils::WrapMode::None
-                {
-                    self.push_newline_with_context();
-                }
-
-                // Apply formatting (no-op for regular text) and add to output
-                let formatted_unit = self.apply_formatting_with_highlight(unit, highlighted);
-
-                // Add content indentation for new lines if needed
-                // But don't add it if we're continuing text on the same line (like after inline links)
-                let should_add_indent = (self.output.ends_with('\n') || self.output.is_empty())
-                    && !formatted_unit.trim().is_empty();
-
-                // Check if we're immediately after content that shouldn't get extra indentation
-                let after_inline_content = if let Some(last_newline) = self.output.rfind('\n') {
-                    let line_content = &self.output[last_newline + 1..];
-                    // If the line has content (not just whitespace), we're continuing on the same line
-                    !line_content.trim().is_empty()
-                } else {
-                    // No newlines, check if we have any content
-                    !self.output.trim().is_empty()
-                };
-
-                if should_add_indent && !after_inline_content {
-                    self.push_indent_for_line_start();
-                }
-
-                self.output.push_str(&formatted_unit);
-            }
+            self.process_text_units_with_wrapping(text, highlighted)?;
         } else {
-            // No wrapping - still ensure correct indentation at visual line starts
-            let final_text = self.apply_formatting_with_highlight(text, highlighted);
-
-            // Add content indentation for new visual lines when appropriate
+            let formatted = self.apply_formatting_with_highlight(text, highlighted);
             if (self.output.ends_with('\n') || self.output.is_empty())
-                && !final_text.trim().is_empty()
+                && !formatted.trim().is_empty()
             {
-                // If the current line (after the last newline) already contains
-                // non-whitespace content, we are continuing on the same line and
-                // must not add extra indentation.
-                let after_inline_content = if let Some(last_newline) = self.output.rfind('\n') {
-                    let line_content = &self.output[last_newline + 1..];
-                    !line_content.trim().is_empty()
-                } else {
-                    !self.output.trim().is_empty()
-                };
-
-                if !after_inline_content {
-                    self.push_indent_for_line_start();
-                }
+                self.push_indent_for_line_start();
             }
-
-            self.output.push_str(&final_text);
+            self.output.push_str(&formatted);
         }
-
         Ok(())
     }
 }

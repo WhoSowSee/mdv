@@ -1,9 +1,11 @@
 use crate::{PagerState, error::MinusError, minus_core::utils::term};
+mod deferred;
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     terminal::{Clear, ClearType},
 };
+pub use deferred::SourceViewRenderer;
 use std::io::Write;
 use std::time::Duration;
 
@@ -19,6 +21,7 @@ pub struct LineNavigation {
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum SourceView {
     Current,
+    Deferred(deferred::DeferredSource),
     Alternate {
         text: String,
         source_lines: Vec<Option<usize>>,
@@ -33,6 +36,32 @@ pub struct LineNavigationSession {
 }
 
 impl LineNavigation {
+    /// Prepares alternate source-numbered content without changing the active view.
+    ///
+    /// # Errors
+    ///
+    /// Returns the deferred renderer's layout error without replacing the source view.
+    pub fn prepare_source_view(&mut self) -> Result<(), crate::PromptError> {
+        if let SourceView::Deferred(source) = &self.source_view {
+            let (text, source_lines) = (source.0)().map_err(crate::PromptError::Layout)?;
+            self.source_view = SourceView::Alternate { text, source_lines };
+        }
+        Ok(())
+    }
+
+    /// Creates navigation data that prepares source-numbered content on first use.
+    #[must_use]
+    pub fn deferred(
+        display_source_lines: Vec<Option<usize>>,
+        renderer: SourceViewRenderer,
+    ) -> Self {
+        Self {
+            toc: Vec::new(),
+            display_source_lines,
+            source_view: SourceView::Deferred(deferred::DeferredSource(renderer)),
+        }
+    }
+
     /// Creates line-navigation data with alternate source-numbered content.
     ///
     /// Both maps contain one entry per logical line. `None` marks lines that do not
@@ -152,6 +181,11 @@ impl PagerState {
         }
 
         if self.line_navigation_session.is_none() {
+            let navigation = self
+                .line_navigation
+                .as_mut()
+                .expect("available line navigation requires configured content");
+            navigation.prepare_source_view()?;
             let original_upper_mark = self.upper_mark;
             let original_left_mark = self.left_mark;
             let uses_alternate_view = self.line_navigation.as_ref().is_some_and(|navigation| {

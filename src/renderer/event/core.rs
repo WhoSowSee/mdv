@@ -19,6 +19,7 @@ mod end_blockquote;
 mod end_lists;
 mod end_paragraph;
 mod end_tags;
+mod output;
 mod process;
 mod render;
 mod start_tags;

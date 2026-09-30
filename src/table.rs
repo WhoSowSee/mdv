@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use crate::theme::{Color as ThemeColor, Theme, ThemeElement, create_style};
-use crate::utils::{display_width, strip_ansi};
+use crate::utils::{display_width, display_width_ansi, strip_ansi};
 use anyhow::Result;
 use comfy_table::{
     Attribute, Cell, CellAlignment, Color, ColumnConstraint, ContentArrangement, ContentLineStyle,

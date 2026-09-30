@@ -194,10 +194,9 @@ impl<'a> EventRenderer<'a> {
         {
             if let Some(source_line) = source_line {
                 let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
-                self.output
-                    .replace_range(start..len.saturating_sub(1), &marker);
+                self.replace_output_spacing(start..len.saturating_sub(1), &marker);
             } else {
-                self.output.drain(start..len.saturating_sub(1));
+                self.replace_output_spacing(start..len.saturating_sub(1), "");
             }
         }
     }
@@ -228,8 +227,7 @@ impl<'a> EventRenderer<'a> {
 
         let mut replacement = crate::renderer::line_numbers::encode_internal_marker(source_line);
         replacement.push_str(prefix);
-        self.output
-            .replace_range(start..len.saturating_sub(1), &replacement);
+        self.replace_output_spacing(start..len.saturating_sub(1), &replacement);
         true
     }
 
@@ -243,13 +241,13 @@ impl<'a> EventRenderer<'a> {
             let last_line = &without_last[start..];
 
             if last_line.is_empty() {
-                self.output.truncate(start);
+                self.replace_output_spacing(start..len, "");
                 continue;
             }
 
             let clean = strip_ansi(last_line);
             if clean.trim().is_empty() {
-                self.output.truncate(start);
+                self.replace_output_spacing(start..len, "");
             } else {
                 break;
             }

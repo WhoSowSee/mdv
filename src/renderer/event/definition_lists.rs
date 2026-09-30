@@ -14,6 +14,15 @@ pub(super) struct DefinitionListState {
     active_description: Option<ActiveDefinitionDescription>,
 }
 
+impl DefinitionListState {
+    pub(super) fn update_output_positions(&mut self, update: impl Fn(&mut usize)) {
+        if let Some(description) = &mut self.active_description {
+            update(&mut description.output_start);
+            update(&mut description.content_start);
+        }
+    }
+}
+
 impl EventRenderer<'_> {
     pub(super) fn in_definition_description(&self) -> bool {
         self.definition_list_stack

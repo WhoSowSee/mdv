@@ -13,6 +13,10 @@ cargo build --release
 
 Use `cargo test <name> -- --nocapture` to inspect a specific test's standard output.
 
+## Rendering performance
+
+For CLI comparisons, save the reference executable before editing, check successful exit codes, and compare raw stdout bytes under the same configuration, terminal environment, width, and color policy. Alternate reference/candidate runs with no concurrent builds; report medians and distinguish end-to-end times from the in-process benchmark. Include both the original document and larger inputs to detect repeated work that grows faster than document size.
+
 ## Unit tests
 
 After large source files were split, large inline `mod tests` blocks moved into companion modules. The primary groups are:
@@ -122,6 +126,10 @@ color limits after their own dynamic highlighting.
 | Links or tables | Plain text, ANSI colors, OSC 8, and fragmented wrapping. |
 | Themes | YAML parsing, overrides, and all `--color` modes. |
 | Pager or interactive mode | Pure key/action helpers; manually exercise terminal integration when necessary. |
+
+Pager cache tests count requested renders across initial snapshots, navigation, cycling, refresh, and width changes. Deferred-navigation state transitions and failure handling also run in the vendored pager with `cargo test --manifest-path vendor/minus/Cargo.toml --lib --features dynamic_output,search`.
+
+Warmup tests check the five-second deadline from the first-screen signal, cancellation on exit, reset after refresh or width changes, unchanged visible output, and cache sharing with user requests. Channels coordinate active renders without timing assumptions; tests expire the internal deadline after validating it to avoid waiting five seconds per scenario.
 
 ## Test invariants
 

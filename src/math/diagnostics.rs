@@ -1,12 +1,12 @@
 use super::ast::MathDiagnostic;
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::sync::{Arc, Mutex};
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct MathDiagnostics {
-    reported: RefCell<HashSet<u64>>,
+    reported: Arc<Mutex<HashSet<u64>>>,
 }
 
 impl MathDiagnostics {
@@ -43,7 +43,12 @@ impl MathDiagnostics {
     fn report_once(&self, key: impl Hash, report: impl FnOnce()) {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
-        if self.reported.borrow_mut().insert(hasher.finish()) {
+        let first_report = self
+            .reported
+            .lock()
+            .expect("math diagnostic lock poisoned")
+            .insert(hasher.finish());
+        if first_report {
             report();
         }
     }
@@ -52,19 +57,30 @@ impl MathDiagnostics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cell::Cell;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
-    fn warnings_are_deduplicated_for_all_layouts_and_reset_for_each_document() {
-        let reports = Cell::new(0);
+    fn warnings_are_shared_between_threads_and_reset_for_each_document() {
+        let reports = Arc::new(AtomicUsize::new(0));
         for _ in 0..2 {
             let diagnostics = MathDiagnostics::default();
-            for _ in 0..3 {
-                for formula in 0..300 {
-                    diagnostics.report_once(formula, || reports.set(reports.get() + 1));
-                }
+            let threads = (0..3)
+                .map(|_| {
+                    let diagnostics = diagnostics.clone();
+                    let reports = reports.clone();
+                    std::thread::spawn(move || {
+                        for formula in 0..8 {
+                            diagnostics.report_once(formula, || {
+                                reports.fetch_add(1, Ordering::SeqCst);
+                            });
+                        }
+                    })
+                })
+                .collect::<Vec<_>>();
+            for thread in threads {
+                thread.join().unwrap();
             }
         }
-        assert_eq!(reports.get(), 600);
+        assert_eq!(reports.load(Ordering::SeqCst), 16);
     }
 }

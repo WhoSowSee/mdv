@@ -1,4 +1,3 @@
-use regex::regex;
 use std::iter::Peekable;
 use std::str::Chars;
 use unicode_width::UnicodeWidthStr;
@@ -8,17 +7,8 @@ pub fn display_width(s: &str) -> usize {
     UnicodeWidthStr::width(s)
 }
 
-/// Clean ANSI escape sequences and OSC 8 hyperlink sequences from a string
-pub fn strip_ansi(s: &str) -> String {
-    if !s.contains('\x1b') {
-        return s.to_string();
-    }
-
-    let without_ansi = regex!(r"\x1b\[[0-9;]*m").replace_all(s, "");
-    regex!(r"\x1b\]8;;[^\x1b]*\x1b\\")
-        .replace_all(&without_ansi, "")
-        .to_string()
-}
+mod ansi;
+pub use ansi::{display_width_ansi, strip_ansi};
 
 pub(crate) fn escape_html_text(text: &str) -> String {
     let mut escaped = String::with_capacity(text.len());
@@ -277,7 +267,7 @@ fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
     result
         .into_iter()
         .flat_map(|line| {
-            if display_width(&strip_ansi(&line)) > width {
+            if display_width_ansi(&line) > width {
                 wrap_line_character(&line, width)
             } else {
                 vec![line]

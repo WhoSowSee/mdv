@@ -98,3 +98,53 @@ fn navigation_preserves_state_across_wrapped_views() {
     assert_eq!(pager.left_mark, 4);
     assert!(!pager.line_navigation_is_active());
 }
+#[test]
+fn deferred_navigation_preserves_state_on_success_and_failure() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    for fail in [false, true] {
+        let count = Arc::new(AtomicUsize::new(0));
+        let rendered = count.clone();
+        let mut pager = PagerState::new().unwrap();
+        pager.screen.orig_text = "first\nsecond".into();
+        pager.screen.line_count = 2;
+        pager.reformat_display().unwrap();
+        pager.upper_mark = usize::from(fail);
+        pager.line_navigation = Some(LineNavigation::deferred(
+            vec![Some(1), Some(7)],
+            Arc::new(move || {
+                rendered.fetch_add(1, Ordering::SeqCst);
+                if fail {
+                    Err("source render failed".into())
+                } else {
+                    Ok(("1 first\n7 second".into(), vec![Some(1), Some(7)]))
+                }
+            }),
+        ));
+        assert!(pager.line_navigation_available());
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+        if fail {
+            assert_eq!(
+                pager.begin_line_navigation().unwrap_err(),
+                crate::PromptError::Layout("source render failed".into())
+            );
+            assert_eq!(pager.screen.orig_text, "first\nsecond");
+            assert_eq!(pager.upper_mark, 1);
+            assert!(pager.line_navigation_session.is_none());
+        } else {
+            for _ in 0..3 {
+                assert!(pager.begin_line_navigation().unwrap());
+                assert_eq!(pager.screen.orig_text, "1 first\n7 second");
+                assert!(pager.finish_line_navigation(Some(7)).unwrap());
+                assert_eq!(pager.line_navigation_position(), Some(7));
+                assert!(pager.exit_line_navigation().unwrap());
+                assert_eq!(pager.screen.orig_text, "first\nsecond");
+                assert_eq!(pager.upper_mark, 1);
+                assert_eq!(count.load(Ordering::SeqCst), 1);
+            }
+        }
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+    }
+}

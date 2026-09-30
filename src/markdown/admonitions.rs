@@ -64,6 +64,9 @@ impl Admonitions {
     }
 
     pub(super) fn restore_events(&self, events: &mut Vec<(Event<'_>, std::ops::Range<usize>)>) {
+        if self.metadata.is_empty() {
+            return;
+        }
         let mut restored = Vec::with_capacity(events.len());
         for (event, range) in events.drain(..) {
             if let Event::Text(text) = &event

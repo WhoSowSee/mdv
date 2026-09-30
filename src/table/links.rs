@@ -80,6 +80,7 @@ fn find_segment_in_output(
     expected_separator_count: Option<usize>,
 ) -> Option<(usize, usize)> {
     const MIN_SEGMENT_LEN: usize = 3;
+    let first_char_len = remaining_plain.chars().next()?.len_utf8();
     let mut best_match: Option<(usize, usize)> = None;
 
     for segment_len in prefix_lengths_desc(remaining_plain) {
@@ -88,6 +89,10 @@ fn find_segment_in_output(
         }
 
         let segment = &remaining_plain[..segment_len];
+        // Source markers alone must not select a neighboring cell before the link text.
+        if crate::utils::display_width(segment) == 0 && segment_len != remaining_plain.len() {
+            continue;
+        }
         let mut lookup_start = search_start;
         while let Some(rel_idx) = output[lookup_start..].find(segment) {
             let segment_pos = lookup_start + rel_idx;
@@ -107,7 +112,7 @@ fn find_segment_in_output(
                 break;
             }
 
-            lookup_start = segment_pos + 1;
+            lookup_start = segment_pos + first_char_len;
         }
     }
 
@@ -126,7 +131,7 @@ fn find_segment_in_output(
                 return Some((segment_pos, segment_len));
             }
 
-            lookup_start = segment_pos + 1;
+            lookup_start = segment_pos + first_char_len;
         }
     }
 

@@ -142,7 +142,7 @@ pub fn run(mut cli: Cli, matches: &ArgMatches) -> Result<()> {
             &pager_backend,
         )?;
     } else {
-        print!("{}", rendered.output());
+        print!("{}", rendered.output()?);
     }
 
     if cli.monitor_file

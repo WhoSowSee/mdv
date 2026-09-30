@@ -1,8 +1,11 @@
 use super::*;
 use crate::cli::OutputStyle;
 mod layout;
+mod views;
+pub(in crate::pager) use views::PagerLineNumberViews;
 
 pub(crate) struct PagerDocument {
+    warmup: Option<super::warmup::WarmupHandle>,
     reflow: Option<super::rendering::Reflow>,
     layout_width: Option<usize>,
     width_limit: Option<usize>,
@@ -21,14 +24,6 @@ pub(in crate::pager) enum PagerContent {
 pub(in crate::pager) struct PagerDisplay {
     output: String,
     source_lines: Vec<Option<usize>>,
-}
-
-pub(in crate::pager) struct PagerLineNumberViews {
-    toc: Vec<minus::TocEntry>,
-    mode: PagerLineNumberMode,
-    unnumbered: PagerDisplay,
-    rendered: PagerDisplay,
-    source: PagerDisplay,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -57,84 +52,18 @@ impl PagerDisplay {
     }
 }
 
-impl PagerLineNumberViews {
-    pub(in crate::pager) fn new(
-        mode: PagerLineNumberMode,
-        unnumbered: PagerDisplay,
-        rendered: PagerDisplay,
-        source: PagerDisplay,
-    ) -> Self {
-        Self {
-            mode,
-            toc: Vec::new(),
-            unnumbered,
-            rendered,
-            source,
-        }
-    }
-
-    fn current(&self) -> &PagerDisplay {
-        match self.mode {
-            PagerLineNumberMode::Off => &self.unnumbered,
-            PagerLineNumberMode::Rendered => &self.rendered,
-            PagerLineNumberMode::Source => &self.source,
-        }
-    }
-
-    pub(super) fn with_toc(mut self, mut entries: Vec<minus::TocEntry>) -> Self {
-        entries.retain(|entry| {
-            self.unnumbered
-                .source_lines
-                .contains(&Some(entry.source_line))
-        });
-        self.toc = super::toc::visible_levels(entries);
-        self
-    }
-
-    fn cycle(&mut self) {
-        self.mode = self.mode.next();
-    }
-
-    fn snapshot(&self) -> (String, Option<LineNavigation>) {
-        let current = self.current();
-        let navigation = current.source_lines.iter().any(Option::is_some).then(|| {
-            if self.mode == PagerLineNumberMode::Source {
-                LineNavigation::from_current(current.source_lines.clone())
-            } else {
-                LineNavigation::new(
-                    self.source.output.clone(),
-                    current.source_lines.clone(),
-                    self.source.source_lines.clone(),
-                )
-            }
-        });
-        (
-            current.output.clone(),
-            navigation.map(|nav| nav.with_toc(self.toc.clone())),
-        )
-    }
-
-    fn into_output(self) -> String {
-        match self.mode {
-            PagerLineNumberMode::Off => self.unnumbered.output,
-            PagerLineNumberMode::Rendered => self.rendered.output,
-            PagerLineNumberMode::Source => self.source.output,
-        }
-    }
-}
-
 impl PagerContent {
-    pub(in crate::pager) fn output(&self) -> &str {
+    pub(in crate::pager) fn output(&self) -> Result<&str> {
         match self {
-            Self::Static(output) => output,
-            Self::LineNumbers(views) => &views.current().output,
+            Self::Static(output) => Ok(output),
+            Self::LineNumbers(views) => Ok(&views.current()?.output),
         }
     }
 
-    fn into_output(self) -> String {
+    fn into_output(self) -> Result<String> {
         match self {
-            Self::Static(output) => output,
-            Self::LineNumbers(views) => views.into_output(),
+            Self::Static(output) => Ok(output),
+            Self::LineNumbers(views) => Ok(views.current()?.output.clone()),
         }
     }
 }
@@ -147,6 +76,7 @@ impl PagerDocument {
     pub(in crate::pager) fn from_content(content: PagerContent, output_style: OutputStyle) -> Self {
         Self {
             content,
+            warmup: None,
             reflow: None,
             layout_width: None,
             width_limit: None,
@@ -178,11 +108,11 @@ impl PagerDocument {
         self.reflow.is_some()
     }
 
-    pub(super) fn has_line_navigation(&self) -> bool {
+    pub(super) fn has_line_navigation(&self) -> Result<bool> {
         match &self.content {
-            PagerContent::Static(_) => false,
+            PagerContent::Static(_) => Ok(false),
             PagerContent::LineNumbers(views) => {
-                views.current().source_lines.iter().any(Option::is_some)
+                Ok(views.current()?.source_lines.iter().any(Option::is_some))
             }
         }
     }
@@ -200,14 +130,35 @@ impl PagerDocument {
         self.output_style
     }
 
-    pub(in crate::pager) fn display_snapshot(&self) -> (String, Option<LineNavigation>) {
+    pub(in crate::pager) fn display_snapshot(&self) -> Result<(String, Option<LineNavigation>)> {
         match &self.content {
-            PagerContent::Static(output) => (output.clone(), None),
-            PagerContent::LineNumbers(views) => views.snapshot(),
+            PagerContent::Static(output) => Ok((output.clone(), None)),
+            PagerContent::LineNumbers(views) => {
+                let snapshot = views.snapshot()?;
+                if let Some(warmup) = &self.warmup {
+                    warmup.schedule(views.clone());
+                }
+                Ok(snapshot)
+            }
         }
     }
 
-    pub(in crate::pager) fn into_output(self) -> String {
+    pub(super) fn attach_warmup(&mut self, warmup: super::warmup::WarmupHandle) {
+        self.warmup = Some(warmup);
+    }
+
+    pub(super) fn inherit_warmup_from(&mut self, previous: &Self) {
+        self.warmup = previous.warmup.clone();
+        if let Some(warmup) = &self.warmup {
+            warmup.reset();
+        }
+    }
+
+    pub(in crate::pager) fn prepare_current_view(&self) -> Result<()> {
+        self.content.output().map(|_| ())
+    }
+
+    pub(in crate::pager) fn into_output(self) -> Result<String> {
         self.content.into_output()
     }
 
@@ -226,12 +177,12 @@ impl PagerDocument {
         }
     }
 
-    pub(in crate::pager) fn cycle_line_number_mode(&mut self) -> bool {
+    pub(in crate::pager) fn cycle_line_number_mode(&mut self) -> Result<bool> {
         let PagerContent::LineNumbers(views) = &mut self.content else {
-            return false;
+            return Ok(false);
         };
-        views.cycle();
-        true
+        views.cycle()?;
+        Ok(true)
     }
 }
 

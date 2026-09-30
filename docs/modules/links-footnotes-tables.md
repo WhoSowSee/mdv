@@ -36,6 +36,8 @@ These subsystems interact closely: links and footnotes may occur inside tables, 
 3. `table::apply_clickable_link_replacements` restores underline and OSC fragments in the rendered output.
 4. If `comfy-table` split visible text across rows, `table/links.rs` reconstructs wrappers within the same cell boundary.
 
+Fragment searches advance by whole UTF-8 characters when skipping matches in another column. Zero-width source markers alone cannot establish a link's owning column; matching includes visible link text.
+
 An internal zero-width marker identifies the optional break before `[N]`. Before layout,
 `TableRenderer` either reserves enough column width for the link's final word and marker or turns
 the marker into an explicit line break when those protected widths cannot fit. No visible-width

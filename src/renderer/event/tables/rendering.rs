@@ -31,7 +31,7 @@ impl<'a> EventRenderer<'a> {
         } else {
             String::new()
         };
-        let prefix_width = display_width(&strip_ansi(&line_prefix));
+        let prefix_width = display_width_ansi(&line_prefix);
         let table_indent = if self.blockquote_level > 0 || self.html_details_depth > 0 {
             0
         } else {
@@ -156,7 +156,7 @@ impl<'a> EventRenderer<'a> {
             for (column, cell) in row.iter().enumerate() {
                 for line in cell.lines() {
                     if !line.contains(HTML_TABLE_HORIZONTAL_RULE) {
-                        widths[column] = widths[column].max(display_width(&strip_ansi(line)));
+                        widths[column] = widths[column].max(display_width_ansi(line));
                     }
                 }
             }
@@ -177,7 +177,7 @@ impl<'a> EventRenderer<'a> {
                         let (before, after) = line
                             .split_once(HTML_TABLE_HORIZONTAL_RULE)
                             .expect("horizontal rule marker must be present");
-                        let fixed_width = display_width(&strip_ansi(&format!("{before}{after}")));
+                        let fixed_width = display_width_ansi(&format!("{before}{after}"));
                         let styled =
                             self.styled_horizontal_rule(width.saturating_sub(fixed_width).max(3));
                         format!("{before}{styled}{after}")

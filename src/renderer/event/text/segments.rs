@@ -76,14 +76,8 @@ impl<'a> EventRenderer<'a> {
         // wrap to the detected terminal width (unless --no-wrap is set).
         let should_wrap = self.should_wrap_inline_text();
 
-        if should_wrap && !self.formatting_stack.is_empty() {
-            // For styled text, prefer continuous decoration for strike-through
-            if self.formatting_stack.contains(&ThemeElement::Strikethrough) {
-                self.process_strikethrough_text_with_wrapping(text, highlighted)?;
-            } else {
-                // Default styled processing (per-unit formatting)
-                self.process_styled_text_with_wrapping(text, highlighted)?;
-            }
+        if should_wrap && self.formatting_stack.contains(&ThemeElement::Strikethrough) {
+            self.process_strikethrough_text_with_wrapping(text, highlighted)?;
         } else {
             // Regular text processing
             self.process_regular_text(text, should_wrap, highlighted)?;

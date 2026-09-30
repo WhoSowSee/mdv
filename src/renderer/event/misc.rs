@@ -2,7 +2,7 @@ use super::{CowStr, EventRenderer, Result, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
 use crate::cli::HorizontalRuleStyle;
 use crate::terminal::AnsiStyle;
-use crate::utils::{display_width, strip_ansi};
+use crate::utils::display_width_ansi;
 
 impl<'a> EventRenderer<'a> {
     pub(super) fn handle_html(&mut self, html: CowStr) -> Result<()> {
@@ -102,7 +102,7 @@ impl<'a> EventRenderer<'a> {
     pub(super) fn handle_horizontal_rule(&mut self) -> Result<()> {
         self.reset_explicit_blank_line_streak();
         let prefix = self.current_rule_prefix();
-        let prefix_width = display_width(&strip_ansi(&prefix));
+        let prefix_width = display_width_ansi(&prefix);
         let width = self
             .effective_text_width()
             .saturating_sub(prefix_width)

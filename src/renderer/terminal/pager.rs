@@ -6,10 +6,11 @@ use pulldown_cmark::Event;
 
 pub(crate) struct PagerRender {
     pub(crate) initial_target: Option<LineNumberTarget>,
-    pub(crate) unnumbered: PagerRenderView,
-    pub(crate) rendered: PagerRenderView,
-    pub(crate) source: PagerRenderView,
+    pub(crate) render_view: PagerViewRenderer,
 }
+
+pub(crate) type PagerViewRenderer =
+    std::sync::Arc<dyn Fn(Option<LineNumberTarget>) -> Result<PagerRenderView> + Send + Sync>;
 
 pub(crate) struct PagerRenderView {
     pub(crate) output: String,
@@ -26,37 +27,22 @@ impl From<SourceMappedOutput> for PagerRenderView {
 }
 
 impl TerminalRenderer {
-    pub(crate) fn render_for_pager(&self, events: Vec<Event<'static>>) -> Result<PagerRender> {
-        let math_diagnostics = std::rc::Rc::default();
+    pub(crate) fn render_for_pager(&self, events: Vec<Event<'static>>) -> PagerRender {
+        let renderer = self.clone();
+        let math_diagnostics = crate::math::MathDiagnostics::default();
         let separator = self
             .config
             .line_numbers
             .is_some_and(|options| options.separator);
-        let rendered_options = LineNumberOptions {
-            target: LineNumberTarget::Rendered,
-            separator,
-        };
-        let source_options = LineNumberOptions {
-            target: LineNumberTarget::Source,
-            separator,
-        };
-
-        Ok(PagerRender {
+        PagerRender {
             initial_target: self.config.line_numbers.map(|options| options.target),
-            unnumbered: self
-                .render_with_options(events.clone(), None, true, &math_diagnostics)?
-                .into(),
-            rendered: self
-                .render_with_options(
-                    events.clone(),
-                    Some(rendered_options),
-                    true,
-                    &math_diagnostics,
-                )?
-                .into(),
-            source: self
-                .render_with_options(events, Some(source_options), true, &math_diagnostics)?
-                .into(),
-        })
+            render_view: std::sync::Arc::new(move |target| {
+                let options = target.map(|target| LineNumberOptions { target, separator });
+                let diagnostics = std::rc::Rc::new(math_diagnostics.clone());
+                renderer
+                    .render_with_options(events.clone(), options, true, &diagnostics)
+                    .map(Into::into)
+            }),
+        }
     }
 }

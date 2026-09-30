@@ -1,4 +1,38 @@
 use super::render;
+use crate::support::mdv_cmd;
+
+#[test]
+fn empty_callout_in_list_preserves_utf8_output_positions() {
+    let source = "1. Step:\n   :::note Title\n   :::\n\n## Heading\n";
+    for style in ["simple", "pretty"] {
+        for numbering in [false, true] {
+            let mut args = vec![
+                "--color",
+                "always",
+                "--cols",
+                "100",
+                "--wrap",
+                "none",
+                "--reverse",
+            ];
+            if numbering {
+                args.push("--line-numbers=source");
+            }
+            let output = mdv_cmd()
+                .args(["-", "--callout-style", style])
+                .args(args)
+                .write_stdin(source)
+                .assert()
+                .success();
+            let clean =
+                mdv::utils::strip_ansi(std::str::from_utf8(&output.get_output().stdout).unwrap());
+            for label in ["Heading", "Step:", "Title"] {
+                assert_eq!(clean.matches(label).count(), 1, "{clean:?}");
+            }
+            assert!(clean.find("Heading") < clean.find("Step:"), "{clean:?}");
+        }
+    }
+}
 
 #[test]
 fn quoted_list_items_do_not_activate_callouts() {

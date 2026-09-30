@@ -1,6 +1,25 @@
 use super::*;
 
 #[test]
+fn quoted_list_after_heading_preserves_utf8_output_positions() {
+    for color in ["never", "always"] {
+        let output = mdv_cmd()
+            .args(["-", "--color", color, "--cols", "40"])
+            .write_stdin("## Heading\n> - item\n")
+            .assert()
+            .success();
+        let output =
+            mdv::utils::strip_ansi(std::str::from_utf8(&output.get_output().stdout).unwrap());
+        assert_eq!(output.matches("Heading").count(), 1);
+        assert_eq!(output.matches("item").count(), 1);
+        assert!(
+            output.lines().any(|line| line == "  │ - item"),
+            "{output:?}"
+        );
+    }
+}
+
+#[test]
 fn test_blockquote_list_preserves_marker_prefix() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

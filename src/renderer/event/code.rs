@@ -7,7 +7,7 @@ use crate::block_spacing::BlockElement;
 use crate::inline_style::InlineStyleKind;
 use crate::math::is_math_language_hint;
 use crate::terminal::AnsiStyle;
-use crate::utils::{display_width, strip_ansi};
+use crate::utils::{display_width, display_width_ansi, strip_ansi};
 use regex::regex;
 use syntect::parsing::SyntaxReference;
 use syntect::util::LinesWithEndings;

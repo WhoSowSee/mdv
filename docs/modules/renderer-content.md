@@ -13,7 +13,7 @@ This section covers ordinary text, inline formatting, wrapping, headings, lists,
 | [event/text/wrapping.rs](../../src/renderer/event/text/wrapping.rs) | Word and character wrapping with styles and hanging indentation. |
 | [event/text/callouts.rs](../../src/renderer/event/text/callouts.rs) | Buffer and parse `[!kind]`, a fold marker, and a custom title. |
 
-`handle_text` first checks active containers: code block, link, table cell, HTML buffer, footnote scan, and callout marker. Only ordinary text enters the shared styled-wrapping pipeline.
+`handle_text` first checks active containers: code block, link, table cell, HTML buffer, footnote scan, and callout marker. Ordinary and styled text share the same per-unit wrapping path; strikethrough and underlined fragments retain continuous decoration.
 
 ## Inline formatting
 
@@ -36,7 +36,11 @@ This section covers ordinary text, inline formatting, wrapping, headings, lists,
 
 Word mode extracts words and oversized units; character mode splits on Unicode characters. Visible width is measured with `unicode-width` after ANSI and OSC sequences are removed.
 
+Wrapping units borrow slices from their text event; only oversized words that need rewriting allocate new strings. ANSI removal preserves its two-stage contract (SGR first, then OSC 8), and visible width uses the complete resulting Unicode string so emoji sequences remain intact across style boundaries.
+
 Inline heading content is collected without wrapping. Heading finalization wraps it once, after adding optional Markdown markers and subtracting the actual heading prefix width; continuation lines receive that prefix exactly once.
+
+Heading finalization replaces only the current heading span in the output buffer. It does not copy the preceding document for each heading.
 
 Pretty-callout text reserves the frame overhead and the outer indentation saved at each active callout level. Nested frame rendering uses the remaining width of its parent, so framing does not wrap already fitted text again.
 

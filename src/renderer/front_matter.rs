@@ -16,7 +16,7 @@ impl TerminalRenderer {
         &self,
         document: ParsedDocument,
     ) -> Result<PagerRender> {
-        self.render_for_pager(document_events(document, &self.config, false)?)
+        Ok(self.render_for_pager(document_events(document, &self.config, false)?))
     }
 
     pub(crate) fn to_html_document(&self, document: ParsedDocument) -> Result<String> {

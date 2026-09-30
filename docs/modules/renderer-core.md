@@ -49,7 +49,7 @@ it is not implemented by stripping all ANSI from the completed document.
 - rendered line numbers: render first, then number visual rows;
 - source line numbers: decode markers emitted by the Markdown pipeline.
 
-Pager rendering prepares unnumbered, rendered-numbered, and source-numbered output with an independent source-line map for each layout. All three variants pass through the same renderer, theme, gutter-width, margin, wrapping, and separator logic as ordinary CLI output. The configured line-number target selects the initial pager variant.
+Pager rendering supplies a factory for unnumbered, rendered-numbered, and source-numbered output with an independent source-line map for each layout. The pager prepares only the selected variant for its first screen and caches other variants on first use. Every variant passes through the same renderer, theme, gutter-width, margin, wrapping, and separator logic as ordinary CLI output. The configured line-number target selects the initial pager variant.
 
 Only the left margin is added to output lines at the end. The right margin reduces available width but does not append spaces.
 
@@ -86,6 +86,7 @@ Fields are crate-visible because inherent `impl EventRenderer` blocks are physic
 | [core/constructor.rs](../../src/renderer/event/core/constructor.rs) | Complete initialization in `EventRenderer::new`. |
 | [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle and smart-indent pre-analysis. |
 | [core/process.rs](../../src/renderer/event/core/process.rs) | Dispatch one `Event` and process source markers. |
+| [core/output.rs](../../src/renderer/event/core/output.rs) | Replace output spacing while rebasing positions held by open blocks. |
 | [core/start_tags.rs](../../src/renderer/event/core/start_tags.rs) | Route `Event::Start(Tag)` to specialized handlers. |
 | [core/end_tags.rs](../../src/renderer/event/core/end_tags.rs) | Route `Event::End(TagEnd)` and hard breaks. |
 | [core/end_paragraph.rs](../../src/renderer/event/core/end_paragraph.rs) | Finish paragraphs, references, attached footnotes, and spacing. |
@@ -140,3 +141,4 @@ Add new behavior to a specialized handler and keep the core dispatcher compact.
 - Deferred blocks finish at the boundary owned by their paragraph, table, callout, or document.
 - All width operations use `display_width`, never `str::len`.
 - Finalization for new state belongs in `render_events` or the corresponding end-tag handler.
+- Removing or replacing existing spacing must rebase the saved byte positions of open paragraphs, quotes, headings, lists, and definition descriptions before those positions are reused.

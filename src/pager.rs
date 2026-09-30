@@ -21,6 +21,7 @@ mod operations;
 mod page;
 mod rendering;
 mod toc;
+mod warmup;
 mod watcher;
 
 pub(crate) use command::PagerBackend;
@@ -49,7 +50,7 @@ pub(super) fn page(
     match backend {
         PagerBackend::Builtin => page::page(document, file, refresh, screen),
         PagerBackend::External(command) => {
-            let output = document.into_output();
+            let output = document.into_output()?;
             command.page(&output)
         }
     }

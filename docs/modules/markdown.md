@@ -125,6 +125,8 @@ Markers must never reach ANSI or HTML output or contribute to visible width.
 
 Only then does `reverse_events` run when reverse mode is enabled.
 
+Blank-line lookup starts with a binary search in the sorted line offsets and scans only the current source gap. Admonition scanning skips protected-range parsing when no possible dialect opener occurs anywhere in the scope; the normal line-ending and source-map normalization still runs.
+
 ## Invariants
 
 - Preprocessing must not change the visible meaning of valid Markdown unless the responsible option is enabled.

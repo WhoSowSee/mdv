@@ -1,4 +1,5 @@
 use super::*;
+use std::borrow::Cow;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn push_styled_inline_atom(
@@ -20,7 +21,7 @@ impl<'a> EventRenderer<'a> {
                 .output
                 .rfind('\n')
                 .map_or(self.output.as_str(), |index| &self.output[index + 1..]);
-            let current_line_width = display_width(&strip_ansi(current_line));
+            let current_line_width = display_width_ansi(current_line);
             let available = terminal_width.saturating_sub(current_line_width);
             if available == 0 {
                 if current_line_width > self.compute_line_start_context_width() {
@@ -116,16 +117,19 @@ impl<'a> EventRenderer<'a> {
     /// (e.g. Strong + Emphasis). Color precedence: Highlight > Code > Heading > StrongEmphasis > Strong > Emphasis > Strikethrough > TextLight > Text.
     pub(in crate::renderer::event) fn apply_formatting(&self, text: &str) -> String {
         self.apply_formatting_with_highlight(text, false)
+            .into_owned()
     }
 
-    pub(in crate::renderer::event) fn apply_formatting_with_highlight(
+    pub(in crate::renderer::event) fn apply_formatting_with_highlight<'t>(
         &self,
-        text: &str,
+        text: &'t str,
         highlighted: bool,
-    ) -> String {
+    ) -> Cow<'t, str> {
         let in_front_matter = self.in_properties_callout();
-        if self.formatting_stack.is_empty() && !highlighted && !in_front_matter {
-            return text.to_string();
+        if self.output_style.is_disabled()
+            || (self.formatting_stack.is_empty() && !highlighted && !in_front_matter)
+        {
+            return Cow::Borrowed(text);
         }
 
         let has_strong = self.formatting_stack.contains(&ThemeElement::Strong);
@@ -225,7 +229,7 @@ impl<'a> EventRenderer<'a> {
         }
         style = attributes.apply_attributes(style);
 
-        style.apply(text, self.output_style)
+        Cow::Owned(style.apply(text, self.output_style))
     }
 
     pub(in crate::renderer::event) fn sync_inline_backticks(&mut self, highlighted: bool) -> bool {

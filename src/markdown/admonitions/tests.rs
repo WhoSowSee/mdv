@@ -63,3 +63,15 @@ fn pymdown_options_stop_at_the_first_blank_line() {
     assert!(output.contains("[!note]"));
     assert!(output.contains("type: warning"));
 }
+#[test]
+fn callout_free_content_preserves_line_endings_and_source_numbers() {
+    let input = "first\r\n\r\n> text\r\n\r\n- item\r\n";
+    let processor = MarkdownProcessor::new(&crate::config::Config::default());
+    let mut context = Admonitions::new(input);
+    let mut sources = vec![Some(1), Some(2), Some(3), Some(4), Some(5)];
+    assert_eq!(
+        processor.convert_admonitions_to_callouts(input, Some(&mut sources), &mut context),
+        "first\n\n> text\n\n- item"
+    );
+    assert_eq!(sources, [Some(1), Some(2), Some(3), Some(4), Some(5)]);
+}

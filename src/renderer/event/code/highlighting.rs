@@ -45,6 +45,10 @@ impl<'a> EventRenderer<'a> {
             return line.to_string();
         }
 
+        if !line.contains('^') {
+            return line.to_string();
+        }
+
         let regex = regex!(r"\[\^([^\]\s][^\]]*)\]");
 
         let clean = strip_ansi(line);

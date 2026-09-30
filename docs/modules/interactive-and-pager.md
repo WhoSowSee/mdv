@@ -77,7 +77,9 @@ Pressing `.` toggles files excluded by `.gitignore`, the global Git ignore file,
 | [pager/command.rs](../../src/pager/command.rs) | Backend precedence, command parsing, recursion checks, and external process lifecycle. |
 | [pager/document.rs](../../src/pager/document.rs) | `PagerDocument`, line-number view state, `RefreshCallback`, and `PagerScreen`. |
 | [pager/page.rs](../../src/pager/page.rs) | Configure `minus::Pager` and run the pager/editor loop. |
-| [pager/rendering.rs](../../src/pager/rendering.rs) | Build the three pager line-number views, prefixes, and source-line maps. |
+| [pager/rendering.rs](../../src/pager/rendering.rs) | Supply the pager view factory, prefixes, and source-line maps. |
+| [pager/document/views.rs](../../src/pager/document/views.rs) | Cache line-number variants on first use and defer the source-navigation view. |
+| [pager/warmup.rs](../../src/pager/warmup.rs) | Start delayed background preparation of numbered views after the first screen. |
 | [pager/input.rs](../../src/pager/input.rs) | Custom input classifier for help, copy, reload, and editor actions. |
 | [pager/toc.rs](../../src/pager/toc.rs) | Extract and normalize source-mapped headings for the contents panel. |
 | [pager/interrupt.rs](../../src/pager/interrupt.rs) | Preserve parent interrupt handling and configure external pager children. |
@@ -104,8 +106,8 @@ for a successful exit. It does not silently fall back to stdout and does not
 inject pager-specific flags; a color-capable `less` command therefore normally
 includes `-R`. Redirected stdout retains the existing direct-output behavior and
 does not start either pager backend. External paging uses one rendered view;
-the built-in pager additionally prepares its three switchable views and source
-navigation maps.
+the built-in pager caches its switchable views and prepares source navigation
+on demand.
 
 The built-in pager owns mdv-specific search, copy, reload, editor, help, and
 line-number switching. An external pager owns its controls and receives only the
@@ -130,7 +132,7 @@ the shell or launching an editor restores cursor visibility.
 
 For the built-in backend, the document stores these values separately:
 
-- unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
+- lazily prepared unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
 - the active line-number mode;
 - optional `title`;
 - `status_bar_transparent` from the selected theme.
@@ -138,7 +140,13 @@ For the built-in backend, the document stores these values separately:
 
 Copying uses only selected rendered text, with ANSI and OSC sequences removed.
 Without a selection, copy commands do not access the clipboard or update the status.
-Source-line navigation data is derived from the active view and the prepared source-numbered view.
+The initial display and source-line map prepare only the selected numbering mode. Other variants share a cache that renders each mode once per layout width. The source-numbered view needed by `:` shares the same cache used by `l` and background preparation.
+
+Five seconds after the `PostPagerStart` hook confirms the first screen was drawn, one background worker prepares rendered numbering followed by source numbering. Already prepared or currently rendering variants use the existing shared cache, so background preparation and early `l`/`:` requests do not duplicate work. Rendering holds no document lock and does not switch modes or redraw the screen. A background failure stays in the cache and is reported through the normal on-demand error path if that mode is requested.
+
+Refresh and layout-width changes cancel pending work and start a new five-second delay once the replacement view is available. Repeated snapshots and numbering changes at the same width do not reset the timer. Exiting the pager or opening an editor cancels the wait immediately; an already running render may finish in its old cache, but no further mode is started and pager exit does not wait for it.
+
+Refresh clears the view cache. The replacement renders its selected mode outside the document lock before being installed; an error preserves the current document. If the user changes numbering while refresh renders, the replacement prepares the newly selected mode before committing.
 
 ## Input classifier
 
@@ -158,7 +166,7 @@ The help panel uses three columns in wide terminals, two below 78 columns, and o
 
 `l` cycles `off → rendered → source → off`. The initial position comes from the effective `line_numbers` setting, so the first transition depends on how mdv was launched. When line-number switching is available, this mdv binding takes precedence over the default `minus` horizontal-scroll binding for `l`; the right arrow remains available for horizontal scrolling. The built-in `minus` gutter remains disabled; every numbered view is produced by `TerminalRenderer` and therefore uses the configured mdv colors, separator, margins, and wrapping.
 
-The `:` prompt accepts a one-based Markdown source line. It swaps in the prepared source-numbered rendering when another line-number mode is active and reuses the current rendering in source mode. After a successful jump, that rendering and a fixed muted highlight remain active, while the footer shows `:N` immediately before document progress. `Esc` leaves line-navigation mode and restores the view selected by `l`. A missing line uses the same two-second status-message timeout as a search with no matches.
+The `:` prompt accepts a one-based Markdown source line. It prepares and swaps in the source-numbered rendering when another line-number mode is active and reuses the current rendering in source mode. After a successful jump, that rendering and a fixed muted highlight remain active, while the footer shows `:N` immediately before document progress. `Esc` leaves line-navigation mode and restores the view selected by `l`. A missing line uses the same two-second status-message timeout as a search with no matches.
 
 When an active search has matches, the footer shows the current and total occurrences immediately before document progress. Both status values use the muted `#5a5a5a` foreground. Incremental search updates the matching viewport and highlights after every query edit, before confirmation. Search navigation and counting operate on individual occurrences, including multiple matches in one row, and only the exact current range receives the stronger tint. The viewport stays fixed while the next occurrence is visible; the first result below it is revealed on the bottom row instead of being moved to the top. Match highlighting preserves syntax foreground colors and derives each background tint from the active text color. Mouse selection remains available during search, preserves syntax colors over a neutral `#2e313b` background, and produces a lighter combined tint where selection overlaps a match.
 
@@ -172,7 +180,7 @@ Outline-only scrolling redraws just the panel and footer, without clearing the s
 
 Width changes reuse the parsed Markdown and initialized renderer. The document keeps its current layout and at most two cached widths, preserving numbering mode when switching between them. Initial pager setup reuses the layout already rendered by the file selector. A background worker prepares the sidebar width without holding the document lock during rendering; its result is discarded if the document was refreshed meanwhile. Refresh creates a new cache, so older layouts never overwrite new source content.
 
-Markdown pager documents retain a width-aware render callback. Uncached widths rebuild all three views, including callout/code frames and table geometry, before terminal rows are formatted. Explicit CLI column limits remain an upper bound. Static pager output uses ordinary pager wrapping.
+Markdown pager documents retain a width-aware render callback. Uncached widths rebuild the selected view, including callout/code frames and table geometry, before terminal rows are formatted. Other numbering modes are prepared on demand or by delayed background work. Explicit CLI column limits remain an upper bound. Static pager output uses ordinary pager wrapping.
 
 `Alt+Up/Down` traverses adjacent entries, including subsections. The footer displays a first-use navigation hint while the panel is open, until a keyboard outline-navigation or outline-scroll shortcut is used. Mouse actions and normal document scrolling do not acknowledge it. Acknowledgment lasts for the pager session and survives mapped-text replacement; status messages take temporary priority.
 
@@ -188,7 +196,7 @@ At 72 columns or wider the panel reserves up to 36 columns and the pager reforma
 
 `ActiveWatcher` watches the parent directory but compares the canonical or normalized event path with one target. `Modify` and `Create` events use a 100 ms debounce interval. Dropping the watcher sets a stop flag and joins its thread.
 
-The refresh callback re-reads and re-renders all three views and preserves the selected line-number mode. Width-aware documents use `Pager::refresh_layout` after refresh or numbering changes; static content uses `Pager::set_mapped_text`. Both replace text and navigation atomically, preserve source position, and clear obsolete selection and navigation highlights. `set_mapped_text` always installs the supplied content; it does not invoke the layout callback.
+The refresh callback re-reads the document and prepares the selected line-number mode. Width-aware documents use `Pager::refresh_layout` after refresh or numbering changes; static content uses `Pager::set_mapped_text`. Both replace text and navigation atomically, preserve source position, and clear obsolete selection and navigation highlights. `set_mapped_text` always installs the supplied content; it does not invoke the layout callback. The new document inherits the active warmup scheduler but uses a fresh view cache and delay.
 
 ## Editor
 

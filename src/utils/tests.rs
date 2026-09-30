@@ -1,6 +1,62 @@
 use super::*;
 
 #[test]
+fn ansi_width_preserves_unicode_sequences_across_styles() {
+    for text in [
+        "👩‍💻",
+        "🇷🇺",
+        "❤️",
+        "e\u{301}",
+        "\r\n",
+        "\t",
+        "\u{1b}",
+        "لا",
+        "你好",
+    ] {
+        let styled = text
+            .chars()
+            .map(|ch| format!("\x1b[31m{ch}\x1b[0m"))
+            .collect::<String>();
+        assert_eq!(display_width_ansi(&styled), display_width(text), "{text:?}");
+    }
+}
+
+#[test]
+fn ansi_stripping_preserves_the_two_pass_contract() {
+    let sgr = regex::Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+    let osc = regex::Regex::new(r"\x1b\]8;;[^\x1b]*\x1b\\").unwrap();
+    let pieces = [
+        "text",
+        "你好",
+        "\x1b[31m",
+        "\x1b[0m",
+        "\x1b]8;;url",
+        "\x1b\\",
+        "\x1b]8;;",
+        "\x1b[",
+        "m",
+        "\x1b[?25l",
+        "\x1b]0;title\x07",
+    ];
+    for a in pieces {
+        for b in pieces {
+            for c in pieces {
+                let input = format!("{a}{b}{c}");
+                let expected = osc
+                    .replace_all(&sgr.replace_all(&input, ""), "")
+                    .into_owned();
+                assert_eq!(strip_ansi(&input), expected, "{input:?}");
+                assert_eq!(
+                    display_width_ansi(&input),
+                    display_width(&expected),
+                    "{input:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn test_display_width() {
     assert_eq!(display_width("hello"), 5);
     assert_eq!(display_width("héllo"), 5);
@@ -19,6 +75,7 @@ fn test_strip_ansi() {
     // Test combined ANSI and OSC 8
     let combined = "\x1b[31m\x1b]8;;https://example.com\x1b\\red link\x1b]8;;\x1b\\\x1b[0m";
     assert_eq!(strip_ansi(combined), "red link");
+    assert_eq!(display_width_ansi(combined), 8);
 }
 
 #[test]
@@ -107,9 +164,7 @@ fn test_word_wrap_splits_oversized_ansi_token() {
     let wrapped = wrap_text_with_mode(&text, 20, WrapMode::Word);
 
     assert!(
-        wrapped
-            .lines()
-            .all(|line| display_width(&strip_ansi(line)) <= 20),
+        wrapped.lines().all(|line| display_width_ansi(line) <= 20),
         "wrapped token exceeds width: {wrapped:?}"
     );
     assert_eq!(strip_ansi(&wrapped).replace('\n', ""), token);

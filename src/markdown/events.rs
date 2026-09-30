@@ -124,14 +124,13 @@ impl MarkdownProcessor {
             return;
         }
 
+        let first_line = line_starts.partition_point(|start| *start < gap_start);
         let source_line = line_starts
             .iter()
             .enumerate()
+            .skip(first_line)
+            .take_while(|(_, start)| **start < gap_end)
             .find_map(|(line_idx, line_start)| {
-                if *line_start < gap_start || *line_start >= gap_end {
-                    return None;
-                }
-
                 let line_end = line_starts
                     .get(line_idx + 1)
                     .map_or(content.len(), |next_start| next_start.saturating_sub(1));
@@ -274,6 +273,50 @@ impl MarkdownProcessor {
             Event::Start(_) | Event::End(_) | Event::SoftBreak | Event::HardBreak | Event::Rule => {
                 false
             }
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn blank_source_marker_stays_inside_gap_and_skips_unmapped_lines() {
+        let config = Config {
+            line_numbers: Some(crate::cli::LineNumberOptions {
+                target: crate::cli::LineNumberTarget::Source,
+                separator: false,
+            }),
+            ..Config::default()
+        };
+        let processor = MarkdownProcessor::new(&config);
+        let content = "first\n\nsecond\n\n\nthird";
+        let starts = source_lines::starts(content);
+        let sources = [Some(1), Some(2), Some(3), None, Some(5), Some(6)];
+        for (gap, expected) in [
+            (0..5, None),
+            (7..13, None),
+            (13..16, Some(5)),
+            (16..21, None),
+            (6..7, Some(2)),
+        ] {
+            let mut events = vec![Event::Rule];
+            processor.push_collapsed_blank_source_marker(
+                &mut events,
+                content,
+                gap.start,
+                gap.end,
+                &starts,
+                &sources,
+            );
+            let found = events
+                .get(1)
+                .and_then(source_line_from_event)
+                .map(|marker| match marker {
+                    SourceLineMarker::Blank(line) => line,
+                    _ => panic!("expected blank source marker"),
+                });
+            assert_eq!(found, expected);
         }
     }
 }

@@ -32,6 +32,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [theme.rs](../../src/theme.rs) | Theme facade and public re-exports. | [themes](themes-and-styling.md) |
 | [user_themes.rs](../../src/user_themes.rs) | User-theme facade. | [themes](themes-and-styling.md) |
 | [utils.rs](../../src/utils.rs) | Display width, ANSI stripping, and text wrapping. | [architecture](architecture.md) |
+| [utils/ansi.rs](../../src/utils/ansi.rs) | SGR/OSC 8 removal and visible Unicode string width. | [renderer content](renderer-content.md) |
 | [editor.rs](../../src/editor.rs) | Editor discovery and launch. | [interactive/pager](interactive-and-pager.md) |
 
 Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [list_marker/tests.rs](../../src/list_marker/tests.rs), and [utils/tests.rs](../../src/utils/tests.rs).
@@ -148,8 +149,13 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 |---|---|
 | [command.rs](../../src/pager/command.rs) | Pager backend selection, external command parsing, and process lifecycle. |
 | [document.rs](../../src/pager/document.rs) | Pager document, line-number views, screen, and callback types. |
+| [document/views.rs](../../src/pager/document/views.rs) | Deferred numbering views, shared cache, and source navigation. |
+| [document/views/tests.rs](../../src/pager/document/views/tests.rs) | Lazy rendering, switching, refresh, and width-cache regressions. |
+| [warmup.rs](../../src/pager/warmup.rs) | Delayed background numbering preparation and pager lifetime cancellation. |
+| [warmup/tests.rs](../../src/pager/warmup/tests.rs) | Delay, cache reuse, refresh, width changes, and deferred errors. |
+| [warmup/tests/concurrency.rs](../../src/pager/warmup/tests/concurrency.rs) | Concurrent switching, refresh, and exit during background rendering. |
 | [page.rs](../../src/pager/page.rs) | `minus` pager setup and event loop. |
-| [rendering.rs](../../src/pager/rendering.rs) | Pager-specific three-mode rendering and source-line maps. |
+| [rendering.rs](../../src/pager/rendering.rs) | Pager view factories, prefixes, and source-line maps. |
 | [input.rs](../../src/pager/input.rs) | Custom keys and classifier. |
 | [interrupt.rs](../../src/pager/interrupt.rs) | Parent and child interrupt handling for external pager processes. |
 | [operations.rs](../../src/pager/operations.rs) | Refresh, clipboard, and messages. |
@@ -214,6 +220,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [core/constructor.rs](../../src/renderer/event/core/constructor.rs) | Constructor. |
 | [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle. |
 | [core/process.rs](../../src/renderer/event/core/process.rs) | Event dispatcher. |
+| [core/output.rs](../../src/renderer/event/core/output.rs) | Spacing edits and open-block output positions. |
 | [core/start_tags.rs](../../src/renderer/event/core/start_tags.rs) | Start tags. |
 | [core/end_tags.rs](../../src/renderer/event/core/end_tags.rs) | End tags and hard breaks. |
 | [core/end_paragraph.rs](../../src/renderer/event/core/end_paragraph.rs) | Paragraph finalization. |

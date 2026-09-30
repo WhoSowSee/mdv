@@ -132,12 +132,12 @@ impl TableRenderer {
     fn maximum_column_widths(headers: &[String], rows: &[Vec<String>]) -> Vec<usize> {
         let mut max_widths = headers
             .iter()
-            .map(|header| display_width(&strip_ansi(header)))
+            .map(|header| display_width_ansi(header))
             .collect::<Vec<_>>();
 
         for row in rows {
             for (cell, max_width) in row.iter().zip(&mut max_widths) {
-                *max_width = (*max_width).max(display_width(&strip_ansi(cell)));
+                *max_width = (*max_width).max(display_width_ansi(cell));
             }
         }
 

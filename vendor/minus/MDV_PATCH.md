@@ -25,6 +25,7 @@ mdv adds a typed prompt-rendering API:
 - `Pager::send_message_for` displays a message for a fixed duration and uses a generation ID so an older timer cannot clear a newer message.
 - `PagerState::selected_text` returns the active visible selection without ANSI or OSC control sequences, allowing custom input classifiers to choose between selection-aware and whole-document actions.
 - `LineNavigation` and `Pager::set_line_navigation` provide a source-numbered `:` navigation mode with a persistent target indicator and fixed whole-line highlight; `Esc` restores the caller's normal content and line-number mode.
+- `LineNavigation::deferred` accepts a source-view renderer that runs on first navigation. `prepare_source_view` preserves the current text and navigation state when that renderer returns an error.
 - `PromptContext::content_rows` reports the usable content height, `PromptContext::panel_rows` exposes the currently reserved panel height, `PromptContext::max_scroll_offset` shares the pager's canonical scroll bound, and `PromptContext::line_navigation_position` exposes the active source-line target.
 - `PromptSpan` rejects line breaks and terminal control characters. Base-prompt and message setters now report line breaks through `Result` instead of panicking while preserving their legacy ANSI-capable surface; the search-prefix setter follows the same single-line contract.
 - Changing the base prompt while a renderer is active updates `PromptContext::prompt`; clearing the renderer later reveals that latest base prompt.

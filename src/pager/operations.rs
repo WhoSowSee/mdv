@@ -5,10 +5,7 @@ pub(super) fn apply_refreshed_document(
     document: &RwLock<PagerDocument>,
     refreshed: PagerDocument,
 ) -> Result<()> {
-    let mut current = document
-        .write()
-        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-    replace_preserving_line_number_mode(&mut current, refreshed);
+    let current = replace_preserving_line_number_mode(document, refreshed)?;
     update_display(pager, &current)
 }
 
@@ -16,16 +13,33 @@ pub(super) fn replace_document(
     document: &RwLock<PagerDocument>,
     refreshed: PagerDocument,
 ) -> Result<()> {
-    let mut current = document
-        .write()
-        .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-    replace_preserving_line_number_mode(&mut current, refreshed);
+    drop(replace_preserving_line_number_mode(document, refreshed)?);
     Ok(())
 }
 
-fn replace_preserving_line_number_mode(current: &mut PagerDocument, mut refreshed: PagerDocument) {
-    refreshed.preserve_line_number_mode_from(current);
-    *current = refreshed;
+fn replace_preserving_line_number_mode(
+    document: &RwLock<PagerDocument>,
+    mut refreshed: PagerDocument,
+) -> Result<std::sync::RwLockWriteGuard<'_, PagerDocument>> {
+    loop {
+        let mode = {
+            let current = document
+                .read()
+                .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+            refreshed.preserve_line_number_mode_from(&current);
+            current.line_number_mode()
+        };
+        refreshed.prepare_current_view()?;
+        let mut current = document
+            .write()
+            .map_err(|_| anyhow!("Pager document lock poisoned"))?;
+        if current.line_number_mode() != mode {
+            continue;
+        }
+        refreshed.inherit_warmup_from(&current);
+        *current = refreshed;
+        return Ok(current);
+    }
 }
 
 pub(super) fn cycle_line_number_mode(
@@ -35,7 +49,7 @@ pub(super) fn cycle_line_number_mode(
     let mut document = document
         .write()
         .map_err(|_| anyhow!("Pager document lock poisoned"))?;
-    if !document.cycle_line_number_mode() {
+    if !document.cycle_line_number_mode()? {
         return Ok(false);
     }
     update_display(pager, &document)?;
@@ -46,7 +60,7 @@ fn update_display(pager: &Pager, document: &PagerDocument) -> Result<()> {
     if document.can_reflow() {
         pager.refresh_layout()?;
     } else {
-        let (output, navigation) = document.display_snapshot();
+        let (output, navigation) = document.display_snapshot()?;
         pager.set_mapped_text(output, navigation)?;
     }
     Ok(())

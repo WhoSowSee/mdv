@@ -47,7 +47,7 @@ impl RenderedOutput {
         }
     }
 
-    pub(crate) fn output(&self) -> &str {
+    pub(crate) fn output(&self) -> Result<&str> {
         self.content.output()
     }
 
@@ -90,9 +90,15 @@ pub(crate) fn render_terminal_document(
     };
     let views = PagerLineNumberViews::new(
         mode,
-        prefixed_display(&prefix, prefix_lines, rendered.unnumbered),
-        prefixed_display(&prefix, prefix_lines, rendered.rendered),
-        prefixed_display(&prefix, prefix_lines, rendered.source),
+        std::sync::Arc::new(move |mode| {
+            let target = match mode {
+                PagerLineNumberMode::Off => None,
+                PagerLineNumberMode::Rendered => Some(LineNumberTarget::Rendered),
+                PagerLineNumberMode::Source => Some(LineNumberTarget::Source),
+            };
+            let view = (rendered.render_view)(target)?;
+            Ok(prefixed_display(&prefix, prefix_lines, view))
+        }),
     )
     .with_toc(toc);
     Ok(RenderedOutput::for_pager(

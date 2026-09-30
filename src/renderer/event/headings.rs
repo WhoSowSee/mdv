@@ -219,7 +219,6 @@ impl<'a> EventRenderer<'a> {
                 .map(|idx| idx + 1)
                 .unwrap_or(0);
             let line_prefix = self.output[line_start..start].to_string();
-            let before = self.output[..line_start].to_string();
             let header_text = self.output[start..].to_string();
 
             let clean_header_text = header_text.trim();
@@ -260,9 +259,11 @@ impl<'a> EventRenderer<'a> {
                     .map(|line| format!("{}{}", line_prefix, line))
                     .collect::<Vec<_>>()
                     .join("\n");
-                self.output = format!("{}{}", before, final_header);
+                self.output.truncate(line_start);
+                self.output.push_str(&final_header);
             } else {
-                self.output = format!("{}{}", before, line_prefix);
+                self.output.truncate(line_start);
+                self.output.push_str(&line_prefix);
             }
         }
 

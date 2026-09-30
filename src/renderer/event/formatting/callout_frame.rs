@@ -208,7 +208,7 @@ impl<'a> EventRenderer<'a> {
         right_padding: usize,
         kind: CalloutKind,
     ) -> String {
-        let content_width = display_width(&strip_ansi(part));
+        let content_width = display_width_ansi(part);
         let base_width = left_padding + content_width + right_padding;
         let line_width = text_width.max(1);
         let trailing_pad = line_width.saturating_sub(base_width);
@@ -259,7 +259,7 @@ impl<'a> EventRenderer<'a> {
         if matches!(wrap_mode, WrapMode::Word) {
             let mut normalized = Vec::with_capacity(lines.len());
             for part in lines {
-                if display_width(&strip_ansi(&part)) <= width {
+                if display_width_ansi(&part) <= width {
                     normalized.push(part);
                     continue;
                 }
@@ -285,7 +285,7 @@ impl<'a> EventRenderer<'a> {
             .collect();
         let word_fits = word_lines
             .iter()
-            .all(|part| display_width(&strip_ansi(part)) <= width);
+            .all(|part| display_width_ansi(part) <= width);
 
         if word_fits && !Self::has_single_visible_char_tail(&word_lines) {
             lines = word_lines;
@@ -330,7 +330,7 @@ impl<'a> EventRenderer<'a> {
             let replacement_valid = !replacement.is_empty()
                 && replacement
                     .iter()
-                    .all(|part| display_width(&strip_ansi(part)) <= width)
+                    .all(|part| display_width_ansi(part) <= width)
                 && replacement
                     .iter()
                     .all(|part| !Self::is_single_visible_char_line(part));

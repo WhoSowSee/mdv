@@ -52,30 +52,29 @@ fn pager_render_builds_all_line_number_modes_from_each_starting_mode() {
 
         let target = line_numbers.map(|options| options.target);
         assert_eq!(pager_render.initial_target, target);
+        let unnumbered = (pager_render.render_view)(None).unwrap();
+        let rendered_view = (pager_render.render_view)(Some(LineNumberTarget::Rendered)).unwrap();
+        let source = (pager_render.render_view)(Some(LineNumberTarget::Source)).unwrap();
 
-        for view in [
-            &pager_render.unnumbered,
-            &pager_render.rendered,
-            &pager_render.source,
-        ] {
+        for view in [&unnumbered, &rendered_view, &source] {
             assert!(view.source_lines.contains(&Some(5)));
             assert_eq!(view.source_lines.len(), view.output.lines().count());
             assert!(!view.output.contains('\u{2063}'));
         }
 
-        assert!(!pager_render.unnumbered.output.lines().any(|line| {
+        assert!(!unnumbered.output.lines().any(|line| {
             line.trim_start()
                 .chars()
                 .next()
                 .is_some_and(|character| character.is_ascii_digit())
         }));
-        assert!(contains_numbered_line(&pager_render.rendered.output, 4));
-        assert!(!contains_numbered_line(&pager_render.rendered.output, 5));
-        assert!(contains_numbered_line(&pager_render.source.output, 5));
+        assert!(contains_numbered_line(&rendered_view.output, 4));
+        assert!(!contains_numbered_line(&rendered_view.output, 5));
+        assert!(contains_numbered_line(&source.output, 5));
 
         let separator = line_numbers.is_some_and(|options| options.separator);
-        assert_eq!(pager_render.rendered.output.contains(" │ "), separator);
-        assert_eq!(pager_render.source.output.contains(" │ "), separator);
+        assert_eq!(rendered_view.output.contains(" │ "), separator);
+        assert_eq!(source.output.contains(" │ "), separator);
     }
 }
 
@@ -106,19 +105,18 @@ fn pager_render_preserves_callout_layout_with_source_metadata() {
             crate::cli::CalloutStyle::Pretty => ("╭─ Important ", "│ Body", 0),
             crate::cli::CalloutStyle::Simple => ("┃ [Important]", "┃ Body", 1),
         };
+        let unnumbered = (pager_render.render_view)(None).unwrap();
+        let rendered_view = (pager_render.render_view)(Some(LineNumberTarget::Rendered)).unwrap();
+        let source = (pager_render.render_view)(Some(LineNumberTarget::Source)).unwrap();
 
-        for view in [
-            &pager_render.unnumbered,
-            &pager_render.rendered,
-            &pager_render.source,
-        ] {
+        for view in [&unnumbered, &rendered_view, &source] {
             assert_eq!(view.output.lines().count(), 3, "{}", view.output);
             assert_eq!(view.output.matches("[Important]").count(), marker_count);
             assert!(view.output.contains(body), "{}", view.output);
         }
-        assert!(pager_render.unnumbered.output.starts_with(header));
-        assert!(pager_render.source.source_lines.contains(&Some(1)));
-        assert!(pager_render.source.source_lines.contains(&Some(3)));
+        assert!(unnumbered.output.starts_with(header));
+        assert!(source.source_lines.contains(&Some(1)));
+        assert!(source.source_lines.contains(&Some(3)));
     }
 }
 
@@ -144,15 +142,17 @@ fn pager_render_preserves_display_math_geometry_and_source_line() {
         .render_document_for_pager(document)
         .unwrap();
 
-    for view in [&rendered.unnumbered, &rendered.rendered, &rendered.source] {
+    let unnumbered = (rendered.render_view)(None).unwrap();
+    let rendered_view = (rendered.render_view)(Some(LineNumberTarget::Rendered)).unwrap();
+    let source = (rendered.render_view)(Some(LineNumberTarget::Source)).unwrap();
+    for view in [&unnumbered, &rendered_view, &source] {
         assert!(view.output.contains("a+b") && view.output.contains("c+d"));
         assert!(view.output.contains("───"), "{}", view.output);
         assert!(!view.output.contains('\u{2062}'));
         assert_eq!(view.source_lines.len(), view.output.lines().count());
     }
     assert_eq!(
-        rendered
-            .source
+        source
             .source_lines
             .iter()
             .flatten()

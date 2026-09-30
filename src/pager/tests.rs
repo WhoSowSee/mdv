@@ -131,7 +131,7 @@ fn line_number_modes_advance_from_the_active_starting_mode() {
     for (initial, expected) in cases {
         let mut document = numbered_document(initial, "initial");
 
-        assert!(document.cycle_line_number_mode());
+        assert!(document.cycle_line_number_mode().unwrap());
         assert_eq!(document.line_number_mode(), Some(expected));
     }
 }
@@ -158,7 +158,8 @@ fn line_navigation_uses_the_mdv_source_view_for_each_active_mode() {
 
     for (mode, expected_output, expected_navigation) in cases {
         let document = numbered_document(mode, "current");
-        let (output, navigation) = document.display_snapshot();
+        let (output, mut navigation) = document.display_snapshot().unwrap();
+        navigation.as_mut().unwrap().prepare_source_view().unwrap();
 
         assert_eq!(output, expected_output);
         assert_eq!(navigation, Some(expected_navigation));
@@ -180,19 +181,47 @@ fn replacing_a_document_preserves_the_selected_line_number_mode() {
         document.line_number_mode(),
         Some(PagerLineNumberMode::Source)
     );
-    assert_eq!(document.display_snapshot().0, "1 refreshed source\n");
+    assert_eq!(
+        document.display_snapshot().unwrap().0,
+        "1 refreshed source\n"
+    );
 }
 
 fn numbered_document(mode: PagerLineNumberMode, label: &str) -> PagerDocument {
+    let label = label.to_owned();
     PagerDocument::from_content(
         PagerContent::LineNumbers(PagerLineNumberViews::new(
             mode,
-            PagerDisplay::new(format!("{label} off\n"), vec![Some(1)]),
-            PagerDisplay::new(format!("1 {label} rendered\n"), vec![Some(1)]),
-            PagerDisplay::new(format!("1 {label} source\n"), vec![Some(1)]),
+            Arc::new(move |mode| {
+                let output = match mode {
+                    PagerLineNumberMode::Off => format!("{label} off\n"),
+                    PagerLineNumberMode::Rendered => format!("1 {label} rendered\n"),
+                    PagerLineNumberMode::Source => format!("1 {label} source\n"),
+                };
+                Ok(PagerDisplay::new(output, vec![Some(1)]))
+            }),
         )),
         OutputStyle::Disabled,
     )
+}
+
+pub(super) fn markdown_document(width: usize) -> PagerDocument {
+    let config = crate::config::Config {
+        cols: Some(width),
+        cols_from_cli: true,
+        ..Default::default()
+    };
+    crate::document::render_document(
+        "# Heading\n\nA paragraph with a [link](https://example.com).\n",
+        &config,
+        OutputStyle::Disabled,
+        crate::document::RenderOptions {
+            prepare_pager_views: true,
+            ..Default::default()
+        },
+    )
+    .unwrap()
+    .into_pager_document()
 }
 
 #[test]
@@ -249,7 +278,7 @@ fn active_watcher_refreshes_modified_file() {
     drop(watcher);
     assert!(refresh_count.load(Ordering::SeqCst) >= 1);
     assert_eq!(
-        document.read().unwrap().display_snapshot().0,
+        document.read().unwrap().display_snapshot().unwrap().0,
         "rendered after"
     );
 }

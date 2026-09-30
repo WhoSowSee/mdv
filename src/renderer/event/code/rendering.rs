@@ -64,7 +64,7 @@ impl<'a> EventRenderer<'a> {
             };
 
             let context_width = self.compute_indented_block_context_width();
-            let border_visible_width = display_width(&strip_ansi(&prefix));
+            let border_visible_width = display_width_ansi(&prefix);
             let available_width = input
                 .terminal_width
                 .saturating_sub(context_width + border_visible_width);

@@ -158,3 +158,18 @@ fn highlight_code_reset_closes_last_line_without_phantom_row() {
         "a single source line must render as exactly one row, got: {highlighted:?}"
     );
 }
+#[test]
+fn footnote_highlighting_accepts_sgr_between_marker_characters() {
+    let config = Config {
+        missing_footnote_style: crate::cli::MissingFootnoteStyle::Hide,
+        ..Config::default()
+    };
+    let theme = Theme::default();
+    let syntax_set = SyntaxSet::load_defaults_newlines();
+    let code_theme = test_code_theme();
+    let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
+    let input = "[\x1b[31m^note]";
+    let output = renderer.highlight_footnote_markers_in_ansi(input);
+    assert_ne!(output, input);
+    assert_eq!(strip_ansi(&output), "[^note]");
+}
