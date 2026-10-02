@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.0.1] - 2026-10-02
+
+### Bug Fixes
+
+- Fixed: rendering test timeouts on Linux and macOS
+- Fixed: crates.io package verification on Rust 1.99.0
+
+### Maintenance
+
+- Updated: mdv-minus to v6.0.1
+
 ## [6.0.0] - 2026-10-02
 
 ### Breaking Changes

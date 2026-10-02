@@ -30,8 +30,8 @@ check ELF architecture and packaging, but do not execute foreign binaries.
 Snap jobs install the resulting package and run it; each Nix job evaluates,
 builds, and runs its native package. Together, the two jobs cover both systems.
 
-The package job checks formatting, Clippy, Debian validator tests, and
-`cargo publish --dry-run --locked`. Publishing waits for this job and every
+The package job checks formatting, Clippy, Debian validator and release-note
+tests, and `cargo publish --dry-run --locked`. Publishing waits for this job and every
 platform job, including Nix. Only the release job receives `contents: write`.
 
 The package job also runs formatting, Clippy with `-D warnings`, and unit tests
@@ -113,14 +113,19 @@ Cargo removes the path dependency when packaging mdv and uses the crates.io
 release during verification. The dry run blocks publication if that release
 does not contain the APIs used by mdv, even when local binary builds succeed.
 
-The vendored pager contains unreleased color-depth APIs (`ColorDepth` and
-`Pager::set_color_depth`); crate verification requires a published fork containing
-them. The Unix-only `terminfo` 0.9.0 dependency reads terminfo files in Rust
+mdv 6.0.1 requires the published `mdv-minus` 6.0.1 patch with the Clippy 1.99.0
+fix. The Unix-only `terminfo` 0.9.0 dependency reads terminfo files in Rust
 and adds no ncurses linkage or mandatory runtime database package.
 
 `.github/scripts/release-notes.sh` writes the custom release body directly to a
 file, preserving the existing changelog, tag annotation, and commit-message
-priority. The release action's `generate_release_notes` option appends GitHub's
+priority. For 6.0.1, it includes both the 6.0.1 patch section and the complete
+6.0.0 section, retaining their version headings so users see the initial 6.0
+changes and Breaking Changes. Later releases select only their own section.
+The changelog keeps both historical sections separate. Regression tests in
+`.github/scripts/test_release_notes.py` cover the combined body, ordinary
+releases, and the existing tag/commit message priority.
+The release action's `generate_release_notes` option appends GitHub's
 generated notes on both creation and update. The script does not call the GitHub
 API or require a token. Multiline text is never passed through a fixed
 `GITHUB_OUTPUT` delimiter.

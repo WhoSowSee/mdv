@@ -30,8 +30,10 @@ jobs:
           cargo fmt --all -- --check
           cargo clippy --locked --all-targets -- -D warnings
 
-      - name: Test Debian package validation
-        run: python3 .github/scripts/test_verify_deb.py
+      - name: Test release packaging helpers
+        run: |
+          python3 .github/scripts/test_verify_deb.py
+          python3 .github/scripts/test_release_notes.py
 
       - name: Verify vendored pager
         run: |
