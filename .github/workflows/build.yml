@@ -197,7 +197,7 @@ jobs:
       - name: Test and verify binary
         run: |
           cargo test --locked --target ${{ matrix.target }}
-          lipo -verify_arch ${{ matrix.arch }} "target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          lipo "target/${{ matrix.target }}/release/${PROJECT_NAME}" -verify_arch ${{ matrix.arch }}
           "target/${{ matrix.target }}/release/${PROJECT_NAME}" --version
 
       - name: Package zip
