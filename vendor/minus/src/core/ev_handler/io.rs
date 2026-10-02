@@ -12,7 +12,7 @@ use super::{
 )]
 pub fn handle_io_command(
     internal_command: IoCommand,
-    mut out: &mut impl Write,
+    out: &mut impl Write,
     p: &mut PagerState,
     command_queue: &mut CommandQueue,
     #[cfg(feature = "search")] pager: &Pager,
@@ -26,12 +26,12 @@ pub fn handle_io_command(
             display::write_prompt_view(out, p)?;
         }
         IoCommand::RedrawDisplay => {
-            display::draw_full(&mut out, p)?;
+            display::draw_full(out, p)?;
         }
         #[cfg(feature = "search")]
         IoCommand::RedrawToc => display::draw_toc_update(out, p)?,
         IoCommand::RedrawSelection(start, end) => {
-            display::draw_selection_rows(&mut out, p, start, end)?;
+            display::draw_selection_rows(out, p, start, end)?;
         }
         IoCommand::SetUpperMark(mut um) => {
             display::draw_for_change(out, p, &mut um)?;
@@ -60,14 +60,14 @@ pub fn handle_io_command(
         #[cfg(feature = "search")]
         IoCommand::FetchSearchQuery => {
             let search_result =
-                with_general_input_paused(user_input_active, || search::fetch_input(&mut out, p))?;
+                with_general_input_paused(user_input_active, || search::fetch_input(out, p))?;
 
             apply_search_result(p, pager, command_queue, search_result)?;
         }
         #[cfg(feature = "search")]
         IoCommand::FetchLineNumber => {
             let input = with_general_input_paused(user_input_active, || {
-                line_navigation::fetch_line_number(&mut out, p)
+                line_navigation::fetch_line_number(out, p)
             })?;
 
             apply_line_navigation_result(p, pager, command_queue, input)?;
