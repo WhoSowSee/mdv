@@ -1,6 +1,9 @@
-use minus::{PromptColor, PromptError, PromptLine, PromptSpan, PromptStyle};
+use minus::{PromptColor, PromptError, PromptLine, PromptStyle};
 use std::cmp::Reverse;
 use unicode_width::UnicodeWidthStr;
+
+mod row;
+use row::HelpRow;
 
 const HELP_BACKGROUND: PromptColor = PromptColor::Rgb {
     r: 27,
@@ -59,36 +62,32 @@ pub(super) fn build_toc_help_panel(
         .unwrap_or(0)
         * 2
         + 4;
-    let texts = if width >= required_width {
+    let rows = if width >= required_width {
         let column = width.saturating_sub(4) / 2;
         groups[0]
             .iter()
             .zip(groups[1].iter())
             .map(|(left, right)| {
-                format!(
-                    "  {left}{}  {right}",
-                    " ".repeat(column.saturating_sub(left.width()))
-                )
+                let mut row = HelpRow::new();
+                row.push(left);
+                row.push(&" ".repeat(column.saturating_sub(left.width()) + 2));
+                row.push(right);
+                row
             })
             .collect::<Vec<_>>()
     } else {
         groups
             .into_iter()
             .flatten()
-            .map(|text| format!("  {text}"))
+            .map(|text| {
+                let mut row = HelpRow::new();
+                row.push(&text);
+                row
+            })
             .collect()
     };
-    for text in texts {
-        for part in
-            crate::utils::wrap_text_with_mode(&text, width.max(1), crate::utils::WrapMode::Word)
-                .lines()
-        {
-            lines.push(
-                PromptLine::new()
-                    .left(PromptSpan::new(part, style)?)
-                    .fill_style(style),
-            );
-        }
+    for row in rows {
+        lines.extend(row.wrap(width.max(1), style)?);
     }
     lines.push(help_line(None, style)?);
     Ok(lines)
@@ -119,16 +118,12 @@ pub(super) fn fit_help_panel(
         }
     }
     let mut result = vec![help_line(None, style)?];
-    for row in items.chunks(columns) {
-        let text = row
-            .iter()
-            .map(|item| format!("{item:<HELP_COLUMN_WIDTH$}"))
-            .collect::<String>();
-        result.push(
-            PromptLine::new()
-                .left(PromptSpan::new(format!("  {text}"), style)?)
-                .fill_style(style),
-        );
+    for items in items.chunks(columns) {
+        let mut row = HelpRow::new();
+        for item in items {
+            row.push(&format!("{item:<HELP_COLUMN_WIDTH$}"));
+        }
+        result.push(row.render(style)?);
     }
     result.push(help_line(None, style)?);
     Ok(result)
@@ -218,18 +213,19 @@ fn help_line(
     columns: Option<[Option<&str>; 3]>,
     style: PromptStyle,
 ) -> Result<PromptLine, PromptError> {
-    let text = columns.map_or_else(String::new, |[left, middle, right]| {
-        format!(
-            "  {:<HELP_COLUMN_WIDTH$}{:<HELP_COLUMN_WIDTH$}{}",
-            left.unwrap_or_default(),
-            middle.unwrap_or_default(),
-            right.unwrap_or_default(),
-        )
-    });
-
-    Ok(PromptLine::new()
-        .left(PromptSpan::new(text, style)?)
-        .fill_style(style))
+    let Some(columns) = columns else {
+        return Ok(PromptLine::new().fill_style(style));
+    };
+    let mut row = HelpRow::new();
+    for (index, item) in columns.into_iter().enumerate() {
+        let item = item.unwrap_or_default();
+        if index < 2 {
+            row.push(&format!("{item:<HELP_COLUMN_WIDTH$}"));
+        } else {
+            row.push(item);
+        }
+    }
+    row.render(style)
 }
 
 #[cfg(test)]

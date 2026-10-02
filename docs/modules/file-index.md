@@ -170,6 +170,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [footer.rs](../../src/pager/footer.rs) | Footer renderer and tests. |
 | [pager/styling.rs](../../src/pager/styling.rs) | Theme-to-pager color conversion. |
 | [help.rs](../../src/pager/help.rs) | Help panel and tests. |
+| [pager/help/row.rs](../../src/pager/help/row.rs) | Help row spans and style-preserving wrapping. |
 | [tests.rs](../../src/pager/tests.rs) | Pager behavior tests. |
 
 ## `src/theme/` and `src/user_themes/`

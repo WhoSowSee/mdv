@@ -171,6 +171,11 @@ The custom classifier extends the default `minus` classifier with:
 
 The help panel uses three columns in wide terminals, two below 78 columns, and one below 52 columns; resizing an open panel recomputes its layout. Entries are ordered by the visible width of the key combination; descriptions do not affect ordering. Optional entries are removed when line navigation, line-number switching, reload, or editor integration is unavailable.
 
+Shortcut keys retain the theme's `pager.help` color. Pager and browser descriptions
+share `terminal::HELP_DESCRIPTION_COLOR` (RGB `73,73,73`).
+[pager/help/row.rs](../../src/pager/help/row.rs) preserves separate description spans
+through narrow layouts and wrapped contents-panel help.
+
 `l` cycles `off → rendered → source → off`. The initial position comes from the effective `line_numbers` setting, so the first transition depends on how mdv was launched. When line-number switching is available, this mdv binding takes precedence over the default `minus` horizontal-scroll binding for `l`; the right arrow remains available for horizontal scrolling. The built-in `minus` gutter remains disabled; every numbered view is produced by `TerminalRenderer` and therefore uses the configured mdv colors, separator, margins, and wrapping.
 
 The `:` prompt accepts a one-based Markdown source line. It prepares and swaps in the source-numbered rendering when another line-number mode is active and reuses the current rendering in source mode. After a successful jump, that rendering and a fixed muted highlight remain active, while the footer shows `:N` immediately before document progress. `Esc` leaves line-navigation mode and restores the view selected by `l`. A missing line uses the same two-second status-message timeout as a search with no matches.

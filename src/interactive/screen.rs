@@ -1,6 +1,6 @@
 use super::app::App;
 use super::browser::{BrowserSection, BrowserState, FilterState};
-use crate::terminal::{AnsiStyle, OutputStyle};
+use crate::terminal::{AnsiStyle, HELP_DESCRIPTION_COLOR as BROWSER_HELP_LABEL, OutputStyle};
 use crate::utils::display_width;
 use anyhow::{Context, Result};
 use crossterm::cursor::{Hide, MoveTo, Show};
@@ -40,11 +40,6 @@ const BROWSER_HELP_KEY: Color = Color::Rgb {
     r: 97,
     g: 97,
     b: 97,
-};
-const BROWSER_HELP_LABEL: Color = Color::Rgb {
-    r: 73,
-    g: 73,
-    b: 73,
 };
 const BROWSER_HELP_SEPARATOR: Color = Color::Rgb {
     r: 60,

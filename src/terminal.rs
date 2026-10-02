@@ -3,6 +3,12 @@ pub use minus::ansi256_to_rgb;
 
 pub(crate) mod detection;
 
+pub(crate) const HELP_DESCRIPTION_COLOR: minus::PromptColor = minus::PromptColor::Rgb {
+    r: 73,
+    g: 73,
+    b: 73,
+};
+
 /// Resolved terminal styling and palette policy.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum OutputStyle {

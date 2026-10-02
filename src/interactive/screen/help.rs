@@ -46,7 +46,7 @@ pub(super) fn browser_mini_help(
         help.push(' ');
         help.push_str(&styled(
             label,
-            Some(BROWSER_HELP_LABEL),
+            Some(BROWSER_HELP_LABEL.into()),
             None,
             false,
             output_style,
@@ -70,13 +70,13 @@ pub(super) fn browser_mini_help(
 pub(super) fn browser_filter_help(output_style: OutputStyle) -> String {
     let segments = [
         ("enter", BROWSER_HELP_KEY),
-        ("confirm", BROWSER_HELP_LABEL),
+        ("confirm", BROWSER_HELP_LABEL.into()),
         ("•", BROWSER_HELP_SEPARATOR),
         ("esc", BROWSER_HELP_KEY),
-        ("cancel", BROWSER_HELP_LABEL),
+        ("cancel", BROWSER_HELP_LABEL.into()),
         ("•", BROWSER_HELP_SEPARATOR),
         ("ctrl+j/ctrl+k ↑/↓", BROWSER_HELP_KEY),
-        ("choose", BROWSER_HELP_LABEL),
+        ("choose", BROWSER_HELP_LABEL.into()),
     ];
     let mut help = String::from("   ");
     for (index, (text, color)) in segments.into_iter().enumerate() {
@@ -106,7 +106,13 @@ pub(super) fn browser_filter_full_help(output_style: OutputStyle) -> Vec<String>
                 "   {}{}{}",
                 styled(key, Some(BROWSER_HELP_KEY), None, false, output_style),
                 " ".repeat(key_width - display_width(key) + 2),
-                styled(label, Some(BROWSER_HELP_LABEL), None, false, output_style)
+                styled(
+                    label,
+                    Some(BROWSER_HELP_LABEL.into()),
+                    None,
+                    false,
+                    output_style
+                )
             )
         })
         .collect()
@@ -151,7 +157,7 @@ pub(super) fn browser_full_help(browser: &BrowserState, output_style: OutputStyl
                         line.push_str(&" ".repeat(key_width - display_width(key) + 2));
                         line.push_str(&styled(
                             label,
-                            Some(BROWSER_HELP_LABEL),
+                            Some(BROWSER_HELP_LABEL.into()),
                             None,
                             false,
                             output_style,
