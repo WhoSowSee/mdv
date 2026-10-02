@@ -53,6 +53,12 @@ Pager rendering supplies a factory for unnumbered, rendered-numbered, and source
 
 Only the left margin is added to output lines at the end. The right margin reduces available width but does not append spaces.
 
+Each event-rendering pass resolves terminal width once into a local configuration
+snapshot. Layout helpers and nested renderers reuse that width, avoiding repeated
+Unix `tput` subprocesses when no TTY is available. A subsequent render resolves
+the width again, including monitor refreshes; pager passes retain their explicit
+layout width.
+
 `to_html(events)` is a separate export backend and does not treat ANSI output as an intermediate representation.
 
 `render_document(parsed_document)` and `to_html_document(parsed_document)` convert front matter into synthetic callout, table, paragraph, definition-list, code-block, or HTML events before using the existing event-only entry points. Source mode bypasses front matter extraction entirely. The properties callout uses dedicated title, key, value, and border theme roles and defers wrapping until the frame width is known. Generated property rows have an empty source-number gutter; rendered numbering includes them as ordinary visual rows.

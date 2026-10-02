@@ -155,9 +155,12 @@ impl TerminalRenderer {
         events: &[Event<'static>],
         math_diagnostics: &Rc<crate::math::MathDiagnostics>,
     ) -> Result<(String, usize)> {
-        config.validate_horizontal_margins()?;
+        let mut render_config = config.clone();
+        render_config.cols = Some(config.get_terminal_width());
+        render_config.cols_from_cli = true;
+        render_config.validate_horizontal_margins()?;
         let mut renderer = EventRenderer::new(
-            config,
+            &render_config,
             &self.theme,
             &self.syntax_set,
             &self.code_theme,

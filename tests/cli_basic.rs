@@ -28,3 +28,6 @@ mod html_semantics;
 mod monitor;
 #[path = "cli_basic/rendering_options.rs"]
 mod rendering_options;
+#[cfg(unix)]
+#[path = "cli_basic/terminal_width.rs"]
+mod terminal_width;

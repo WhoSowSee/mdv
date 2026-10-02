@@ -60,6 +60,7 @@ process and covers search positions beyond 65,535 characters.
 | Group | Primary coverage |
 |---|---|
 | `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, pager routing, and monitor snapshots. |
+| `tests/cli_basic/terminal_width.rs` | Unix terminal-size query counts remain bounded as documents grow, with child processes detached from the controlling terminal. |
 | `tests/color.rs` | Color settings reaching the renderer, loader diagnostics, pipe/redirection, HTML, and fast commands. |
 | `tests/themes.rs` | Nested theme/config/CLI parity, combined label colors, independent list/task colors, and detached callout palettes. |
 | `tests/themes/precedence.rs` | Theme/config/preset/CLI color priority across both override parameters, preservation of partial values, and explicit clearing of preset settings. |
