@@ -863,7 +863,7 @@ dependencies = [
 
 [[package]]
 name = "mdv-minus"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "crossbeam-channel",
  "crossterm",

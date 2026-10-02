@@ -1,16 +1,22 @@
 # mdv-minus
 
-`mdv-minus` 6.0.0 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name. The fork's version is independent of the upstream version.
+`mdv-minus` 6.0.1 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name. The fork's version is independent of the upstream version.
 
 Depend on the fork under that library name:
 
 ```toml
-minus = { package = "mdv-minus", version = "6.0.0" }
+minus = { package = "mdv-minus", version = "6.0.1" }
 ```
+
+## Changes in 6.0.1
+
+This patch fixes redundant mutable borrows in the pager's I/O handler so the
+crate passes Clippy 1.99.0 checks with warnings denied. The public API is unchanged
+from 6.0.0.
 
 ## Migrating from 5.7.3
 
-This release adds source-line navigation, an interactive document outline,
+Version 6.0.0 added source-line navigation, an interactive document outline,
 deferred source-view rendering, whole-document selection with `Ctrl+A`, and
 configurable color depth and highlight palettes. It also fixes cursor visibility
 when handing an existing screen back to the caller and restores the previous

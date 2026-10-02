@@ -1,6 +1,6 @@
 [package]
 name = "mdv-minus"
-version = "6.0.0"
+version = "6.0.1"
 authors = ["Arijit Dey <arijid79@gmail.com>", "WhoSowSee"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
