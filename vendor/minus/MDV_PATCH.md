@@ -1,12 +1,29 @@
 # mdv-minus
 
-`mdv-minus` 5.7.3 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name.
+`mdv-minus` 6.0.0 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name. The fork's version is independent of the upstream version.
 
 Depend on the fork under that library name:
 
 ```toml
-minus = { package = "mdv-minus", version = "5.7.3" }
+minus = { package = "mdv-minus", version = "6.0.0" }
 ```
+
+## Migrating from 5.7.3
+
+This release adds source-line navigation, an interactive document outline,
+deferred source-view rendering, whole-document selection with `Ctrl+A`, and
+configurable color depth and highlight palettes. It also fixes cursor visibility
+when handing an existing screen back to the caller and restores the previous
+process panic hook after each pager session.
+
+The major version reflects these public API changes:
+
+- `SearchOpts::cursor_position` is now `usize`, and `SearchOpts::word_index` is
+  `Vec<usize>`. Use character indices rather than `u16` terminal coordinates.
+- Exhaustive matches on `PromptColor` must handle the new `Reset` variant.
+- Exhaustive matches on `PromptError` must handle the new `Layout(String)` variant.
+
+## Pager extensions
 
 mdv adds a typed prompt-rendering API:
 
