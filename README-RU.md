@@ -467,22 +467,22 @@ syntax:
 
 Пользовательская тема с тем же именем, что и встроенная, имеет приоритет и полностью её заменяет - это поддерживаемый способ сделать форк встроенной темы, не копируя каждое поле. Нечитаемые или повреждённые файлы пропускаются с предупреждением, поэтому одна битая тема не ломает остальные.
 
-## История звёзд
+---
 
 <p align="center">
   <a href="https://github.com/WhoSowSee/mdv/stargazers">
     <picture>
       <source
         media="(prefers-color-scheme: dark)"
-        srcset="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-dark.svg"
+        srcset="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-dark-ru.svg"
       />
       <source
         media="(prefers-color-scheme: light)"
-        srcset="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-light.svg"
+        srcset="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-light-ru.svg"
       />
       <img
         alt="История звёзд"
-        src="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-light.svg"
+        src="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-light-ru.svg"
         width="820"
       />
     </picture>

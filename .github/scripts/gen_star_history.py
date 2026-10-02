@@ -15,6 +15,20 @@ COLORS = {
     "light": ("#ffffff", "#24292f", "#57606a", "#eaecef", "#2f81f7", "#d0d7de", 0.12),
     "dark": ("#0d1117", "#e6edf3", "#8b949e", "#21262d", "#58a6ff", "#30363d", 0.15),
 }
+LANGUAGES = {
+    "en": {
+        "heading": "Star History",
+        "title": "{repository} star history: {total:,} stars",
+        "stars": "{total:,} stars",
+        "months": ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+    },
+    "ru": {
+        "heading": "История звёзд",
+        "title": "{repository} — История звёзд: {total}",
+        "stars": "Звёзд: {total}",
+        "months": ("янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"),
+    },
+}
 
 
 def request_json(path):
@@ -76,7 +90,8 @@ def axis_maximum(total):
     )
 
 
-def render_svg(repository, series, created_at, theme):
+def render_svg(repository, series, created_at, theme, language="en"):
+    labels = LANGUAGES[language]
     background, title, text, grid, line, axis, opacity = COLORS[theme]
     width, height = SIZE
     left, top, plot_width, plot_height = PLOT
@@ -99,12 +114,12 @@ def render_svg(repository, series, created_at, theme):
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
         f'viewBox="0 0 {width} {height}" role="img" aria-labelledby="chart-title" '
         'font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">',
-        f'<title id="chart-title">{escape(repository)} star history: {total:,} stars</title>',
+        f'<title id="chart-title">{escape(labels["title"].format(repository=repository, total=total))}</title>',
         f'<rect width="{width}" height="{height}" rx="6" fill="{background}"/>',
         f'<text x="{left}" y="30" fill="{title}" font-size="17" '
-        'font-weight="600">Star History</text>',
+        f'font-weight="600">{labels["heading"]}</text>',
         f'<text x="{right}" y="30" text-anchor="end" fill="{text}" font-size="13">'
-        f'{escape(repository)} &#183; {total:,} stars</text>',
+        f'{escape(repository)} &#183; {labels["stars"].format(total=total)}</text>',
     ]
     for tick in range(6):
         count = ceiling * tick / 5
@@ -115,13 +130,19 @@ def render_svg(repository, series, created_at, theme):
             f'<text x="{left - 8}" y="{position + 4:.1f}" text-anchor="end" '
             f'fill="{text}" font-size="11">{round(count):,}</text>',
         ])
-    date_format = "%b %Y" if start.year != end.year else "%b %d"
     for tick in range(5):
         date = start + (end - start) * (tick / 4)
+        month = labels["months"][date.month - 1]
+        if start.year != end.year:
+            date_label = f"{month} {date.year}"
+        elif language == "ru":
+            date_label = f"{date.day:02d} {month}"
+        else:
+            date_label = f"{month} {date.day:02d}"
         anchor = "start" if tick == 0 else "end" if tick == 4 else "middle"
         parts.append(
             f'<text x="{x(date):.1f}" y="{bottom + 20}" text-anchor="{anchor}" '
-            f'fill="{text}" font-size="11">{date.strftime(date_format)}</text>'
+            f'fill="{text}" font-size="11">{date_label}</text>'
         )
     parts.append(
         f'<line x1="{left}" y1="{bottom}" x2="{right}" y2="{bottom}" '
@@ -151,12 +172,14 @@ def main():
     created_at = datetime.fromisoformat(metadata["created_at"].replace("Z", "+00:00"))
     series = cumulative_series(fetch_history(arguments.repo))
     charts = {
-        theme: render_svg(arguments.repo, series, created_at, theme)
+        (theme, language): render_svg(arguments.repo, series, created_at, theme, language)
+        for language in LANGUAGES
         for theme in COLORS
     }
     arguments.output_dir.mkdir(parents=True, exist_ok=True)
-    for theme, svg in charts.items():
-        path = arguments.output_dir / f"star-history-{theme}.svg"
+    for (theme, language), svg in charts.items():
+        suffix = "" if language == "en" else f"-{language}"
+        path = arguments.output_dir / f"star-history-{theme}{suffix}.svg"
         path.write_text(svg, encoding="utf-8", newline="\n")
         print(f"Generated {path.name}: {series[-1][1] if series else 0} stars")
 

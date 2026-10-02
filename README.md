@@ -467,7 +467,7 @@ Colors inherit per field. Explicit `null` clears an inherited optional border or
 
 A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying every field. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.
 
-## Star History
+---
 
 <p align="center">
   <a href="https://github.com/WhoSowSee/mdv/stargazers">

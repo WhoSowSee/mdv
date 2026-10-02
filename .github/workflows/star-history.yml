@@ -32,11 +32,17 @@ jobs:
 
       - name: Commit updated charts
         run: |
-          if git diff --quiet -- .github/assets/star-history-light.svg .github/assets/star-history-dark.svg; then
+          charts=(
+            .github/assets/star-history-light.svg
+            .github/assets/star-history-dark.svg
+            .github/assets/star-history-light-ru.svg
+            .github/assets/star-history-dark-ru.svg
+          )
+          if git diff --quiet -- "${charts[@]}"; then
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- .github/assets/star-history-light.svg .github/assets/star-history-dark.svg
+          git add -- "${charts[@]}"
           git commit -m 'Updated star history chart'
           git push

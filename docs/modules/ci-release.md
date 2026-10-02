@@ -140,14 +140,17 @@ not later fixes in the working tree.
 
 ## README star history
 
-`.github/workflows/star-history.yml` refreshes the local light and dark SVGs in
+`.github/workflows/star-history.yml` refreshes the English and Russian light and dark SVGs in
 `.github/assets/` every Monday and Thursday at 06:17 UTC, or by manual dispatch.
 The chart style follows [makerspet/oomwoo](https://github.com/makerspet/oomwoo).
 `.github/scripts/gen_star_history.py` reads GitHub's aggregate daily star history
 and renders SVGs using only Python's standard library. The job uses its own
-`GITHUB_TOKEN` and commits only the two charts when their contents change.
+`GITHUB_TOKEN` and commits only the four charts when their contents change.
 Both README languages select the chart for the reader's color scheme using
 absolute `raw.githubusercontent.com` URLs. This also works on crates.io, which
 rewrites relative `img src` URLs but leaves `source srcset` URLs unchanged.
+README-RU uses the `star-history-light-ru.svg` and `star-history-dark-ru.svg`
+variants with Russian titles, star counts, and month labels. The SVGs provide
+their own headings, so the README files do not repeat them.
 The generator's pagination, cumulative counts, sampling, and empty/single-day
 rendering are checked by `.github/scripts/test_gen_star_history.py`.
