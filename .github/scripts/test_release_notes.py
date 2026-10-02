@@ -95,19 +95,19 @@ class ReleaseNotesTests(unittest.TestCase):
         )
         return (root / "release-notes.md").read_text(encoding="utf-8")
 
-    def test_601_includes_patch_notes_and_original_600_changes(self):
+    def test_middle_release_excludes_adjacent_versions(self):
         notes = self.generate("v6.0.1")
-        self.assertIn("## [6.0.1]", notes)
-        self.assertIn("## [6.0.0]", notes)
+        self.assertTrue(notes.startswith("### Bug Fixes"))
         self.assertIn("- Fixed: package checks", notes)
-        self.assertIn("- Changed: color modes", notes)
-        self.assertIn("- Added: source-line navigation", notes)
+        self.assertIn("- Fixed: Unix render timeouts", notes)
+        self.assertIn("- Updated: mdv-minus to v6.0.1", notes)
+        self.assertNotIn("- Changed: color modes", notes)
+        self.assertNotIn("- Added: source-line navigation", notes)
         self.assertNotIn("future-only change", notes)
         self.assertNotIn("older-only change", notes)
         self.assertNotIn("Tag fallback", notes)
-        self.assertLess(notes.index("## [6.0.1]"), notes.index("## [6.0.0]"))
 
-    def test_600_keeps_single_section_and_changelog_priority(self):
+    def test_changelog_takes_priority_over_tag_message(self):
         notes = self.generate("v6.0.0")
         self.assertTrue(notes.startswith("### Breaking Changes"))
         self.assertIn("- Changed: color modes", notes)
@@ -115,7 +115,7 @@ class ReleaseNotesTests(unittest.TestCase):
         self.assertNotIn("older-only change", notes)
         self.assertNotIn("Tag fallback", notes)
 
-    def test_later_patch_does_not_repeat_600_or_601(self):
+    def test_first_release_stops_before_older_versions(self):
         notes = self.generate("6.0.2")
         self.assertIn("- Fixed: future-only change", notes)
         self.assertNotIn("- Fixed: package checks", notes)

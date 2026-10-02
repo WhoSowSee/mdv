@@ -17,17 +17,9 @@ if [ -f CHANGELOG.md ]; then
     /^## \[/ {
       if (match($0, /^## \[([^\]]+)\]/, m)) {
         heading = trim(m[1])
-        if (found && heading != ver && !(ver == "6.0.1" && heading == "6.0.0")) exit
+        if (found && heading != ver) exit
         if (!found && heading == ver) {
           found = 1
-          if (ver == "6.0.1") {
-            print
-            printed = 1
-          }
-          next
-        }
-        if (found && ver == "6.0.1") {
-          print
           next
         }
       }

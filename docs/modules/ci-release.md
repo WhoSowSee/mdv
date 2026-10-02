@@ -119,12 +119,10 @@ and adds no ncurses linkage or mandatory runtime database package.
 
 `.github/scripts/release-notes.sh` writes the custom release body directly to a
 file, preserving the existing changelog, tag annotation, and commit-message
-priority. For 6.0.1, it includes both the 6.0.1 patch section and the complete
-6.0.0 section, retaining their version headings so users see the initial 6.0
-changes and Breaking Changes. Later releases select only their own section.
-The changelog keeps both historical sections separate. Regression tests in
-`.github/scripts/test_release_notes.py` cover the combined body, ordinary
-releases, and the existing tag/commit message priority.
+priority. It selects only the changelog section matching the release tag,
+stopping before the next version heading. Regression tests in
+`.github/scripts/test_release_notes.py` cover section boundaries and the
+existing tag/commit message priority.
 The release action's `generate_release_notes` option appends GitHub's
 generated notes on both creation and update. The script does not call the GitHub
 API or require a token. Multiline text is never passed through a fixed
