@@ -23,7 +23,7 @@ impl TableRenderer {
 
                 let full_separator_text = format!("{}", inner_separator);
 
-                let separator = if self.theme.table_border_overridden {
+                let separator = if self.theme.table.border.is_some() {
                     create_style(&self.theme, ThemeElement::TableBorder)
                         .apply(&full_separator_text, self.output_style)
                 } else {
@@ -34,7 +34,7 @@ impl TableRenderer {
             }
 
             // Add block number indicator for ALL blocks (including first)
-            let block_style = create_style(&self.theme, ThemeElement::Quote);
+            let block_style = create_style(&self.theme, ThemeElement::TextLight);
             let block_info = block_style.apply(
                 &format!("Block {} of {}", block_idx + 1, blocks.len()),
                 self.output_style,
@@ -79,7 +79,7 @@ impl TableRenderer {
                 let mut cell = self.create_cell(header, &reference_layout);
 
                 if self.output_style.is_enabled() {
-                    if let Some(color) = theme_color_to_comfy(&self.theme.table_header) {
+                    if let Some(color) = theme_color_to_comfy(&self.theme.table.header) {
                         cell = cell.fg(color);
                     }
 
@@ -198,7 +198,7 @@ impl TableRenderer {
                 let mut cell = self.create_cell(header, &reference_layout);
 
                 if self.output_style.is_enabled() {
-                    if let Some(color) = theme_color_to_comfy(&self.theme.table_header) {
+                    if let Some(color) = theme_color_to_comfy(&self.theme.table.header) {
                         cell = cell.fg(color);
                     }
 

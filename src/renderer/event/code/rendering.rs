@@ -26,7 +26,7 @@ impl<'a> EventRenderer<'a> {
             for part in wrapped_label.split('\n') {
                 self.push_indented_block_prefix();
                 self.output.push_str(&indent);
-                self.output.push_str(&self.style_pretty_accent(part));
+                self.output.push_str(&self.style_code_block_label(part));
                 self.output.push('\n');
             }
 
@@ -78,7 +78,7 @@ impl<'a> EventRenderer<'a> {
             for part in wrapped_label.split('\n') {
                 self.push_indented_block_prefix();
                 self.output.push_str(&prefix);
-                self.output.push_str(&self.style_pretty_accent(part));
+                self.output.push_str(&self.style_code_block_label(part));
                 self.output.push('\n');
             }
 

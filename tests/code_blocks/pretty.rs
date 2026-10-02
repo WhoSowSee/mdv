@@ -11,7 +11,7 @@ fn syntax_styles_do_not_leak_into_code_borders() {
     let tokens = regex::Regex::new(r"\x1b\[[0-9;]*m|[^\x1b]+").unwrap();
     for style in ["simple", "pretty"] {
         for wrap in ["none", "char", "word"] {
-            for custom in ["", "code_block_border=#010203"] {
+            for custom in ["", "code_block:border=#010203"] {
                 let mut command = mdv_cmd();
                 command.args([
                     "--no-config",

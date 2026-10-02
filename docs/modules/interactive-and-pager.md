@@ -115,9 +115,7 @@ initial view selected by the effective line-number configuration.
 
 The resolved color depth also reaches the browser and `Pager::set_color_depth`.
 The built-in pager limits final content rows, prompts, help panels, incremental
-search previews, and selection/navigation highlights. ANSI 16 uses contrasting
-fixed pairs for search, selection, and navigation rather than RGB background
-tints. External pagers receive already converted document text and control
+search previews, and selection/navigation highlights. ANSI 16 keeps contrasting default pairs for search, selection, and navigation; configured highlight colors pass through the same depth conversion. External pagers receive already converted document text and control
 their own interface colors.
 
 When the browser opens an external pager, mdv fully suspends the browser session,
@@ -144,7 +142,7 @@ For the built-in backend, the document stores these values separately:
 - lazily prepared unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
 - the active line-number mode;
 - optional `title`;
-- `status_bar_transparent` from the selected theme.
+- the `pager` palette from the selected theme, including footer colors, transparency, selection, and ordinary/current search highlights.
 - the resolved `OutputStyle` shared by document rendering and pager UI.
 
 Copying uses only selected rendered text, with ANSI and OSC sequences removed.
@@ -242,3 +240,5 @@ color flag in the builders and input classifier.
 - Interactive state updates are coalesced, and terminal output never exceeds 120 frames per second.
 - Unchanged browser frames produce no output; ordinary updates rewrite only changed rows.
 - Transparent footer and help views do not set a background color.
+
+The selected theme's `pager` section supplies footer colors and `transparent`. The footer separates `title` (MDV), `help`, `file_name`, `progress`, and `matches`, including the contents-panel footer. Optional `selection`, `search`, and `search_current` text/background overrides reach the vendored pager through `Pager::set_highlight_styles`; unset colors retain the existing default selection/adaptive search behavior. Search previews use the same palette as confirmed results. Disabled output styling still suppresses these decorations.

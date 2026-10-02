@@ -4,7 +4,6 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 const RESET: &str = "\x1b[0m";
-const SELECTION_STYLE: &str = "\x1b[48;2;46;49;59m";
 
 pub fn char_index_at_display_column(line: &str, target_column: usize) -> usize {
     let mut display_column: usize = 0;
@@ -40,20 +39,31 @@ pub fn highlight_visible_range(
     start: usize,
     end: usize,
     depth: crate::ColorDepth,
+    colors: crate::HighlightColors,
 ) -> Cow<'_, str> {
     if start >= end {
         return line;
     }
 
     let end = grapheme_end_char_index(&line, end - 1);
-    let selection_style = if depth == crate::ColorDepth::Ansi16 {
-        "\x1b[30;107m"
+    let (foreground, background) = if depth == crate::ColorDepth::Ansi16 {
+        (
+            Some(crate::PromptColor::Black),
+            Some(crate::PromptColor::White),
+        )
     } else {
-        SELECTION_STYLE
+        (
+            None,
+            Some(crate::PromptColor::Rgb {
+                r: 46,
+                g: 49,
+                b: 59,
+            }),
+        )
     };
-
+    let selection_style = colors.sequence(foreground, background);
     let bytes = line.as_bytes();
-    let mut out = String::with_capacity(line.len() + SELECTION_STYLE.len() + RESET.len());
+    let mut out = String::with_capacity(line.len() + selection_style.len() + RESET.len());
     let mut sgr_history = String::new();
     let mut byte_index = 0;
     let mut visible_index = 0;
@@ -70,7 +80,7 @@ pub fn highlight_visible_range(
             if is_sgr {
                 sgr_history.push_str(sequence);
                 if highlighted {
-                    out.push_str(selection_style);
+                    out.push_str(&selection_style);
                 }
             }
             byte_index = sequence_end;
@@ -78,7 +88,7 @@ pub fn highlight_visible_range(
         }
 
         if !highlighted && visible_index == start {
-            out.push_str(selection_style);
+            out.push_str(&selection_style);
             highlighted = true;
         }
         if highlighted && visible_index == end {

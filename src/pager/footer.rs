@@ -1,33 +1,24 @@
+use super::styling::foreground;
+use crate::theme::{Color, PagerTheme};
 use minus::{PromptColor, PromptContext, PromptError, PromptLine, PromptSpan, PromptStyle};
 use std::path::Path;
 
 const BRAND_TEXT: &str = " MDV ";
 const HELP_TEXT: &str = " ? Help ";
-
 const ACCENT_BACKGROUND: PromptColor = PromptColor::Rgb {
     r: 50,
     g: 50,
     b: 50,
-};
-const MAIN_FOREGROUND: PromptColor = PromptColor::Rgb {
-    r: 125,
-    g: 125,
-    b: 125,
 };
 const MAIN_BACKGROUND: PromptColor = PromptColor::Rgb {
     r: 36,
     g: 36,
     b: 36,
 };
-const PROGRESS_FOREGROUND: PromptColor = PromptColor::Rgb {
-    r: 90,
-    g: 90,
-    b: 90,
-};
 
 pub(super) struct PagerFooter {
     title: String,
-    transparent: bool,
+    theme: PagerTheme,
 }
 
 #[derive(Clone, Copy)]
@@ -48,7 +39,7 @@ impl FooterProgress {
 }
 
 impl PagerFooter {
-    pub(super) fn new(title: Option<&str>, file: Option<&Path>, transparent: bool) -> Self {
+    pub(super) fn new(title: Option<&str>, file: Option<&Path>, theme: &PagerTheme) -> Self {
         let title = title
             .map(str::to_owned)
             .filter(|name| !name.trim().is_empty())
@@ -58,244 +49,117 @@ impl PagerFooter {
                     .filter(|name| !name.trim().is_empty())
             })
             .unwrap_or_else(|| "stdin".to_string());
-
-        Self { title, transparent }
+        Self {
+            title,
+            theme: theme.clone(),
+        }
     }
 
     pub(super) fn render(&self, context: &PromptContext<'_>) -> Result<PromptLine, PromptError> {
+        let progress = FooterProgress::from_context(context);
         if context.toc_hint_visible() && context.message().is_none() {
-            return build_toc_footer(
-                &self.title,
-                FooterProgress::from_context(context),
-                self.transparent,
-                context.columns(),
-            );
+            return build_toc_footer(&self.title, progress, &self.theme, context.columns());
         }
-        let content = context.message().unwrap_or(&self.title);
         build_footer(
-            content,
-            FooterProgress::from_context(context),
-            self.transparent,
+            context.message().unwrap_or(&self.title),
+            progress,
+            &self.theme,
         )
     }
 }
 
-fn build_toc_footer(
-    title: &str,
-    progress: FooterProgress,
-    transparent: bool,
-    columns: usize,
-) -> Result<PromptLine, PromptError> {
-    use unicode_width::UnicodeWidthStr;
-    let mut style = PromptStyle::default().foreground(MAIN_FOREGROUND);
-    if !transparent {
-        style = style.background(MAIN_BACKGROUND);
-    }
-    let hint = if columns >= 72 {
-        "Alt+↑↓ move · ? keys"
+fn style(theme: &PagerTheme, color: Option<&Color>, background: PromptColor) -> PromptStyle {
+    let style = foreground(PromptStyle::default(), color);
+    if theme.transparent {
+        style
     } else {
-        "? keys"
-    };
-    let footer = add_progress(
-        PromptLine::new(),
-        progress,
-        style.foreground(PROGRESS_FOREGROUND),
-    )?
-    .right(PromptSpan::new("| ? Help ", style)?);
-    let right = footer.render_plain(columns);
-    let available = columns.saturating_sub(right.trim_start().width());
-    let hint_start = ((columns.saturating_sub(hint.width())) / 2)
-        .min(available.saturating_sub(hint.width() + 1));
-    let label = PromptLine::new()
-        .left(PromptSpan::new(format!(" MDV | {title}"), style)?)
-        .truncation_indicator(PromptSpan::new("…", style)?)
-        .render_plain(hint_start.saturating_sub(1));
-    let left = format!("{label} {hint}");
-    Ok(footer
-        .left(PromptSpan::new(left, style)?)
-        .fill_style(style)
-        .truncation_indicator(PromptSpan::new("…", style)?))
-}
-
-fn build_footer(
-    content: &str,
-    progress: FooterProgress,
-    transparent: bool,
-) -> Result<PromptLine, PromptError> {
-    if transparent {
-        build_transparent_footer(content, progress)
-    } else {
-        build_opaque_footer(content, progress)
+        style.background(background)
     }
 }
 
 fn add_progress(
     mut footer: PromptLine,
     progress: FooterProgress,
-    style: PromptStyle,
+    theme: &PagerTheme,
 ) -> Result<PromptLine, PromptError> {
+    let progress_style = style(theme, theme.progress.as_ref(), MAIN_BACKGROUND);
     if let Some((current, total)) = progress.search_position {
-        footer = footer.right(PromptSpan::new(format!(" {current}/{total}"), style)?);
+        footer = footer.right(PromptSpan::new(
+            format!(" {current}/{total}"),
+            style(theme, theme.matches.as_ref(), MAIN_BACKGROUND),
+        )?);
     }
     if let Some(source_line) = progress.line_navigation_position {
-        footer = footer.right(PromptSpan::new(format!(" :{source_line}"), style)?);
+        footer = footer.right(PromptSpan::new(format!(" :{source_line}"), progress_style)?);
     }
     Ok(footer.right(PromptSpan::new(
         format!(" {:>3}% ", progress.percentage),
-        style,
+        progress_style,
     )?))
 }
 
-fn build_opaque_footer(content: &str, progress: FooterProgress) -> Result<PromptLine, PromptError> {
-    let brand_style = PromptStyle::default()
-        .foreground(MAIN_FOREGROUND)
-        .background(ACCENT_BACKGROUND);
-    let main_style = PromptStyle::default()
-        .foreground(MAIN_FOREGROUND)
-        .background(MAIN_BACKGROUND);
-    let progress_style = main_style.foreground(PROGRESS_FOREGROUND);
-    let help_style = main_style.background(ACCENT_BACKGROUND);
-
-    let footer = PromptLine::new()
-        .left(PromptSpan::new(BRAND_TEXT, brand_style)?)
-        .left(PromptSpan::new(format!(" {content}"), main_style)?);
-    let footer = add_progress(footer, progress, progress_style)?;
-
-    Ok(footer
-        .right(PromptSpan::new(HELP_TEXT, help_style)?)
+fn build_footer(
+    content: &str,
+    progress: FooterProgress,
+    theme: &PagerTheme,
+) -> Result<PromptLine, PromptError> {
+    let main_style = style(theme, theme.file_name.as_ref(), MAIN_BACKGROUND);
+    let mut footer = PromptLine::new().left(PromptSpan::new(
+        BRAND_TEXT,
+        style(theme, theme.title.as_ref(), ACCENT_BACKGROUND),
+    )?);
+    if theme.transparent {
+        footer = footer.left(PromptSpan::new("|", main_style)?);
+    }
+    let footer = footer.left(PromptSpan::new(format!(" {content}"), main_style)?);
+    let help = if theme.transparent {
+        "| ? Help "
+    } else {
+        HELP_TEXT
+    };
+    Ok(add_progress(footer, progress, theme)?
+        .right(PromptSpan::new(
+            help,
+            style(theme, theme.help.as_ref(), ACCENT_BACKGROUND),
+        )?)
         .fill_style(main_style)
         .truncation_indicator(PromptSpan::new("…", main_style)?))
 }
 
-fn build_transparent_footer(
-    content: &str,
+fn build_toc_footer(
+    title: &str,
     progress: FooterProgress,
+    theme: &PagerTheme,
+    columns: usize,
 ) -> Result<PromptLine, PromptError> {
-    let main_style = PromptStyle::default().foreground(MAIN_FOREGROUND);
-    let progress_style = main_style.foreground(PROGRESS_FOREGROUND);
-
-    let footer = PromptLine::new()
-        .left(PromptSpan::new(BRAND_TEXT, main_style)?)
-        .left(PromptSpan::new("|", main_style)?)
-        .left(PromptSpan::new(format!(" {content}"), main_style)?);
-    let footer = add_progress(footer, progress, progress_style)?;
-
+    use unicode_width::UnicodeWidthStr;
+    let main_style = style(theme, theme.file_name.as_ref(), MAIN_BACKGROUND);
+    let title_style = style(theme, theme.title.as_ref(), MAIN_BACKGROUND);
+    let hint = if columns >= 72 {
+        "Alt+↑↓ move · ? keys"
+    } else {
+        "? keys"
+    };
+    let footer = add_progress(PromptLine::new(), progress, theme)?.right(PromptSpan::new(
+        "| ? Help ",
+        style(theme, theme.help.as_ref(), MAIN_BACKGROUND),
+    )?);
+    let right = footer.render_plain(columns);
+    let available = columns.saturating_sub(right.trim_start().width());
+    let hint_start = ((columns.saturating_sub(hint.width())) / 2)
+        .min(available.saturating_sub(hint.width() + 1));
+    let label = PromptLine::new()
+        .left(PromptSpan::new(format!(" MDV | {title}"), main_style)?)
+        .truncation_indicator(PromptSpan::new("…", main_style)?)
+        .render_plain(hint_start.saturating_sub(1));
+    let brand: String = label.chars().take(BRAND_TEXT.len()).collect();
+    let rest: String = label.chars().skip(BRAND_TEXT.len()).collect();
     Ok(footer
-        .right(PromptSpan::new("| ? Help ", main_style)?)
+        .left(PromptSpan::new(brand, title_style)?)
+        .left(PromptSpan::new(format!("{rest} {hint}"), main_style)?)
         .fill_style(main_style)
         .truncation_indicator(PromptSpan::new("…", main_style)?))
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use unicode_width::UnicodeWidthStr;
-
-    fn progress(percentage: u8) -> FooterProgress {
-        FooterProgress {
-            percentage,
-            search_position: None,
-            line_navigation_position: None,
-        }
-    }
-
-    #[test]
-    fn footer_layout_contains_all_sections() {
-        let plain = build_footer("AGENTS.md", progress(22), false)
-            .unwrap()
-            .render_plain(80);
-
-        assert_eq!(plain.width(), 80);
-        assert!(plain.starts_with(" MDV  AGENTS.md"));
-        assert!(plain.ends_with("  22%  ? Help "));
-        for transparent in [false, true] {
-            for width in [60, 80, 120] {
-                let hint = build_toc_footer("README.md", progress(22), transparent, width).unwrap();
-                let text = hint.render_plain(width);
-                assert_eq!(text.width(), width);
-                assert!(text.contains("MDV | README.md") && text.contains("? keys"));
-                assert!(!text.contains("TOC:"));
-                assert!(text.ends_with("22% | ? Help "));
-                if width >= 72 {
-                    assert!(text.contains("Alt+↑↓ move · ? keys"));
-                }
-                if transparent {
-                    assert!(!hint.render(width).contains("48;"));
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn search_and_line_positions_appear_before_document_progress() {
-        let progress = FooterProgress {
-            search_position: Some((2, 5)),
-            line_navigation_position: Some(50),
-            ..progress(22)
-        };
-        let footer = build_footer("AGENTS.md", progress, false).unwrap();
-        let plain = footer.render_plain(80);
-        let rendered = footer.render(80);
-        let transparent = build_footer("AGENTS.md", progress, true)
-            .unwrap()
-            .render_plain(80);
-
-        assert!(plain.ends_with(" 2/5 :50  22%  ? Help "));
-        assert!(transparent.ends_with(" 2/5 :50  22% | ? Help "));
-        assert!(
-            rendered.matches("38;2;90;90;90").count() >= 2,
-            "{}",
-            rendered.escape_debug()
-        );
-    }
-
-    #[test]
-    fn explicit_title_overrides_the_file_name() {
-        let footer = PagerFooter::new(Some("Help"), Some(Path::new("README.md")), false);
-
-        assert_eq!(footer.title, "Help");
-    }
-
-    #[test]
-    fn footer_uses_expected_colors() {
-        let rendered = build_footer("AGENTS.md", progress(22), false)
-            .unwrap()
-            .render(80);
-
-        assert!(rendered.contains("38;2;125;125;125"));
-        assert!(rendered.contains("38;2;90;90;90"));
-        assert!(rendered.contains("48;2;36;36;36"));
-        assert!(rendered.matches("48;2;50;50;50").count() >= 2);
-        assert!(rendered.ends_with("\x1b[0m"));
-    }
-
-    #[test]
-    fn transparent_footer_uses_separators_without_background() {
-        let footer = build_footer("AGENTS.md", progress(22), true).unwrap();
-        let plain = footer.render_plain(80);
-
-        assert!(plain.starts_with(" MDV | AGENTS.md"));
-        assert!(plain.ends_with("  22% | ? Help "));
-        assert!(!plain.contains("|  22%"));
-        assert_eq!(plain.matches('|').count(), 2);
-        assert!(!footer.render(80).contains("\x1b[48;"));
-    }
-
-    #[test]
-    fn long_unicode_file_name_is_truncated_to_terminal_width() {
-        let plain = build_footer("very-long-file-name-📚.md", progress(7), false)
-            .unwrap()
-            .render_plain(32);
-
-        assert_eq!(plain.width(), 32);
-        assert!(plain.contains('…'));
-    }
-
-    #[test]
-    fn narrow_footer_never_exceeds_terminal_width() {
-        let footer = build_footer("README.md", progress(100), false).unwrap();
-        for columns in 0..20 {
-            assert_eq!(footer.render_plain(columns).width(), columns);
-        }
-    }
-}
+mod tests;

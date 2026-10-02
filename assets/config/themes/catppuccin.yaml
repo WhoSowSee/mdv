@@ -1,38 +1,139 @@
 name: catppuccin
 description: Catppuccin color scheme
-pager_status_bar_transparent: false
-text: "205,214,244"
-text_light: "186,194,222"
-line_number: "186,194,222"
-line_number_separator: "186,194,222"
-h1: "180,190,254"
-h2: "137,180,250"
-h3: "148,226,213"
-h4: "166,227,161"
-h5: "249,226,175"
-h6: "242,205,205"
-code: "245,194,231"
-math: "137,180,250"
-math_border: "116,199,236"
-quote: "108,112,134"
-link: "137,220,235"
-emphasis: "245,194,231"
-strong: "203,166,247"
-strikethrough: "108,112,134"
-highlight_background: "49,50,68"
-background: "30,30,46"
-border: "49,50,68"
-list_marker: "166,227,161"
-table_header: "137,180,250"
-table_border: "49,50,68"
-error: "243,139,168"
-warning: "250,179,135"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 205,214,244
+text_light: 186,194,222
+line_number:
+  number: 186,194,222
+  separator: 186,194,222
+h1: 180,190,254
+h2: 137,180,250
+h3: 148,226,213
+h4: 166,227,161
+h5: 249,226,175
+h6: 242,205,205
+code:
+  text: 245,194,231
+  background: null
+math:
+  text: 137,180,250
+  border: 116,199,236
+quote: 108,112,134
+link: 137,220,235
+emphasis:
+  text: 245,194,231
+  background: null
+strong:
+  text: 203,166,247
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 108,112,134
+  background: null
+highlight:
+  text: null
+  background: 49,50,68
+background: 30,30,46
+error: 243,139,168
+warning: 250,179,135
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 137,220,235
+    abstract: 137,180,250
+    info: 137,220,235
+    todo: 245,194,231
+    tip: 180,190,254
+    success: 108,112,134
+    question: 166,227,161
+    warning: 148,226,213
+    failure: 249,226,175
+    danger: 249,226,175
+    bug: 249,226,175
+    example: 137,180,250
+    quote: 243,139,168
+front_matter:
+  title: 49,50,68
+  key: 186,194,222
+  value: 205,214,244
+  border: 49,50,68
+details_border: 49,50,68
+list:
+  ordered: 166,227,161
+  unordered: 166,227,161
+todo:
+  checked: 166,227,161
+  unchecked: 166,227,161
+table:
+  header: 137,180,250
+  border: null
 syntax:
-  keyword: "203,166,247"
-  string: "166,227,161"
-  comment: "108,112,134"
-  number: "250,179,135"
-  operator: "137,220,235"
-  function: "137,180,250"
-  variable: "205,214,244"
-  type_name: "148,226,213"
+  keyword: 203,166,247
+  string: 166,227,161
+  comment: 108,112,134
+  number: 250,179,135
+  operator: 137,220,235
+  function: 137,180,250
+  variable: 205,214,244
+  type_name: 148,226,213
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

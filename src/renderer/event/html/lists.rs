@@ -40,7 +40,7 @@ impl<'a> EventRenderer<'a> {
         let marker = if html_list_item_starts_with_checkbox(&element) {
             String::new()
         } else {
-            self.styled_list_marker(marker, pretty_level)
+            self.styled_list_marker(marker, pretty_level, pretty_level.is_none())
         };
         let child_context = context.in_nested_list();
 

@@ -99,3 +99,50 @@ fn disabled_styling_preserves_navigation_search_and_selection() {
     assert!(rows.iter().all(|row| !row.contains('\x1b')));
     assert_eq!(rows[1], "target two");
 }
+
+#[cfg(feature = "search")]
+#[test]
+#[allow(clippy::trivial_regex)]
+fn custom_highlight_palette_reaches_rows_and_color_conversion() {
+    let handle = Pager::new();
+    handle
+        .set_highlight_styles(crate::HighlightStyles {
+            selection: crate::HighlightColors {
+                foreground: Some(PromptColor::White),
+                background: Some(PromptColor::Blue),
+            },
+            search: crate::HighlightColors {
+                foreground: Some(PromptColor::Black),
+                background: Some(PromptColor::Green),
+            },
+            search_current: crate::HighlightColors {
+                foreground: Some(PromptColor::Reset),
+                background: Some(PromptColor::Red),
+            },
+        })
+        .unwrap();
+    handle.push_str("target other target\n").unwrap();
+    let mut state = PagerState::generate_initial_state(&handle.rx).unwrap();
+    state.search_state.search_term = Some(regex::Regex::new("target").unwrap());
+    state.reformat_display().unwrap();
+    state.selection_anchor = Some(Selection {
+        absolute_row: 0,
+        col: 7,
+    });
+    state.selection = Some(Selection {
+        absolute_row: 0,
+        col: 11,
+    });
+    let row = state.render_rows_for_display(0, 1);
+    for style in ["\x1b[97;104m", "\x1b[30;102m", "\x1b[39;101m"] {
+        assert!(row[0].contains(style), "{row:?}");
+    }
+    assert_eq!(state.selected_text().as_deref(), Some("other"));
+    state.color_depth = crate::ColorDepth::Ansi16;
+    assert!(!state.render_rows_for_display(0, 1)[0].contains("48;"));
+    state.output_styling = false;
+    assert_eq!(
+        state.render_rows_for_display(0, 1)[0],
+        "target other target"
+    );
+}

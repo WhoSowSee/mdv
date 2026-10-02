@@ -1,6 +1,8 @@
 use super::event::EventRenderer;
 use super::syntax_set::load_full_syntax_set;
-use super::syntax_theme::{CodeHighlightTheme, build_syntect_theme, default_theme_set};
+use super::syntax_theme::{
+    CodeHighlightTheme, apply_syntax_overrides, build_syntect_theme, default_theme_set,
+};
 use crate::cli::{LineNumberOptions, LineNumberTarget};
 use crate::config::Config;
 use crate::terminal::OutputStyle;
@@ -54,20 +56,17 @@ impl TerminalRenderer {
         let syntax_set = load_full_syntax_set(config.syntaxes_dir.as_deref())?;
         let theme_set = default_theme_set();
 
-        let code_theme = if config.custom_code_theme.is_some() {
-            if config.code_theme.is_some() {
-                log::info!(
-                    "Ignoring '--code-theme' because '--custom-code-theme' overrides are applied."
-                );
-            }
-            build_syntect_theme(&theme)
+        let code_theme = if let Some(requested_theme) = config.code_theme.as_ref() {
+            let mut code_theme =
+                resolve_code_theme(requested_theme, &theme, &theme_manager, theme_set);
+            apply_syntax_overrides(
+                &mut code_theme,
+                &theme.syntax,
+                &theme.color_priorities.syntax_above_code_theme(),
+            );
+            code_theme
         } else {
-            match config.code_theme.as_ref() {
-                Some(requested_theme) => {
-                    resolve_code_theme(requested_theme, &theme, &theme_manager, theme_set)
-                }
-                None => build_syntect_theme(&theme),
-            }
+            build_syntect_theme(&theme)
         };
 
         Ok(Self {
@@ -117,8 +116,8 @@ impl TerminalRenderer {
         Ok(output)
     }
 
-    pub(crate) const fn pager_status_bar_transparent(&self) -> bool {
-        self.theme.pager_status_bar_transparent
+    pub(crate) fn pager_theme(&self) -> &crate::theme::PagerTheme {
+        &self.theme.pager
     }
 
     pub(crate) const fn output_style(&self) -> OutputStyle {
@@ -298,6 +297,12 @@ fn resolve_theme(config: &Config, theme_manager: &ThemeManager) -> Result<Theme>
     }
 
     theme.inline_style.apply_overrides(&config.inline_style);
+    theme.color_priorities.record(
+        config.custom_theme.as_deref(),
+        config.custom_code_theme.as_deref(),
+        crate::theme::ColorSource::Config,
+    )?;
+    theme.color_priorities.overlay(&config.color_priorities);
 
     if (config.custom_theme.is_some() || config.custom_code_theme.is_some())
         && !theme.name.ends_with("+custom")
@@ -322,9 +327,9 @@ fn mapped_output(
     }
 }
 
-pub(crate) fn pager_status_bar_transparent(config: &Config) -> Result<bool> {
+pub(crate) fn pager_theme(config: &Config) -> Result<crate::theme::PagerTheme> {
     let theme_manager = build_theme_manager(config);
-    Ok(resolve_theme(config, &theme_manager)?.pager_status_bar_transparent)
+    Ok(resolve_theme(config, &theme_manager)?.pager)
 }
 
 fn resolve_code_theme(

@@ -169,7 +169,7 @@ impl<'a> EventRenderer<'a> {
         let mut style = if in_front_matter && has_strong {
             create_style(self.theme, ThemeElement::FrontMatterKey)
         } else if has_code {
-            AnsiStyle::new().fg(self.theme.code.clone().into())
+            AnsiStyle::new().fg(self.theme.code.text.clone().into())
         } else if let Some(heading) = heading {
             create_style(self.theme, heading)
         } else if let Some(kind) = semantic_kind {

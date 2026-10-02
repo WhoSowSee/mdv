@@ -14,8 +14,6 @@ mod spacing;
 mod tables;
 mod text;
 
-use crossterm::style::Color as CrosstermColor;
-
 pub(super) use core::EventRenderer;
 pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock};
 pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
@@ -38,9 +36,3 @@ pub(super) use pulldown_cmark::{Alignment, CowStr, Event, HeadingLevel, Tag, Tag
 pub(super) use std::collections::HashMap;
 pub(super) use syntect::easy::HighlightLines;
 pub(super) use syntect::parsing::SyntaxSet;
-
-pub(super) const PRETTY_ACCENT_COLOR: CrosstermColor = CrosstermColor::Rgb {
-    r: 0x8f,
-    g: 0x93,
-    b: 0xa2,
-};

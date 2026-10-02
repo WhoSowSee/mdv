@@ -1,38 +1,139 @@
 name: tokyonight
 description: Tokyonight color scheme
-pager_status_bar_transparent: false
-text: "192,202,245"
-text_light: "169,177,214"
-line_number: "169,177,214"
-line_number_separator: "169,177,214"
-h1: "122,162,247"
-h2: "158,206,106"
-h3: "187,154,247"
-h4: "125,207,255"
-h5: "247,118,142"
-h6: "224,175,104"
-code: "255,158,100"
-math: "187,154,247"
-math_border: "122,162,247"
-quote: "59,66,97"
-link: "125,207,255"
-emphasis: "169,177,214"
-strong: "122,162,247"
-strikethrough: "84,92,126"
-highlight_background: "44,50,70"
-background: "26,27,38"
-border: "59,66,97"
-list_marker: "158,206,106"
-table_header: "125,207,255"
-table_border: "59,66,97"
-error: "247,118,142"
-warning: "224,175,104"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 192,202,245
+text_light: 169,177,214
+line_number:
+  number: 169,177,214
+  separator: 169,177,214
+h1: 122,162,247
+h2: 158,206,106
+h3: 187,154,247
+h4: 125,207,255
+h5: 247,118,142
+h6: 224,175,104
+code:
+  text: 255,158,100
+  background: null
+math:
+  text: 187,154,247
+  border: 122,162,247
+quote: 59,66,97
+link: 125,207,255
+emphasis:
+  text: 169,177,214
+  background: null
+strong:
+  text: 122,162,247
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 84,92,126
+  background: null
+highlight:
+  text: null
+  background: 44,50,70
+background: 26,27,38
+error: 247,118,142
+warning: 224,175,104
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 125,207,255
+    abstract: 122,162,247
+    info: 125,207,255
+    todo: 169,177,214
+    tip: 187,154,247
+    success: ansi(39)
+    question: 158,206,106
+    warning: 247,118,142
+    failure: 224,175,104
+    danger: 224,175,104
+    bug: 224,175,104
+    example: 122,162,247
+    quote: 192,202,245
+front_matter:
+  title: 59,66,97
+  key: 169,177,214
+  value: 192,202,245
+  border: 59,66,97
+details_border: 59,66,97
+list:
+  ordered: 158,206,106
+  unordered: 158,206,106
+todo:
+  checked: 158,206,106
+  unchecked: 158,206,106
+table:
+  header: 125,207,255
+  border: null
 syntax:
-  keyword: "122,162,247"
-  string: "158,206,106"
-  comment: "86,95,137"
-  number: "255,158,100"
-  operator: "125,207,255"
-  function: "187,154,247"
-  variable: "192,202,245"
-  type_name: "224,175,104"
+  keyword: 122,162,247
+  string: 158,206,106
+  comment: 86,95,137
+  number: 255,158,100
+  operator: 125,207,255
+  function: 187,154,247
+  variable: 192,202,245
+  type_name: 224,175,104
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

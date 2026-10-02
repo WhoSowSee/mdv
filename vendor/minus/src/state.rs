@@ -140,6 +140,7 @@ pub struct PagerState {
     pub(crate) follow_output: bool,
     pub(crate) output_styling: bool,
     pub(crate) color_depth: crate::ColorDepth,
+    pub(crate) highlight_styles: crate::HighlightStyles,
     pub(crate) selection_anchor: Option<Selection>,
 }
 
@@ -209,6 +210,7 @@ impl PagerState {
             follow_output: false,
             output_styling: true,
             color_depth: crate::ColorDepth::TrueColor,
+            highlight_styles: crate::HighlightStyles::default(),
             selection_anchor: None,
         };
 

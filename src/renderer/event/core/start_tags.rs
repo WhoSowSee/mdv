@@ -149,7 +149,7 @@ impl<'a> EventRenderer<'a> {
                     };
                     let pretty_level =
                         (!list_state.is_ordered).then_some(indent_level.saturating_add(1));
-                    self.styled_list_marker(&marker, pretty_level)
+                    self.styled_list_marker(&marker, pretty_level, list_state.is_ordered)
                 } else {
                     String::new()
                 };

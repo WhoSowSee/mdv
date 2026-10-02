@@ -80,6 +80,7 @@ pub(super) fn preview_line<'a>(
                     current_range,
                     iso.content_start_chars(),
                     iso.color_depth,
+                    iso.highlight_styles,
                 ))
             } else {
                 row

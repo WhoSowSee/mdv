@@ -5,18 +5,29 @@
 
 # Theme settings
 # Complex settings accept both YAML mappings and their legacy one-line CLI syntax.
+# Theme colors merge per field: selected theme < config < preset < CLI.
+# Within one source, syntax order is custom_theme < code_theme < custom_code_theme.
+# CLI theme colors override lower-source callout, checkbox, and list colors.
+# Optional backgrounds inherit when omitted; explicit null clears them.
+# Unspecified colors retain lower-priority values.
 theme: "terminal"          # Option: "terminal" | "solarized-dark" | "nord" | "tokyonight" | "kanagawa" | "gruvbox" | "monokai" | "material-ocean" | "catppuccin"
 code_theme: null           # Use null to follow theme; accepts the same values as theme
 syntaxes_dir: null         # Directory with custom .sublime-syntax files; relative paths start from the config directory
 theme_info: false          # Print palette information alongside rendered output
-custom_theme: null         # Flat YAML mapping of UI values, or a legacy key=value string
+custom_theme: null         # Nested YAML mapping of theme values, or a section:field=value string
 # Example:
 # custom_theme:
 #   text: "#cdd6f4"
 #   h1: "#89b4fa"
 #   horizontal_rule: "#6c7086"
-#   math: "#89dceb"
-#   math_border: "#74c7ec"
+#   math:
+#     text: blue
+#     border: darkcyan
+#   code_block:
+#     label: darkgrey
+#   syntax:
+#     keyword: blue
+#     number: magenta
 #   background: null
 inline_style: {}           # Per-element backticks/bold/italic/underline/strikethrough overrides
 custom_code_theme: null    # Flat YAML mapping of syntax colors, or a legacy key=value string
@@ -24,6 +35,10 @@ custom_code_theme: null    # Flat YAML mapping of syntax colors, or a legacy key
 # custom_code_theme:
 #   keyword: "#cba6f7"
 #   string: "#a6e3a1"
+# Custom callouts, code blocks, checkboxes, and list markers merge by entry and property:
+# main config -> preset -> CLI. Omitted entries/properties retain their values.
+# Explicit null clears a property or entry; root null or {} clears the whole setting.
+# aliases is replaced when specified; aliases: [] clears inherited aliases.
 custom_callout: null       # Mapping of callout names to icon/color, or a legacy definition string
 # Example:
 # custom_callout:
@@ -127,16 +142,31 @@ from_text: null            # Render starting from the first line that contains t
 
 # `table_wrap` accepts the values above; `heading_layout` also understands camel-case variants from earlier releases.
 
-# Available keys for custom_theme:
-# pager_status_bar_transparent (true or false)
-# text, text_light, line_number, line_number_separator, h1..h6,
-# code, math, math_border, quote, link, emphasis, strong, strong_emphasis, strikethrough, highlight,
-# highlight_background, emphasis_background, strong_background,
-# strong_emphasis_background, code_background, strikethrough_background,
-# background, border, code_block_border, callout_border, horizontal_rule,
-# footnote_separator, list_marker,
-# front_matter_title, front_matter_key, front_matter_value, front_matter_border,
-# table_header, table_border, error, warning
+# Available root keys for custom_theme:
+# text, text_light, h1..h6,
+# quote, link, background, details_border, horizontal_rule, footnote_separator,
+# error, warning
+# Grouped keys use section:field in CLI strings and nested YAML mappings:
+# emphasis, strong, strong_emphasis, code, strikethrough, highlight: text, background
+# line_number: number, separator
+# table: header, border
+# math: text, border
+# front_matter: title, key, value, border
+# code_block: label, border
+# callout: label, border, palette
+# callout:palette: note, abstract, info, todo, tip, success, question, warning,
+#                  failure, danger, bug, example, quote
+# list: ordered, unordered
+# todo: checked, unchecked
+# pager: transparent (true or false), title, help, file_name, progress, matches
+# pager:selection, pager:search, pager:search_current: text, background
+# Null pager highlight colors preserve the current automatic/default highlighting.
+# Example: --custom-theme 'pager:transparent=true;pager:title=blue;pager:search_current:background=darkblue'
+# syntax: keyword, string, comment, number, operator, function, variable, type_name
+# An omitted user-theme field inherits its base. Null border colors use terminal text.
+# Null callout label uses the custom per-type color or its independent palette.
+# Example: --custom-theme 'code:text=darkgrey;code:background=null;details_border=grey'
+# Inline decorations remain in inline_style, independently of these color groups.
 
 # Available inline_style elements:
 # emphasis, strong, strong_emphasis, code, strikethrough, highlight

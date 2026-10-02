@@ -87,7 +87,7 @@ fn color_depth_limits_mixed_output_without_changing_text_or_links() {
 fn block_borders_and_footnote_separator_use_independent_colors() {
     let markdown = "```rust\nlet x = 1;\n```\n\n> Plain quote\n\n> [!note]\n> Callout body\n\nText[^a]\n\n[^a]: Footnote\n";
     let colors =
-        "code_block_border=#010203;callout_border=#040506;footnote_separator=#070809;quote=#101112";
+        "code_block:border=#010203;callout:border=#040506;footnote_separator=#070809;quote=#101112";
 
     for (style, code_style, code_line, callout_line) in [
         ("simple", "simple", "│", "┃"),
@@ -139,7 +139,7 @@ fn block_borders_and_footnote_separator_use_independent_colors() {
     assert!(
         default
             .lines()
-            .any(|line| line.starts_with('╭') && line.contains("\x1b[38;2;143;147;162mRust")),
+            .any(|line| line.starts_with('╭') && line.contains("\x1b[90mRust")),
         "{default}"
     );
     assert!(

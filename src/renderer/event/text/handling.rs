@@ -175,7 +175,7 @@ impl<'a> EventRenderer<'a> {
                         let state = marker.chars().nth(1).unwrap_or(' ');
                         self.styled_checkbox_marker(state)
                     } else {
-                        let style = create_style(self.theme, ThemeElement::ListMarker);
+                        let style = self.task_marker_style(marker.chars().nth(1).unwrap_or(' '));
                         style.apply(marker, self.output_style)
                     };
                     self.output.push_str(&rendered_marker);

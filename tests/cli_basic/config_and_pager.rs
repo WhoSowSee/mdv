@@ -19,7 +19,7 @@ fn test_text_highlight_background() {
     let clean = strip_ansi(&stdout);
     assert!(clean.contains("highlighted text"));
     assert!(!clean.contains("==highlighted text=="));
-    assert!(stdout.contains("\u{1b}[48;"));
+    assert!(stdout.contains("\u{1b}[44m"));
 }
 
 #[test]

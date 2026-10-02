@@ -5,16 +5,12 @@ use super::*;
 pub struct Theme {
     pub name: String,
     pub description: String,
-    #[serde(default)]
-    pub pager_status_bar_transparent: bool,
+    pub pager: PagerTheme,
 
     // Text colors
     pub text: Color,
     pub text_light: Color,
-    #[serde(default = "default_line_number_color")]
-    pub line_number: Color,
-    #[serde(default = "default_line_number_color")]
-    pub line_number_separator: Color,
+    pub line_number: LineNumberTheme,
 
     // Header colors (H1-H6)
     pub h1: Color,
@@ -25,61 +21,35 @@ pub struct Theme {
     pub h6: Color,
 
     // Special elements
-    pub code: Color,
-    #[serde(default)]
-    pub math: Option<Color>,
-    #[serde(default)]
-    pub math_border: Option<Color>,
+    pub code: InlineTheme,
+    pub math: MathTheme,
     pub quote: Color,
     pub link: Color,
-    pub emphasis: Color,
-    pub strong: Color,
-    #[serde(default)]
-    pub strong_emphasis: Option<Color>,
-    pub strikethrough: Color,
-    #[serde(default)]
-    pub highlight: Option<Color>,
+    pub emphasis: InlineTheme,
+    pub strong: InlineTheme,
+    pub strong_emphasis: InlineTheme<Option<Color>>,
+    pub strikethrough: InlineTheme,
+    pub highlight: InlineTheme<Option<Color>, Color>,
 
     // Background and borders
-    pub highlight_background: Color,
-    #[serde(default)]
-    pub emphasis_background: Option<Color>,
-    #[serde(default)]
-    pub strong_background: Option<Color>,
-    #[serde(default)]
-    pub strong_emphasis_background: Option<Color>,
-    #[serde(default)]
-    pub code_background: Option<Color>,
-    #[serde(default)]
-    pub strikethrough_background: Option<Color>,
     pub background: Option<Color>,
-    pub border: Color,
-    #[serde(default)]
-    pub code_block_border: Option<Color>,
-    #[serde(default)]
-    pub callout_border: Option<Color>,
+    pub code_block: CodeBlockTheme,
+    pub callout: CalloutTheme,
     #[serde(default)]
     pub horizontal_rule: Option<Color>,
     #[serde(default)]
     pub footnote_separator: Option<Color>,
+    pub front_matter: FrontMatterTheme,
     #[serde(default)]
-    pub front_matter_title: Option<Color>,
-    #[serde(default)]
-    pub front_matter_key: Option<Color>,
-    #[serde(default)]
-    pub front_matter_value: Option<Color>,
-    #[serde(default)]
-    pub front_matter_border: Option<Color>,
+    pub details_border: Option<Color>,
 
     #[serde(default)]
     pub inline_style: InlineStyleSet,
 
     // List and table elements
-    pub list_marker: Color,
-    pub table_header: Color,
-    pub table_border: Color,
-    #[serde(skip)]
-    pub(crate) table_border_overridden: bool,
+    pub list: ListTheme,
+    pub table: TableTheme,
+    pub todo: TodoTheme,
 
     // Error and warning
     pub error: Color,
@@ -87,6 +57,8 @@ pub struct Theme {
 
     // Code syntax highlighting colors
     pub syntax: SyntaxTheme,
+    #[serde(skip)]
+    pub(crate) color_priorities: ColorPriorities,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,55 +89,30 @@ impl Default for SyntaxTheme {
 }
 
 impl Theme {
-    pub(crate) fn math_color(&self) -> &Color {
-        self.math.as_ref().unwrap_or(&self.text)
-    }
-
-    pub(crate) fn math_border_color(&self) -> &Color {
-        self.math_border.as_ref().unwrap_or(&self.border)
-    }
-
-    pub(crate) fn front_matter_title_color(&self) -> &Color {
-        self.front_matter_title.as_ref().unwrap_or(&self.border)
-    }
-
-    pub(crate) fn front_matter_key_color(&self) -> &Color {
-        self.front_matter_key.as_ref().unwrap_or(&self.text_light)
-    }
-
-    pub(crate) fn front_matter_value_color(&self) -> &Color {
-        self.front_matter_value.as_ref().unwrap_or(&self.text)
-    }
-
-    pub(crate) fn front_matter_border_color(&self) -> &Color {
-        self.front_matter_border.as_ref().unwrap_or(&self.border)
-    }
-
     pub(crate) fn inline_foreground(&self, kind: InlineStyleKind) -> Option<&Color> {
         match kind {
-            InlineStyleKind::Emphasis => Some(&self.emphasis),
-            InlineStyleKind::Strong => Some(&self.strong),
-            InlineStyleKind::StrongEmphasis => {
-                Some(self.strong_emphasis.as_ref().unwrap_or(&self.strong))
-            }
-            InlineStyleKind::Code => Some(&self.code),
-            InlineStyleKind::Strikethrough => Some(&self.strikethrough),
-            InlineStyleKind::Highlight => self.highlight.as_ref(),
+            InlineStyleKind::Emphasis => Some(&self.emphasis.text),
+            InlineStyleKind::Strong => Some(&self.strong.text),
+            InlineStyleKind::StrongEmphasis => Some(
+                self.strong_emphasis
+                    .text
+                    .as_ref()
+                    .unwrap_or(&self.strong.text),
+            ),
+            InlineStyleKind::Code => Some(&self.code.text),
+            InlineStyleKind::Strikethrough => Some(&self.strikethrough.text),
+            InlineStyleKind::Highlight => self.highlight.text.as_ref(),
         }
     }
 
     pub(crate) fn inline_background(&self, kind: InlineStyleKind) -> Option<&Color> {
         match kind {
-            InlineStyleKind::Emphasis => self.emphasis_background.as_ref(),
-            InlineStyleKind::Strong => self.strong_background.as_ref(),
-            InlineStyleKind::StrongEmphasis => self.strong_emphasis_background.as_ref(),
-            InlineStyleKind::Code => self.code_background.as_ref(),
-            InlineStyleKind::Strikethrough => self.strikethrough_background.as_ref(),
-            InlineStyleKind::Highlight => Some(&self.highlight_background),
+            InlineStyleKind::Emphasis => self.emphasis.background.as_ref(),
+            InlineStyleKind::Strong => self.strong.background.as_ref(),
+            InlineStyleKind::StrongEmphasis => self.strong_emphasis.background.as_ref(),
+            InlineStyleKind::Code => self.code.background.as_ref(),
+            InlineStyleKind::Strikethrough => self.strikethrough.background.as_ref(),
+            InlineStyleKind::Highlight => Some(&self.highlight.background),
         }
     }
-}
-
-fn default_line_number_color() -> Color {
-    Color::Grey
 }

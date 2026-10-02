@@ -142,6 +142,7 @@ pub struct IncrementalSearchOpts<'a> {
     writable_rows: usize,
     output_styling: bool,
     color_depth: crate::ColorDepth,
+    highlight_styles: crate::HighlightStyles,
 }
 
 impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
@@ -156,6 +157,7 @@ impl<'a> From<&'a PagerState> for IncrementalSearchOpts<'a> {
             writable_rows: ps.content_rows(),
             output_styling: ps.output_styling,
             color_depth: ps.color_depth,
+            highlight_styles: ps.highlight_styles,
         }
     }
 }

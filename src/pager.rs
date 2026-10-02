@@ -20,6 +20,7 @@ mod interrupt;
 mod operations;
 mod page;
 mod rendering;
+mod styling;
 mod toc;
 mod warmup;
 mod watcher;

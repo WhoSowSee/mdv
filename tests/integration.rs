@@ -1,5 +1,6 @@
 mod color;
 mod support;
+mod themes;
 
 #[path = "callouts.rs"]
 mod callouts;

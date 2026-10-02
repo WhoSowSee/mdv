@@ -106,6 +106,7 @@ fn write_preset(config_dir: &std::path::Path, filename: &str, contents: &str) {
 }
 
 mod color;
+mod custom_overrides;
 mod environment;
 mod loading;
 mod structured;

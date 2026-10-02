@@ -18,56 +18,92 @@
 #   ansi:  ansi(42) or just 42
 
 name: custom
-description: Fully standalone palette with every field set explicitly.
-pager_status_bar_transparent: false
-
-# Text colors
+description: Standalone palette with all theme sections.
+pager:
+  transparent: false
 text: white
 text_light: grey
-
-# Line numbers
-line_number: yellow
-line_number_separator: darkgrey
-
-# Heading colors (H1..H6)
+line_number:
+  number: yellow
+  separator: darkgrey
 h1: red
 h2: green
 h3: yellow
 h4: blue
 h5: magenta
 h6: cyan
-
-# Special elements
-code: red
-math: "#66ccff"
-math_border: "#6699cc"
+code:
+  text: red
+  background: null
+math:
+  text: '#66ccff'
+  border: '#6699cc'
 quote: darkgrey
 link: blue
-emphasis: yellow
-strong: red
-strong_emphasis: null
-strikethrough: darkgrey
-highlight: null
-
-# Background and borders
-highlight_background: "ansi(236)"
-emphasis_background: null
-strong_background: null
-strong_emphasis_background: null
-code_background: null
-strikethrough_background: null
-background: "rgb(30,30,46)"
-border: grey
-code_block_border: null
-callout_border: null
+emphasis:
+  text: yellow
+  background: null
+strong:
+  text: red
+  background: null
+strikethrough:
+  text: darkgrey
+  background: null
+background: rgb(30,30,46)
+error: red
+warning: yellow
+code_block:
+  label: darkgrey
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: blue
+    abstract: yellow
+    info: blue
+    todo: green
+    tip: magenta
+    success: green
+    question: red
+    warning: cyan
+    failure: grey
+    danger: grey
+    bug: grey
+    example: yellow
+    quote: reset
+front_matter:
+  title: grey
+  key: grey
+  value: white
+  border: darkgrey
+details_border: grey
+list:
+  ordered: blue
+  unordered: green
+todo:
+  checked: green
+  unchecked: yellow
+table:
+  header: yellow
+  border: grey
+syntax:
+  keyword: red
+  string: green
+  comment: darkgrey
+  number: magenta
+  operator: red
+  function: green
+  variable: white
+  type_name: blue
+strong_emphasis:
+  text: null
+  background: null
+highlight:
+  text: null
+  background: ansi(236)
 horizontal_rule: null
 footnote_separator: null
-front_matter_title: null
-front_matter_key: null
-front_matter_value: null
-front_matter_border: null
-
-# Inline decorations
 inline_style:
   emphasis:
     italic: true
@@ -81,23 +117,3 @@ inline_style:
   strikethrough:
     strikethrough: true
   highlight: {}
-
-# Lists and tables
-list_marker: green
-table_header: yellow
-table_border: grey
-
-# Error and warning
-error: red
-warning: yellow
-
-# Syntax highlight palette
-syntax:
-  keyword: red
-  string: green
-  comment: darkgrey
-  number: magenta
-  operator: red
-  function: green
-  variable: white
-  type_name: blue

@@ -85,6 +85,26 @@ fn preview_highlights_matches_before_confirmation() {
         2
     );
 
+    state.highlight_styles.search = crate::HighlightColors {
+        foreground: Some(crate::PromptColor::Black),
+        background: Some(crate::PromptColor::Green),
+    };
+    state.highlight_styles.search_current = crate::HighlightColors {
+        foreground: Some(crate::PromptColor::Reset),
+        background: Some(crate::PromptColor::Red),
+    };
+    let options = IncrementalSearchOpts::from(&state);
+    let preview = incremental_preview(&options, &query).unwrap();
+    let custom = preview
+        .rows
+        .iter()
+        .map(std::borrow::Cow::as_ref)
+        .collect::<String>();
+    assert!(
+        custom.contains("\x1b[39;101m") && custom.contains("\x1b[30;102m"),
+        "{custom:?}"
+    );
+    state.highlight_styles = crate::HighlightStyles::default();
     state.color_depth = crate::ColorDepth::Ansi16;
     state.search_state.search_mode = super::SearchMode::Forward;
     let mut search = super::SearchOpts::from(&state);

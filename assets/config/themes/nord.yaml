@@ -1,38 +1,139 @@
 name: nord
 description: Nord color scheme
-pager_status_bar_transparent: false
-text: "236,239,244"
-text_light: "216,222,233"
-line_number: "216,222,233"
-line_number_separator: "216,222,233"
-h1: "136,192,208"
-h2: "143,188,187"
-h3: "129,161,193"
-h4: "94,129,172"
-h5: "191,97,106"
-h6: "208,135,112"
-code: "235,203,139"
-math: "136,192,208"
-math_border: "94,129,172"
-quote: "76,86,106"
-link: "136,192,208"
-emphasis: "163,190,140"
-strong: "180,142,173"
-strikethrough: "67,76,94"
-highlight_background: "67,76,94"
-background: "46,52,64"
-border: "76,86,106"
-list_marker: "163,190,140"
-table_header: "136,192,208"
-table_border: "76,86,106"
-error: "191,97,106"
-warning: "235,203,139"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 236,239,244
+text_light: 216,222,233
+line_number:
+  number: 216,222,233
+  separator: 216,222,233
+h1: 136,192,208
+h2: 143,188,187
+h3: 129,161,193
+h4: 94,129,172
+h5: 191,97,106
+h6: 208,135,112
+code:
+  text: 235,203,139
+  background: null
+math:
+  text: 136,192,208
+  border: 94,129,172
+quote: 76,86,106
+link: 136,192,208
+emphasis:
+  text: 163,190,140
+  background: null
+strong:
+  text: 180,142,173
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 67,76,94
+  background: null
+highlight:
+  text: null
+  background: 67,76,94
+background: 46,52,64
+error: 191,97,106
+warning: 235,203,139
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 136,192,208
+    abstract: 143,188,187
+    info: 136,192,208
+    todo: 163,190,140
+    tip: 129,161,193
+    success: ansi(33)
+    question: 94,129,172
+    warning: 191,97,106
+    failure: 208,135,112
+    danger: 208,135,112
+    bug: 208,135,112
+    example: 143,188,187
+    quote: 76,86,106
+front_matter:
+  title: 76,86,106
+  key: 216,222,233
+  value: 236,239,244
+  border: 76,86,106
+details_border: 76,86,106
+list:
+  ordered: 163,190,140
+  unordered: 163,190,140
+todo:
+  checked: 163,190,140
+  unchecked: 163,190,140
+table:
+  header: 136,192,208
+  border: null
 syntax:
-  keyword: "129,161,193"
-  string: "163,190,140"
-  comment: "76,86,106"
-  number: "180,142,173"
-  operator: "129,161,193"
-  function: "136,192,208"
-  variable: "236,239,244"
-  type_name: "143,188,187"
+  keyword: 129,161,193
+  string: 163,190,140
+  comment: 76,86,106
+  number: 180,142,173
+  operator: 129,161,193
+  function: 136,192,208
+  variable: 236,239,244
+  type_name: 143,188,187
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

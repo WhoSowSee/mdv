@@ -93,6 +93,11 @@ impl Pager {
         Ok(self.tx.send(Command::SetColorDepth(depth))?)
     }
 
+    /// Overrides selection and search colors while retaining unspecified defaults.
+    pub fn set_highlight_styles(&self, styles: crate::HighlightStyles) -> Result<(), MinusError> {
+        Ok(self.tx.send(Command::SetHighlightStyles(styles))?)
+    }
+
     /// Sets the single-line text displayed in the prompt.
     pub fn set_prompt(&self, text: impl Into<String>) -> Result<(), MinusError> {
         let text: String = text.into();

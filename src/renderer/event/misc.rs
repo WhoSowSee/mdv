@@ -181,13 +181,35 @@ impl<'a> EventRenderer<'a> {
         Ok(())
     }
 
-    pub(super) fn styled_list_marker(&self, fallback: &str, pretty_level: Option<usize>) -> String {
+    pub(super) fn styled_list_marker(
+        &self,
+        fallback: &str,
+        pretty_level: Option<usize>,
+        ordered: bool,
+    ) -> String {
         let (marker, color) = pretty_level
             .and_then(|level| self.config.list_marker.resolve(level))
             .map(|(icon, color)| (format!("{icon} "), color))
             .unwrap_or_else(|| (fallback.to_string(), None));
-        let mut style = create_style(self.theme, ThemeElement::ListMarker);
-        if let Some(color) = color {
+        let element = if ordered {
+            ThemeElement::OrderedListMarker
+        } else {
+            ThemeElement::UnorderedListMarker
+        };
+        let mut style = create_style(self.theme, element);
+        let path = if ordered {
+            "list:ordered"
+        } else {
+            "list:unordered"
+        };
+        if let Some(color) = color
+            && let Some(level) = pretty_level
+            && self
+                .config
+                .color_priorities
+                .custom_color("custom_list", &level.to_string())
+                >= self.theme.color_priorities.element(path)
+        {
             style = style.fg(color.into());
         }
         style.apply(&marker, self.output_style)
@@ -199,7 +221,8 @@ impl<'a> EventRenderer<'a> {
         }
 
         let marker = if checked { "[✓]" } else { "[ ]" };
-        create_style(self.theme, ThemeElement::ListMarker).apply(marker, self.output_style)
+        self.task_marker_style(if checked { 'x' } else { ' ' })
+            .apply(marker, self.output_style)
     }
 
     /// Returns the checkbox icon. Callers add the separating space.
@@ -225,14 +248,38 @@ impl<'a> EventRenderer<'a> {
         };
 
         let style = match custom_color {
-            Some(color) => create_style(self.theme, ThemeElement::ListMarker).fg(color.into()),
-            None => create_style(self.theme, ThemeElement::ListMarker),
+            Some(color)
+                if self
+                    .config
+                    .color_priorities
+                    .custom_color("custom_checkbox", &state.to_string())
+                    >= self
+                        .theme
+                        .color_priorities
+                        .element(if matches!(state, 'x' | 'X') {
+                            "todo:checked"
+                        } else {
+                            "todo:unchecked"
+                        }) =>
+            {
+                self.task_marker_style(state).fg(color.into())
+            }
+            _ => self.task_marker_style(state),
         };
 
         match icon {
             Some(glyph) => style.apply(&glyph, self.output_style),
             None => style.apply(&format!("[{state}]"), self.output_style),
         }
+    }
+
+    pub(in crate::renderer::event) fn task_marker_style(&self, state: char) -> AnsiStyle {
+        let element = if matches!(state, 'x' | 'X') {
+            ThemeElement::TodoChecked
+        } else {
+            ThemeElement::TodoUnchecked
+        };
+        create_style(self.theme, element)
     }
 
     pub(super) fn strip_bullet_for_checkbox_item(&mut self) {

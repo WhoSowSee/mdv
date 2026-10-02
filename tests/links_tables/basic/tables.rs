@@ -117,9 +117,9 @@ fn table_border_color_applies_to_vertical_and_horizontal_lines_only() {
 
     for full_borders in [false, true] {
         let args: &[&str] = if full_borders {
-            &["--custom-theme", "table_border=#123456", "--table-borders"]
+            &["--custom-theme", "table:border=#123456", "--table-borders"]
         } else {
-            &["--custom-theme", "table_border=#123456"]
+            &["--custom-theme", "table:border=#123456"]
         };
         let stdout = render(args);
         let color = "\x1b[38;2;18;52;86m";

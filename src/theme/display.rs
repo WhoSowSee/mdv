@@ -21,40 +21,52 @@ pub fn list_themes(manager: &ThemeManager) -> std::io::Result<()> {
 /// Create a style from theme colors
 pub fn create_style(theme: &Theme, element: ThemeElement) -> AnsiStyle {
     let color = match element {
-        ThemeElement::Text => &theme.text,
-        ThemeElement::TextLight => &theme.text_light,
-        ThemeElement::LineNumber => &theme.line_number,
-        ThemeElement::LineNumberSeparator => &theme.line_number_separator,
-        ThemeElement::H1 => &theme.h1,
-        ThemeElement::H2 => &theme.h2,
-        ThemeElement::H3 => &theme.h3,
-        ThemeElement::H4 => &theme.h4,
-        ThemeElement::H5 => &theme.h5,
-        ThemeElement::H6 => &theme.h6,
-        ThemeElement::Code => &theme.code,
-        ThemeElement::Math => theme.math_color(),
-        ThemeElement::MathBorder => theme.math_border_color(),
-        ThemeElement::Quote => &theme.quote,
-        ThemeElement::Link => &theme.link,
-        ThemeElement::Emphasis => &theme.emphasis,
-        ThemeElement::Strong => &theme.strong,
-        ThemeElement::Strikethrough => &theme.strikethrough,
-        ThemeElement::Underline => &theme.text,
-        ThemeElement::Border => &theme.border,
-        ThemeElement::FrontMatterKey => theme.front_matter_key_color(),
-        ThemeElement::FrontMatterValue => theme.front_matter_value_color(),
-        ThemeElement::FrontMatterBorder => theme.front_matter_border_color(),
-        ThemeElement::ListMarker => &theme.list_marker,
-        ThemeElement::TableHeader => &theme.table_header,
-        ThemeElement::TableBorder => &theme.table_border,
-        ThemeElement::Error => &theme.error,
-        ThemeElement::Warning => &theme.warning,
+        ThemeElement::Text => Some(&theme.text),
+        ThemeElement::TextLight => Some(&theme.text_light),
+        ThemeElement::LineNumber => Some(&theme.line_number.number),
+        ThemeElement::LineNumberSeparator => Some(&theme.line_number.separator),
+        ThemeElement::H1 => Some(&theme.h1),
+        ThemeElement::H2 => Some(&theme.h2),
+        ThemeElement::H3 => Some(&theme.h3),
+        ThemeElement::H4 => Some(&theme.h4),
+        ThemeElement::H5 => Some(&theme.h5),
+        ThemeElement::H6 => Some(&theme.h6),
+        ThemeElement::Code => Some(&theme.code.text),
+        ThemeElement::Math => Some(&theme.math.text),
+        ThemeElement::MathBorder => theme.math.border.as_ref(),
+        ThemeElement::Quote => Some(&theme.quote),
+        ThemeElement::Link => Some(&theme.link),
+        ThemeElement::Emphasis => Some(&theme.emphasis.text),
+        ThemeElement::Strong => Some(&theme.strong.text),
+        ThemeElement::Strikethrough => Some(&theme.strikethrough.text),
+        ThemeElement::Underline => Some(&theme.text),
+        ThemeElement::DetailsBorder => theme.details_border.as_ref(),
+        ThemeElement::CodeBlockLabel => Some(&theme.code_block.label),
+        ThemeElement::CalloutLabel => theme.callout.label.as_ref(),
+        ThemeElement::FrontMatterTitle => Some(&theme.front_matter.title),
+        ThemeElement::FrontMatterKey => Some(&theme.front_matter.key),
+        ThemeElement::FrontMatterValue => Some(&theme.front_matter.value),
+        ThemeElement::FrontMatterBorder => theme.front_matter.border.as_ref(),
+        ThemeElement::OrderedListMarker => Some(&theme.list.ordered),
+        ThemeElement::UnorderedListMarker => Some(&theme.list.unordered),
+        ThemeElement::TodoChecked => Some(&theme.todo.checked),
+        ThemeElement::TodoUnchecked => Some(&theme.todo.unchecked),
+        ThemeElement::TableHeader => Some(&theme.table.header),
+        ThemeElement::TableBorder => theme.table.border.as_ref(),
+        ThemeElement::Error => Some(&theme.error),
+        ThemeElement::Warning => Some(&theme.warning),
     };
 
-    let mut style = AnsiStyle::new().fg(color.clone().into());
+    let mut style = AnsiStyle::new();
+    if let Some(color) = color {
+        style = style.fg(color.clone().into());
+    }
 
     match element {
-        ThemeElement::Strong | ThemeElement::H1 => style = style.bold(),
+        ThemeElement::Strong
+        | ThemeElement::H1
+        | ThemeElement::FrontMatterTitle
+        | ThemeElement::CalloutLabel => style = style.bold(),
         ThemeElement::Emphasis => style = style.italic(),
         ThemeElement::Strikethrough => style = style.strikethrough(),
         ThemeElement::Underline => style = style.underline(),

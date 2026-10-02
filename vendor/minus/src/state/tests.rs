@@ -139,6 +139,7 @@ fn selection_highlight_preserves_and_restores_sgr_styles() {
         0,
         "red plain".chars().count(),
         crate::ColorDepth::TrueColor,
+        crate::HighlightColors::default(),
     );
 
     assert!(rendered.contains(&format!("\x1b[31m{SELECTION_BACKGROUND}red")));
@@ -149,6 +150,7 @@ fn selection_highlight_preserves_and_restores_sgr_styles() {
         0,
         3,
         crate::ColorDepth::TrueColor,
+        crate::HighlightColors::default(),
     );
     assert!(rendered.contains("red\x1b[0m\x1b[31m plain"));
 }

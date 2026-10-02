@@ -108,7 +108,7 @@ mod tests {
             continue_rx.lock().unwrap().recv().unwrap();
             Ok(super::super::super::rendering::RenderedOutput::new(
                 "old narrow".into(),
-                false,
+                crate::theme::PagerTheme::default(),
                 OutputStyle::Disabled,
             ))
         });

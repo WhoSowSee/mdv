@@ -12,7 +12,7 @@ impl<'a> EventRenderer<'a> {
         }
         self.close_inline_backticks();
         let inline_style = self.theme.inline_style.get(InlineStyleKind::Code);
-        let mut style = AnsiStyle::new().fg(self.theme.code.clone().into());
+        let mut style = AnsiStyle::new().fg(self.theme.code.text.clone().into());
         if let Some(background) = self.theme.inline_background(InlineStyleKind::Code) {
             style = style.bg(background.clone().into());
         }

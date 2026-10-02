@@ -14,13 +14,7 @@ pub(crate) fn page(
     loop {
         let editor_requested = Arc::new(AtomicBool::new(false));
         let pager = Pager::new();
-        let (
-            title,
-            line_navigation_enabled,
-            line_number_toggle_enabled,
-            status_bar_transparent,
-            output_style,
-        ) = {
+        let (title, line_navigation_enabled, line_number_toggle_enabled, pager_theme, output_style) = {
             let document = document
                 .read()
                 .map_err(|_| anyhow!("Pager document lock poisoned"))?;
@@ -28,7 +22,7 @@ pub(crate) fn page(
                 document.title.clone(),
                 document.has_line_navigation()?,
                 document.line_number_mode().is_some(),
-                document.status_bar_transparent(),
+                document.pager_theme().clone(),
                 document.output_style(),
             )
         };
@@ -39,14 +33,15 @@ pub(crate) fn page(
                 line_navigation_enabled,
                 line_number_toggle_enabled,
             },
-            status_bar_transparent,
+            &pager_theme,
         )?;
-        let footer = PagerFooter::new(title.as_deref(), file.as_deref(), status_bar_transparent);
+        let footer = PagerFooter::new(title.as_deref(), file.as_deref(), &pager_theme);
         let warmup = line_number_toggle_enabled
             .then(|| super::warmup::ViewWarmup::install(&pager, &document))
             .transpose()?;
         pager.set_output_styling(output_style.is_enabled())?;
         pager.set_color_depth(output_style.color_depth())?;
+        pager.set_highlight_styles(super::styling::highlight_styles(&pager_theme))?;
         pager.set_line_numbers(LineNumbers::AlwaysOff)?;
         if document
             .read()
@@ -73,7 +68,7 @@ pub(crate) fn page(
             editor_requested: editor_requested.clone(),
             editor_enabled,
             help_panel: help_panel.clone(),
-            help_transparent: status_bar_transparent,
+            help_theme: pager_theme,
             pager: pager.clone(),
             document: document.clone(),
             refresh: refresh.clone(),

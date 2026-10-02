@@ -75,7 +75,7 @@ impl EventRenderer<'_> {
 
         let previous_content_indent = if let Some(style) = self.config.definition_marker_style {
             self.push_indent_for_line_start();
-            let marker = create_style(self.theme, ThemeElement::ListMarker)
+            let marker = create_style(self.theme, ThemeElement::UnorderedListMarker)
                 .apply(style.marker(), self.output_style);
             self.output.push_str(&marker);
             None

@@ -3,6 +3,65 @@ use std::fs;
 use tempfile::TempDir;
 
 #[test]
+fn optional_background_inheritance_preserves_explicit_clears_and_resets() {
+    let fields = [
+        "background",
+        "emphasis:background",
+        "strong:background",
+        "strong_emphasis:background",
+        "code:background",
+        "strikethrough:background",
+    ];
+    let assignments = |value: &str| {
+        fields
+            .iter()
+            .map(|field| format!("{}: {value}\n", field.replace(':', ":\n  ")))
+            .collect::<String>()
+    };
+    let parent: schema::ThemeFile =
+        serde_yaml::from_str(&format!("name: parent\n{}", assignments("red"))).unwrap();
+    let mut parent = parent.resolve(&Theme::default());
+    parent.pager.selection.background = Some(Color::Red);
+    parent.pager.title = Some(Color::Blue);
+    let child: ThemeFile =
+        serde_yaml::from_str("name: child\npager: {selection: {text: yellow}}\n").unwrap();
+    let child = child.resolve(&parent);
+    assert_eq!(child.pager.title, Some(Color::Blue));
+    assert_eq!(child.pager.selection.text, Some(Color::Yellow));
+    assert_eq!(child.pager.selection.background, Some(Color::Red));
+    let child: ThemeFile =
+        serde_yaml::from_str("name: child\npager: {title: null, selection: {background: null}}\n")
+            .unwrap();
+    let child = child.resolve(&parent);
+    assert!(child.pager.title.is_none() && child.pager.selection.background.is_none());
+    for (yaml, expected) in [
+        ("name: child\n".to_string(), Some(Color::Red)),
+        (
+            "name: child\ncode: {text: yellow}\n".to_string(),
+            Some(Color::Red),
+        ),
+        (format!("name: child\n{}", assignments("null")), None),
+        (
+            format!("name: child\n{}", assignments("reset")),
+            Some(Color::Reset),
+        ),
+    ] {
+        let child: schema::ThemeFile = serde_yaml::from_str(&yaml).unwrap();
+        let child = child.resolve(&parent);
+        for color in [
+            child.background,
+            child.emphasis.background,
+            child.strong.background,
+            child.strong_emphasis.background,
+            child.code.background,
+            child.strikethrough.background,
+        ] {
+            assert_eq!(color, expected, "{yaml}");
+        }
+    }
+}
+
+#[test]
 fn empty_themes_dir_returns_empty_vec() {
     let tmp = TempDir::new().unwrap();
     let manager = ThemeManager::new();
@@ -33,7 +92,7 @@ fn loads_full_theme_with_all_fields() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("warm.yaml"),
-        "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nline_number: yellow\nline_number_separator: blue\nh1: \"#ff5577\"\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode: red\nmath: cyan\nmath_border: blue\nquote: darkgrey\nlink: blue\nemphasis: yellow\nstrong: red\nstrikethrough: darkgrey\nhighlight_background: \"#222222\"\nbackground: \"#111111\"\nborder: grey\nlist_marker: green\ntable_header: yellow\ntable_border: grey\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\n",
+        "name: warm\ndescription: warm palette\ntext: white\ntext_light: grey\nh1: '#ff5577'\nh2: green\nh3: yellow\nh4: blue\nh5: magenta\nh6: cyan\ncode:\n  text: red\nquote: darkgrey\nlink: blue\nemphasis:\n  text: yellow\nstrong:\n  text: red\nstrikethrough:\n  text: darkgrey\nhighlight:\n  background: '#222222'\nbackground: '#111111'\nerror: red\nwarning: yellow\nsyntax:\n  keyword: red\n  string: green\n  comment: darkgrey\n  number: magenta\n  operator: red\n  function: green\n  variable: white\n  type_name: blue\nline_number:\n  number: yellow\n  separator: blue\ntable:\n  header: yellow\n  border: grey\nmath:\n  text: cyan\n  border: blue\nlist:\n  unordered: green\n",
     )
     .unwrap();
 
@@ -50,21 +109,34 @@ fn loads_full_theme_with_all_fields() {
             b: 0x77
         }
     );
-    assert_eq!(theme.line_number, Color::Yellow);
-    assert_eq!(theme.line_number_separator, Color::Blue);
-    assert_eq!(theme.math_color(), &Color::Cyan);
-    assert_eq!(theme.math_border_color(), &Color::Blue);
+    assert_eq!(theme.line_number.number, Color::Yellow);
+    assert_eq!(theme.line_number.separator, Color::Blue);
+    assert_eq!(&theme.math.text, &Color::Cyan);
+    assert_eq!(
+        theme.math.border.as_ref().expect("math border"),
+        &Color::Blue
+    );
     assert_eq!(theme.syntax.keyword, Color::Red);
 }
 
 #[test]
-fn removed_code_block_field_is_rejected() {
-    let error = serde_yaml::from_str::<ThemeFile>("name: legacy\ncode_block: red\n")
-        .expect_err("removed code_block field must be rejected");
-    assert!(
-        error.to_string().contains("unknown field `code_block`"),
-        "unexpected error: {error}"
-    );
+fn removed_theme_fields_are_rejected() {
+    for field in [
+        "border",
+        "code_background",
+        "details",
+        "pager_status_bar_transparent",
+    ] {
+        let yaml = format!("name: legacy\n{field}: red\n");
+        let error = serde_yaml::from_str::<ThemeFile>(&yaml).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("unknown field `{field}`")),
+            "{error}"
+        );
+    }
+    assert!(serde_yaml::from_str::<ThemeFile>("name: legacy\ncode: red\n").is_err());
 }
 
 #[test]
@@ -74,7 +146,7 @@ fn partial_fields_fill_from_default() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("partial.yaml"),
-        "name: partial\nh1: red\nline_number: yellow\nline_number_separator: blue\nfront_matter_key: magenta\n",
+        "name: partial\nh1: red\ncode: {background: red}\nhighlight: {text: magenta}\nline_number:\n  number: yellow\n  separator: blue\nfront_matter:\n  key: magenta\n",
     )
     .unwrap();
 
@@ -82,16 +154,29 @@ fn partial_fields_fill_from_default() {
     let theme = &loaded[0];
     assert_eq!(theme.h1, Color::Red);
     assert_eq!(theme.h2, Theme::default().h2);
-    assert_eq!(theme.line_number, Color::Yellow);
-    assert_eq!(theme.line_number_separator, Color::Blue);
-    assert_eq!(theme.front_matter_key, Some(Color::Magenta));
-    assert_eq!(theme.front_matter_title_color(), &Theme::default().border);
-    assert_eq!(theme.front_matter_value_color(), &Theme::default().text);
-    assert_eq!(theme.front_matter_border_color(), &Theme::default().border);
-    assert_eq!(theme.math_color(), Theme::default().math_color());
+    assert_eq!(theme.code.text, Theme::default().code.text);
+    assert_eq!(theme.code.background, Some(Color::Red));
+    assert_eq!(theme.highlight.text, Some(Color::Magenta));
     assert_eq!(
-        theme.math_border_color(),
-        Theme::default().math_border_color()
+        theme.highlight.background,
+        Theme::default().highlight.background
+    );
+    assert_eq!(theme.line_number.number, Color::Yellow);
+    assert_eq!(theme.line_number.separator, Color::Blue);
+    assert_eq!(theme.front_matter.key, Color::Magenta);
+    assert_eq!(
+        theme.front_matter.title,
+        Theme::default().front_matter.title
+    );
+    assert_eq!(theme.front_matter.value, Theme::default().text);
+    assert_eq!(
+        theme.front_matter.border,
+        Theme::default().front_matter.border
+    );
+    assert_eq!(&theme.math.text, &Theme::default().math.text);
+    assert_eq!(
+        theme.math.border.as_ref().expect("math border"),
+        Theme::default().math.border.as_ref().expect("math border")
     );
 }
 
@@ -102,7 +187,7 @@ fn user_theme_can_enable_transparent_pager_status_bar() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("transparent.yaml"),
-        "name: transparent\npager_status_bar_transparent: true\n",
+        "name: transparent\npager:\n  transparent: true\n",
     )
     .unwrap();
 
@@ -110,7 +195,7 @@ fn user_theme_can_enable_transparent_pager_status_bar() {
     assert_eq!(loaded.len(), 1);
     let yaml = serde_yaml::to_value(&loaded[0]).unwrap();
     assert_eq!(
-        yaml.get("pager_status_bar_transparent"),
+        yaml.get("pager").and_then(|pager| pager.get("transparent")),
         Some(&serde_yaml::Value::Bool(true))
     );
 }
@@ -122,7 +207,7 @@ fn extends_builtin_theme() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("warm-mono.yaml"),
-        "name: warm-mono\nextends: monokai\nh1: \"#ff0000\"\n",
+        "name: warm-mono\nextends: monokai\nh1: '#ff0000'\n",
     )
     .unwrap();
 
@@ -147,7 +232,7 @@ fn extends_can_chain_user_themes() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("a.yaml"),
-        "name: a\nextends: monokai\nh1: red\nhorizontal_rule: '#010203'\ntable_border: '#0d0e0f'\n",
+        "name: a\nextends: monokai\nh1: red\nhorizontal_rule: '#010203'\ntable:\n  border: '#0d0e0f'\n",
     )
     .unwrap();
     fs::write(themes.join("b.yaml"), "name: b\nextends: a\nh2: green\n").unwrap();
@@ -159,14 +244,13 @@ fn extends_can_chain_user_themes() {
     assert_eq!(b.h1, Color::Red);
     assert_eq!(b.horizontal_rule, Some(Color::Rgb { r: 1, g: 2, b: 3 }));
     assert_eq!(
-        b.table_border,
+        b.table.border.as_ref().expect("table border").clone(),
         Color::Rgb {
             r: 13,
             g: 14,
             b: 15
         }
     );
-    assert!(b.table_border_overridden);
     assert_eq!(
         b.quote,
         Color::Rgb {
@@ -227,7 +311,7 @@ fn syntax_block_is_optional_and_merges() {
     fs::create_dir(&themes).unwrap();
     fs::write(
         themes.join("code-only.yaml"),
-        "name: code-only\nextends: monokai\nsyntax:\n  keyword: \"#abcdef\"\n",
+        "name: code-only\nextends: monokai\nsyntax:\n  keyword: '#abcdef'\n",
     )
     .unwrap();
 

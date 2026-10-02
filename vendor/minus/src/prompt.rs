@@ -2,6 +2,7 @@ use crate::{LineNumbers, PagerState};
 use std::sync::Arc;
 
 mod style;
+pub use style::write_prompt_color;
 pub use style::{PromptAttribute, PromptColor, PromptStyle};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;

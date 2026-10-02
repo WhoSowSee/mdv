@@ -87,6 +87,28 @@ impl PresetFile {
     fn apply_to(self, config: &mut Config) -> Result<()> {
         let inherited_inline_style = config.inline_style.clone();
         let mut merged = self.merged_with(config, &self.name)?;
+        merged.color_priorities = config.color_priorities.clone();
+        if self
+            .settings
+            .contains_key(Value::String("code_theme".to_string()))
+        {
+            merged.color_priorities.code_theme = crate::theme::ColorSource::Preset;
+        }
+        for setting in crate::config::custom_overrides::CustomSetting::ALL {
+            if self
+                .settings
+                .contains_key(Value::String(setting.key().to_string()))
+            {
+                let raw = setting.value(&mut merged).take();
+                *setting.value(&mut merged) = setting.value(config).clone();
+                merged.merge_custom_override(
+                    setting,
+                    raw.as_deref(),
+                    crate::theme::ColorSource::Preset,
+                )?;
+            }
+        }
+        merge_theme_settings(config, &mut merged, &self.settings)?;
         let preset_inline_style =
             std::mem::replace(&mut merged.inline_style, inherited_inline_style);
         merged.inline_style.merge(&preset_inline_style);
@@ -95,6 +117,41 @@ impl PresetFile {
         *config = merged;
         Ok(())
     }
+}
+
+fn merge_theme_settings(base: &Config, preset: &mut Config, settings: &Mapping) -> Result<()> {
+    let has_theme = settings.contains_key(Value::String("custom_theme".to_string()));
+    let has_code_theme = settings.contains_key(Value::String("custom_code_theme".to_string()));
+    if !has_theme && !has_code_theme {
+        return Ok(());
+    }
+    let theme = has_theme.then(|| preset.custom_theme.take()).flatten();
+    let code_theme = has_code_theme
+        .then(|| preset.custom_code_theme.take())
+        .flatten();
+    preset.custom_theme = if has_theme && theme.is_none() {
+        preset.color_priorities.clear_theme();
+        None
+    } else {
+        base.custom_theme.clone()
+    };
+    preset.custom_code_theme = if has_code_theme && code_theme.is_none() {
+        preset.color_priorities.clear_code();
+        None
+    } else {
+        base.custom_code_theme.clone()
+    };
+    preset.color_priorities.record(
+        theme.as_deref(),
+        code_theme.as_deref(),
+        crate::theme::ColorSource::Preset,
+    )?;
+    crate::theme::merge_custom_theme_overrides(
+        &mut preset.custom_theme,
+        &mut preset.custom_code_theme,
+        theme.as_deref(),
+        code_theme.as_deref(),
+    )
 }
 
 fn key_debug(key: &Value) -> String {

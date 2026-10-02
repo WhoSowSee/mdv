@@ -71,7 +71,9 @@ pub(super) const CUSTOM_CODE_BLOCK_LONG_HELP: &str = r#"Override code block icon
 
 Format: <language>:icon=<glyph>,label=<text>,aliases=<alias>|<alias>
 Separate entries with ';' and properties with ','
-Each entry requires an icon or label; aliases are optional
+Omitted properties retain their values from config and presets
+An aliases list replaces the previous list; aliases=[] clears it
+Use null for a property, <language>:null for an entry, or null for all entries
 
 Examples:
   --custom-code-block 'rust:icon=*,label=Rust;python:label=Python,aliases=py|py3'"#;
@@ -107,7 +109,9 @@ pub(super) const CUSTOM_CHECKBOX_LONG_HELP: &str = r#"Override checkbox icons an
 
 Format: <char>:<icon>[:<color>];<char>:<color>
 Requires --checkbox-style
-Omit the icon to keep the default icon and change only its color
+Named form: <char>:icon=<glyph>,color=<color>
+Omitted properties retain their values from config and presets
+Use null for a property, <char>:null for an entry, or null for all entries
 New states without an icon use the unchecked icon
 Colors: named (yellow), hex (#ffffff), RGB (128,1,1), ANSI (ansi(200))
 
@@ -151,7 +155,9 @@ pub(super) const CUSTOM_LIST_LONG_HELP: &str = r#"Override list marker icons and
 
 Format: <level>:<icon>[:<color>];<level>:<color>
 Requires --list-style
-Levels start at 1; omit the icon to keep the selected set's icon
+Named form: <level>:icon=<glyph>,color=<color>
+Levels start at 1; omitted properties retain their values from config and presets
+Use null for a property, <level>:null for an entry, or null for all entries
 Colors: named (red), hex (#ff0000), RGB (255,0,0), ANSI (ansi(200))
 
 Examples:
@@ -209,22 +215,33 @@ Examples:
 
 pub(super) const CUSTOM_THEME_LONG_HELP: &str = r#"Override colors of the selected theme
 
-Format: <key>=<color>;<key>=<color>
+Format: <key>=<color>;<section>:<field>=<color>
+Use section:field for line_number, table, math, front_matter, code_block,
+callout, list, todo, pager, syntax, and inline text/background colors
+Inline sections: emphasis, strong, strong_emphasis, code, strikethrough, highlight
+The details guide color uses the root key details_border
+Callout palette entries use callout:palette:<type>=<color>
+Pager highlights use pager:selection:text or pager:search_current:background
+Pager transparency uses pager:transparent=true|false
 
 Examples:
-  --custom-theme 'text=#ffffff;h1=187,154,247'"#;
+  --custom-theme 'code:text=darkgrey;code:background=null;details_border=grey'
+  --custom-theme 'line_number:number=grey;syntax:number=magenta'"#;
 
 pub(super) const CUSTOM_CODE_THEME_LONG_HELP: &str = r#"Override syntax highlighting colors
 
 Format: <key>=<color>;<key>=<color>
 
 Examples:
-  --custom-code-theme 'keyword=#ffffff;string=128,0,128'"#;
+  --custom-code-theme 'keyword=#ffffff;string=128,0,128'
+  --custom-code-theme 'syntax:keyword=blue;syntax:number=magenta'"#;
 
 pub(super) const CUSTOM_CALLOUT_LONG_HELP: &str = r#"Override existing callout styles or add new ones
 
 Format: <name>:icon=<glyph>,color=<color>
 Separate entries with ';'; specify an icon, a color, or both
+Omitted properties retain their values from config and presets
+Use null for a property, <name>:null for an entry, or null for all entries
 
 Examples:
   --custom-callout 'tip:icon=*,color=red;custom:color=#ffffff'"#;

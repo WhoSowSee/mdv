@@ -24,12 +24,12 @@ After large source files were split, large inline `mod tests` blocks moved into 
 | Implementation | Tests |
 |---|---|
 | `src/cli.rs` | `src/cli/tests.rs` and `src/cli/tests/{contract,parsing,styles}.rs` |
-| `src/config.rs` | `src/config/tests.rs` and `src/config/tests/{loading,environment,structured,writing}.rs` |
+| `src/config.rs` | `src/config/tests.rs` and `src/config/tests/{loading,environment,structured,custom_overrides,writing}.rs` |
 | `src/markdown.rs` | `src/markdown/tests.rs`, with additional tests in `raw_html.rs` and `source_lines.rs` |
 | `src/table.rs` | `src/table/tests.rs` and `src/table/tests/{rendering,styles,links}.rs` |
 | `src/theme.rs` | `src/theme/tests.rs` |
 | `src/user_themes.rs` | `src/user_themes/tests.rs` |
-| `src/pager.rs` | `src/pager/tests.rs`, plus tests in `footer.rs` and `help.rs` |
+| `src/pager.rs` | `src/pager/tests.rs`, `footer/tests.rs`, and `help/tests.rs` |
 | `src/interactive/browser.rs` | `src/interactive/browser/tests.rs`, plus screen tests in `src/interactive/screen/tests.rs` |
 | `src/editor.rs` | `src/editor/tests.rs` |
 | `src/list_marker.rs` | `src/list_marker/tests.rs` |
@@ -53,6 +53,10 @@ process and covers search positions beyond 65,535 characters.
 |---|---|
 | `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, pager routing, and monitor snapshots. |
 | `tests/color.rs` | Color settings reaching the renderer, loader diagnostics, pipe/redirection, HTML, and fast commands. |
+| `tests/themes.rs` | Nested theme/config/CLI parity, combined label colors, independent list/task colors, and detached callout palettes. |
+| `tests/themes/precedence.rs` | Theme/config/preset/CLI color priority across both override parameters, preservation of partial values, and explicit clearing of preset settings. |
+| `tests/themes/source_priority.rs` | Source priority across common and individual colors, selected code palettes, and preservation of unmodified syntax colors. |
+| `tests/themes/backgrounds.rs` | Omitted, cleared, and reset optional colors through CLI theme loading, uncolored inherited borders, and rejection of the removed global border. |
 | `tests/callouts*` | Syntax, custom styles, wrapping, frames, headings, tables, and links. |
 | `tests/checkboxes*` | Shapes, custom states/colors, lists, and nested indentation. |
 | `tests/code_blocks*` | Styles, labels/icons, line-number gutters, blockquotes, spacing, wrapping, and tab-indented fences. |
@@ -87,7 +91,7 @@ Large topic files act as facades with explicit `#[path = "..."]` declarations:
 
 The callout dialect and regression modules share the CLI rendering helper in `tests/callouts.rs`. Syntax and boundary invariants use one terminal layout or HTML structure; layout-dependent options retain their style matrix. Source-number mapping is covered through the CLI after the full preprocessing pipeline.
 
-Shared helpers remain in the facade module and are imported by child tests through `use super::*`.
+Shared helpers remain in the facade module and are imported by child tests through `use super::*`. Theme tests share temporary-file setup and command execution. Related source-priority and clearing cases use tables within focused tests; parameter syntax, inheritance, and rendered output remain covered separately.
 
 Integration modules import the shared `mdv_cmd` constructor directly instead of
 declaring identical forwarding functions. Color tests retain boundary regressions

@@ -109,7 +109,7 @@ mod tests {
             resume_rx.lock().unwrap().recv_timeout(timeout).unwrap();
             Ok(super::super::super::rendering::RenderedOutput::new(
                 "old narrow".into(),
-                false,
+                crate::theme::PagerTheme::default(),
                 OutputStyle::Disabled,
             ))
         });

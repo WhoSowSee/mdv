@@ -64,9 +64,12 @@ Unit tests: [tests.rs](../../src/cli/tests.rs), [contract.rs](../../src/cli/test
 | [from_cli.rs](../../src/config/from_cli.rs) | Assemble the effective `Config`. |
 | [merge.rs](../../src/config/merge.rs) | Field-aware merging. |
 | [runtime.rs](../../src/config/runtime.rs) | Derived widths and compiled overrides. |
-| [structured.rs](../../src/config/structured.rs) | Structured YAML forms for complex configuration values. |
+| [structured.rs](../../src/config/structured.rs) | Structured YAML theme overrides. |
+| [structured/custom.rs](../../src/config/structured/custom.rs) | YAML custom entries with explicit property clearing. |
+| [custom_overrides.rs](../../src/config/custom_overrides.rs) | Per-entry and per-property merging and color origins. |
+| [custom_overrides/parsing.rs](../../src/config/custom_overrides/parsing.rs) | Custom entry patch parsing and legacy syntax compatibility. |
 
-Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/config/tests/environment.rs), [loading.rs](../../src/config/tests/loading.rs), [structured.rs](../../src/config/tests/structured.rs), and [writing.rs](../../src/config/tests/writing.rs).
+Unit tests: [tests.rs](../../src/config/tests.rs), [environment.rs](../../src/config/tests/environment.rs), [loading.rs](../../src/config/tests/loading.rs), [structured.rs](../../src/config/tests/structured.rs), [custom_overrides.rs](../../src/config/tests/custom_overrides.rs), and [writing.rs](../../src/config/tests/writing.rs).
 
 Color schema and migration checks: [color.rs](../../src/config/tests/color.rs).
 
@@ -165,6 +168,7 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [operations.rs](../../src/pager/operations.rs) | Refresh, clipboard, and messages. |
 | [watcher.rs](../../src/pager/watcher.rs) | Targeted file watcher. |
 | [footer.rs](../../src/pager/footer.rs) | Footer renderer and tests. |
+| [pager/styling.rs](../../src/pager/styling.rs) | Theme-to-pager color conversion. |
 | [help.rs](../../src/pager/help.rs) | Help panel and tests. |
 | [tests.rs](../../src/pager/tests.rs) | Pager behavior tests. |
 
@@ -180,9 +184,20 @@ Additional tests: [interactive_tests.rs](../../src/interactive_tests.rs).
 | [theme/manager.rs](../../src/theme/manager.rs) | Theme registry. |
 | [theme/overrides.rs](../../src/theme/overrides.rs) | Terminal and code overrides. |
 | [theme/types.rs](../../src/theme/types.rs) | `Theme` and `SyntaxTheme`. |
+| [theme/sections.rs](../../src/theme/sections.rs) | Typed nested color groups. |
+| [theme/pager.rs](../../src/theme/pager.rs) | Pager colors and transparency. |
+| [theme/overrides/sections.rs](../../src/theme/overrides/sections.rs) | Colon-path section and syntax overrides. |
+| [theme/overrides/merging.rs](../../src/theme/overrides/merging.rs) | Source-ordered merging of general and syntax color assignments. |
+| [theme/priority.rs](../../src/theme/priority.rs) | Sources of color assignments and precedence across semantic roles. |
+| [theme/syntax.rs](../../src/theme/syntax.rs) | Syntax field names, aliases, and color access. |
 | [theme/tests.rs](../../src/theme/tests.rs) | Theme tests. |
 | [user_themes/loading.rs](../../src/user_themes/loading.rs) | User-theme discovery and inheritance. |
 | [user_themes/schema.rs](../../src/user_themes/schema.rs) | Partial YAML schema. |
+| [user_themes/colors.rs](../../src/user_themes/colors.rs) | Color parsing and omission/null states. |
+| [user_themes/groups.rs](../../src/user_themes/groups.rs) | Nested partial groups and inheritance. |
+| [user_themes/inline.rs](../../src/user_themes/inline.rs) | Inline foreground/background groups and inheritance. |
+| [user_themes/pager.rs](../../src/user_themes/pager.rs) | Partial pager palette and inherited fields. |
+| [user_themes/complete.rs](../../src/user_themes/complete.rs) | Required embedded fields and group construction. |
 | [user_themes/tests.rs](../../src/user_themes/tests.rs) | User-theme tests. |
 
 ## `src/table/`
@@ -217,6 +232,8 @@ for streamed character units. Pager help tests live in [help/tests.rs](../../src
 | [syntax_set.rs](../../src/renderer/syntax_set.rs) | Syntax cache and loader. |
 | [syntax_theme.rs](../../src/renderer/syntax_theme.rs) | Code-theme facade. |
 | [syntax_theme/builder.rs](../../src/renderer/syntax_theme/builder.rs) | Terminal palette to `syntect` theme. |
+| [syntax_theme/scopes.rs](../../src/renderer/syntax_theme/scopes.rs) | Shared syntax-category scope selectors. |
+| [syntax_theme/overrides.rs](../../src/renderer/syntax_theme/overrides.rs) | Partial color overrides of a selected syntax palette. |
 | [syntax_theme/terminal.rs](../../src/renderer/syntax_theme/terminal.rs) | `syntect` spans to ANSI. |
 | [syntax_theme/tests.rs](../../src/renderer/syntax_theme/tests.rs) | Theme-adapter tests. |
 
@@ -262,7 +279,7 @@ Facades: [text.rs](../../src/renderer/event/text.rs) and [formatting.rs](../../s
 
 Text files: [callouts.rs](../../src/renderer/event/text/callouts.rs), [handling.rs](../../src/renderer/event/text/handling.rs), [segments.rs](../../src/renderer/event/text/segments.rs), [styled.rs](../../src/renderer/event/text/styled.rs), and [wrapping.rs](../../src/renderer/event/text/wrapping.rs).
 
-Formatting files: [blockquotes.rs](../../src/renderer/event/formatting/blockquotes.rs), [borders.rs](../../src/renderer/event/formatting/borders.rs), [callout_frame.rs](../../src/renderer/event/formatting/callout_frame.rs), [callout_label.rs](../../src/renderer/event/formatting/callout_label.rs), [callout_render.rs](../../src/renderer/event/formatting/callout_render.rs), [inline.rs](../../src/renderer/event/formatting/inline.rs), and [spacing.rs](../../src/renderer/event/formatting/spacing.rs).
+Formatting files: [blockquotes.rs](../../src/renderer/event/formatting/blockquotes.rs), [borders.rs](../../src/renderer/event/formatting/borders.rs), [callout_colors.rs](../../src/renderer/event/formatting/callout_colors.rs), [callout_frame.rs](../../src/renderer/event/formatting/callout_frame.rs), [callout_label.rs](../../src/renderer/event/formatting/callout_label.rs), [callout_render.rs](../../src/renderer/event/formatting/callout_render.rs), [inline.rs](../../src/renderer/event/formatting/inline.rs), and [spacing.rs](../../src/renderer/event/formatting/spacing.rs).
 
 ## `src/renderer/event/links/`, `footnotes/`, and `tables/`
 
@@ -300,6 +317,10 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Checkboxes: [checkboxes.rs](../../tests/checkboxes.rs) and files under [tests/checkboxes/](../../tests/checkboxes/basic.rs).
 - CLI: [cli_basic.rs](../../tests/cli_basic.rs) and files under [tests/cli_basic/](../../tests/cli_basic/general.rs).
 - Color: [color.rs](../../tests/color.rs) and shared [support.rs](../../tests/support.rs).
+- Nested themes and independent roles: [themes.rs](../../tests/themes.rs).
+- Theme color precedence and partial overrides: [themes/precedence.rs](../../tests/themes/precedence.rs).
+- Color-source conflicts and selected code palettes: [themes/source_priority.rs](../../tests/themes/source_priority.rs).
+- Optional background inheritance and clearing: [themes/backgrounds.rs](../../tests/themes/backgrounds.rs).
 - Code blocks: [code_blocks.rs](../../tests/code_blocks.rs) and files under [tests/code_blocks/](../../tests/code_blocks/basic.rs).
 - Footnotes: [footnotes.rs](../../tests/footnotes.rs) and files under [tests/footnotes/](../../tests/footnotes/attached.rs).
 - Layout: [layout.rs](../../tests/layout.rs) and files under [tests/layout/](../../tests/layout/headings.rs).

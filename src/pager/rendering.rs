@@ -4,6 +4,7 @@ use crate::markdown::ParsedDocument;
 use crate::renderer::TerminalRenderer;
 use crate::renderer::terminal::PagerRenderView;
 use crate::terminal::OutputStyle;
+use crate::theme::PagerTheme;
 use anyhow::Result;
 
 pub(crate) type Reflow = std::sync::Arc<dyn Fn(usize) -> Result<RenderedOutput> + Send + Sync>;
@@ -13,29 +14,25 @@ pub(crate) struct RenderedOutput {
     layout_width: Option<usize>,
     width_limit: Option<usize>,
     content: PagerContent,
-    status_bar_transparent: bool,
+    pager_theme: PagerTheme,
     output_style: OutputStyle,
 }
 
 impl RenderedOutput {
-    pub(crate) fn new(
-        output: String,
-        status_bar_transparent: bool,
-        output_style: OutputStyle,
-    ) -> Self {
+    pub(crate) fn new(output: String, pager_theme: PagerTheme, output_style: OutputStyle) -> Self {
         Self {
             reflow: None,
             layout_width: None,
             width_limit: None,
             content: PagerContent::Static(output),
-            status_bar_transparent,
+            pager_theme,
             output_style,
         }
     }
 
     fn for_pager(
         views: PagerLineNumberViews,
-        status_bar_transparent: bool,
+        pager_theme: PagerTheme,
         output_style: OutputStyle,
     ) -> Self {
         Self {
@@ -43,7 +40,7 @@ impl RenderedOutput {
             layout_width: None,
             width_limit: None,
             content: PagerContent::LineNumbers(views),
-            status_bar_transparent,
+            pager_theme,
             output_style,
         }
     }
@@ -58,7 +55,7 @@ impl RenderedOutput {
 
     pub(crate) fn into_pager_document(self) -> PagerDocument {
         PagerDocument::from_content(self.content, self.output_style)
-            .with_status_bar_transparent(self.status_bar_transparent)
+            .with_pager_theme(self.pager_theme)
             .with_reflow(self.reflow, self.layout_width, self.width_limit)
     }
 
@@ -79,7 +76,6 @@ pub(crate) fn render_terminal_document(
     renderer: &TerminalRenderer,
     document: ParsedDocument,
     prefix: String,
-    status_bar_transparent: bool,
 ) -> Result<RenderedOutput> {
     let prefix_lines = prefix.lines().count();
     let toc = super::toc::headings(&document.events);
@@ -104,7 +100,7 @@ pub(crate) fn render_terminal_document(
     .with_toc(toc);
     Ok(RenderedOutput::for_pager(
         views,
-        status_bar_transparent,
+        renderer.pager_theme().clone(),
         renderer.output_style(),
     ))
 }

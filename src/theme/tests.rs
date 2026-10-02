@@ -5,7 +5,7 @@ fn builtin_themes_define_opaque_pager_status_bar() {
     for (name, source) in BUILTIN_THEME_FILES {
         let yaml: serde_yaml::Value = serde_yaml::from_str(source).unwrap();
         assert_eq!(
-            yaml.get("pager_status_bar_transparent"),
+            yaml.get("pager").and_then(|pager| pager.get("transparent")),
             Some(&serde_yaml::Value::Bool(false)),
             "built-in theme '{name}' must explicitly use an opaque pager status bar"
         );
@@ -45,11 +45,19 @@ fn math_style_uses_dedicated_palette_entries() {
 
     assert_eq!(
         create_style(&theme, ThemeElement::Math).fg_color,
-        Some(theme.math_color().clone().into())
+        Some(theme.math.text.clone().into())
     );
     assert_eq!(
         create_style(&theme, ThemeElement::MathBorder).fg_color,
-        Some(theme.math_border_color().clone().into())
+        Some(
+            theme
+                .math
+                .border
+                .as_ref()
+                .expect("math border")
+                .clone()
+                .into()
+        )
     );
 }
 
@@ -58,7 +66,7 @@ fn test_apply_custom_theme_overrides() {
     let mut theme = Theme::default();
     apply_custom_theme(
         &mut theme,
-        "h1=#ffffff; link=187,154,247; math=#141516; math-border=#171819; background=none; strong=rgb(10,20,30); strong_emphasis=#070809; highlight=#0a0b0c; highlight_bg=#112233; emphasis_background=#0d0e0f; code_background=none; line_number=#010203; line_number_separator=#040506",
+        "h1=#ffffff; link=187,154,247; math:text=#141516; math:border=#171819; background=none; strong:text=rgb(10,20,30); strong_emphasis:text=#070809; highlight:text=#0a0b0c; highlight:background=#112233; emphasis:background=#0d0e0f; code:background=none; line_number:number=#010203; line_number:separator=#040506",
     )
     .expect("custom theme overrides should be applied");
 
@@ -79,7 +87,7 @@ fn test_apply_custom_theme_overrides() {
         }
     ));
     assert!(matches!(
-        theme.strong,
+        theme.strong.text,
         Color::Rgb {
             r: 10,
             g: 20,
@@ -87,9 +95,12 @@ fn test_apply_custom_theme_overrides() {
         }
     ));
     assert!(theme.background.is_none());
-    assert_eq!(theme.strong_emphasis, Some(Color::Rgb { r: 7, g: 8, b: 9 }));
     assert_eq!(
-        theme.highlight,
+        theme.strong_emphasis.text,
+        Some(Color::Rgb { r: 7, g: 8, b: 9 })
+    );
+    assert_eq!(
+        theme.highlight.text,
         Some(Color::Rgb {
             r: 10,
             g: 11,
@@ -97,26 +108,26 @@ fn test_apply_custom_theme_overrides() {
         })
     );
     assert_eq!(
-        theme.emphasis_background,
+        theme.emphasis.background,
         Some(Color::Rgb {
             r: 13,
             g: 14,
             b: 15
         })
     );
-    assert!(theme.code_background.is_none());
+    assert!(theme.code.background.is_none());
     assert!(matches!(
-        theme.highlight_background,
+        theme.highlight.background,
         Color::Rgb {
             r: 0x11,
             g: 0x22,
             b: 0x33
         }
     ));
-    assert_eq!(theme.line_number, Color::Rgb { r: 1, g: 2, b: 3 });
-    assert_eq!(theme.line_number_separator, Color::Rgb { r: 4, g: 5, b: 6 });
+    assert_eq!(theme.line_number.number, Color::Rgb { r: 1, g: 2, b: 3 });
+    assert_eq!(theme.line_number.separator, Color::Rgb { r: 4, g: 5, b: 6 });
     assert_eq!(
-        theme.math_color(),
+        &theme.math.text,
         &Color::Rgb {
             r: 20,
             g: 21,
@@ -124,7 +135,7 @@ fn test_apply_custom_theme_overrides() {
         }
     );
     assert_eq!(
-        theme.math_border_color(),
+        theme.math.border.as_ref().expect("math border"),
         &Color::Rgb {
             r: 23,
             g: 24,
@@ -137,12 +148,12 @@ fn test_apply_custom_theme_overrides() {
 fn custom_theme_can_enable_transparent_pager_status_bar() {
     let mut theme = Theme::default();
 
-    apply_custom_theme(&mut theme, "pager_status_bar_transparent=true")
+    apply_custom_theme(&mut theme, "pager:transparent=true")
         .expect("pager status bar transparency override should be accepted");
 
     let yaml = serde_yaml::to_value(theme).unwrap();
     assert_eq!(
-        yaml.get("pager_status_bar_transparent"),
+        yaml.get("pager").and_then(|pager| pager.get("transparent")),
         Some(&serde_yaml::Value::Bool(true))
     );
 }
@@ -172,34 +183,35 @@ fn test_apply_custom_code_theme_overrides() {
 }
 
 #[test]
-fn removed_code_block_override_is_rejected() {
-    let mut theme = Theme::default();
-    let error = apply_custom_theme(&mut theme, "code_block=#ffffff")
-        .expect_err("removed code_block override must be rejected");
-    let error_chain = format!("{error:#}");
-    assert!(
-        error_chain.contains("Unknown key for custom theme: 'code_block'."),
-        "unexpected error: {error_chain}"
-    );
+fn removed_theme_overrides_are_rejected() {
+    for key in ["code_block", "code", "code_background", "details:border"] {
+        let mut theme = Theme::default();
+        let error = apply_custom_theme(&mut theme, &format!("{key}=red")).unwrap_err();
+        assert!(
+            format!("{error:#}").contains(&format!("Unknown key for custom theme: '{key}'.")),
+            "{error:#}"
+        );
+    }
 }
 
 #[test]
 fn test_apply_custom_theme_plain_ansi_value() {
     let mut theme = Theme::default();
-    apply_custom_theme(&mut theme, "border=123").expect("plain ANSI value should be accepted");
-    assert!(matches!(theme.border, Color::AnsiValue(123)));
+    apply_custom_theme(&mut theme, "code:text=123").expect("plain ANSI value should be accepted");
+    assert!(matches!(theme.code.text, Color::AnsiValue(123)));
 }
 
 #[test]
 fn test_apply_custom_theme_ansi_function() {
     let mut theme = Theme::default();
-    apply_custom_theme(&mut theme, "border=ansi(42)").expect("ansi() notation should be accepted");
-    assert!(matches!(theme.border, Color::AnsiValue(42)));
+    apply_custom_theme(&mut theme, "code:text=ansi(42)")
+        .expect("ansi() notation should be accepted");
+    assert!(matches!(theme.code.text, Color::AnsiValue(42)));
 }
 
 #[test]
 fn test_apply_custom_theme_rejects_ansi_without_parens() {
     let mut theme = Theme::default();
-    let result = apply_custom_theme(&mut theme, "border=ansi42");
+    let result = apply_custom_theme(&mut theme, "code:text=ansi42");
     assert!(result.is_err());
 }

@@ -1,7 +1,7 @@
 use super::{
     CapturedReferenceBlock, CodeBlockStyle, CodeWrapIndent, CowStr, DeferredLinkReferenceBlock,
-    EventRenderer, HighlightLines, LinkStyle, MarkdownProcessor, MdvError, PRETTY_ACCENT_COLOR,
-    Result, ThemeElement, WrapMode, as_terminal_escaped, create_style, detect_source_code,
+    EventRenderer, HighlightLines, LinkStyle, MarkdownProcessor, MdvError, Result, ThemeElement,
+    WrapMode, as_terminal_escaped, create_style, detect_source_code,
 };
 use crate::block_spacing::BlockElement;
 use crate::inline_style::InlineStyleKind;

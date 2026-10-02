@@ -39,9 +39,9 @@ Code rendering combines a language hint, optional heuristic detection, `syntect`
 | `simple` | Lightweight visual emphasis with an optional label. |
 | `pretty` | Top and bottom borders, optional name/icon, and aligned content. |
 
-`show-name` and `show-icon` are independent. A custom code-block definition can override the label, icon, and aliases for a language without changing its syntax definition.
+`show-name` and `show-icon` are independent visibility options. A custom code-block definition can override the label, icon, and aliases for a language without changing its syntax definition. `code_block.label` colors the combined language name and icon in every layout. Plain labels are truncated and wrapped before their common color is applied.
 
-The optional `code_block_border` theme color applies to both vertical and horizontal frame pieces. Without it, both styles use the terminal text color.
+The optional `code_block.border` theme color applies to both vertical and horizontal frame pieces. Without it, both styles use the terminal text color.
 
 ## Code wrapping
 

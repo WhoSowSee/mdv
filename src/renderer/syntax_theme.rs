@@ -39,9 +39,12 @@ impl CodeHighlightTheme {
 }
 
 mod builder;
+mod overrides;
+mod scopes;
 mod terminal;
 
 pub(crate) use builder::build_syntect_theme;
+pub(crate) use overrides::apply_syntax_overrides;
 pub(crate) use terminal::as_terminal_escaped;
 
 #[cfg(test)]

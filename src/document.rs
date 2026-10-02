@@ -73,12 +73,12 @@ fn render_parsed_document(
         prepare_pager_views,
     } = options;
     let output_style = renderer.output_style();
-    let pager_status_bar_transparent = renderer.pager_status_bar_transparent();
+    let pager_theme = renderer.pager_theme().clone();
 
     if do_html {
         return Ok(pager::RenderedOutput::new(
             renderer.to_html_document(document)?,
-            pager_status_bar_transparent,
+            pager_theme,
             output_style,
         ));
     }
@@ -97,12 +97,8 @@ fn render_parsed_document(
         output.push('\n');
     }
     if prepare_pager_views {
-        let rendered = pager::render_terminal_document(
-            &renderer,
-            document.clone(),
-            output.clone(),
-            pager_status_bar_transparent,
-        )?;
+        let rendered =
+            pager::render_terminal_document(&renderer, document.clone(), output.clone())?;
         let width = config.get_terminal_width();
         let limit = config.cols.filter(|_| config.cols_from_cli);
         let renderer = renderer.into_owned();
@@ -112,7 +108,6 @@ fn render_parsed_document(
                     &renderer.with_layout_width(width),
                     document.clone(),
                     output.clone(),
-                    pager_status_bar_transparent,
                 )
             }),
             width,
@@ -122,7 +117,7 @@ fn render_parsed_document(
     output.push_str(&renderer.render_document(document)?);
     Ok(pager::RenderedOutput::new(
         output,
-        pager_status_bar_transparent,
+        pager_theme,
         output_style,
     ))
 }

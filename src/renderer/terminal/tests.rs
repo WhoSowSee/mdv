@@ -2,15 +2,24 @@ use super::*;
 use crate::markdown::MarkdownProcessor;
 
 #[test]
-fn renderer_exposes_pager_status_bar_transparency() {
+fn renderer_exposes_pager_palette() {
     let config = Config {
-        custom_theme: Some("pager_status_bar_transparent=true".to_string()),
+        custom_theme: Some("pager:transparent=true;pager:title=red;pager:selection:background=darkblue;pager:search_current:text=reset".to_string()),
         ..Config::default()
     };
 
     let renderer = TerminalRenderer::new(&config, OutputStyle::Disabled).unwrap();
 
-    assert!(renderer.pager_status_bar_transparent());
+    assert!(renderer.pager_theme().transparent);
+    assert_eq!(renderer.pager_theme().title, Some(crate::theme::Color::Red));
+    assert_eq!(
+        renderer.pager_theme().selection.background,
+        Some(crate::theme::Color::DarkBlue)
+    );
+    assert_eq!(
+        renderer.pager_theme().search_current.text,
+        Some(crate::theme::Color::Reset)
+    );
 }
 
 fn contains_numbered_line(output: &str, number: usize) -> bool {

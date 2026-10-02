@@ -2,11 +2,6 @@ use minus::{PromptColor, PromptError, PromptLine, PromptSpan, PromptStyle};
 use std::cmp::Reverse;
 use unicode_width::UnicodeWidthStr;
 
-const HELP_FOREGROUND: PromptColor = PromptColor::Rgb {
-    r: 125,
-    g: 125,
-    b: 125,
-};
 const HELP_BACKGROUND: PromptColor = PromptColor::Rgb {
     r: 27,
     g: 27,
@@ -14,9 +9,9 @@ const HELP_BACKGROUND: PromptColor = PromptColor::Rgb {
 };
 const HELP_COLUMN_WIDTH: usize = 26;
 
-fn help_style(transparent: bool) -> PromptStyle {
-    let style = PromptStyle::default().foreground(HELP_FOREGROUND);
-    if transparent {
+fn help_style(theme: &crate::theme::PagerTheme) -> PromptStyle {
+    let style = super::styling::foreground(PromptStyle::default(), theme.help.as_ref());
+    if theme.transparent {
         style
     } else {
         style.background(HELP_BACKGROUND)
@@ -25,9 +20,9 @@ fn help_style(transparent: bool) -> PromptStyle {
 
 pub(super) fn build_toc_help_panel(
     width: usize,
-    transparent: bool,
+    theme: &crate::theme::PagerTheme,
 ) -> Result<Vec<PromptLine>, PromptError> {
-    let style = help_style(transparent);
+    let style = help_style(theme);
     let groups = [
         [
             ("1–9", "select / cycle"),
@@ -102,12 +97,12 @@ pub(super) fn build_toc_help_panel(
 pub(super) fn fit_help_panel(
     lines: &[PromptLine],
     width: usize,
-    transparent: bool,
+    theme: &crate::theme::PagerTheme,
 ) -> Result<Vec<PromptLine>, PromptError> {
     if width >= 78 {
         return Ok(lines.to_vec());
     }
-    let style = help_style(transparent);
+    let style = help_style(theme);
     let columns = if width >= 52 { 2 } else { 1 };
     let mut items = Vec::new();
     for column in 0..3 {
@@ -148,7 +143,7 @@ pub(super) struct PagerCapabilities {
 
 pub(super) fn build_help_panel(
     capabilities: PagerCapabilities,
-    transparent: bool,
+    theme: &crate::theme::PagerTheme,
 ) -> Result<Vec<PromptLine>, PromptError> {
     let PagerCapabilities {
         editor_enabled,
@@ -156,7 +151,7 @@ pub(super) fn build_help_panel(
         line_navigation_enabled,
         line_number_toggle_enabled,
     } = capabilities;
-    let style = help_style(transparent);
+    let style = help_style(theme);
     let scrolling = longest_shortcuts_first([
         "k/↑      up",
         "j/↓      down",

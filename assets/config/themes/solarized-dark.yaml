@@ -1,38 +1,139 @@
 name: solarized-dark
 description: Solarized Dark color scheme
-pager_status_bar_transparent: false
-text: "131,148,150"
-text_light: "88,110,117"
-line_number: "88,110,117"
-line_number_separator: "88,110,117"
-h1: "220,50,47"
-h2: "203,75,22"
-h3: "181,137,0"
-h4: "38,139,210"
-h5: "108,113,196"
-h6: "42,161,152"
-code: "42,161,152"
-math: "181,137,0"
-math_border: "38,139,210"
-quote: "88,110,117"
-link: "38,139,210"
-emphasis: "203,75,22"
-strong: "220,50,47"
-strikethrough: "88,110,117"
-highlight_background: "7,54,66"
-background: "0,43,54"
-border: "88,110,117"
-list_marker: "133,153,0"
-table_header: "181,137,0"
-table_border: "88,110,117"
-error: "220,50,47"
-warning: "181,137,0"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 131,148,150
+text_light: 88,110,117
+line_number:
+  number: 88,110,117
+  separator: 88,110,117
+h1: 220,50,47
+h2: 203,75,22
+h3: 181,137,0
+h4: 38,139,210
+h5: 108,113,196
+h6: 42,161,152
+code:
+  text: 42,161,152
+  background: null
+math:
+  text: 181,137,0
+  border: 38,139,210
+quote: 88,110,117
+link: 38,139,210
+emphasis:
+  text: 203,75,22
+  background: null
+strong:
+  text: 220,50,47
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 88,110,117
+  background: null
+highlight:
+  text: null
+  background: 7,54,66
+background: 0,43,54
+error: 220,50,47
+warning: 181,137,0
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 38,139,210
+    abstract: 181,137,0
+    info: 38,139,210
+    todo: 203,75,22
+    tip: 133,153,0
+    success: ansi(51)
+    question: 220,50,47
+    warning: 108,113,196
+    failure: 42,161,152
+    danger: 42,161,152
+    bug: 42,161,152
+    example: 181,137,0
+    quote: ansi(33)
+front_matter:
+  title: 88,110,117
+  key: 88,110,117
+  value: 131,148,150
+  border: 88,110,117
+details_border: 88,110,117
+list:
+  ordered: 133,153,0
+  unordered: 133,153,0
+todo:
+  checked: 133,153,0
+  unchecked: 133,153,0
+table:
+  header: 181,137,0
+  border: null
 syntax:
-  keyword: "133,153,0"
-  string: "42,161,152"
-  comment: "88,110,117"
-  number: "181,137,0"
-  operator: "220,50,47"
-  function: "38,139,210"
-  variable: "131,148,150"
-  type_name: "108,113,196"
+  keyword: 133,153,0
+  string: 42,161,152
+  comment: 88,110,117
+  number: 181,137,0
+  operator: 220,50,47
+  function: 38,139,210
+  variable: 131,148,150
+  type_name: 108,113,196
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

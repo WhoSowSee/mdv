@@ -330,7 +330,7 @@ fn panel_preserves_dedicated_colors_and_wraps_once() {
             "--cols",
             "120",
             "--custom-theme",
-            "front_matter_title=#010203;front_matter_key=#040506;front_matter_value=#070809;front_matter_border=#0a0b0c",
+            "front_matter:title=#010203;front_matter:key=#040506;front_matter:value=#070809;front_matter:border=#0a0b0c",
         ],
     );
     assert!(

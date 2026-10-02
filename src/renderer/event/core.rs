@@ -1,7 +1,7 @@
 use super::{
     Alignment, CalloutStyle, Config, DefinitionListState, Event, FootnoteDefinitions,
     FootnoteStyle, HashMap, HeadingLevel, LinkStyle, Result, SyntaxSet, Tag, TagEnd, Theme,
-    ThemeElement, create_style, extract_code_language,
+    ThemeElement, extract_code_language,
 };
 use crate::block_spacing::BlockElement;
 use crate::inline_style::InlineStyleKind;
@@ -35,7 +35,8 @@ pub(crate) use state::{
     TableInlineUrlSegment, TableInlineUrlTarget, TableState,
 };
 
-use callouts::{blockquote_kind_info, build_callout_palette};
+use callouts::blockquote_kind_info;
+pub(in crate::renderer::event) use callouts::callout_palette_color;
 
 /// Internal event renderer
 pub(in crate::renderer) struct EventRenderer<'a> {
@@ -52,7 +53,6 @@ pub(in crate::renderer) struct EventRenderer<'a> {
     pub(super) pending_html_source_line: Option<usize>,
     pub(super) blockquote_starts: Vec<usize>,
     pub(super) callout_stack: Vec<CalloutState>,
-    pub(super) callout_palette: HashMap<CalloutKind, Color>,
     pub(super) list_stack: Vec<ListState>,
     pub(super) prepared_list_spacing_elements: VecDeque<BlockElement>,
     pub(super) prepared_blockquote_spacing_elements: VecDeque<BlockElement>,

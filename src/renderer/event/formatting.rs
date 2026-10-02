@@ -2,6 +2,7 @@ use super::core::{CalloutFold, CalloutKind, CalloutState};
 use super::{EventRenderer, ThemeElement, create_style};
 use crate::block_spacing::BlockElement;
 use crate::inline_style::{InlineStyle, InlineStyleKind};
+use crate::renderer::event::core::callout_palette_color;
 use crate::terminal::AnsiStyle;
 use crate::utils::{WrapMode, display_width, display_width_ansi, strip_ansi, wrap_text_with_mode};
 
@@ -20,6 +21,7 @@ const DEFAULT_UNKNOWN_SIMPLE_CALLOUT_ICON: &str = "[?]";
 
 mod blockquotes;
 mod borders;
+mod callout_colors;
 mod callout_frame;
 mod callout_label;
 mod callout_render;

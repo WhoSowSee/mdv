@@ -1,38 +1,139 @@
 name: terminal
 description: Terminal theme with standard colors
-pager_status_bar_transparent: false
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
 text: reset
 text_light: grey
-line_number: grey
-line_number_separator: grey
+line_number:
+  number: grey
+  separator: grey
 h1: red
 h2: green
 h3: yellow
 h4: blue
 h5: magenta
 h6: cyan
-code: "ansi(102)"
-math: "ansi(110)"
-math_border: "ansi(66)"
-quote: "ansi(109)"
+code:
+  text: darkgrey
+  background: null
+math:
+  text: blue
+  border: darkcyan
+quote: darkgray
 link: blue
-emphasis: yellow
-strong: red
-strikethrough: darkgrey
-highlight_background: "ansi(236)"
+emphasis:
+  text: yellow
+  background: null
+strong:
+  text: red
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: darkgrey
+  background: null
+highlight:
+  text: null
+  background: darkblue
 background: null
-border: grey
-list_marker: green
-table_header: yellow
-table_border: grey
 error: red
 warning: yellow
+code_block:
+  label: darkgrey
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: blue
+    abstract: yellow
+    info: blue
+    todo: green
+    tip: magenta
+    success: green
+    question: red
+    warning: cyan
+    failure: grey
+    danger: grey
+    bug: grey
+    example: yellow
+    quote: reset
+front_matter:
+  title: grey
+  key: grey
+  value: reset
+  border: darkgrey
+details_border: grey
+list:
+  ordered: blue
+  unordered: green
+todo:
+  checked: green
+  unchecked: green
+table:
+  header: yellow
+  border: null
 syntax:
-  keyword: "ansi(117)"
-  string: "ansi(109)"
-  comment: "ansi(59)"
-  number: "ansi(109)"
-  operator: "ansi(65)"
-  function: "ansi(153)"
+  keyword: ansi(117)
+  string: ansi(109)
+  comment: ansi(59)
+  number: ansi(109)
+  operator: ansi(65)
+  function: ansi(153)
   variable: reset
-  type_name: "ansi(117)"
+  type_name: ansi(117)
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

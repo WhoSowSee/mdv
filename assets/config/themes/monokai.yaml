@@ -1,38 +1,139 @@
 name: monokai
 description: Monokai color scheme
-pager_status_bar_transparent: false
-text: "248,248,242"
-text_light: "117,113,94"
-line_number: "117,113,94"
-line_number_separator: "117,113,94"
-h1: "249,38,114"
-h2: "166,226,46"
-h3: "230,219,116"
-h4: "102,217,239"
-h5: "253,151,31"
-h6: "174,129,255"
-code: "230,219,116"
-math: "102,217,239"
-math_border: "117,113,94"
-quote: "117,113,94"
-link: "102,217,239"
-emphasis: "253,151,31"
-strong: "249,38,114"
-strikethrough: "117,113,94"
-highlight_background: "73,72,62"
-background: "39,40,34"
-border: "73,72,62"
-list_marker: "166,226,46"
-table_header: "253,151,31"
-table_border: "73,72,62"
-error: "249,38,114"
-warning: "253,151,31"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 248,248,242
+text_light: 117,113,94
+line_number:
+  number: 117,113,94
+  separator: 117,113,94
+h1: 249,38,114
+h2: 166,226,46
+h3: 230,219,116
+h4: 102,217,239
+h5: 253,151,31
+h6: 174,129,255
+code:
+  text: 230,219,116
+  background: null
+math:
+  text: 102,217,239
+  border: 117,113,94
+quote: 117,113,94
+link: 102,217,239
+emphasis:
+  text: 253,151,31
+  background: null
+strong:
+  text: 249,38,114
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 117,113,94
+  background: null
+highlight:
+  text: null
+  background: 73,72,62
+background: 39,40,34
+error: 249,38,114
+warning: 253,151,31
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 102,217,239
+    abstract: 253,151,31
+    info: 102,217,239
+    todo: 166,226,46
+    tip: 230,219,116
+    success: ansi(51)
+    question: 249,38,114
+    warning: 174,129,255
+    failure: 73,72,62
+    danger: 73,72,62
+    bug: 73,72,62
+    example: 253,151,31
+    quote: ansi(33)
+front_matter:
+  title: 73,72,62
+  key: 117,113,94
+  value: 248,248,242
+  border: 73,72,62
+details_border: 73,72,62
+list:
+  ordered: 166,226,46
+  unordered: 166,226,46
+todo:
+  checked: 166,226,46
+  unchecked: 166,226,46
+table:
+  header: 253,151,31
+  border: null
 syntax:
-  keyword: "249,38,114"
-  string: "230,219,116"
-  comment: "117,113,94"
-  number: "174,129,255"
-  operator: "249,38,114"
-  function: "166,226,46"
-  variable: "248,248,242"
-  type_name: "102,217,239"
+  keyword: 249,38,114
+  string: 230,219,116
+  comment: 117,113,94
+  number: 174,129,255
+  operator: 249,38,114
+  function: 166,226,46
+  variable: 248,248,242
+  type_name: 102,217,239
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

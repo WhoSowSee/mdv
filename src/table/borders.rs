@@ -5,10 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 impl TableRenderer {
     pub(super) fn colorize_borders(&self, rendered: String) -> String {
-        if self.output_style.is_disabled() {
-            return rendered;
-        }
-        if !self.theme.table_border_overridden {
+        if self.output_style.is_disabled() || self.theme.table.border.is_none() {
             return rendered;
         }
 

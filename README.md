@@ -208,7 +208,7 @@ mdv merges settings from several sources in the following order of precedence:
 
 Create the default user config with `mdv --init-config`. Add a directory path (`mdv --init-config custom/dir`), use `--config-file <CONFIG_DIR>`, or set `MDV_CONFIG_PATH` to write it somewhere else.
 
-Configuration files must be written in YAML (`.yaml` or `.yml`). See `docs/examples/config.yaml` for a complete template including inline documentation:
+Configuration files must be written in YAML (`.yaml` or `.yml`). See the [configuration template](docs/examples/config.yaml) for all settings and examples:
 
 ```yaml
 # docs/examples/config.yaml
@@ -226,13 +226,15 @@ link_style: "clickable"
 link_overflow: "wrap"
 ```
 
-`inline_style` is merged per element and property instead of replacing the whole mapping. Its effective order is semantic defaults, user theme, main config, preset, then `--inline-style`.
-
 ### Structured complex settings
 
-The configuration file and user presets accept YAML mappings for `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list`, and `callout_style`. Their legacy one-line values remain supported and continue to be used by the corresponding CLI options.
+Configuration files and presets accept YAML mappings for `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list`, and `callout_style`. CLI options use the corresponding compact strings, which remain valid in YAML too.
 
-The structured form changes only how a value is written. A setting present in a preset replaces the same top-level setting from the main config, and an explicit CLI value replaces the preset value. `inline_style` retains its property-level merge behavior; explicit `--block-spacing` entries merge their specified elements and sides into the effective spacing configuration. See [`docs/examples/config.yaml`](docs/examples/config.yaml) for all structured examples.
+Theme colors, `inline_style`, and the four custom-entry settings merge by field, preserving omitted properties and entries. For example, `--custom-callout 'note:color=red'` changes only the note color, retaining its icon and other callouts.
+
+For custom entries, `null` clears a property or entry; root `null` or `{}` clears the entire setting. An explicitly supplied `aliases` list replaces the earlier list; `[]` clears it.
+
+Configuration and preset `block_spacing` mappings replace the earlier mapping; `--block-spacing` merges only the specified elements and sides. Other structured settings use whole-value replacement. See the [configuration reference](docs/modules/cli-configuration.md#structured-yaml-settings) for detailed merge and clearing rules.
 
 ## Presets
 
@@ -402,23 +404,30 @@ Built-in themes include:
 
 Switch between them with `--theme` or set a default in your configuration file.
 
-Use `--custom-theme` to override UI theme values and `--custom-code-theme` to fine-tune syntax highlighting. Overrides accept `key=value` pairs separated by semicolons, where keys match theme fields (for example `text`, `h1`, `border`, `code_background`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` accepts `true` or `false`; optional inline foreground/background colors accept `none`; other color values can be hex codes (`#rrggbb`), comma-separated RGB (`187,154,247`), named ANSI colors (`red`, `darkgrey`), or 256-color indexes (`ansi(42)`).
+Use `--custom-theme` to override colors: `key=value` for root fields, `section:field=value` for grouped fields, separated by semicolons:
 
-Run `mdv --theme-info` to preview the active palette. Add a path (`mdv --theme-info README.md`) to inspect how colors apply to a document. Starting from `examples/config.yaml` you can build your own theme variants and keep them in version control.
+```sh
+mdv README.md --custom-theme 'code:text=darkgrey;emphasis:background=null;details_border=grey;syntax:number=magenta'
+```
+
+`code_theme` selects the syntax palette; `--custom-code-theme` overrides individual syntax colors, accepting both `keyword=blue` and `syntax:keyword=blue`. See [theme override priorities](docs/modules/themes-and-styling.md#application-order) and [color formats](docs/modules/themes-and-styling.md#color-formats).
+
+Run `mdv --theme-info` to preview the active palette, or `mdv --theme-info README.md` to see it applied to a document.
 
 ### User themes
 
 Drop one or more `*.yaml`/`*.yml` files into `<config_dir>/themes/` to register your own themes. The directory follows the same resolution order as `config.yaml` (the `--config-file` flag, `$MDV_CONFIG_PATH`, then `~/.config/mdv/`). Two ready-to-use examples ship with the repository:
 
 - [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) - uses `extends: monokai` to override just a handful of fields.
-- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - fully standalone palette that lists every available field for reference.
+- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - example of a standalone palette.
 
 ```yaml
 # <config_dir>/themes/warm.yaml
 name: warm
 description: Warm red accent layered on top of monokai.
 extends: monokai
-pager_status_bar_transparent: true
+pager:
+  transparent: true
 
 h1: "#ff5577"
 link: "#66ccff"
@@ -433,17 +442,15 @@ syntax:
   keyword: "#ff5577"
 ```
 
-Field reference:
+Theme file basics:
 
 - `name` (required) - the value accepted by `--theme`.
-- `description` (optional) - shown in `mdv --theme-info`; falls back to the base theme's description.
-- `extends` (optional) - names a built-in theme or any other theme file loaded earlier in the same directory (alphabetical order). When omitted, missing fields are filled from the default terminal theme.
-- `pager_status_bar_transparent` (optional) - `false` keeps the filled pager status bar and Help panel; `true` removes both backgrounds and separates footer sections with `|`. It inherits from the base theme when omitted.
-- Every color field is optional and inherits from the base theme when omitted. Available UI fields: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strong_emphasis`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `strong_emphasis_background`, `code_background`, `strikethrough_background`, `background`, `border`, `code_block_border`, `callout_border`, `horizontal_rule`, `footnote_separator`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. `strong_emphasis` falls back to `strong`, while an omitted `highlight` keeps the surrounding foreground.
+- `description` (optional) - shown in `mdv --theme-info`; inherits from the base theme.
+- `extends` (optional) - a built-in theme or a user theme loaded earlier in alphabetical order. Without it, missing fields inherit from `terminal`.
+- `pager` - footer colors, transparency, selection, and search highlighting in the built-in pager.
+- `inline_style` - inline Markdown decorations; colors belong to the corresponding color sections.
 
-- `inline_style:` (optional) - partially overrides `backticks`, `bold`, `italic`, `underline`, and `strikethrough` for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Omitted properties inherit from the base theme. The defaults are italic emphasis, bold strong, bold-italic strong emphasis, backticks around code, strikethrough decoration, and no extra highlight decoration.
-- `syntax:` (optional) - overrides the syntax-highlight palette. Each field is optional and merges against the base: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
-- Color values follow the same syntax as `--custom-theme`: named (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`), or 256-color (`ansi(42)` or `42`).
+Colors inherit per field. Explicit `null` clears an inherited optional border or background color override; `reset` uses the terminal's default color. See the [field reference](docs/modules/themes-and-styling.md#theme-field-reference) and [inheritance rules](docs/modules/themes-and-styling.md#inheritance-and-null) for the full schema and special cases. The [bundled theme files](assets/config/themes/) show all fields; [terminal.yaml](assets/config/themes/terminal.yaml) defines the default palette.
 
 A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying every field. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.
 

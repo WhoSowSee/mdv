@@ -109,7 +109,7 @@ a grapheme-wrap boundary are removed before the final layout pass, so following 
 the released width while column geometry and alignment padding remain unchanged.
 
 `table_borders=false` uses compact borders without a complete outer grid. `table_borders=true` enables `UTF8_FULL` with rounded corners.
-An explicit `table_border` theme color applies to vertical and horizontal structural lines in both layouts and to separators between wrapped table blocks. Without an override, all these lines use the terminal text color. Cell content retains its own styling.
+An explicit `table:border` theme color applies to vertical and horizontal structural lines in both layouts and to separators between wrapped table blocks. Without an override, all these lines use the terminal text color. Wrapped-block labels use `text_light`; cell content retains its own styling.
 
 ## Smart table indentation
 

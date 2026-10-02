@@ -1,5 +1,6 @@
 use super::*;
 use crate::terminal::OutputStyle;
+use crate::theme::PagerTheme;
 mod layout;
 mod shared;
 mod views;
@@ -14,7 +15,7 @@ pub(crate) struct PagerDocument {
     cached_layouts: std::collections::VecDeque<(usize, PagerContent)>,
     content: PagerContent,
     pub(in crate::pager) title: Option<String>,
-    status_bar_transparent: bool,
+    pager_theme: PagerTheme,
     output_style: OutputStyle,
 }
 
@@ -93,7 +94,7 @@ impl PagerDocument {
             width_limit: None,
             cached_layouts: std::collections::VecDeque::new(),
             title: None,
-            status_bar_transparent: false,
+            pager_theme: PagerTheme::default(),
             output_style,
         }
     }
@@ -128,13 +129,13 @@ impl PagerDocument {
         }
     }
 
-    pub(crate) const fn with_status_bar_transparent(mut self, transparent: bool) -> Self {
-        self.status_bar_transparent = transparent;
+    pub(crate) fn with_pager_theme(mut self, theme: PagerTheme) -> Self {
+        self.pager_theme = theme;
         self
     }
 
-    pub(crate) const fn status_bar_transparent(&self) -> bool {
-        self.status_bar_transparent
+    pub(crate) fn pager_theme(&self) -> &PagerTheme {
+        &self.pager_theme
     }
 
     pub(crate) const fn output_style(&self) -> OutputStyle {

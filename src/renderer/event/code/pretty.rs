@@ -249,7 +249,7 @@ impl<'a> EventRenderer<'a> {
             format!(
                 "{}{}{}",
                 self.style_code_block_border(&line[..start]),
-                self.style_pretty_accent(&line[start..end]),
+                self.style_code_block_label(&line[start..end]),
                 self.style_code_block_border(&line[end..])
             )
         } else {
@@ -292,9 +292,7 @@ impl<'a> EventRenderer<'a> {
         line
     }
 
-    pub(super) fn style_pretty_accent(&self, text: &str) -> String {
-        AnsiStyle::new()
-            .fg(PRETTY_ACCENT_COLOR)
-            .apply(text, self.output_style)
+    pub(super) fn style_code_block_label(&self, text: &str) -> String {
+        create_style(self.theme, ThemeElement::CodeBlockLabel).apply(text, self.output_style)
     }
 }

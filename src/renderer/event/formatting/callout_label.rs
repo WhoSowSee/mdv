@@ -11,35 +11,6 @@ impl<'a> EventRenderer<'a> {
             .any(|state| matches!(state, CalloutState::Active(_)))
     }
 
-    pub(in crate::renderer::event) fn callout_label_style(
-        &self,
-        kind: CalloutKind,
-        label: &str,
-    ) -> AnsiStyle {
-        let color = if kind == CalloutKind::Properties {
-            self.theme.front_matter_title_color().clone()
-        } else if let Some(custom) = self.config.custom_callouts.get(label) {
-            custom
-                .color
-                .clone()
-                .unwrap_or_else(|| self.unknown_callout_color())
-        } else {
-            self.callout_palette
-                .get(&kind)
-                .cloned()
-                .unwrap_or_else(|| self.theme.text.clone())
-        };
-
-        AnsiStyle::new().fg(color.into()).bold()
-    }
-
-    pub(in crate::renderer::event) fn unknown_callout_color(&self) -> crate::theme::Color {
-        self.callout_palette
-            .get(&CalloutKind::Tip)
-            .cloned()
-            .unwrap_or_else(|| self.theme.text.clone())
-    }
-
     pub(in crate::renderer::event) fn callout_label_text(
         &self,
         label: &str,

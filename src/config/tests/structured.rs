@@ -3,7 +3,7 @@ use crate::block_spacing::BlockElement;
 use crate::cli::{CalloutStyle, MathBlockStyle};
 use crate::theme::{Color, Theme, apply_custom_code_theme, apply_custom_theme};
 
-fn parse_with_structured_preset(
+pub(super) fn parse_with_structured_preset(
     config_contents: &str,
     preset_settings: &str,
     extra_args: &[&str],
@@ -31,17 +31,34 @@ fn parse_with_structured_preset(
 #[test]
 fn structured_theme_overrides_load_from_config() {
     let _environment = env_lock();
-    let config = parse_with_config(
+    let config = parse_with_structured_preset(
         r##"
 custom_theme:
   text: "#010203"
   horizontal_rule: "#070809"
+  details_border: darkgrey
+  emphasis: {text: cyan, background: null}
+  code: {text: red, background: blue}
+  line_number:
+    number: red
+    separator: grey
+  callout:
+    palette:
+      success: cyan
+  syntax:
+    number: magenta
   background: null
-  pager_status_bar_transparent: true
+  pager:
+    transparent: true
+    help: cyan
+    search: {background: red}
+    search_current: {text: reset, background: null}
 custom_code_theme:
   keyword: "#040506"
   number: 42
 "##,
+        "custom_theme: {pager: {file_name: yellow, title: magenta}}\n",
+        &["--custom-theme", "pager:title=red"],
     );
 
     let mut theme = Theme::default();
@@ -62,7 +79,20 @@ custom_code_theme:
     assert!(matches!(theme.text, Color::Rgb { r: 1, g: 2, b: 3 }));
     assert!(theme.background.is_none());
     assert_eq!(theme.horizontal_rule, Some(Color::Rgb { r: 7, g: 8, b: 9 }));
-    assert!(theme.pager_status_bar_transparent);
+    assert_eq!(theme.line_number.number, Color::Red);
+    assert_eq!(theme.details_border, Some(Color::DarkGrey));
+    assert_eq!(theme.emphasis.text, Color::Cyan);
+    assert!(theme.emphasis.background.is_none());
+    assert_eq!(theme.code.text, Color::Red);
+    assert_eq!(theme.code.background, Some(Color::Blue));
+    assert_eq!(theme.callout.palette.success, Color::Cyan);
+    assert!(theme.pager.transparent);
+    assert_eq!(theme.pager.help, Some(Color::Cyan));
+    assert_eq!(theme.pager.title, Some(Color::Red));
+    assert_eq!(theme.pager.file_name, Some(Color::Yellow));
+    assert_eq!(theme.pager.search.background, Some(Color::Red));
+    assert_eq!(theme.pager.search_current.text, Some(Color::Reset));
+    assert!(theme.pager.search_current.background.is_none());
     assert!(matches!(
         theme.syntax.keyword,
         Color::Rgb { r: 4, g: 5, b: 6 }
@@ -214,25 +244,6 @@ custom_list:
 }
 
 #[test]
-fn structured_preset_and_cli_keep_field_level_priority() {
-    let _environment = env_lock();
-    let config_contents = "custom_callout:\n  config:\n    icon: C\n  retained:\n    icon: R\n";
-    let preset_settings = "custom_callout:\n  preset:\n    icon: P\n";
-
-    let preset_config = parse_with_structured_preset(config_contents, preset_settings, &[]);
-    assert_eq!(preset_config.custom_callouts.len(), 1);
-    assert!(preset_config.custom_callouts.contains_key("preset"));
-
-    let config = parse_with_structured_preset(
-        config_contents,
-        preset_settings,
-        &["--custom-callout", "cli:icon=L"],
-    );
-    assert_eq!(config.custom_callouts.len(), 1);
-    assert!(config.custom_callouts.contains_key("cli"));
-}
-
-#[test]
 fn structured_block_spacing_keeps_preset_and_cli_priority() {
     let _environment = env_lock();
     let config = parse_with_structured_preset(
@@ -280,15 +291,14 @@ custom_code_block: "rust:icon=R,label=Rust,aliases=rs|rustlang"
 }
 
 #[test]
-fn empty_structured_preset_values_clear_lower_priority_settings() {
+fn empty_structured_preset_resets_block_spacing() {
     let _environment = env_lock();
     let config = parse_with_structured_preset(
-        "custom_callout:\n  config:\n    icon: C\nblock_spacing:\n  paragraph:\n    top: 2\n",
-        "custom_callout: {}\nblock_spacing: {}\n",
+        "block_spacing:\n  paragraph:\n    top: 2\n",
+        "block_spacing: {}\n",
         &[],
     );
 
-    assert!(config.custom_callouts.is_empty());
     let paragraph = config.block_spacing.spacing(BlockElement::Paragraph);
     assert_eq!((paragraph.top, paragraph.bottom), (0, 1));
 }

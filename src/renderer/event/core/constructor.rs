@@ -23,7 +23,6 @@ impl<'a> EventRenderer<'a> {
             pending_html_source_line: None,
             blockquote_starts: Vec::new(),
             callout_stack: Vec::new(),
-            callout_palette: build_callout_palette(theme),
             list_stack: Vec::new(),
             prepared_list_spacing_elements: VecDeque::new(),
             prepared_blockquote_spacing_elements: VecDeque::new(),

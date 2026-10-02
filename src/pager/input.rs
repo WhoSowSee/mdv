@@ -5,7 +5,7 @@ pub(super) struct PagerInputClassifier {
     pub(super) editor_requested: Arc<AtomicBool>,
     pub(super) editor_enabled: bool,
     pub(super) help_panel: Vec<PromptLine>,
-    pub(super) help_transparent: bool,
+    pub(super) help_theme: crate::theme::PagerTheme,
     pub(super) pager: Pager,
     pub(super) document: Arc<RwLock<PagerDocument>>,
     pub(super) refresh: Option<RefreshCallback>,
@@ -16,9 +16,9 @@ impl PagerInputClassifier {
     fn set_help_visible(&self, visible: bool, width: usize, toc: bool) {
         let result = if visible {
             let lines = if toc {
-                super::help::build_toc_help_panel(width, self.help_transparent)
+                super::help::build_toc_help_panel(width, &self.help_theme)
             } else {
-                super::help::fit_help_panel(&self.help_panel, width, self.help_transparent)
+                super::help::fit_help_panel(&self.help_panel, width, &self.help_theme)
             };
             lines
                 .map_err(minus::error::MinusError::from)

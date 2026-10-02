@@ -4,6 +4,7 @@ use std::fmt::Write;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PromptColor {
+    Reset,
     Black,
     DarkGrey,
     Red,
@@ -107,7 +108,7 @@ impl PromptStyle {
     }
 }
 
-fn write_prompt_color(output: &mut String, color: PromptColor, background: bool) {
+pub fn write_prompt_color(output: &mut String, color: PromptColor, background: bool) {
     let offset = if background { 10 } else { 0 };
     match color {
         PromptColor::Rgb { r, g, b } => {
@@ -120,6 +121,7 @@ fn write_prompt_color(output: &mut String, color: PromptColor, background: bool)
         }
         named => {
             let foreground = match named {
+                PromptColor::Reset => 39,
                 PromptColor::Black => 30,
                 PromptColor::DarkRed => 31,
                 PromptColor::DarkGreen => 32,
@@ -146,6 +148,7 @@ fn write_prompt_color(output: &mut String, color: PromptColor, background: bool)
 impl From<PromptColor> for Color {
     fn from(color: PromptColor) -> Self {
         match color {
+            PromptColor::Reset => Self::Reset,
             PromptColor::Black => Self::Black,
             PromptColor::DarkGrey => Self::DarkGrey,
             PromptColor::Red => Self::Red,

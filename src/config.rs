@@ -216,6 +216,8 @@ define_config! {
     pub inline_style: InlineStyleOverrides,
     #[serde(default, deserialize_with = "structured::deserialize_theme_overrides")]
     pub custom_code_theme: Option<String>,
+    #[serde(skip)]
+    pub(crate) color_priorities: crate::theme::ColorPriorities,
     #[serde(default, deserialize_with = "structured::deserialize_custom_callout")]
     pub custom_callout: Option<String>,
     #[serde(skip)]
@@ -296,6 +298,7 @@ impl Default for Config {
             custom_theme: None,
             inline_style: InlineStyleOverrides::default(),
             custom_code_theme: None,
+            color_priorities: crate::theme::ColorPriorities::default(),
             custom_callout: None,
             custom_callouts: HashMap::new(),
             custom_code_block: None,
@@ -315,6 +318,7 @@ impl Default for Config {
 mod deserialization;
 mod files;
 pub(crate) use deserialization::REMOVED_COLOR_SETTING;
+pub(crate) mod custom_overrides;
 mod from_cli;
 mod merge;
 mod runtime;

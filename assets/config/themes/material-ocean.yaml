@@ -1,38 +1,139 @@
 name: material-ocean
 description: Material Theme Ocean color scheme
-pager_status_bar_transparent: false
-text: "238,255,255"
-text_light: "176,190,197"
-line_number: "176,190,197"
-line_number_separator: "176,190,197"
-h1: "130,170,255"
-h2: "128,203,196"
-h3: "195,232,141"
-h4: "255,203,107"
-h5: "247,140,108"
-h6: "199,146,234"
-code: "255,203,107"
-math: "130,170,255"
-math_border: "137,221,255"
-quote: "84,110,122"
-link: "130,170,255"
-emphasis: "247,140,108"
-strong: "199,146,234"
-strikethrough: "84,110,122"
-highlight_background: "30,34,48"
-background: "15,17,26"
-border: "28,34,48"
-list_marker: "195,232,141"
-table_header: "130,170,255"
-table_border: "28,34,48"
-error: "240,113,120"
-warning: "255,203,107"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 238,255,255
+text_light: 176,190,197
+line_number:
+  number: 176,190,197
+  separator: 176,190,197
+h1: 130,170,255
+h2: 128,203,196
+h3: 195,232,141
+h4: 255,203,107
+h5: 247,140,108
+h6: 199,146,234
+code:
+  text: 255,203,107
+  background: null
+math:
+  text: 130,170,255
+  border: 137,221,255
+quote: 84,110,122
+link: 130,170,255
+emphasis:
+  text: 247,140,108
+  background: null
+strong:
+  text: 199,146,234
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 84,110,122
+  background: null
+highlight:
+  text: null
+  background: 30,34,48
+background: 15,17,26
+error: 240,113,120
+warning: 255,203,107
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 130,170,255
+    abstract: 128,203,196
+    info: 130,170,255
+    todo: 247,140,108
+    tip: 195,232,141
+    success: ansi(33)
+    question: 255,203,107
+    warning: 199,146,234
+    failure: 28,34,48
+    danger: 28,34,48
+    bug: 28,34,48
+    example: 128,203,196
+    quote: 238,255,255
+front_matter:
+  title: 28,34,48
+  key: 176,190,197
+  value: 238,255,255
+  border: 28,34,48
+details_border: 28,34,48
+list:
+  ordered: 195,232,141
+  unordered: 195,232,141
+todo:
+  checked: 195,232,141
+  unchecked: 195,232,141
+table:
+  header: 130,170,255
+  border: null
 syntax:
-  keyword: "199,146,234"
-  string: "195,232,141"
-  comment: "84,110,122"
-  number: "247,140,108"
-  operator: "137,221,255"
-  function: "130,170,255"
-  variable: "238,255,255"
-  type_name: "128,203,196"
+  keyword: 199,146,234
+  string: 195,232,141
+  comment: 84,110,122
+  number: 247,140,108
+  operator: 137,221,255
+  function: 130,170,255
+  variable: 238,255,255
+  type_name: 128,203,196
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

@@ -10,15 +10,12 @@ pub(crate) struct CustomCalloutStyle {
 
 pub(crate) fn parse_custom_callouts(input: &str) -> Result<HashMap<String, CustomCalloutStyle>> {
     let mut callouts = HashMap::new();
-    let mut has_entries = false;
 
     for raw_entry in input.split([';', '\n']) {
         let entry = raw_entry.trim();
         if entry.is_empty() {
             continue;
         }
-
-        has_entries = true;
 
         let (name_raw, values_raw) = entry
             .split_once(':')
@@ -106,7 +103,7 @@ pub(crate) fn parse_custom_callouts(input: &str) -> Result<HashMap<String, Custo
         }
     }
 
-    if !has_entries {
+    if callouts.is_empty() {
         bail!("Custom callout string is empty.");
     }
 
@@ -120,7 +117,7 @@ pub(crate) fn is_valid_callout_name(name: &str) -> bool {
             .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
 }
 
-fn parse_callout_options(values: &str) -> Result<Vec<(String, String)>> {
+pub(crate) fn parse_callout_options(values: &str) -> Result<Vec<(String, String)>> {
     let mut options = Vec::new();
     let mut remaining = values.trim();
 

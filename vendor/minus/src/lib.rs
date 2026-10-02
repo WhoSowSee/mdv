@@ -26,6 +26,7 @@ mod layout;
 mod line_navigation;
 #[cfg(feature = "search")]
 pub use layout::LayoutRenderer;
+mod highlight_styles;
 #[path = "core/mod.rs"]
 mod minus_core;
 mod pager;
@@ -35,6 +36,7 @@ pub mod screen;
 #[cfg_attr(docsrs, doc(cfg(feature = "search")))]
 pub mod search;
 mod selection;
+pub use highlight_styles::{HighlightColors, HighlightStyles};
 #[cfg(feature = "search")]
 mod toc;
 #[cfg(feature = "search")]

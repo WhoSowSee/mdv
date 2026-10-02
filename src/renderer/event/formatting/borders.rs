@@ -7,7 +7,7 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(in crate::renderer::event) fn style_code_block_border(&self, text: &str) -> String {
-        if let Some(color) = self.theme.code_block_border.as_ref() {
+        if let Some(color) = self.theme.code_block.border.as_ref() {
             AnsiStyle::new()
                 .fg(color.clone().into())
                 .apply(text, self.output_style)

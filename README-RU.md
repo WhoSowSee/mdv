@@ -208,7 +208,7 @@ mdv объединяет настройки из нескольких источ
 
 Создать конфиг по умолчанию можно командой `mdv --init-config`. Укажите каталог (`mdv --init-config custom/dir`), используйте `--config-file <CONFIG_DIR>` или задайте `MDV_CONFIG_PATH`, чтобы записать его в другой путь.
 
-Файлы конфигурации поддерживают YAML (`.yaml` или `.yml`). В каталоге `docs/examples/config.yaml` расположен полный шаблон с комментариями:
+Файлы конфигурации поддерживают YAML (`.yaml` или `.yml`). Все настройки и примеры приведены в [шаблоне конфигурации](docs/examples/config.yaml):
 
 ```yaml
 # docs/examples/config.yaml
@@ -226,13 +226,15 @@ link_style: "clickable"
 link_overflow: "wrap"
 ```
 
-`inline_style` объединяется отдельно для каждого элемента и свойства, а не заменяет всю секцию. Итоговый порядок наложения: семантические значения по умолчанию, пользовательская тема, основной конфиг, пресет, затем `--inline-style`.
-
 ### Структурированные сложные параметры
 
-Основной конфиг и пользовательские пресеты принимают вложенные YAML-объекты для `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list` и `callout_style`. Старые однострочные значения остаются совместимыми и продолжают использоваться соответствующими параметрами CLI.
+Конфиг и пресеты принимают вложенные YAML-объекты для `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list` и `callout_style`. В CLI используются соответствующие компактные строки; они также остаются допустимыми в YAML.
 
-Структурированная форма меняет только способ записи значения. Параметр, присутствующий в пресете, заменяет одноимённый параметр основного конфига, а явно переданное значение CLI заменяет значение пресета. `inline_style` сохраняет объединение по свойствам; явно переданные записи `--block-spacing` объединяют указанные элементы и стороны с итоговой конфигурацией интервалов. Все структурированные примеры приведены в [`docs/examples/config.yaml`](docs/examples/config.yaml).
+Цвета темы, `inline_style` и четыре настройки пользовательских элементов объединяются по полям, сохраняя пропущенные свойства и записи. Например, `--custom-callout 'note:color=red'` меняет только цвет note, сохраняя его иконку и остальные callout.
+
+Для пользовательских элементов `null` очищает свойство или запись, а корневой `null` или `{}` — всю настройку. Явно заданный список `aliases` заменяет предыдущий; `[]` очищает его.
+
+Объекты `block_spacing` из конфига и пресета заменяют предыдущий объект; `--block-spacing` объединяет только указанные элементы и стороны. Остальные структурированные настройки заменяются целиком. Подробные правила объединения и очистки приведены в [справочнике конфигурации](docs/modules/cli-configuration.md#structured-yaml-settings).
 
 ## Пресеты
 
@@ -402,23 +404,30 @@ inline_style:
 
 Выбирайте их параметром `--theme` или задавайте по умолчанию в конфигурации.
 
-Для переопределения значений темы интерфейса используйте `--custom-theme`, а для тонкой настройки подсветки синтаксиса - `--custom-code-theme`. Переопределения передаются в формате `ключ=значение`, пары разделяются точкой с запятой. Ключи соответствуют полям темы (например, `text`, `h1`, `border`, `code_background`, `line_number`, `line_number_separator`, `pager_status_bar_transparent`, `keyword`, `function`). `pager_status_bar_transparent` принимает `true` или `false`; необязательные цвета текста и фона inline-элементов также принимают `none`; остальные цветовые значения поддерживают форматы `#rrggbb`, `r,g,b`, именованные цвета ANSI (`red`, `darkgrey`) и индексы 256-цветной палитры (`ansi(42)`).
+Для изменения цветов используйте `--custom-theme`: `ключ=значение` для корневых полей, `секция:поле=значение` для сгруппированных. Записи разделяются точкой с запятой:
 
-Команда `mdv --theme-info` отображает выбранную палитру; добавление пути (`mdv --theme-info README.md`) позволяет посмотреть, как цвета применяются к документу. Используйте `examples/config.yaml` как отправную точку для своих тем и храните настройки в системе контроля версий.
+```sh
+mdv README.md --custom-theme 'code:text=darkgrey;emphasis:background=null;details_border=grey;syntax:number=magenta'
+```
+
+`code_theme` выбирает палитру синтаксиса; `--custom-code-theme` меняет отдельные цвета, принимая как `keyword=blue`, так и `syntax:keyword=blue`. Подробнее о [приоритетах переопределений](docs/modules/themes-and-styling.md#application-order) и [форматах цветов](docs/modules/themes-and-styling.md#color-formats).
+
+Команда `mdv --theme-info` показывает активную палитру, а `mdv --theme-info README.md` — её применение к документу.
 
 ### Пользовательские темы
 
 Положите один или несколько файлов `*.yaml`/`*.yml` в каталог `<config_dir>/themes/`, чтобы зарегистрировать собственные темы. Каталог ищется в том же порядке, что и `config.yaml` (флаг `--config-file`, переменная `MDV_CONFIG_PATH`, затем `~/.config/mdv/`). В репозитории есть два готовых примера:
 
 - [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) - использует `extends: monokai` и переопределяет лишь несколько полей.
-- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - полностью самостоятельная палитра, в которой перечислены все доступные поля.
+- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - пример самостоятельной палитры.
 
 ```yaml
 # <config_dir>/themes/warm.yaml
 name: warm
 description: Тёплый красный акцент поверх monokai.
 extends: monokai
-pager_status_bar_transparent: true
+pager:
+  transparent: true
 
 h1: "#ff5577"
 link: "#66ccff"
@@ -433,17 +442,15 @@ syntax:
   keyword: "#ff5577"
 ```
 
-Описание полей:
+Основные поля файла темы:
 
 - `name` (обязательно) - значение, принимаемое параметром `--theme`.
-- `description` (необязательно) - отображается в `mdv --theme-info`; если не задано, берётся описание базовой темы.
-- `extends` (необязательно) - имя встроенной темы или другой темы, загруженной раньше в этом же каталоге (в алфавитном порядке). Если не указано, недостающие поля подставляются из встроенной темы `terminal`.
-- `pager_status_bar_transparent` (необязательно) - `false` сохраняет фон статус-бара и панели Help; `true` убирает оба фона и разделяет секции footer символом `|`. Если поле не указано, значение наследуется от базовой темы.
-- Любое цветовое поле необязательно и наследуется от базовой темы. Доступны UI-поля: `text`, `text_light`, `line_number`, `line_number_separator`, `h1`..`h6`, `code`, `math`, `math_border`, `quote`, `link`, `emphasis`, `strong`, `strikethrough`, `highlight`, `highlight_background`, `emphasis_background`, `strong_background`, `code_background`, `strikethrough_background`, `background`, `border`, `code_block_border`, `callout_border`, `horizontal_rule`, `footnote_separator`, `list_marker`, `table_header`, `table_border`, `error`, `warning`. Для `strong_emphasis` используется цвет `strong`, если отдельный цвет не задан; при отсутствии `highlight` сохраняется цвет окружающего текста.
+- `description` (необязательно) - описание для `mdv --theme-info`; наследуется от базовой темы.
+- `extends` (необязательно) - встроенная тема или пользовательская тема, загруженная раньше по алфавиту. Без него пропущенные поля наследуются от `terminal`.
+- `pager` - цвета нижней панели, прозрачность, выделение и подсветка поиска во встроенном pager.
+- `inline_style` - начертания строчных элементов Markdown; цвета задаются в соответствующих цветовых секциях.
 
-- `inline_style:` (необязательно) - частично переопределяет `backticks`, `bold`, `italic`, `underline` и `strikethrough` для `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough` и `highlight`. Пропущенные свойства наследуются от базовой темы. По умолчанию `emphasis` отображается курсивом, `strong` - жирным, `strong_emphasis` - жирным курсивом, `code` обрамляется обратными кавычками, `strikethrough` зачёркивается, а у `highlight` нет дополнительных начертаний.
-- `syntax:` (необязательно) - переопределение палитры подсветки синтаксиса; каждое поле необязательно и мерджится поверх базовой. Поля: `keyword`, `string`, `comment`, `number`, `operator`, `function`, `variable`, `type_name`.
-- Значения цвета используют тот же синтаксис, что и `--custom-theme`: именованные (`red`, `darkgrey`, `dark_grey`), hex (`#ff5577`), rgb (`187,154,247`) или 256-цветные (`ansi(42)` или просто `42`).
+Цвета наследуются по отдельным полям. Явный `null` очищает унаследованное необязательное переопределение цвета рамки или фона; `reset` использует цвет терминала по умолчанию. Полная схема и особые случаи описаны в [справочнике полей](docs/modules/themes-and-styling.md#theme-field-reference) и [правилах наследования](docs/modules/themes-and-styling.md#inheritance-and-null). Все поля можно посмотреть в [файлах встроенных тем](assets/config/themes/), а палитру по умолчанию — в [terminal.yaml](assets/config/themes/terminal.yaml).
 
 Пользовательская тема с тем же именем, что и встроенная, имеет приоритет и полностью её заменяет - это поддерживаемый способ сделать форк встроенной темы, не копируя каждое поле. Нечитаемые или повреждённые файлы пропускаются с предупреждением, поэтому одна битая тема не ломает остальные.
 

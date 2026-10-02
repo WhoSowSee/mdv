@@ -219,6 +219,43 @@ pub struct ListMarkerOverride {
     pub color: Option<Color>,
 }
 
+impl ListMarkerOverride {
+    pub(crate) fn parse_entry(entry: &str) -> Result<(usize, Self)> {
+        let (level_raw, rest) = entry
+            .split_once(':')
+            .with_context(|| format!("Custom list entry '{entry}' must contain ':'"))?;
+        let level: usize = level_raw.trim().parse().with_context(|| {
+            format!("Custom list level '{level_raw}' must be a positive integer")
+        })?;
+        if level == 0 {
+            bail!("Custom list level must be 1 or greater (got 0).");
+        }
+        let rest = rest.trim();
+        if rest.is_empty() {
+            bail!("Custom list level {level} must define an icon or color.");
+        }
+        let (first, remainder) = rest.split_once(':').unwrap_or((rest, ""));
+        let first = first.trim();
+        let (icon, color) = if let Ok(color) = parse_color_value(first) {
+            if !remainder.trim().is_empty() {
+                bail!("Custom list level {level} color-only entry must not contain extra tokens.");
+            }
+            (None, Some(color))
+        } else {
+            let color = if remainder.trim().is_empty() {
+                None
+            } else {
+                let value = remainder.trim();
+                Some(parse_color_value(value).with_context(|| {
+                    format!("Custom list level {level} has invalid color '{value}'")
+                })?)
+            };
+            (Some(first.to_string()), color)
+        };
+        Ok((level, Self { icon, color }))
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct ListMarkerConfig {
     pub style: Option<PrettyListStyle>,
@@ -249,71 +286,19 @@ impl ListMarkerConfig {
     /// Returns the parsed map. Multiple entries for the same level are rejected.
     pub fn parse_custom_list(input: &str) -> Result<HashMap<usize, ListMarkerOverride>> {
         let mut out = HashMap::new();
-        let mut has_entries = false;
-
-        for raw_entry in input.split(';') {
-            let entry = raw_entry.trim();
-            if entry.is_empty() {
-                continue;
-            }
-            has_entries = true;
-
-            let (level_raw, rest) = entry
-                .split_once(':')
-                .with_context(|| format!("Custom list entry '{entry}' must contain ':'"))?;
-
-            let level: usize = level_raw.trim().parse().with_context(|| {
-                format!("Custom list level '{level_raw}' must be a positive integer")
-            })?;
-            if level == 0 {
-                bail!("Custom list level must be 1 or greater (got 0).");
-            }
-
-            let rest = rest.trim();
-            if rest.is_empty() {
-                bail!("Custom list level {level} must define an icon or color.");
-            }
-
-            // `<icon>[:<color>]` branch, or `<color>` alone when the first
-            // token happens to parse as a color. The first split picks up the
-            // optional second segment without consuming extra ':' inside.
-            let (first, remainder) = match rest.split_once(':') {
-                Some(parts) => parts,
-                None => (rest, ""),
-            };
-            let first_trim = first.trim();
-
-            let (icon, color) = if let Ok(parsed) = parse_color_value(first_trim) {
-                if !remainder.trim().is_empty() {
-                    bail!(
-                        "Custom list level {level} color-only entry must not contain extra tokens."
-                    );
-                }
-                (None, Some(parsed))
-            } else {
-                let color = if remainder.trim().is_empty() {
-                    None
-                } else {
-                    let trimmed = remainder.trim();
-                    Some(parse_color_value(trimmed).with_context(|| {
-                        format!("Custom list level {level} has invalid color '{trimmed}'")
-                    })?)
-                };
-                (Some(first_trim.to_string()), color)
-            };
-
-            if out
-                .insert(level, ListMarkerOverride { icon, color })
-                .is_some()
-            {
+        for entry in input
+            .split(';')
+            .map(str::trim)
+            .filter(|entry| !entry.is_empty())
+        {
+            let (level, parsed) = ListMarkerOverride::parse_entry(entry)?;
+            if out.insert(level, parsed).is_some() {
                 bail!("Custom list level {level} is defined more than once.");
             }
         }
-
-        if !has_entries {
+        if out.is_empty() {
             bail!("Custom list string is empty.");
         }
-
         Ok(out)
     }
 }

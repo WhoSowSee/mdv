@@ -154,6 +154,7 @@ impl PagerState {
                 prefix_width.saturating_add(visible_start),
                 prefix_width.saturating_add(visible_end),
                 self.color_depth,
+                self.highlight_styles.selection,
             )
         } else {
             row
@@ -184,6 +185,7 @@ impl PagerState {
                 current_range,
                 prefix_width,
                 self.color_depth,
+                self.highlight_styles,
             ))
         } else {
             row

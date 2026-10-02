@@ -31,7 +31,7 @@ Rendering is split between an outer document facade and one stateful `EventRende
 
 1. builds a `ThemeManager` from embedded and user themes;
 2. selects the terminal theme;
-3. applies `custom_theme` and inline-style overrides;
+3. applies source-ordered theme color assignments and inline-style overrides;
 4. loads the syntax set, including `syntaxes_dir`;
 5. selects or builds the code theme.
 
@@ -66,7 +66,7 @@ In reverse mode, front matter follows the reversed Markdown body so it remains a
 | Group | Example state |
 |---|---|
 | Output and layout | `output`, `current_indent`, and heading/content indentation. |
-| Blockquotes and callouts | quote depth, `callout_stack`, palette, and pending marker buffers. |
+| Blockquotes and callouts | quote depth, `callout_stack`, and pending marker buffers; colors come from the theme's independent palette. |
 | Lists and definitions | `list_stack`, prepared spacing queues, and the definition-list stack. |
 | Tables and HTML | optional `TableState` and pending HTML-block buffer. |
 | Links | current link text, paragraph/document references, and counters. |
@@ -96,7 +96,7 @@ required by the facade's iterative layout without exposing mutable state.
 | [core/end_paragraph.rs](../../src/renderer/event/core/end_paragraph.rs) | Finish paragraphs, references, attached footnotes, and spacing. |
 | [core/end_blockquote.rs](../../src/renderer/event/core/end_blockquote.rs) | Close a quote or callout and restore indentation state. |
 | [core/end_lists.rs](../../src/renderer/event/core/end_lists.rs) | Close lists and items while reconciling nesting. |
-| [core/callouts.rs](../../src/renderer/event/core/callouts.rs) | Resolve callout type, base palette, and unique fallback colors. |
+| [core/callouts.rs](../../src/renderer/event/core/callouts.rs) | Resolve callout type and its declared palette entry. |
 
 ## Document lifecycle
 

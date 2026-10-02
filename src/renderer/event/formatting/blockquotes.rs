@@ -142,7 +142,7 @@ impl<'a> EventRenderer<'a> {
     fn append_html_details_prefix(&self, prefix: &mut String) {
         if self.html_details_depth > 0 {
             let guide =
-                create_style(self.theme, ThemeElement::Border).apply("│", self.output_style);
+                create_style(self.theme, ThemeElement::DetailsBorder).apply("│", self.output_style);
             for _ in 0..self.html_details_depth {
                 prefix.push_str(&guide);
                 prefix.push_str("  ");

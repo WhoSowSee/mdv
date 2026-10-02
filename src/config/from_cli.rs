@@ -3,6 +3,12 @@ use super::*;
 impl Config {
     pub fn from_cli(cli: &Cli, matches: &ArgMatches) -> Result<Self> {
         let mut config = Self::load_config_files(cli, matches)?;
+        config.color_priorities.record(
+            config.custom_theme.as_deref(),
+            config.custom_code_theme.as_deref(),
+            crate::theme::ColorSource::Config,
+        )?;
+        config.initialize_custom_overrides()?;
         if let Some(name) = cli.preset.as_deref() {
             preset::apply_named_preset(&mut config, name)?;
         }
@@ -91,12 +97,29 @@ impl Config {
             && arg_has_user_value(matches, "code_theme")
         {
             config.code_theme = Some(code_theme.clone());
+            config.color_priorities.code_theme = crate::theme::ColorSource::Cli;
         }
 
-        if let Some(custom_theme) = &cli.custom_theme
-            && arg_has_user_value(matches, "custom_theme")
-        {
-            config.custom_theme = Some(custom_theme.clone());
+        let custom_theme = cli
+            .custom_theme
+            .as_deref()
+            .filter(|_| arg_has_user_value(matches, "custom_theme"));
+        let custom_code_theme = cli
+            .custom_code_theme
+            .as_deref()
+            .filter(|_| arg_has_user_value(matches, "custom_code_theme"));
+        if custom_theme.is_some() || custom_code_theme.is_some() {
+            config.color_priorities.record(
+                custom_theme,
+                custom_code_theme,
+                crate::theme::ColorSource::Cli,
+            )?;
+            crate::theme::merge_custom_theme_overrides(
+                &mut config.custom_theme,
+                &mut config.custom_code_theme,
+                custom_theme,
+                custom_code_theme,
+            )?;
         }
 
         if let Some(inline_style) = &cli.inline_style
@@ -105,22 +128,24 @@ impl Config {
             config.inline_style.merge(inline_style);
         }
 
-        if let Some(custom_code_theme) = &cli.custom_code_theme
-            && arg_has_user_value(matches, "custom_code_theme")
-        {
-            config.custom_code_theme = Some(custom_code_theme.clone());
-        }
-
         if let Some(custom_callout) = &cli.custom_callout
             && arg_has_user_value(matches, "custom_callout")
         {
-            config.custom_callout = Some(custom_callout.clone());
+            config.merge_custom_override(
+                super::custom_overrides::CustomSetting::Callout,
+                Some(custom_callout),
+                crate::theme::ColorSource::Cli,
+            )?;
         }
 
         if let Some(custom_code_block) = &cli.custom_code_block
             && arg_has_user_value(matches, "custom_code_block")
         {
-            config.custom_code_block = Some(custom_code_block.clone());
+            config.merge_custom_override(
+                super::custom_overrides::CustomSetting::CodeBlock,
+                Some(custom_code_block),
+                crate::theme::ColorSource::Cli,
+            )?;
         }
 
         if let Some(link_style) = cli.link_style.clone()
@@ -236,13 +261,21 @@ impl Config {
         if let Some(raw) = &cli.custom_list
             && arg_has_user_value(matches, "custom_list")
         {
-            config.custom_list = Some(raw.clone());
+            config.merge_custom_override(
+                super::custom_overrides::CustomSetting::List,
+                Some(raw),
+                crate::theme::ColorSource::Cli,
+            )?;
         }
 
         if let Some(raw) = &cli.custom_checkbox
             && arg_has_user_value(matches, "custom_checkbox")
         {
-            config.custom_checkbox = Some(raw.clone());
+            config.merge_custom_override(
+                super::custom_overrides::CustomSetting::Checkbox,
+                Some(raw),
+                crate::theme::ColorSource::Cli,
+            )?;
         }
 
         if let Some(indent) = cli.code_wrap_indent

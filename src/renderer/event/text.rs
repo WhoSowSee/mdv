@@ -1,5 +1,5 @@
 use super::core::{CalloutFold, CalloutInfo, CalloutKind, CalloutState};
-use super::{CalloutStyle, CowStr, EventRenderer, LinkStyle, Result, ThemeElement, create_style};
+use super::{CalloutStyle, CowStr, EventRenderer, LinkStyle, Result, ThemeElement};
 
 #[derive(Debug, Clone)]
 struct HighlightSegment {

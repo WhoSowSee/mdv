@@ -68,7 +68,7 @@ impl<'a> EventRenderer<'a> {
             let marker = if self.config.checkbox_style.is_some() {
                 self.styled_checkbox_marker(state)
             } else {
-                let style = create_style(self.theme, ThemeElement::ListMarker);
+                let style = self.task_marker_style(state);
                 style.apply(&format!("[{state}]"), self.output_style)
             };
             self.output.push_str(&marker);

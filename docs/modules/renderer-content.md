@@ -55,7 +55,7 @@ A callout passes through several stages:
 1. `markdown/admonitions.rs` converts alternative syntax into a blockquote marker.
 2. `text/callouts.rs` buffers initial characters and parses marker, type, fold state, and title.
    A preceding internal presentation event supplies hidden-title and hidden-icon options for that blockquote.
-3. `core/callouts.rs` selects the semantic kind and color.
+3. `core/callouts.rs` selects the semantic kind and its independent theme palette entry.
 4. `formatting/callout_label.rs` builds the label and selected Nerd Font or portable ASCII icon and applies case options.
 5. Ordinary text renders inside callout state.
 6. On close, pretty style passes through `callout_render.rs` and `callout_frame.rs`.
@@ -68,7 +68,7 @@ A callout passes through several stages:
 
 A pretty callout first accumulates logical content and is framed afterward. Handlers must not print border segments directly in the middle of the block.
 
-The optional `callout_border` theme color applies to both `simple` callout markers and `pretty` frame pieces. Without it, standard callout borders use the terminal text color. Ordinary blockquotes use the separate `quote` color; the front matter properties panel retains `front_matter_border`.
+The optional `callout.border` color applies to both `simple` markers and `pretty` frame pieces. Without it, borders use the terminal text color. Titles and icons share `callout.label`. Color selection compares CLI, preset, config, and theme sources first; within one source, per-type custom colors override the common label, followed by the type palette. Ordinary blockquotes use `quote`; properties use `front_matter.title`, `.key`, `.value`, and `.border`. HTML details guides use `details_border` and no global border value.
 
 A link inside a pending custom label collects its visible text and inline math in `current_link_text`. Link end appends that complete text to the pending label without emitting body content or registering URL references. The label keeps the original order of text around the link.
 
@@ -95,7 +95,7 @@ A list starting inside a pending ordinary blockquote ends callout detection for 
 - List starts, ends, and item boundaries are handled by `core/start_tags.rs` and `core/end_lists.rs`.
 - [event/misc.rs](../../src/renderer/event/misc.rs) selects a regular, pretty, or custom marker and removes the bullet before a checkbox.
 - [event/definition_lists.rs](../../src/renderer/event/definition_lists.rs) maintains a separate description stack and applies `PrettyDefinitionStyle`.
-- `list_marker::ListMarkerConfig` is already compiled in `Config`; the renderer only resolves the marker for the current depth.
+- `list_marker::ListMarkerConfig` is already compiled in `Config`; the renderer resolves the icon/override for the current depth, while default colors distinguish ordered/unordered markers and checked/unchecked task states.
 
 ## Soft breaks, hard breaks, and rules
 

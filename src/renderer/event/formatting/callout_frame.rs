@@ -234,11 +234,12 @@ impl<'a> EventRenderer<'a> {
         text: &str,
         kind: CalloutKind,
     ) -> String {
-        if kind == CalloutKind::Properties {
-            AnsiStyle::new()
-                .fg(self.theme.front_matter_border_color().clone().into())
-                .apply(text, self.output_style)
-        } else if let Some(color) = self.theme.callout_border.as_ref() {
+        let color = if kind == CalloutKind::Properties {
+            self.theme.front_matter.border.as_ref()
+        } else {
+            self.theme.callout.border.as_ref()
+        };
+        if let Some(color) = color {
             AnsiStyle::new()
                 .fg(color.clone().into())
                 .apply(text, self.output_style)

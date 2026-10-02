@@ -1,38 +1,139 @@
 name: kanagawa
 description: Kanagawa color scheme
-pager_status_bar_transparent: false
-text: "220,215,186"
-text_light: "200,192,147"
-line_number: "200,192,147"
-line_number_separator: "200,192,147"
-h1: "126,156,216"
-h2: "122,168,159"
-h3: "147,138,169"
-h4: "149,127,184"
-h5: "255,160,102"
-h6: "228,104,118"
-code: "192,163,110"
-math: "126,156,216"
-math_border: "127,180,202"
-quote: "84,84,109"
-link: "126,156,216"
-emphasis: "200,192,147"
-strong: "147,138,169"
-strikethrough: "114,113,105"
-highlight_background: "45,46,60"
-background: "31,31,40"
-border: "42,42,55"
-list_marker: "122,168,159"
-table_header: "200,192,147"
-table_border: "42,42,55"
-error: "228,104,118"
-warning: "255,158,59"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 220,215,186
+text_light: 200,192,147
+line_number:
+  number: 200,192,147
+  separator: 200,192,147
+h1: 126,156,216
+h2: 122,168,159
+h3: 147,138,169
+h4: 149,127,184
+h5: 255,160,102
+h6: 228,104,118
+code:
+  text: 192,163,110
+  background: null
+math:
+  text: 126,156,216
+  border: 127,180,202
+quote: 84,84,109
+link: 126,156,216
+emphasis:
+  text: 200,192,147
+  background: null
+strong:
+  text: 147,138,169
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 114,113,105
+  background: null
+highlight:
+  text: null
+  background: 45,46,60
+background: 31,31,40
+error: 228,104,118
+warning: 255,158,59
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 126,156,216
+    abstract: 200,192,147
+    info: 126,156,216
+    todo: 122,168,159
+    tip: 147,138,169
+    success: 152,187,108
+    question: 149,127,184
+    warning: 255,160,102
+    failure: 228,104,118
+    danger: 228,104,118
+    bug: 228,104,118
+    example: 200,192,147
+    quote: 84,84,109
+front_matter:
+  title: 42,42,55
+  key: 200,192,147
+  value: 220,215,186
+  border: 42,42,55
+details_border: 42,42,55
+list:
+  ordered: 122,168,159
+  unordered: 122,168,159
+todo:
+  checked: 122,168,159
+  unchecked: 122,168,159
+table:
+  header: 200,192,147
+  border: null
 syntax:
-  keyword: "126,156,216"
-  string: "152,187,108"
-  comment: "114,113,105"
-  number: "255,160,102"
-  operator: "147,138,169"
-  function: "122,168,159"
-  variable: "220,215,186"
-  type_name: "192,163,110"
+  keyword: 126,156,216
+  string: 152,187,108
+  comment: 114,113,105
+  number: 255,160,102
+  operator: 147,138,169
+  function: 122,168,159
+  variable: 220,215,186
+  type_name: 192,163,110
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null

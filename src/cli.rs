@@ -191,7 +191,7 @@ pub struct Cli {
     #[arg(long = "monitor", help_heading = "Output and flow", display_order = 2)]
     pub monitor_file: bool,
 
-    /// Override colors of the selected theme
+    /// Override theme colors, including grouped syntax colors
     #[arg(long = "custom-theme", value_name = "PAIRS", help_heading = "Themes and code", display_order = 26, long_help = CUSTOM_THEME_LONG_HELP)]
     pub custom_theme: Option<String>,
 

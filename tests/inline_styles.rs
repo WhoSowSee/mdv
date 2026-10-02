@@ -167,7 +167,7 @@ fn user_theme_can_set_inline_style_and_colors() {
     fs::create_dir(&themes_dir).unwrap();
     fs::write(
         themes_dir.join("inline.yaml"),
-        "name: inline\nextends: terminal\ncode_background: \"#010203\"\nhighlight: \"#040506\"\nstrong_emphasis: \"#070809\"\ninline_style:\n  code:\n    backticks: false\n    underline: true\n",
+        "name: inline\nextends: terminal\ncode:\n  background: \"#010203\"\nhighlight:\n  text: \"#040506\"\nstrong_emphasis:\n  text: \"#070809\"\ninline_style:\n  code:\n    backticks: false\n    underline: true\n",
     )
     .unwrap();
     let file = markdown_file("`code` ==mark== ***combined***\n");

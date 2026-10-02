@@ -341,6 +341,10 @@ pub fn handle_event(
             command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
             queue_prompt_redraw(p, command_queue)?;
         }
+        Command::SetHighlightStyles(styles) => {
+            p.highlight_styles = styles;
+            command_queue.push_back(Command::Io(IoCommand::RedrawDisplay));
+        }
         Command::SetExitStrategy(es) => {
             p.hooks.remove_callback(Hook::PostPagerExit, 1);
             if es == ExitStrategy::ProcessQuit {

@@ -192,10 +192,10 @@ fn build_help_document(
     output_style: OutputStyle,
     help: String,
 ) -> Result<pager::PagerDocument> {
-    let status_bar_transparent = renderer::terminal::pager_status_bar_transparent(config)?;
+    let theme = renderer::terminal::pager_theme(config)?;
     Ok(pager::PagerDocument::new(help, output_style)
         .with_title("Help")
-        .with_status_bar_transparent(status_bar_transparent))
+        .with_pager_theme(theme))
 }
 
 fn get_input_content(cli: &Cli) -> Result<String> {
@@ -248,7 +248,7 @@ mod tests {
         std::fs::write(temp_dir.path().join("config.yaml"), "theme: transparent\n").unwrap();
         std::fs::write(
             themes_dir.join("transparent.yaml"),
-            "name: transparent\npager_status_bar_transparent: true\n",
+            "name: transparent\npager:\n  transparent: true\n",
         )
         .unwrap();
         let config = Config {
@@ -259,6 +259,6 @@ mod tests {
         let document =
             build_help_document(&config, OutputStyle::Disabled, "help".to_string()).unwrap();
 
-        assert!(document.status_bar_transparent());
+        assert!(document.pager_theme().transparent);
     }
 }

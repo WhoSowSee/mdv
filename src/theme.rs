@@ -15,6 +15,10 @@ mod display;
 mod element;
 mod manager;
 mod overrides;
+mod pager;
+mod priority;
+mod sections;
+mod syntax;
 mod types;
 
 pub use colors::Color;
@@ -22,9 +26,17 @@ pub use display::{create_style, list_themes};
 pub use element::ThemeElement;
 pub use manager::ThemeManager;
 pub use overrides::{apply_custom_code_theme, apply_custom_theme};
+pub use pager::PagerTheme;
+pub use sections::{
+    CalloutPalette, CalloutTheme, CodeBlockTheme, FrontMatterTheme, InlineTheme, LineNumberTheme,
+    ListTheme, MathTheme, TableTheme, TodoTheme,
+};
 pub use types::{SyntaxTheme, Theme};
 
 pub(crate) use color_parse::parse_color_value;
+pub(crate) use overrides::merge_custom_theme_overrides;
+pub(crate) use priority::{ColorPriorities, ColorSource};
+pub(crate) use syntax::SyntaxField;
 
 #[cfg(test)]
 use builtin::BUILTIN_THEME_FILES;

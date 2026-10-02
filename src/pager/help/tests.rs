@@ -1,3 +1,9 @@
+fn theme(transparent: bool) -> crate::theme::PagerTheme {
+    crate::theme::PagerTheme {
+        transparent,
+        ..Default::default()
+    }
+}
 use super::*;
 
 #[test]
@@ -9,7 +15,7 @@ fn help_panel_contains_and_orders_expected_shortcuts() {
             line_navigation_enabled: true,
             line_number_toggle_enabled: true,
         },
-        false,
+        &theme(false),
     )
     .unwrap();
     let rendered_lines = lines
@@ -54,7 +60,7 @@ fn help_panel_contains_and_orders_expected_shortcuts() {
     );
     assert!(rendered_lines[4].contains("r       reload document"));
     assert!(!text.contains("TOC entries"));
-    let toc_rows = build_toc_help_panel(80, true).unwrap();
+    let toc_rows = build_toc_help_panel(80, &theme(true)).unwrap();
     let toc = toc_rows
         .iter()
         .map(|line| line.render_plain(80))
@@ -100,7 +106,7 @@ fn help_panel_has_symmetric_vertical_padding() {
             line_navigation_enabled: true,
             line_number_toggle_enabled: true,
         },
-        false,
+        &theme(false),
     )
     .unwrap();
 
@@ -117,7 +123,7 @@ fn help_panel_omits_unavailable_actions() {
             line_navigation_enabled: false,
             line_number_toggle_enabled: false,
         },
-        false,
+        &theme(false),
     )
     .unwrap();
     let text = lines
@@ -141,12 +147,12 @@ fn help_panel_fills_the_terminal_width() {
             line_navigation_enabled: true,
             line_number_toggle_enabled: true,
         },
-        false,
+        &theme(false),
     )
     .unwrap();
 
     for columns in [20, 80, 120] {
-        let fitted = fit_help_panel(&lines, columns, false).unwrap();
+        let fitted = fit_help_panel(&lines, columns, &theme(false)).unwrap();
         assert!(
             fitted
                 .iter()
@@ -177,7 +183,7 @@ fn help_panel_uses_expected_colors() {
             line_navigation_enabled: true,
             line_number_toggle_enabled: true,
         },
-        false,
+        &theme(false),
     )
     .unwrap()[1]
         .render(80);
@@ -196,7 +202,7 @@ fn transparent_help_panel_does_not_set_a_background() {
             line_navigation_enabled: true,
             line_number_toggle_enabled: true,
         },
-        true,
+        &theme(true),
     )
     .unwrap()[1]
         .render(80);

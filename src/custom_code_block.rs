@@ -10,15 +10,12 @@ pub(crate) struct CustomCodeBlock {
 
 pub(crate) fn parse_custom_code_blocks(input: &str) -> Result<HashMap<String, CustomCodeBlock>> {
     let mut blocks = HashMap::new();
-    let mut has_entries = false;
 
     for raw_entry in input.split([';', '\n']) {
         let entry = raw_entry.trim_start();
         if entry.is_empty() {
             continue;
         }
-
-        has_entries = true;
 
         let (name_raw, values_raw) = entry.split_once(':').ok_or_else(|| {
             anyhow::anyhow!("Custom code block entry '{}' must contain ':'", entry)
@@ -98,9 +95,9 @@ pub(crate) fn parse_custom_code_blocks(input: &str) -> Result<HashMap<String, Cu
             }
         }
 
-        if icon.is_none() && label.is_none() {
+        if icon.is_none() && label.is_none() && aliases.is_empty() {
             bail!(
-                "Custom code block '{}' must define at least one of icon or label.",
+                "Custom code block '{}' must define at least one of icon, label or aliases.",
                 name
             );
         }
@@ -120,19 +117,21 @@ pub(crate) fn parse_custom_code_blocks(input: &str) -> Result<HashMap<String, Cu
         }
     }
 
-    if !has_entries {
+    if blocks.is_empty() {
         bail!("Custom code block string is empty.");
     }
 
     Ok(blocks)
 }
 
-fn is_valid_code_block_name(name: &str) -> bool {
-    name.chars()
-        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '+' | '#' | '.'))
+pub(crate) fn is_valid_code_block_name(name: &str) -> bool {
+    !name.is_empty()
+        && name
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '+' | '#' | '.'))
 }
 
-fn parse_code_block_options(values: &str) -> Result<Vec<(String, String)>> {
+pub(crate) fn parse_code_block_options(values: &str) -> Result<Vec<(String, String)>> {
     let mut options = Vec::new();
     let mut remaining = values.trim_start().to_string();
 

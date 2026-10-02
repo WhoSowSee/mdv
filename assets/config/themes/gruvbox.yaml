@@ -1,38 +1,139 @@
 name: gruvbox
 description: Gruvbox Dark color scheme
-pager_status_bar_transparent: false
-text: "235,219,178"
-text_light: "168,153,132"
-line_number: "168,153,132"
-line_number_separator: "168,153,132"
-h1: "250,189,47"
-h2: "184,187,38"
-h3: "142,192,124"
-h4: "131,165,152"
-h5: "211,134,155"
-h6: "254,128,25"
-code: "142,192,124"
-math: "131,165,152"
-math_border: "211,134,155"
-quote: "146,131,116"
-link: "131,165,152"
-emphasis: "211,134,155"
-strong: "251,73,52"
-strikethrough: "102,92,84"
-highlight_background: "60,56,54"
-background: "40,40,40"
-border: "102,92,84"
-list_marker: "184,187,38"
-table_header: "184,187,38"
-table_border: "102,92,84"
-error: "251,73,52"
-warning: "254,128,25"
+extends: null
+pager:
+  transparent: false
+  title: "#7d7d7d"
+  help: "#7d7d7d"
+  file_name: "#7d7d7d"
+  progress: "#5a5a5a"
+  matches: "#5a5a5a"
+  selection:
+    text: null
+    background: null
+  search:
+    text: null
+    background: null
+  search_current:
+    text: null
+    background: null
+text: 235,219,178
+text_light: 168,153,132
+line_number:
+  number: 168,153,132
+  separator: 168,153,132
+h1: 250,189,47
+h2: 184,187,38
+h3: 142,192,124
+h4: 131,165,152
+h5: 211,134,155
+h6: 254,128,25
+code:
+  text: 142,192,124
+  background: null
+math:
+  text: 131,165,152
+  border: 211,134,155
+quote: 146,131,116
+link: 131,165,152
+emphasis:
+  text: 211,134,155
+  background: null
+strong:
+  text: 251,73,52
+  background: null
+strong_emphasis:
+  text: null
+  background: null
+strikethrough:
+  text: 102,92,84
+  background: null
+highlight:
+  text: null
+  background: 60,56,54
+background: 40,40,40
+error: 251,73,52
+warning: 254,128,25
+code_block:
+  label: '#8f93a2'
+  border: null
+callout:
+  label: null
+  border: null
+  palette:
+    note: 131,165,152
+    abstract: 184,187,38
+    info: 131,165,152
+    todo: 211,134,155
+    tip: 142,192,124
+    success: ansi(39)
+    question: 250,189,47
+    warning: 254,128,25
+    failure: 251,73,52
+    danger: 251,73,52
+    bug: 251,73,52
+    example: 184,187,38
+    quote: 235,219,178
+front_matter:
+  title: 102,92,84
+  key: 168,153,132
+  value: 235,219,178
+  border: 102,92,84
+details_border: 102,92,84
+list:
+  ordered: 184,187,38
+  unordered: 184,187,38
+todo:
+  checked: 184,187,38
+  unchecked: 184,187,38
+table:
+  header: 184,187,38
+  border: null
 syntax:
-  keyword: "251,73,52"
-  string: "184,187,38"
-  comment: "146,131,116"
-  number: "211,134,155"
-  operator: "254,128,25"
-  function: "142,192,124"
-  variable: "235,219,178"
-  type_name: "131,165,152"
+  keyword: 251,73,52
+  string: 184,187,38
+  comment: 146,131,116
+  number: 211,134,155
+  operator: 254,128,25
+  function: 142,192,124
+  variable: 235,219,178
+  type_name: 131,165,152
+horizontal_rule: null
+footnote_separator: null
+inline_style:
+  emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strong_emphasis:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  code:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  strikethrough:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
+  highlight:
+    backticks: null
+    bold: null
+    italic: null
+    underline: null
+    strikethrough: null
