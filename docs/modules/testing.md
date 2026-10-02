@@ -11,6 +11,14 @@ cargo test --no-fail-fast
 cargo build --release
 ```
 
+The root [justfile](../../justfile) provides optional shortcuts with `just` 1.56.0 or newer. Run `just` or `just --list` to list recipes. `just check` runs the formatting check, Clippy with `-D warnings`, `cargo test`, and the release build in order, stopping on failure. `just check-pager` checks formatting, Clippy, and library tests for `vendor/minus` with `dynamic_output,search`; the fork is a path dependency rather than a workspace member. `just check-all` adds justfile syntax/formatting checks and the Debian validator tests to both Rust check groups. Packaging tests require Python 3.11+ (`python` on Windows, `python3` on Unix).
+
+`just fmt` formats the justfile and both crates. `just fmt-just` and `just check-just` format and check the justfile independently; `just fmt-check`, `just lint`, `just test`, and `just build` run individual mdv checks. `just test config::tests -- --nocapture` forwards a test filter and harness options to Cargo. Recipes require PowerShell 7.4+ (`pwsh.exe` on `PATH`) on Windows, use `sh` on Unix, and work from repository subdirectories. Windows uses `-CommandWithArgs`; parameterized recipes preserve argument boundaries, empty arguments, embedded quotes, the `-` stdin argument, and Cargo exit codes.
+
+`just run` forwards application arguments to `cargo run`; `just run-dev` uses the optimized, incremental `dev-opt` profile. `just demo compact` renders `docs/examples/sample.md` with that profile and the selected preset. `just demo-monitor` watches the same file until Ctrl+C. Both demo recipes default to `showcase`.
+
+`just test-packaging` runs `.github/scripts/test_verify_deb.py`. `just check-package` runs `cargo publish --dry-run --locked` separately from the local check groups; it requires a clean checkout, registry access, and a published pager fork with the APIs used by mdv. See [release verification](ci-release.md#release-notes-and-verification).
+
 Use `cargo test <name> -- --nocapture` to inspect a specific test's standard output.
 
 ## Rendering performance

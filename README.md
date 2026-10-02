@@ -79,6 +79,19 @@ cargo build --release
 
 Use the `mdv` binary from `target/release` directly or add it to your PATH.
 
+## Development
+
+The optional [justfile](justfile) provides development commands. Install [just](https://just.systems/man/en/) 1.56.0 or newer with `cargo install --locked just`.
+
+```text
+just --list
+just check-all
+just fmt
+just run-dev README.md
+```
+
+Windows requires PowerShell 7.4+ (`pwsh.exe` on `PATH`); `check-all` also requires Python 3.11+. See [development and testing documentation](docs/modules/testing.md) for all commands and details.
+
 ## Usage
 
 ```text

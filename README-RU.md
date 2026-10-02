@@ -79,6 +79,19 @@ cargo build --release
 
 Можно запускать бинарник из `target/release` напрямую или добавить путь к нему в `PATH`.
 
+## Разработка
+
+Необязательный [justfile](justfile) содержит команды для разработки. Установите [just](https://just.systems/man/en/) версии 1.56.0 или новее командой `cargo install --locked just`.
+
+```text
+just --list
+just check-all
+just fmt
+just run-dev README.md
+```
+
+На Windows нужен PowerShell 7.4+ (`pwsh.exe` в `PATH`); для `check-all` также требуется Python 3.11+. Все команды и подробности — в [документации разработки и тестирования](docs/modules/testing.md).
+
 ## Использование
 
 ```text
