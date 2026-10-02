@@ -1,5 +1,59 @@
 # Changelog
 
+## [6.0.0] - 2026-10-02
+
+### Breaking Changes
+
+- Reworked: theme structure and extended color customization
+- Renamed: styling options and standardized CLI help
+- Changed: color controls to `auto`, `always` and `never` modes
+
+### Features
+
+- Added: interactive table of contents to the built-in pager
+- Added: HTML `details` styling and block spacing support
+- Added: `code_block_border`, `callout_border` and `footnote_separator` line colors
+- Added: `--horizontal-rule-style` and `horizontal_rule` theme color
+- Expanded: callout syntax and nesting support
+- Added: automatic color depth detection and palette adaptation
+- Added: built-in `pretty` preset
+- Added: detailed build information to `--version` output
+- Added: external pager selection via `MDV_PAGER` and `--pager`
+- Added: extended terminal math support
+- Added: source-line navigation to the pager
+- Added: Git-ignored file toggling to interactive mode
+
+### Bug Fixes
+
+- Fixed: monitor rendering and simplified internal modules
+- Fixed: heading and callout wrapping in narrow terminals
+- Fixed: cursor appearing during transitions between the browser and pager
+- Fixed: code highlighting styles leaking into block borders
+- Fixed: automatic interactive mode selection for redirected output
+- Fixed: callout rendering in the pager
+
+### Changes
+
+- Improved: Markdown rendering performance and built-in pager startup
+- Improved: copying and added select-all support in the pager
+- Improved: pager line numbering and help
+
+### Documentation
+
+- Improved: test data and standardized documentation formatting
+
+### Internal
+
+- Added: justfile for development and project checks
+- Simplified: internal modules and removed Rust antipatterns
+- Removed: unused imports from the pager search module
+
+### Maintenance
+
+- Updated: mdv-minus to v6.0.0
+- Updated: release build and packaging pipeline
+- Updated: Cargo dependencies
+
 ## [5.1.0] - 2026-08-22
 
 ### Features
