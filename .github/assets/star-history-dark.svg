@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="420" viewBox="0 0 820 420" role="img" aria-labelledby="chart-title" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<title id="chart-title">WhoSowSee/mdv star history: 13 stars</title>
+<rect width="820" height="420" rx="6" fill="#0d1117"/>
+<text x="76" y="30" fill="#e6edf3" font-size="17" font-weight="600">Star History</text>
+<text x="792" y="30" text-anchor="end" fill="#8b949e" font-size="13">WhoSowSee/mdv &#183; 13 stars</text>
+<line x1="76" y1="368.0" x2="792" y2="368.0" stroke="#21262d"/>
+<text x="68" y="372.0" text-anchor="end" fill="#8b949e" font-size="11">0</text>
+<line x1="76" y1="307.2" x2="792" y2="307.2" stroke="#21262d"/>
+<text x="68" y="311.2" text-anchor="end" fill="#8b949e" font-size="11">4</text>
+<line x1="76" y1="246.4" x2="792" y2="246.4" stroke="#21262d"/>
+<text x="68" y="250.4" text-anchor="end" fill="#8b949e" font-size="11">8</text>
+<line x1="76" y1="185.6" x2="792" y2="185.6" stroke="#21262d"/>
+<text x="68" y="189.6" text-anchor="end" fill="#8b949e" font-size="11">12</text>
+<line x1="76" y1="124.8" x2="792" y2="124.8" stroke="#21262d"/>
+<text x="68" y="128.8" text-anchor="end" fill="#8b949e" font-size="11">16</text>
+<line x1="76" y1="64.0" x2="792" y2="64.0" stroke="#21262d"/>
+<text x="68" y="68.0" text-anchor="end" fill="#8b949e" font-size="11">20</text>
+<text x="76.0" y="388" text-anchor="start" fill="#8b949e" font-size="11">Oct 2025</text>
+<text x="255.0" y="388" text-anchor="middle" fill="#8b949e" font-size="11">Jan 2026</text>
+<text x="434.0" y="388" text-anchor="middle" fill="#8b949e" font-size="11">Apr 2026</text>
+<text x="613.0" y="388" text-anchor="middle" fill="#8b949e" font-size="11">Jun 2026</text>
+<text x="792.0" y="388" text-anchor="end" fill="#8b949e" font-size="11">Sep 2026</text>
+<line x1="76" y1="368" x2="792" y2="368" stroke="#30363d" stroke-width="1.5"/>
+<polygon points="76,368 76.0,337.6 78.1,322.4 554.0,307.2 598.7,292.0 605.0,276.8 607.2,261.6 624.2,246.4 626.3,231.2 630.5,200.8 734.6,185.6 792.0,170.4 792.0,368" fill="#58a6ff" fill-opacity="0.15"/>
+<polyline points="76.0,337.6 78.1,322.4 554.0,307.2 598.7,292.0 605.0,276.8 607.2,261.6 624.2,246.4 626.3,231.2 630.5,200.8 734.6,185.6 792.0,170.4" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="792.0" cy="170.4" r="3.5" fill="#58a6ff"/>
+</svg>

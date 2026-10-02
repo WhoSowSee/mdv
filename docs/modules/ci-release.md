@@ -139,3 +139,15 @@ Cross/Docker, LXD/Snapcraft, or Nix builds. Before releasing, run the modified
 workflow through `workflow_dispatch` on a branch containing the changes and
 require every job to pass. Rerunning an existing tag uses that tag's commit,
 not later fixes in the working tree.
+
+## README star history
+
+`.github/workflows/star-history.yml` refreshes the local light and dark SVGs in
+`.github/assets/` every Monday and Thursday at 06:17 UTC, or by manual dispatch.
+The chart style follows [makerspet/oomwoo](https://github.com/makerspet/oomwoo).
+`.github/scripts/gen_star_history.py` reads GitHub's aggregate daily star history
+and renders SVGs using only Python's standard library. The job uses its own
+`GITHUB_TOKEN` and commits only the two charts when their contents change.
+Both README languages select the local image for the reader's color scheme.
+The generator's pagination, cumulative counts, sampling, and empty/single-day
+rendering are checked by `.github/scripts/test_gen_star_history.py`.

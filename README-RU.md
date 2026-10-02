@@ -470,19 +470,20 @@ syntax:
 ## История звёзд
 
 <p align="center">
-  <a href="https://starchart.cc/WhoSowSee/mdv">
+  <a href="https://github.com/WhoSowSee/mdv/stargazers">
     <picture>
       <source
         media="(prefers-color-scheme: dark)"
-        srcset="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%230d1117&axis=%238b949e&line=%232f81f7"
+        srcset=".github/assets/star-history-dark.svg"
       />
       <source
         media="(prefers-color-scheme: light)"
-        srcset="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%23ffffff&axis=%2357606a&line=%230969da"
+        srcset=".github/assets/star-history-light.svg"
       />
       <img
         alt="История звёзд"
-        src="https://starchart.cc/WhoSowSee/mdv.svg?variant=custom&background=%23ffffff&axis=%2357606a&line=%230969da"
+        src=".github/assets/star-history-light.svg"
+        width="820"
       />
     </picture>
   </a>
