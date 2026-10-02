@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 
+- Fixed: lipo argument order in macOS builds
 - Fixed: rendering test timeouts on Linux and macOS
 - Fixed: crates.io package verification on Rust 1.99.0
 
