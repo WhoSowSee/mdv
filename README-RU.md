@@ -474,15 +474,15 @@ syntax:
     <picture>
       <source
         media="(prefers-color-scheme: dark)"
-        srcset=".github/assets/star-history-dark.svg"
+        srcset="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-dark.svg"
       />
       <source
         media="(prefers-color-scheme: light)"
-        srcset=".github/assets/star-history-light.svg"
+        srcset="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-light.svg"
       />
       <img
         alt="История звёзд"
-        src=".github/assets/star-history-light.svg"
+        src="https://raw.githubusercontent.com/WhoSowSee/mdv/main/.github/assets/star-history-light.svg"
         width="820"
       />
     </picture>

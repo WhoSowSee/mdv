@@ -146,6 +146,8 @@ The chart style follows [makerspet/oomwoo](https://github.com/makerspet/oomwoo).
 `.github/scripts/gen_star_history.py` reads GitHub's aggregate daily star history
 and renders SVGs using only Python's standard library. The job uses its own
 `GITHUB_TOKEN` and commits only the two charts when their contents change.
-Both README languages select the local image for the reader's color scheme.
+Both README languages select the chart for the reader's color scheme using
+absolute `raw.githubusercontent.com` URLs. This also works on crates.io, which
+rewrites relative `img src` URLs but leaves `source srcset` URLs unchanged.
 The generator's pagination, cumulative counts, sampling, and empty/single-day
 rendering are checked by `.github/scripts/test_gen_star_history.py`.
