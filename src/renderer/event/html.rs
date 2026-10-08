@@ -1,8 +1,8 @@
 use super::core::CalloutState;
 use super::images::{media_marker, media_marker_leading_separator};
 use super::{
-    Alignment, CowStr, EventRenderer, HeadingLevel, HtmlBlockBuffer, LinkStyle, Result, TableState,
-    ThemeElement, create_style,
+    Alignment, CowStr, EventRenderer, HeadingLevel, HtmlBlockBuffer, HtmlBlockKind, LinkStyle,
+    Result, TableState, ThemeElement, create_style,
 };
 use crate::math::ScriptKind;
 use crate::utils::{display_width, display_width_ansi, escape_html_text, strip_ansi};

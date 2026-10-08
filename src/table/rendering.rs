@@ -269,7 +269,11 @@ impl TableRenderer {
             return rendered;
         }
 
-        lines.remove(lines.len() - 2);
+        let separator = lines.len() - 2;
+        // Only bordered comfy-table output has a redundant separator before the bottom border.
+        if lines[separator].starts_with('├') && lines[separator].ends_with('┤') {
+            lines.remove(separator);
+        }
         lines.join("\n")
     }
 

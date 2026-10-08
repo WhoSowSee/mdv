@@ -259,11 +259,14 @@ impl MarkdownProcessor {
             Event::Text(text) => !text.is_empty(),
             Event::Html(html) | Event::InlineHtml(html) => {
                 let html = html.as_ref().trim();
-                html != BLANK_LINE_MARKER
-                    && !(self.config.hide_comments
-                        && !self.config.render_html
-                        && html.starts_with("<!--")
-                        && html.ends_with("-->"))
+                let is_comment = html.starts_with("<!--")
+                    && if self.config.render_html {
+                        html.find("-->")
+                            .is_none_or(|end| html[end + 3..].trim().is_empty())
+                    } else {
+                        html.ends_with("-->")
+                    };
+                html != BLANK_LINE_MARKER && !(self.config.hide_comments && is_comment)
             }
             Event::Code(_)
             | Event::FootnoteReference(_)

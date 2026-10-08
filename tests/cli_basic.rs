@@ -16,6 +16,8 @@ fn mdv_cmd_with_config(config_dir: &TempDir) -> Command {
 mod config_and_pager;
 #[path = "cli_basic/general.rs"]
 mod general;
+#[path = "cli_basic/html_comments.rs"]
+mod html_comments;
 #[path = "cli_basic/html_content.rs"]
 mod html_content;
 #[path = "cli_basic/html_details.rs"]

@@ -74,11 +74,15 @@ impl<'a> EventRenderer<'a> {
     }
 
     pub(super) fn needs_html_separator_before_text(&self) -> bool {
-        let line = self
-            .output
+        let output = self
+            .table_state
+            .as_ref()
+            .map(|table| table.current_cell.as_str())
+            .unwrap_or(&self.output);
+        let line = output
             .rsplit_once('\n')
             .map(|(_, line)| line)
-            .unwrap_or(&self.output);
+            .unwrap_or(output);
         let clean = strip_ansi(line);
         clean
             .chars()
