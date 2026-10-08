@@ -14,12 +14,16 @@ concurrency:
 
 jobs:
   refresh:
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Test chart generation
         run: python3 .github/scripts/test_gen_star_history.py
@@ -30,7 +34,8 @@ jobs:
           STAR_HISTORY_REPO: ${{ github.repository }}
         run: python3 .github/scripts/gen_star_history.py --repo "$STAR_HISTORY_REPO"
 
-      - name: Commit updated charts
+      - name: Stage updated charts
+        id: charts
         run: |
           charts=(
             .github/assets/star-history-light.svg
@@ -38,11 +43,37 @@ jobs:
             .github/assets/star-history-light-ru.svg
             .github/assets/star-history-dark-ru.svg
           )
-          if git diff --quiet -- "${charts[@]}"; then
+          git add -- "${charts[@]}"
+          if ! git diff --cached --quiet -- . "${charts[@]/#/:!}"; then
+            echo '::error::Only star-history charts may be committed'
+            exit 1
+          fi
+          if git diff --cached --quiet; then
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "${charts[@]}"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Create chart publisher token
+        if: steps.charts.outputs.changed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.STAR_HISTORY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.STAR_HISTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Commit updated charts
+        if: steps.charts.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          bot_login="${APP_SLUG}[bot]"
+          bot_id=$(gh api "/users/${bot_login}" --jq .id)
+          git config user.name "$bot_login"
+          git config user.email "${bot_id}+${bot_login}@users.noreply.github.com"
           git commit -m 'Updated star history chart'
-          git push
+          gh auth setup-git
+          git push origin "HEAD:${GITHUB_REF}"
