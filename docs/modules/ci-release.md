@@ -180,8 +180,21 @@ not later fixes in the working tree.
 `.github/assets/` every Monday and Thursday at 06:17 UTC, or by manual dispatch.
 The chart style follows [makerspet/oomwoo](https://github.com/makerspet/oomwoo).
 `.github/scripts/gen_star_history.py` reads GitHub's aggregate daily star history
-and renders SVGs using only Python's standard library. The job uses its own
-`GITHUB_TOKEN` and commits only the four charts when their contents change.
+and renders SVGs using only Python's standard library. The job uses its read-only
+`GITHUB_TOKEN` to fetch star history. When charts change, it verifies that only the
+four SVGs are staged and uses a dedicated GitHub App token to commit and push them
+to the workflow's branch. Tag dispatches are skipped.
+
+The private App is installed only on `WhoSowSee/mdv` with `Contents: write` and
+the mandatory `Metadata: read` permission. Its Client ID is stored in the
+`STAR_HISTORY_APP_CLIENT_ID` repository variable, and its private key in the
+`STAR_HISTORY_APP_PRIVATE_KEY` repository secret. The token is restricted to the
+current repository and revoked after the job. The App is the sole bypass actor in
+the `CI checks for main` ruleset, allowing scheduled chart updates while the four
+CI checks remain required for other actors. App pushes trigger the regular CI
+workflow. The bypass applies to the App, so the staged-file check limits this
+workflow's commits to charts.
+
 Both README languages select the chart for the reader's color scheme using
 absolute `raw.githubusercontent.com` URLs. This also works on crates.io, which
 rewrites relative `img src` URLs but leaves `source srcset` URLs unchanged.
