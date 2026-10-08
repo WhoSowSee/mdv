@@ -50,7 +50,10 @@ impl<'a> EventRenderer<'a> {
                     self.render_html_node(child, context)?;
                 }
             }
-            HtmlNode::Comment(_) | HtmlNode::Doctype(_) | HtmlNode::ProcessingInstruction(_) => {}
+            HtmlNode::Comment(comment) => {
+                self.render_html_comment(&format!("<!--{}-->", comment.comment))?;
+            }
+            HtmlNode::Doctype(_) | HtmlNode::ProcessingInstruction(_) => {}
         }
 
         Ok(())

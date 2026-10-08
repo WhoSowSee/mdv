@@ -34,6 +34,10 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         }
 
+        self.render_literal_html(html_str)
+    }
+
+    pub(in crate::renderer::event) fn render_literal_html(&mut self, html: &str) -> Result<()> {
         self.note_paragraph_content();
 
         let mut followup_prefix: Option<String> = None;
@@ -59,12 +63,16 @@ impl<'a> EventRenderer<'a> {
             }
         }
 
-        let mut segments = html_str.split('\n').peekable();
+        let mut segments = html.split('\n').peekable();
         let mut first_segment = true;
 
         while let Some(segment) = segments.next() {
             if !first_segment {
-                self.output.push('\n');
+                if let Some(table) = self.table_state.as_mut() {
+                    table.current_cell.push('\n');
+                } else {
+                    self.output.push('\n');
+                }
                 if let Some(prefix) = followup_prefix.as_ref()
                     && !prefix.is_empty()
                     && (!segment.is_empty() || segments.peek().is_some())

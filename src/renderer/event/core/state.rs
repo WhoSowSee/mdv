@@ -26,11 +26,18 @@ pub(crate) struct TableState {
 
 #[derive(Debug)]
 pub(crate) struct HtmlBlockBuffer {
-    pub(in crate::renderer::event) tag: &'static str,
+    pub(in crate::renderer::event) kind: HtmlBlockKind,
     pub(in crate::renderer::event) content: String,
     pub(in crate::renderer::event) captures_markdown_events: bool,
     pub(in crate::renderer::event) details_events: Vec<Event<'static>>,
     pub(in crate::renderer::event) details_depth: usize,
+    pub(in crate::renderer::event) comment_open: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum HtmlBlockKind {
+    Element(&'static str),
+    Comment,
 }
 
 #[derive(Debug, Clone)]

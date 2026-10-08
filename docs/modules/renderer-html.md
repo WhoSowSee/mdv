@@ -44,6 +44,10 @@ recursive call, including lists, details, definition lists, and table cells.
 
 Some HTML tags may contain ordinary Markdown events between opening and closing fragments. `HtmlBlockBuffer` temporarily stores both HTML and Markdown events, then `render_html_fragment_as_terminal` processes the complete container.
 
+`HtmlBlockKind` distinguishes element containers from standalone comments. Multiline comments are buffered through their closing delimiter before literal rendering, retaining whitespace and source-line markers. An unclosed standalone comment retains its original source through document end. Text after a closing comment delimiter continues through HTML rendering. Container detection and details-depth tracking retain comment state across events so tags inside comments cannot close or open a container.
+
+Generic containers retain the existing Markdown block boundaries: a comment spanning a blank-line boundary inside a `div` can still be split by the Markdown parser.
+
 This preserves context for alignment, `<details>`, definition lists, figures, and HTML tables. Printing an opening tag immediately would lose information from its closing element and descendants.
 
 `<details>` buffers Markdown events and HTML fragments across blank lines until the matching closing tag. Outside table cells, its first summary receives an expanded `` marker and code-colored bold text. Body lines use a border-colored `│` guide and two spaces, included in wrapping and table width calculations. Nested sections repeat the guide. Content blocks honor explicit and inherited HTML alignment within the available width after the guides; summary markers stay at the tree's left edge. Sections remain expanded regardless of `open`, with no interactive folding. The container adds no fixed blank lines: body blocks use the same `block_spacing` settings as outside the section, and trailing blank lines retain their count and source metadata when the guide ends. Table cells retain their existing plain summary/body representation.
@@ -53,6 +57,7 @@ HTML `p`, `pre`, `blockquote`, `dl`, and top-level lists use paragraph, code-blo
 ## Text modes
 
 - Ordinary HTML text collapses whitespace runs.
+- Comments retain their literal `<!-- ... -->` delimiters and whitespace, including inside HTML containers, and use the same wrapping as literal HTML. `hide_comments` suppresses them without hiding surrounding content.
 - `<pre>` and `<textarea>` preserve spaces and line breaks.
 - `<code>` uses code-like semantic styling without entering the fenced-code pipeline.
 - `<sup>` and `<sub>` use `math::convert_script` when a Unicode representation exists.

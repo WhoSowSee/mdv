@@ -13,6 +13,15 @@ pub(super) fn buffering_inline_html_container_tag(html: &str) -> Option<&'static
 }
 
 pub(super) fn contains_html_tag(html: &str, tag: &str, closing: bool) -> bool {
+    contains_html_tag_outside_comments(html, tag, closing, &mut false)
+}
+
+pub(super) fn contains_html_tag_outside_comments(
+    html: &str,
+    tag: &str,
+    closing: bool,
+    comment_open: &mut bool,
+) -> bool {
     let lower = html.to_ascii_lowercase();
     let needle = if closing {
         format!("</{tag}")
@@ -20,23 +29,39 @@ pub(super) fn contains_html_tag(html: &str, tag: &str, closing: bool) -> bool {
         format!("<{tag}")
     };
     let mut offset = 0;
+    let mut found = false;
 
-    while let Some(index) = lower[offset..].find(&needle) {
-        let after = offset + index + needle.len();
-        let has_tag_boundary = lower[after..]
-            .chars()
-            .next()
-            .map(|ch| ch == '>' || ch == '/' || ch.is_ascii_whitespace())
-            .unwrap_or(false);
-
-        if has_tag_boundary {
-            return true;
+    while offset < lower.len() {
+        if *comment_open {
+            let Some(end) = lower[offset..].find("-->") else {
+                break;
+            };
+            offset += end + 3;
+            *comment_open = false;
+            continue;
         }
 
-        offset = after;
+        let Some(index) = lower[offset..].find('<') else {
+            break;
+        };
+        offset += index;
+        if lower[offset..].starts_with("<!--") {
+            *comment_open = true;
+            offset += 4;
+            continue;
+        }
+        if lower[offset..].starts_with(&needle)
+            && lower[offset + needle.len()..]
+                .chars()
+                .next()
+                .is_some_and(|ch| ch == '>' || ch == '/' || ch.is_ascii_whitespace())
+        {
+            found = true;
+        }
+        offset += 1;
     }
 
-    false
+    found
 }
 
 pub(super) fn is_html_block_element(name: &str) -> bool {

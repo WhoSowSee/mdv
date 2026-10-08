@@ -317,6 +317,7 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Callouts: [callouts.rs](../../tests/callouts.rs), [basic.rs](../../tests/callouts/basic.rs), [boundaries.rs](../../tests/callouts/boundaries.rs), [dialects.rs](../../tests/callouts/dialects.rs), [regressions.rs](../../tests/callouts/regressions.rs), [customization.rs](../../tests/callouts/customization.rs), [formatting.rs](../../tests/callouts/formatting.rs), [heading_layout.rs](../../tests/callouts/heading_layout.rs), and [tables_links.rs](../../tests/callouts/tables_links.rs).
 - Checkboxes: [checkboxes.rs](../../tests/checkboxes.rs) and files under [tests/checkboxes/](../../tests/checkboxes/basic.rs).
 - CLI: [cli_basic.rs](../../tests/cli_basic.rs) and files under [tests/cli_basic/](../../tests/cli_basic/general.rs).
+- HTML comment visibility and buffering: [html_comments.rs](../../tests/cli_basic/html_comments.rs).
 - Unix terminal-width detection: [terminal_width.rs](../../tests/cli_basic/terminal_width.rs).
 - Color: [color.rs](../../tests/color.rs) and shared [support.rs](../../tests/support.rs).
 - Nested themes and independent roles: [themes.rs](../../tests/themes.rs).

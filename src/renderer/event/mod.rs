@@ -16,7 +16,9 @@ mod text;
 
 pub(super) use core::EventRenderer;
 pub(crate) use core::{CapturedReferenceBlock, DeferredLinkReferenceBlock};
-pub(super) use core::{HtmlBlockBuffer, TableInlineUrlSegment, TableInlineUrlTarget, TableState};
+pub(super) use core::{
+    HtmlBlockBuffer, HtmlBlockKind, TableInlineUrlSegment, TableInlineUrlTarget, TableState,
+};
 use definition_lists::DefinitionListState;
 use footnotes::FootnoteDefinitions;
 

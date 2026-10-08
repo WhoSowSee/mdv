@@ -97,6 +97,7 @@ process and covers search positions beyond 65,535 characters.
 Large topic files act as facades with explicit `#[path = "..."]` declarations:
 
 - `tests/cli_basic/`: general behavior, HTML content/semantics/lists, rendering options, configuration, and pager;
+- `tests/cli_basic/html_comments.rs`: comment visibility with `--render-html`, multiline and nested comments, container-like text inside comments, source numbering, wrapping, and unclosed comments;
 - `tests/callouts/formatting/`: wrapping, rules, and headings;
 - `tests/callouts/dialects.rs`: all seven additional dialect families, nested blocks, metadata, structured bodies, title options, source numbering, and HTML export; reusable input lives in `tests/files/callout-dialects.md`;
 - `tests/callouts/regressions.rs`: quoted-list preservation, bounded completion with unmatched openers, multiline inline-code protection, and literal hashes in callout titles;

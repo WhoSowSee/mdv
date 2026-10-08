@@ -1,17 +1,20 @@
 use super::*;
 use pulldown_cmark::Event;
 
-pub(super) fn html_details_balance(html: &str, mut depth: usize) -> usize {
+pub(super) fn html_details_balance(html: &str, mut depth: usize, comment_open: &mut bool) -> usize {
     static TAGS: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     let tags = TAGS.get_or_init(|| {
-        regex::Regex::new(r#"(?is)<!--.*?-->|</?details(?:\s+(?:[^>\"']|\"[^\"]*\"|'[^']*')*)?/?>"#)
+        regex::Regex::new(r#"(?is)<!--|-->|</?details(?:\s+(?:[^>\"']|\"[^\"]*\"|'[^']*')*)?/?>"#)
             .expect("valid details tag pattern")
     });
     for tag in tags.find_iter(html).map(|tag| tag.as_str()) {
-        if tag.starts_with("<!--") {
+        if tag == "<!--" {
+            *comment_open = true;
+        } else if tag == "-->" {
+            *comment_open = false;
+        } else if *comment_open {
             continue;
-        }
-        if tag.starts_with("</") {
+        } else if tag.starts_with("</") {
             depth = depth.saturating_sub(1);
         } else {
             depth += 1;
@@ -28,7 +31,7 @@ impl<'a> EventRenderer<'a> {
         let Some(buffer) = self
             .pending_html_block_buffer
             .as_mut()
-            .filter(|buffer| buffer.tag == "details")
+            .filter(|buffer| buffer.kind == HtmlBlockKind::Element("details"))
         else {
             return Ok(Some(event));
         };
@@ -44,7 +47,8 @@ impl<'a> EventRenderer<'a> {
             if html.trim() == crate::markdown::BLANK_LINE_MARKER {
                 return Ok(None);
             }
-            buffer.details_depth = html_details_balance(html, buffer.details_depth);
+            buffer.details_depth =
+                html_details_balance(html, buffer.details_depth, &mut buffer.comment_open);
         }
         buffer.details_events.push(event.into_static());
         if buffer.details_depth == 0 {

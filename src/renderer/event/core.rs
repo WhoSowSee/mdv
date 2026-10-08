@@ -31,7 +31,7 @@ pub(super) use subsystems::{
 
 pub(crate) use state::{
     CalloutFold, CalloutInfo, CalloutKind, CalloutState, CapturedReferenceBlock,
-    DeferredLinkReferenceBlock, FootnoteTextState, HtmlBlockBuffer, ListState,
+    DeferredLinkReferenceBlock, FootnoteTextState, HtmlBlockBuffer, HtmlBlockKind, ListState,
     TableInlineUrlSegment, TableInlineUrlTarget, TableState,
 };
 

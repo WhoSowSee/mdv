@@ -7,13 +7,39 @@ impl<'a> EventRenderer<'a> {
     ) -> Result<()> {
         if let Some(buffer) = self.pending_html_block_buffer.as_mut() {
             buffer.content.push_str(html);
-            if contains_html_tag(html, buffer.tag, true) {
+            let complete = match buffer.kind {
+                HtmlBlockKind::Element(tag) => {
+                    contains_html_tag_outside_comments(html, tag, true, &mut buffer.comment_open)
+                }
+                HtmlBlockKind::Comment => html.contains("-->"),
+            };
+            if complete {
                 self.flush_pending_html_block_buffer()?;
             }
             return Ok(());
         }
 
-        let details_depth = html_details_balance(html, 0);
+        let trimmed = html.trim_start();
+        if trimmed.starts_with("<!--") {
+            if let Some(end) = trimmed.find("-->") {
+                if trimmed[end + 3..].trim().is_empty() {
+                    return self.render_html_comment(html);
+                }
+            } else {
+                self.pending_html_block_buffer = Some(HtmlBlockBuffer {
+                    kind: HtmlBlockKind::Comment,
+                    content: html.to_string(),
+                    captures_markdown_events: false,
+                    details_events: Vec::new(),
+                    details_depth: 0,
+                    comment_open: true,
+                });
+                return Ok(());
+            }
+        }
+
+        let mut comment_open = false;
+        let details_depth = html_details_balance(html, 0, &mut comment_open);
         let container = if details_depth > 0 {
             Some("details")
         } else {
@@ -29,11 +55,12 @@ impl<'a> EventRenderer<'a> {
             });
         if let Some((tag, captures_markdown_events)) = pending {
             self.pending_html_block_buffer = Some(HtmlBlockBuffer {
-                tag,
+                kind: HtmlBlockKind::Element(tag),
                 content: html.to_string(),
                 captures_markdown_events,
                 details_events: Vec::new(),
                 details_depth,
+                comment_open,
             });
             return Ok(());
         }
@@ -46,12 +73,42 @@ impl<'a> EventRenderer<'a> {
             return Ok(());
         };
 
+        if buffer.kind == HtmlBlockKind::Comment {
+            if let Some(end) = buffer.content.find("-->") {
+                let (comment, remainder) = buffer.content.split_at(end + 3);
+                if !remainder.trim().is_empty() {
+                    let last_line = comment
+                        .rsplit('\n')
+                        .next()
+                        .expect("comment has a closing delimiter");
+                    let (_, source_line) =
+                        crate::renderer::line_numbers::strip_internal_markers(last_line);
+                    self.render_html_comment(comment)?;
+                    self.pending_html_source_line = source_line;
+                    return self.render_html_fragment_buffering_blocks(remainder);
+                }
+            }
+            return self.render_html_comment(&buffer.content);
+        }
+
         pulldown_cmark::html::push_html(&mut buffer.content, buffer.details_events.into_iter());
         if buffer.content.trim().is_empty() {
             return Ok(());
         }
 
         self.render_html_fragment_as_terminal(&buffer.content)
+    }
+
+    pub(super) fn render_html_comment(&mut self, html: &str) -> Result<()> {
+        let source_line = self.pending_html_source_line.take();
+        if self.config.hide_comments {
+            return Ok(());
+        }
+        if let Some(source_line) = source_line {
+            let marker = crate::renderer::line_numbers::encode_internal_marker(source_line);
+            return self.render_literal_html(&format!("{marker}{html}"));
+        }
+        self.render_literal_html(html)
     }
 
     pub(in crate::renderer::event) fn pending_html_buffer_captures_markdown_events(&self) -> bool {
