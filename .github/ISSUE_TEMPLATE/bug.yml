@@ -1,0 +1,55 @@
+name: Bug report
+description: Report incorrect rendering or a problem running mdv.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search [existing issues](https://github.com/WhoSowSee/mdv/issues) for the same bug before opening a new report.
+        AI-assisted reports must follow the [AI Policy](https://github.com/WhoSowSee/mdv/blob/main/AI_POLICY.md).
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe the actual result and what you expected. Include any errors.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce
+      description: Include the exact command, relevant settings or config, and steps in pager or interactive mode if needed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: markdown
+    attributes:
+      label: Markdown input
+      description: For rendering bugs, paste the smallest document that shows the problem.
+      render: text
+
+  - type: textarea
+    id: version
+    attributes:
+      label: mdv version
+      description: Paste the output of `mdv --version`. If mdv won't start, give the release or commit you installed.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and terminal
+      description: Include their versions. For layout bugs, add the terminal width.
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Attach a screenshot or paste relevant logs. For missing or misaligned glyphs, include the font name.

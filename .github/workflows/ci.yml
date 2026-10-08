@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  RUST_BACKTRACE: "1"
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            vendor/minus -> target
+          save-if: ${{ github.event_name == 'push' }}
+
+      - name: Check formatting
+        run: |
+          cargo fmt --all -- --check
+          cargo fmt --manifest-path vendor/minus/Cargo.toml --all -- --check
+
+      - name: Check lints
+        run: |
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo clippy --locked --manifest-path vendor/minus/Cargo.toml --lib --features dynamic_output,search -- -D warnings
+
+      - name: Test helper scripts
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            vendor/minus -> target
+          save-if: ${{ github.event_name == 'push' }}
+
+      - name: Test mdv
+        run: cargo test --locked
+
+      - name: Test vendored pager
+        run: cargo test --locked --manifest-path vendor/minus/Cargo.toml --lib --features dynamic_output,search
+
+      - name: Build release binary
+        if: runner.os == 'Linux'
+        run: cargo build --release --locked
+
+      - name: Verify release binary
+        if: runner.os == 'Linux'
+        run: ./target/release/mdv --version

@@ -81,6 +81,16 @@ Use the `mdv` binary from `target/release` directly or add it to your PATH.
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for reporting issues, preparing pull requests, and contribution guidelines.
+
+For AI-assisted contributions, read the [AI Policy](AI_POLICY.md).
+
+Local development uses [rust-toolchain.toml](rust-toolchain.toml) to select stable Rust with `rustfmt` and `clippy`. Formatting settings are in [rustfmt.toml](rustfmt.toml).
+
+The [CI workflow](https://github.com/WhoSowSee/mdv/blob/main/.github/workflows/ci.yml) checks pull requests and pushes to `main`: formatting, Clippy, helper scripts, and tests on Linux, Windows, and macOS. It also builds and runs the release binary on Linux.
+
+For release builds, [build.yml](https://github.com/WhoSowSee/mdv/blob/main/.github/workflows/build.yml) coordinates the platform and package workflows and publishes after all checks pass. Manual runs build and check packages without publishing.
+
 The optional [justfile](justfile) provides development commands. Install [just](https://just.systems/man/en/) 1.56.0 or newer with `cargo install --locked just`.
 
 ```text

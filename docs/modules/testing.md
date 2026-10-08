@@ -4,12 +4,22 @@ The project combines unit tests beside implementation modules with one integrati
 
 ## Commands
 
+[rust-toolchain.toml](../../rust-toolchain.toml) selects the stable toolchain with
+`rustfmt` and `clippy`. [rustfmt.toml](../../rustfmt.toml) sets the language and
+style editions to 2024, a width of 100, and field initialization shorthand.
+Both mdv and `vendor/minus` use this formatting configuration.
+
 ```text
 cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test --no-fail-fast
 cargo build --release
 ```
+
+The [CI workflow](../../.github/workflows/ci.yml) runs these checks for pull
+requests and pushes to `main`, with mdv and pager tests on Linux, Windows, and
+macOS. The release build runs on Linux. See [CI details](ci-release.md#pull-request-and-branch-checks)
+for helper tests, caching, and job responsibilities.
 
 The root [justfile](../../justfile) provides optional shortcuts with `just` 1.56.0 or newer. Run `just` or `just --list` to list recipes. `just check` runs the formatting check, Clippy with `-D warnings`, `cargo test`, and the release build in order, stopping on failure. `just check-pager` checks formatting, Clippy, and library tests for `vendor/minus` with `dynamic_output,search`; the fork is a path dependency rather than a workspace member. `just check-all` adds justfile syntax/formatting checks and the Debian validator tests to both Rust check groups. Packaging tests require Python 3.11+ (`python` on Windows, `python3` on Unix).
 

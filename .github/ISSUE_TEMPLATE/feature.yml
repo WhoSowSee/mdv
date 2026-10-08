@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest a change to mdv.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [existing issues](https://github.com/WhoSowSee/mdv/issues) and [open pull requests](https://github.com/WhoSowSee/mdv/pulls) for the same idea.
+        AI-assisted requests must follow the [AI Policy](https://github.com/WhoSowSee/mdv/blob/main/AI_POLICY.md).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe what you need to do with mdv and what's missing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Show how it would work, with a command or Markdown example.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or additional context
+      description: Mention any existing options or workarounds you've tried.

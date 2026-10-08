@@ -81,6 +81,16 @@ cargo build --release
 
 ## Разработка
 
+Порядок сообщения о проблемах, подготовки pull request и правила участия описаны в [CONTRIBUTING.md](CONTRIBUTING.md).
+
+При использовании AI для подготовки изменений прочитайте [AI Policy](AI_POLICY.md).
+
+Для локальной разработки [rust-toolchain.toml](rust-toolchain.toml) выбирает стабильный Rust с `rustfmt` и `clippy`. Настройки форматирования находятся в [rustfmt.toml](rustfmt.toml).
+
+В [CI workflow](https://github.com/WhoSowSee/mdv/blob/main/.github/workflows/ci.yml) для pull request и изменений `main` проверяются форматирование, Clippy, вспомогательные скрипты и тесты на Linux, Windows и macOS. На Linux также собирается и запускается release-бинарник.
+
+Релизной сборкой управляет [build.yml](https://github.com/WhoSowSee/mdv/blob/main/.github/workflows/build.yml): он вызывает workflow сборки платформ и пакетов и публикует релиз после всех проверок. Ручной запуск собирает и проверяет пакеты без публикации.
+
 Необязательный [justfile](justfile) содержит команды для разработки. Установите [just](https://just.systems/man/en/) версии 1.56.0 или новее командой `cargo install --locked just`.
 
 ```text

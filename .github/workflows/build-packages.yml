@@ -1,0 +1,88 @@
+name: Build Snap and Nix packages
+
+on:
+  workflow_call:
+
+env:
+  PROJECT_NAME: mdv
+
+permissions:
+  contents: read
+
+jobs:
+  snap:
+    name: Snap package ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install LXD and Snapcraft
+        run: |
+          sudo groupadd --force --system lxd
+          sudo usermod --append --groups lxd runner
+          sudo snap install lxd
+          sudo lxd init --auto
+          sudo iptables -P FORWARD ACCEPT
+          sudo snap install --channel 9.x/stable --classic snapcraft
+
+      - name: Build snap
+        run: sudo -u runner -E snapcraft pack --use-lxd --build-for=${{ matrix.arch }}
+
+      - name: Collect snaps
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          snaps=(*_${{ matrix.arch }}.snap)
+          test "${#snaps[@]}" -eq 1
+          test -f "${snaps[0]}"
+          mv "${snaps[0]}" "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+
+      - name: Test snap
+        run: |
+          sudo snap install --dangerous "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+          snap run "${PROJECT_NAME}" --version
+
+      - name: Upload snaps
+        uses: actions/upload-artifact@v7
+        with:
+          name: mdv-snap-${{ matrix.arch }}
+          path: artifacts/*
+          if-no-files-found: error
+          compression-level: 0
+
+  nix:
+    name: Nix package ${{ matrix.system }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Evaluate flake outputs
+        run: nix flake check --no-build --print-build-logs
+
+      - name: Build Nix package
+        run: |
+          nix build .#packages.${{ matrix.system }}.default --print-build-logs
+          ./result/bin/mdv --version

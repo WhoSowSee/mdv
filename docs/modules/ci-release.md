@@ -1,8 +1,44 @@
 # CI and Release Packaging
 
-`.github/workflows/build.yml` runs on tag pushes and manual dispatches. A manual
+[build.yml](../../.github/workflows/build.yml) runs on tag pushes and manual dispatches. A manual
 run builds and checks packages without publishing a GitHub release. Tag runs
 require the tag, with an optional `v` prefix, to match `Cargo.toml`.
+
+The release process is split across three files:
+
+| Workflow | Responsibility |
+|---|---|
+| [build.yml](../../.github/workflows/build.yml) | Verify the publishable crate, call both build workflows, and publish the release after all checks pass. |
+| [build-platforms.yml](../../.github/workflows/build-platforms.yml) | Linux, macOS, and Windows binary builds, tests, ZIP archives, and Debian packages. |
+| [build-packages.yml](../../.github/workflows/build-packages.yml) | Snap and Nix builds and package checks. |
+
+The two build workflows use `workflow_call` and run only through the caller.
+Local workflow references use the caller's commit. Each called workflow defines
+`PROJECT_NAME: mdv`, because the caller's workflow-level environment is not
+inherited. All uploaded artifacts belong to the same run, so the release job
+downloads them after `package`, `platforms`, and `packages` succeed.
+
+## Pull request and branch checks
+
+[ci.yml](../../.github/workflows/ci.yml) runs for pull requests targeting `main`
+and pushes to `main`. It creates four jobs:
+
+| Job | Checks |
+|---|---|
+| `Checks` on Linux | Formatting and Clippy for mdv and `vendor/minus`, plus Python tests for packaging, release notes, and star history. |
+| `Test (ubuntu-latest)` | mdv and pager tests, release build, and `mdv --version`. |
+| `Test (windows-latest)` | mdv and pager tests. |
+| `Test (macos-latest)` | mdv and pager tests. |
+
+Cargo compilation and test commands use the committed lockfiles. Pager tests use
+its own manifest with `dynamic_output,search`, because it is not a workspace
+member. All command steps use Bash, including Git Bash on Windows, so a failed
+command stops the step. Matrix failures do not cancel the other platforms.
+
+The workflow has read-only repository permissions and does not publish packages.
+Cargo caches cover both target directories and are saved on pushes to `main`;
+pull requests restore available caches. A new run cancels earlier runs for the
+same pull request or branch.
 
 ## Build matrix
 
@@ -34,10 +70,10 @@ The package job checks formatting, Clippy, Debian validator and release-note
 tests, and `cargo publish --dry-run --locked`. Publishing waits for this job and every
 platform job, including Nix. Only the release job receives `contents: write`.
 
-The package job also runs formatting, Clippy with `-D warnings`, and unit tests
+The `package` job in `build.yml` also runs formatting, Clippy with `-D warnings`, and unit tests
 against `vendor/minus/Cargo.toml` with `dynamic_output,search`. The fork is a
 path dependency rather than a workspace member, so the root command does not
-replace these checks. No runner, action version, matrix, or artifact name changes.
+replace these checks.
 
 ## Debian runtime dependencies
 
@@ -83,7 +119,7 @@ python3 .github/scripts/test_verify_deb.py
 
 ## Build tools
 
-The workflow is the source of truth for tool references. Action major tags and
+The workflow files are the source of truth for tool references. Action major tags and
 the Rust `stable` reference receive upstream updates automatically. Cross uses
 its explicit stable release. The ARM64 cargo-deb installer builds from crates.io
 because the selected release has no ARM64 binary asset.
