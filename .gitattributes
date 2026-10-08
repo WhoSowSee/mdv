@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.rs diff=rust
+*.webp binary
+assets/syntaxes.bin binary
