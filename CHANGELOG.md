@@ -1,5 +1,30 @@
 # Changelog
 
+## [6.0.2] - 2026-10-09
+
+### Bug Fixes
+
+- Fixed: pager help descriptions keep their muted color through wrapping and column changes, while shortcut keys retain the theme color ([a472d4c](https://github.com/WhoSowSee/mdv/commit/a472d4ce347e270edad71d54852166fe87ecd260))
+- Fixed: `--render-html` preserves comments unless `--hide-comments` is set, including multiline text and source numbering; borderless header-only tables retain all lines ([1814e47](https://github.com/WhoSowSee/mdv/commit/1814e473f5493685457f9ed44ffecb05bb25c9a4))
+
+### Documentation
+
+- Added: light and dark star history charts stored in the repository and refreshed automatically for both README versions ([0ee95fb](https://github.com/WhoSowSee/mdv/commit/0ee95fb9c1a7091a68d1fd02e26fc66cf2ee4744))
+- Documented: the corrected argument order for macOS `lipo` in the 6.0.1 changelog, making the already shipped build fix explicit ([2f91bf4](https://github.com/WhoSowSee/mdv/commit/2f91bf473dac5ccdafc0b0344e72d6bea8076295))
+- Fixed: README star history charts now display correctly on crates.io through absolute image URLs for light and dark variants ([dcf5b92](https://github.com/WhoSowSee/mdv/commit/dcf5b92c864777afc0e3a0e5ebc5cb8188316d09))
+- Localized: star history titles, star counts and month labels in README-RU, and removed headings already provided by the charts ([6a5bc6e](https://github.com/WhoSowSee/mdv/commit/6a5bc6e7a084bc5ff12646a49e242b9b15f02e9f))
+- Updated: all four star history charts with current data, covering English and Russian labels in light and dark themes ([007a7f2](https://github.com/WhoSowSee/mdv/commit/007a7f282509b164007624945a962c6a68f28054))
+- Updated: the overview and theme screenshots in both README versions, and shortened the sample SQL query for the new captures ([d41edb1](https://github.com/WhoSowSee/mdv/commit/d41edb1594cfcce61528b544e7370bf31a8d42d0))
+
+### Maintenance
+
+- Removed: the special merging of 6.0.1 and 6.0.0 release notes; each release now uses only its own changelog section ([3a6e0a2](https://github.com/WhoSowSee/mdv/commit/3a6e0a29ed5370aa7802beed29b7673293cda8c3))
+- Added: contribution and AI guidelines, issue/PR templates and Rust settings; CI checks formatting and Clippy, runs tests on Linux, Windows and macOS, and reuses build workflows ([6c2bbbb](https://github.com/WhoSowSee/mdv/commit/6c2bbbbaae06743c0f6663e6dad5d67251990738))
+- Fixed: automatic star history updates can publish on protected `main` through a dedicated GitHub App, with commits restricted to the four chart files ([82f3d35](https://github.com/WhoSowSee/mdv/commit/82f3d357b073ddbc3a4def76eb3acd0760f328c4))
+- Added: `.editorconfig` to standardize UTF-8, LF and indentation while preserving Markdown trailing spaces used for hard line breaks ([77575d2](https://github.com/WhoSowSee/mdv/commit/77575d2c1ceeffbe6374247b190b52a15ab46eed))
+- Added: `.gitattributes` to normalize text to LF, show Rust context in diffs and preserve screenshots and bundled syntax data as binary files ([aaec029](https://github.com/WhoSowSee/mdv/commit/aaec029df15ab6dc0be20c3b355d332aad5eb139))
+- Added: RPM packages for x86_64/ARM64 and Arch Linux packages for x86_64; CI checks dependencies, SHA-256 and licenses, then installs and runs each package ([e477ebb](https://github.com/WhoSowSee/mdv/commit/e477ebb378224ee689853c1266f210e66f1cd06f))
+
 ## [6.0.1] - 2026-10-02
 
 ### Bug Fixes

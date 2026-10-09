@@ -195,7 +195,7 @@ Cargo removes the path dependency when packaging mdv and uses the crates.io
 release during verification. The dry run blocks publication if that release
 does not contain the APIs used by mdv, even when local binary builds succeed.
 
-mdv 6.0.1 requires the published `mdv-minus` 6.0.1 patch with the Clippy 1.99.0
+mdv 6.0.2 requires the published `mdv-minus` 6.0.1 patch with the Clippy 1.99.0
 fix. The Unix-only `terminfo` 0.9.0 dependency reads terminfo files in Rust
 and adds no ncurses linkage or mandatory runtime database package.
 
