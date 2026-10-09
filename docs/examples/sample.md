@@ -149,10 +149,7 @@ if __name__ == "__main__":
 Alternative fence characters:
 
 ~~~sql
-SELECT
-    id,
-    username,
-    created_at
+SELECT id, username, created_at
 FROM users
 WHERE active = TRUE
 ORDER BY created_at DESC;
