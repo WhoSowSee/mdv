@@ -214,6 +214,8 @@ cat <FILE> | mdv
 - `--block-spacing <spec>` - overrides top and bottom blank lines per block. Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
 - `--horizontal-rule-style <pretty|simple>` - draws Markdown rules and HTML `<hr>` with decorative endpoints or as a continuous line.
 
+Heading text in braces, such as `# {Context Name}`, remains visible, including inside Markdown code blocks. A trailing `{...}` block is heading metadata only when it contains an ID (`#id`), a class (`.class`), or a `key=value` attribute.
+
 ### Content visibility
 
 - `--show-empty-elements` - keeps normally hidden empty headings, lists, block quotes, code blocks, and tables in the output.

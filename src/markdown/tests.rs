@@ -14,6 +14,79 @@ fn test_markdown_parsing() {
 }
 
 #[test]
+fn headings_preserve_literal_braced_text() {
+    let processor = MarkdownProcessor::new(&Config::default());
+    for (markdown, expected) in [
+        ("# {Context Name}\n", "{Context Name}"),
+        ("# Heading {Context Name} ###\n", "Heading {Context Name}"),
+        ("# {}\n", "{}"),
+        (
+            "# {Context Name} {Other Name}\n",
+            "{Context Name} {Other Name}",
+        ),
+        ("# {Context Name} {.example}\n", "{Context Name}"),
+        ("{Context Name}\n===\n", "{Context Name}"),
+        ("> # {Context Name}\n", "{Context Name}"),
+        ("- # {Context Name}\n", "{Context Name}"),
+        ("    # {Context Name}\n", "{Context Name}"),
+        ("# {**Context** Name}\n", "{Context Name}"),
+        ("# `{Context Name}`\n", "{Context Name}"),
+        (
+            "# {Context [Name][name]}\n\n[name]: /name\n",
+            "{Context Name}",
+        ),
+    ] {
+        let events = processor.parse(markdown).unwrap();
+        let text: String = events
+            .iter()
+            .filter_map(|event| match event {
+                Event::Text(text) | Event::Code(text) => Some(text.as_ref()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(text, expected, "{markdown}");
+        assert!(events.iter().any(|event| matches!(
+            event,
+            Event::Start(Tag::Heading {
+                level: HeadingLevel::H1,
+                ..
+            })
+        )));
+    }
+}
+
+#[test]
+fn braced_heading_math_survives_delimiter_normalization() {
+    let events = MarkdownProcessor::new(&Config::default())
+        .with_extended_math(true)
+        .parse("# {\\(x\\)}\n")
+        .unwrap();
+    assert!(matches!(
+        events.as_slice(),
+        [Event::Start(Tag::Heading { .. }), Event::Text(opening), Event::InlineMath(math),
+         Event::Text(closing), Event::End(TagEnd::Heading(_))]
+            if opening.as_ref() == "{" && math.as_ref() == "x" && closing.as_ref() == "}"
+    ));
+}
+
+#[test]
+fn explicit_heading_attributes_remain_metadata() {
+    let processor = MarkdownProcessor::new(&Config::default());
+    let events = processor
+        .parse("# Heading {#heading .example data-kind=value hidden}\n")
+        .unwrap();
+    assert!(matches!(
+        &events[0],
+        Event::Start(Tag::Heading { id, classes, attrs, .. })
+            if id.as_deref() == Some("heading")
+                && classes.iter().map(|class| class.as_ref()).eq(["example"])
+                && attrs.iter().map(|(key, value)| (key.as_ref(), value.as_deref()))
+                    .eq([("data-kind", Some("value")), ("hidden", None)])
+    ));
+    assert!(matches!(&events[1], Event::Text(text) if text.as_ref() == "Heading"));
+}
+
+#[test]
 fn front_matter_is_extracted_only_from_the_document_start() {
     let processor = MarkdownProcessor::new(&Config::default());
     let document = processor

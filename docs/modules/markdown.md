@@ -43,6 +43,7 @@ flowchart LR
 8. Admonition syntax becomes a callout blockquote, with an explicit source-line map for retained lines and generated separators.
 9. Callout markers are separated from setext headings.
 10. For terminal rendering, `\(…\)` and `\[…\]` are normalized into protected math ranges after code, HTML, and link destinations are excluded.
+11. Trailing heading braces containing only ordinary text are protected from heading-attribute parsing.
 
 Most transformations go through `source_lines::apply_transform`. Admonition conversion carries source positions directly through nested blocks, removed metadata, and generated separators; it does not infer those changes from a text diff.
 
@@ -61,6 +62,7 @@ Most transformations go through `source_lines::apply_transform`. Admonition conv
 | [src/markdown/admonitions/metadata.rs](../../src/markdown/admonitions/metadata.rs) | Directive options, Quarto headings, and internal presentation events. |
 | [src/markdown/blockquotes.rs](../../src/markdown/blockquotes.rs) | Parse `>` prefixes, nesting, and explicit blank lines inside blockquotes. |
 | [src/markdown/fences.rs](../../src/markdown/fences.rs) | Find fence markers and normalize tab-indented fences without losing inner indentation. |
+| [src/markdown/heading_attributes.rs](../../src/markdown/heading_attributes.rs) | Preserve literal braced heading text while retaining explicit heading attributes. |
 | [src/markdown/math.rs](../../src/markdown/math.rs) | Recognize extended TeX delimiters outside protected Markdown ranges. |
 | [src/markdown/math/dollars.rs](../../src/markdown/math/dollars.rs) | Protect table separators inside dollar-delimited formulas. |
 | [src/markdown/math/protected.rs](../../src/markdown/math/protected.rs) | Build protected ranges from Markdown offset events. |
@@ -89,6 +91,10 @@ CSS classes and IDs are recognized as metadata; CSS, site configuration, JavaScr
 `fences.rs` distinguishes container indentation from content indentation. This prevents a tab-indented fence from being parsed as an ordinary indented code block while preserving additional tabs inside the code.
 
 `events.rs` can also demote a plain indented block to text when the original structure identifies it as a paragraph. The decision uses source byte ranges, not only the event kind.
+
+## Heading attributes
+
+`heading_attributes.rs` preserves literal text such as `{Context Name}` while retaining explicit IDs, classes, and valued attributes. It protects omitted closing braces after math normalization, preserving inline formatting, reference links, code content, and source-line positions. Indented-block reparsing and nested Markdown code blocks share the same normalization. Unchanged input is reused without copying.
 
 ## Extended math delimiters
 

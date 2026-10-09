@@ -91,6 +91,7 @@ Color schema and migration checks: [color.rs](../../src/config/tests/color.rs).
 | [detection.rs](../../src/markdown/detection.rs) | Code-language extraction and detection. |
 | [events.rs](../../src/markdown/events.rs) | Event postprocessing. |
 | [fences.rs](../../src/markdown/fences.rs) | Tab-indented fence normalization. |
+| [heading_attributes.rs](../../src/markdown/heading_attributes.rs) | Literal heading braces and explicit attribute preservation. |
 | [math.rs](../../src/markdown/math.rs) | Extended terminal-math delimiter scanner. |
 | [math/dollars.rs](../../src/markdown/math/dollars.rs) | Dollar-math discovery and placeholder protection inside Markdown tables. |
 | [math/protected.rs](../../src/markdown/math/protected.rs) | Code, HTML, attribute, link, container, and existing-math ranges. |
