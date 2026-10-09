@@ -21,6 +21,7 @@ jobs:
             runner: ubuntu-24.04-arm
             builder: cargo
             deb_variant: glibc-2-39
+            rpm_arch: aarch64
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-latest
             builder: cross
@@ -29,6 +30,7 @@ jobs:
             runner: ubuntu-latest
             builder: cargo
             deb_variant: glibc-2-39
+            rpm_arch: x86_64
           - target: x86_64-unknown-linux-musl
             runner: ubuntu-latest
             builder: cross
@@ -107,6 +109,60 @@ jobs:
 
       - name: Verify deb package
         run: python3 .github/scripts/verify_deb.py "${{ matrix.target }}" "artifacts/${PROJECT_NAME}-${{ matrix.target }}.deb"
+
+      - name: Install RPM tools
+        if: matrix.rpm_arch
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes rpm
+          rpmbuild --version
+          rpm --version
+
+      - name: Build and verify RPM package
+        if: matrix.rpm_arch
+        run: |
+          python3 .github/scripts/linux_packages.py prepare rpm "${{ matrix.target }}" "$RUNNER_TEMP/mdv-rpm"
+          rpmbuild -bb --target "${{ matrix.rpm_arch }}" \
+            --define "_topdir $RUNNER_TEMP/mdv-rpm" "$RUNNER_TEMP/mdv-rpm/SPECS/mdv.spec"
+          packages=("$RUNNER_TEMP/mdv-rpm/RPMS/${{ matrix.rpm_arch }}"/*.rpm)
+          test "${#packages[@]}" -eq 1
+          test -f "${packages[0]}"
+          python3 .github/scripts/linux_packages.py verify rpm "${{ matrix.target }}" "${packages[0]}"
+          cp "${packages[0]}" "artifacts/${PROJECT_NAME}-${{ matrix.target }}.rpm"
+
+      - name: Install and test RPM package
+        if: matrix.rpm_arch
+        run: |
+          docker run --rm --volume "$PWD/artifacts:/packages:ro" fedora:44 \
+            bash -euo pipefail -c '
+              dnf5 --version
+              rpm --version
+              dnf5 --assumeyes --no-gpgchecks install "$1"
+              /usr/bin/mdv --version
+              printf "# Package smoke test\n" | /usr/bin/mdv --color never -
+            ' bash "/packages/${PROJECT_NAME}-${{ matrix.target }}.rpm"
+
+      - name: Build, install and test Arch Linux package
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          python3 .github/scripts/linux_packages.py prepare arch "${{ matrix.target }}" "$RUNNER_TEMP/mdv-arch"
+          docker run --rm --volume "$PWD:/repo:ro" --volume "$RUNNER_TEMP/mdv-arch:/package" \
+            --workdir /repo archlinux:base-devel bash -euo pipefail -c '
+              pacman -Syu --noconfirm --needed python libgcc
+              makepkg --version
+              pacman -Q pacman
+              useradd --create-home builder
+              chown -R builder:builder /package
+              runuser -u builder -- bash -euo pipefail -c "cd /package; PKGEXT=.pkg.tar.zst makepkg --noconfirm"
+              packages=(/package/*.pkg.tar.zst)
+              test "${#packages[@]}" -eq 1
+              test -f "${packages[0]}"
+              python .github/scripts/linux_packages.py verify arch x86_64-unknown-linux-gnu "${packages[0]}" --binary /package/mdv
+              pacman -U --noconfirm "${packages[0]}"
+              /usr/bin/mdv --version
+              printf "# Package smoke test\n" | /usr/bin/mdv --color never -
+            '
+          cp "$RUNNER_TEMP/mdv-arch/"*.pkg.tar.zst "artifacts/${PROJECT_NAME}-${{ matrix.target }}.pkg.tar.zst"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

@@ -29,6 +29,14 @@ The root [justfile](../../justfile) provides optional shortcuts with `just` 1.56
 
 `just test-packaging` runs `.github/scripts/test_verify_deb.py`. `just check-package` runs `cargo publish --dry-run --locked` separately from the local check groups; it requires a clean checkout, registry access, and a published pager fork with the APIs used by mdv. See [release verification](ci-release.md#release-notes-and-verification).
 
+RPM and Arch package validation has regressions in
+`.github/scripts/test_linux_packages.py`: manifest-derived versions, source
+checksums, architecture and dependency mismatches, stale staging directories,
+glibc compatibility, license contents, and unexpected payload files. Run all
+helper checks with `python -m unittest discover -s .github/scripts -p 'test_*.py'`;
+release CI runs the same suite. Native package installation checks run in Fedora
+44 and Arch containers in the platform workflow.
+
 Use `cargo test <name> -- --nocapture` to inspect a specific test's standard output.
 
 ## Rendering performance

@@ -36,7 +36,7 @@
 >
 > ### Требования
 >
-> - Установленный Rust
+> - Установленный Rust для установки с crates.io или из исходников
 > - Терминал с поддержкой ANSI-цветов для полноценного отображения
 
 ## Установка
@@ -48,6 +48,24 @@ cargo install mdv
 ```
 
 Так вы установите последнюю опубликованную версию из crates.io в каталог бинарников Cargo.
+
+### Установка RPM-пакетов и пакетов Arch Linux
+
+Скачайте пакет для своей системы из [Releases](https://github.com/WhoSowSee/mdv/releases). RPM-пакеты поддерживают Linux x86_64 и ARM64 и требуют glibc 2.39 или новее. Пакеты Arch Linux поддерживают x86_64.
+
+Для Fedora и совместимых RPM-систем:
+
+```bash
+sudo dnf install "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
+```
+
+Для Arch Linux:
+
+```bash
+sudo pacman -U "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
+```
+
+Замените `<VERSION>` номером релиза. Для RPM-пакетов ARM64 используйте имя файла с `aarch64-unknown-linux-gnu`. Эти пакеты содержат бинарник и лицензию; Rust для их установки не требуется.
 
 ### Установка через Nix (Flake)
 

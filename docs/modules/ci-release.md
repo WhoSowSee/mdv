@@ -9,7 +9,7 @@ The release process is split across three files:
 | Workflow | Responsibility |
 |---|---|
 | [build.yml](../../.github/workflows/build.yml) | Verify the publishable crate, call both build workflows, and publish the release after all checks pass. |
-| [build-platforms.yml](../../.github/workflows/build-platforms.yml) | Linux, macOS, and Windows binary builds, tests, ZIP archives, and Debian packages. |
+| [build-platforms.yml](../../.github/workflows/build-platforms.yml) | Linux, macOS, and Windows binary builds, tests, ZIP archives, Debian, RPM, and Arch Linux packages. |
 | [build-packages.yml](../../.github/workflows/build-packages.yml) | Snap and Nix builds and package checks. |
 
 The two build workflows use `workflow_call` and run only through the caller.
@@ -44,9 +44,9 @@ same pull request or branch.
 
 | Target | Runner | Builder | Artifacts |
 |---|---|---|---|
-| `aarch64-unknown-linux-gnu` | `ubuntu-24.04-arm` | Native Cargo | ZIP, DEB |
+| `aarch64-unknown-linux-gnu` | `ubuntu-24.04-arm` | Native Cargo | ZIP, DEB, RPM |
 | `aarch64-unknown-linux-musl` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
-| `x86_64-unknown-linux-gnu` | `ubuntu-latest` | Native Cargo | ZIP, DEB |
+| `x86_64-unknown-linux-gnu` | `ubuntu-latest` | Native Cargo | ZIP, DEB, RPM, Arch Linux |
 | `x86_64-unknown-linux-musl` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
 | `i686-unknown-linux-gnu` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
 | `riscv64gc-unknown-linux-gnu` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
@@ -117,6 +117,52 @@ Run the validator regressions with:
 python3 .github/scripts/test_verify_deb.py
 ```
 
+## RPM and Arch Linux packages
+
+The two native GNU jobs reuse their already built release binaries for RPM
+packages. The x86_64 GNU job additionally creates an Arch Linux package. The
+existing platform matrix, ZIP archives, Debian packages, Snap jobs, and Nix
+checks retain their coverage.
+
+[linux_packages.py](../../.github/scripts/linux_packages.py) prepares recipes
+from Cargo.toml and the binary's ELF metadata, then verifies the package name,
+version, architecture, runtime dependencies, binary permissions and SHA-256,
+and the exact MIT license. Both formats install only `/usr/bin/mdv` and
+`/usr/share/licenses/mdv/LICENSE`, plus Arch's package metadata. The native GNU
+glibc baseline comes from the existing `glibc-2-39` Debian variant; a binary
+requiring a newer glibc fails validation.
+
+[mdv.spec.in](../../.github/packaging/mdv.spec.in) uses `rpmbuild -bb --target`
+with RPM's automatic ELF dependency generator enabled. Strip and comment/note
+post-processing are disabled to preserve the already stripped binary. Debug
+subpackages and build-id links are disabled, and the RPM format is v4. The
+Ubuntu 24.04 RPM package provides RPM 4.18.2; resolved tool versions are printed
+in each job. Each RPM is installed with dependency checks in a native Fedora 44
+container and tested with `--version` and a Markdown input.
+
+[PKGBUILD.in](../../.github/packaging/PKGBUILD.in) is built by `makepkg` as an
+unprivileged user in the official `archlinux:base-devel` container. SHA-256
+checksums cover the same-run binary and LICENSE. `!strip` and `!debug` preserve
+the executable and avoid an additional debug package. Dependencies are
+`glibc>=2.39` and `libgcc` when the binary needs `libgcc_s.so.1`. The resulting
+`.pkg.tar.zst` is verified, installed through pacman, and tested. Arch Linux
+supports x86_64; Arch Linux ARM requires separate tooling and is not part of
+this package job.
+
+Recipes and build directories live under `RUNNER_TEMP`; only validated packages
+are copied into the existing per-target artifact directories. Publication uses
+the existing release gate and upload/download steps. RPM and Arch archives are
+named by Rust target before receiving the release tag prefix.
+
+Primary references: [RPM 4.18.2 tools](https://packages.ubuntu.com/noble/rpm),
+[RPM ELF dependencies](https://github.com/rpm-software-management/rpm/blob/rpm-4.18.2-release/tools/elfdeps.c),
+[RPM post-processing](https://github.com/rpm-software-management/rpm/blob/rpm-4.18.2-release/platform.in),
+[PKGBUILD](https://man.archlinux.org/man/PKGBUILD.5.en),
+[makepkg](https://man.archlinux.org/man/makepkg.8.en),
+[Arch libgcc files](https://archlinux.org/packages/core/x86_64/libgcc/files/),
+[Fedora 44 image platforms](https://hub.docker.com/v2/repositories/library/fedora/tags/44),
+[Arch image platforms](https://hub.docker.com/v2/repositories/library/archlinux/tags/base-devel).
+
 ## Build tools
 
 The workflow files are the source of truth for tool references. Action major tags and
@@ -164,7 +210,8 @@ generated notes on both creation and update. The script does not call the GitHub
 API or require a token. Multiline text is never passed through a fixed
 `GITHUB_OUTPUT` delimiter.
 
-The artifact contract is 11 ZIP archives, seven Debian packages, and two snaps.
+The artifact contract is 23 files: 11 ZIP archives, seven Debian packages, two
+RPM packages, one Arch Linux package, and two snaps.
 Each upload has a unique name; the release prefixes filenames with the tag.
 The Nix outputs gate publication but are not uploaded as release assets.
 

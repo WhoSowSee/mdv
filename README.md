@@ -36,7 +36,7 @@
 >
 > ### Required dependencies:
 >
-> - Rust toolchain
+> - Rust toolchain for installation from crates.io or source
 > - Terminal with ANSI color support for the best experience
 
 ## Installation
@@ -48,6 +48,24 @@ cargo install mdv
 ```
 
 This installs the latest published release from crates.io into your Cargo bin directory.
+
+### Install RPM or Arch Linux packages
+
+Download the package for your system from [Releases](https://github.com/WhoSowSee/mdv/releases). RPM packages support x86_64 and ARM64 Linux and require glibc 2.39 or newer. Arch Linux packages support x86_64.
+
+For Fedora and compatible RPM systems:
+
+```bash
+sudo dnf install "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
+```
+
+For Arch Linux:
+
+```bash
+sudo pacman -U "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
+```
+
+Replace `<VERSION>` with the release version. For ARM64 RPM packages, use the `aarch64-unknown-linux-gnu` filename. These packages include the executable and license; the Rust toolchain is not required.
 
 ### Install with Nix (Flake)
 

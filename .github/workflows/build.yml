@@ -31,9 +31,7 @@ jobs:
           cargo clippy --locked --all-targets -- -D warnings
 
       - name: Test release packaging helpers
-        run: |
-          python3 .github/scripts/test_verify_deb.py
-          python3 .github/scripts/test_release_notes.py
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 
       - name: Verify vendored pager
         run: |

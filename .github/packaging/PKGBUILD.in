@@ -1,0 +1,17 @@
+pkgname=@NAME@
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc=@DESCRIPTION@
+arch=('x86_64')
+url=@REPOSITORY@
+license=(@LICENSE@)
+depends=(@DEPENDENCIES@)
+options=('!strip' '!debug')
+source=(@NAME@ 'LICENSE')
+noextract=(@NAME@ 'LICENSE')
+sha256sums=('@BINARY_SHA256@' '@LICENSE_SHA256@')
+
+package() {
+    install -Dm755 "$srcdir/$pkgname" "$pkgdir/usr/bin/$pkgname"
+    install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

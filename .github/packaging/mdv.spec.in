@@ -1,0 +1,25 @@
+%global debug_package %{nil}
+%global __brp_strip %{nil}
+%global __brp_strip_comment_note %{nil}
+%global _build_id_links none
+%global _rpmformat 4
+
+Name: @NAME@
+Version: @VERSION@
+Release: 1
+Summary: @DESCRIPTION@
+License: @LICENSE@
+URL: @REPOSITORY@
+ExclusiveArch: x86_64 aarch64
+Requires: glibc >= @GLIBC_MINIMUM@
+
+%description
+@DESCRIPTION@
+
+%install
+install -Dm755 "%{_sourcedir}/@NAME@" "%{buildroot}/usr/bin/@NAME@"
+install -Dm644 "%{_sourcedir}/LICENSE" "%{buildroot}/usr/share/licenses/@NAME@/LICENSE"
+
+%files
+/usr/bin/@NAME@
+%license /usr/share/licenses/@NAME@/LICENSE
