@@ -37,6 +37,7 @@ mod conversion;
 mod detection;
 mod events;
 mod fences;
+mod heading_attributes;
 mod math;
 mod parsing;
 mod structure;

@@ -2,6 +2,38 @@ use super::*;
 use tempfile::tempdir;
 
 #[test]
+fn braced_heading_text_survives_terminal_and_html_output() {
+    for (args, expected) in [
+        (
+            vec![
+                "--color",
+                "never",
+                "--line-numbers",
+                "source",
+                "--heading-layout",
+                "none",
+            ],
+            ["1 {Context Name}", "3 Heading {Other Name}"],
+        ),
+        (
+            vec!["--html"],
+            ["<h1>{Context Name}</h1>", "<h2>Heading {Other Name}</h2>"],
+        ),
+    ] {
+        let output = mdv_cmd()
+            .args(args)
+            .write_stdin("# {Context Name}\n\n## Heading {Other Name}\n")
+            .output()
+            .expect("mdv renders braced headings");
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        for line in expected {
+            assert!(stdout.lines().any(|actual| actual == line), "{stdout}");
+        }
+    }
+}
+
+#[test]
 fn test_smart_indent_promotes_first_heading() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(&temp_file, "## Heading Two\n\nContent\n").unwrap();

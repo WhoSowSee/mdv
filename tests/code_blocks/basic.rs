@@ -234,3 +234,23 @@ fn test_markdown_code_block_setext_heading_renders_as_heading() {
         stdout
     );
 }
+
+#[test]
+fn markdown_code_block_preserves_braced_heading_text() {
+    for language in ["md", "markdown"] {
+        let markdown = format!("```{language}\n# {{Context Name}}\n```\n");
+        mdv_cmd()
+            .args([
+                "--color",
+                "never",
+                "--cols",
+                "80",
+                "--code-block-style",
+                "pretty:show-name;show-icon",
+            ])
+            .write_stdin(markdown)
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("{Context Name}"));
+    }
+}

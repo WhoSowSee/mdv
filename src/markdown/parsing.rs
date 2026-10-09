@@ -127,6 +127,7 @@ impl MarkdownProcessor {
                     self.normalize_extended_math_delimiters(content, placeholders)
                 });
         }
+        processed = self.normalize_heading_attributes(processed);
 
         Ok(PreprocessedContent {
             content: processed,

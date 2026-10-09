@@ -187,19 +187,20 @@ impl MarkdownProcessor {
             }
         }
 
-        let text = text.trim_end_matches('\n');
+        text.truncate(text.trim_end_matches('\n').len());
         if text.is_empty() {
             return Ok(());
         }
 
-        let parser = Parser::new_ext(text, self.options).into_offset_iter();
+        let text = self.normalize_heading_attributes(text);
+        let parser = Parser::new_ext(&text, self.options).into_offset_iter();
         let reparsed_events: Vec<(Event, Range<usize>)> = parser.collect();
         let (line_starts, source_lines) = if self.config.source_line_numbers_enabled() {
             let first_processed_line = events
                 .first()
                 .map(|(_, range)| source_lines::index_for_offset(outer_line_starts, range.start))
                 .unwrap_or(0);
-            let line_starts = source_lines::starts(text);
+            let line_starts = source_lines::starts(&text);
             let source_lines = (0..line_starts.len())
                 .map(|offset| {
                     outer_source_lines
@@ -213,7 +214,7 @@ impl MarkdownProcessor {
             (Vec::new(), Vec::new())
         };
         processed.extend(self.postprocess_events(
-            text,
+            &text,
             reparsed_events,
             &line_starts,
             &source_lines,
