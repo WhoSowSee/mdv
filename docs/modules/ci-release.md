@@ -199,16 +199,49 @@ mdv 6.0.2 requires the published `mdv-minus` 6.0.1 patch with the Clippy 1.99.0
 fix. The Unix-only `terminfo` 0.9.0 dependency reads terminfo files in Rust
 and adds no ncurses linkage or mandatory runtime database package.
 
-`.github/scripts/release-notes.sh` writes the custom release body directly to a
-file, preserving the existing changelog, tag annotation, and commit-message
-priority. It selects only the changelog section matching the release tag,
-stopping before the next version heading. Regression tests in
-`.github/scripts/test_release_notes.py` cover section boundaries and the
-existing tag/commit message priority.
-The release action's `generate_release_notes` option appends GitHub's
-generated notes on both creation and update. The script does not call the GitHub
-API or require a token. Multiline text is never passed through a fixed
-`GITHUB_OUTPUT` delimiter.
+`.github/scripts/release-notes.sh` selects the changelog section matching the
+release tag, stopping before the next version heading. If that section is absent
+or empty, it preserves the existing tag-annotation and commit-message priority.
+It writes this source body directly to `release-notes.md`.
+
+`.github/scripts/compose_release_notes.py` then obtains GitHub's generated notes
+for the tag through the REST API. Changelog list items associated with a PR in
+those notes move into one block per PR. Its summary contains the original title,
+author, and linked PR number; descriptions, multiline content, and commit links
+are preserved as bullets inside the block. All blocks
+are collapsed by default, including those with a single item or breaking changes.
+When breaking PRs exist, `What's Changed` groups them under `Breaking Changes`
+first and ordinary PRs under `Other Changes` second, omitting empty groups.
+Otherwise, PRs appear directly under `What's Changed` without a subgroup heading.
+A PR belongs to the breaking group
+if any related item is in a `Breaking Changes` changelog section, or the PR appears
+in that generated category. Nested headings inherit their parent's category.
+Each PR appears once, preserving its order within the group. Items for ordinary
+commits stay in their original sections, and sections emptied by the move are removed.
+PRs without changelog items retain GitHub's title and author as ordinary entries.
+GitHub's generated PR categories are regrouped; `New Contributors` and the comparison
+link are preserved. A horizontal rule separates the `Full Changelog` link from
+the preceding release notes.
+The source `CHANGELOG.md` is never rewritten.
+
+An explicit PR reference in an item takes priority over commit association:
+use `PR #3`, `(#3)`, or `[#3](https://github.com/WhoSowSee/mdv/pull/3)`.
+References in inline code and fenced examples are ignored. Otherwise, commit
+URLs for the current repository are resolved through GitHub's associated-PR API,
+including merge, squash, and rebased commits. Only merged PRs appearing in the
+generated notes are eligible. Commit lookups are cached within the run and
+paginated. An item associated with multiple eligible PRs must specify one PR
+explicitly; composition fails on ambiguity or API errors rather than publishing
+incomplete notes.
+
+The compose step receives `GITHUB_TOKEN`; the release job has `contents: write`
+and `pull-requests: read`. The release action loads the finished body with
+`generate_release_notes: false`, so creation and updates publish the same composed
+text without appending another PR list. GitHub chooses the comparison base
+automatically for normal tag runs.
+Regression tests cover source selection, PR groups, collapsed details, commit
+links, attribution, HTTP requests, cached commit lookups, pagination, and API
+failures. Multiline text is never passed through a fixed `GITHUB_OUTPUT` delimiter.
 
 The artifact contract is 23 files: 11 ZIP archives, seven Debian packages, two
 RPM packages, one Arch Linux package, and two snaps.

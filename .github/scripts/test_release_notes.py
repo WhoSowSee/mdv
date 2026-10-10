@@ -123,11 +123,11 @@ class ReleaseNotesTests(unittest.TestCase):
 
     def test_missing_changelog_preserves_annotated_tag_message(self):
         notes = self.generate("v6.0.1", changelog=None)
-        self.assertEqual(notes, "Tag fallback\n\nSecond paragraph\n\n---")
+        self.assertEqual(notes, "Tag fallback\n\nSecond paragraph\n")
 
     def test_missing_version_with_lightweight_tag_preserves_commit_message(self):
         notes = self.generate("v9.0.0", annotated=False)
-        self.assertEqual(notes, "Commit fallback\n\nSecond paragraph\n\n---")
+        self.assertEqual(notes, "Commit fallback\n\nSecond paragraph\n")
 
 
 if __name__ == "__main__":
