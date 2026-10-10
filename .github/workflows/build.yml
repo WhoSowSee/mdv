@@ -73,6 +73,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
+      pull-requests: read
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -88,7 +89,12 @@ jobs:
           merge-multiple: true
 
       - name: Compose release notes
-        run: bash .github/scripts/release-notes.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          bash .github/scripts/release-notes.sh
+          python3 .github/scripts/compose_release_notes.py release-notes.md \
+            --repository "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME"
 
       - name: Rename artifacts with version
         run: |
@@ -107,7 +113,7 @@ jobs:
         with:
           files: dist/*
           body_path: release-notes.md
-          generate_release_notes: true
+          generate_release_notes: false
           target_commitish: ${{ github.sha }}
           draft: false
           fail_on_unmatched_files: true

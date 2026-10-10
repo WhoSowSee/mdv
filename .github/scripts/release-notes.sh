@@ -39,4 +39,4 @@ else
   message=$commit_message
 fi
 
-printf '%s\n\n%s' "$message" '---' > release-notes.md
+printf '%s\n' "$message" > release-notes.md
