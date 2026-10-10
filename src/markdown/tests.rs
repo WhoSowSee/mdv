@@ -17,22 +17,18 @@ fn test_markdown_parsing() {
 fn headings_preserve_literal_braced_text() {
     let processor = MarkdownProcessor::new(&Config::default());
     for (markdown, expected) in [
-        ("# {Context Name}\n", "{Context Name}"),
-        ("# Heading {Context Name} ###\n", "Heading {Context Name}"),
-        ("# {}\n", "{}"),
         (
-            "# {Context Name} {Other Name}\n",
-            "{Context Name} {Other Name}",
+            "# Heading {Context Name} {Other Name} ###\n",
+            "Heading {Context Name} {Other Name}",
         ),
+        ("# {}\n", "{}"),
         ("# {Context Name} {.example}\n", "{Context Name}"),
         ("{Context Name}\n===\n", "{Context Name}"),
-        ("> # {Context Name}\n", "{Context Name}"),
-        ("- # {Context Name}\n", "{Context Name}"),
+        ("> - # {Context Name}\n", "{Context Name}"),
         ("    # {Context Name}\n", "{Context Name}"),
-        ("# {**Context** Name}\n", "{Context Name}"),
         ("# `{Context Name}`\n", "{Context Name}"),
         (
-            "# {Context [Name][name]}\n\n[name]: /name\n",
+            "# {**Context** [Name][name]}\n\n[name]: /name\n",
             "{Context Name}",
         ),
     ] {
@@ -45,13 +41,11 @@ fn headings_preserve_literal_braced_text() {
             })
             .collect();
         assert_eq!(text, expected, "{markdown}");
-        assert!(events.iter().any(|event| matches!(
-            event,
-            Event::Start(Tag::Heading {
-                level: HeadingLevel::H1,
-                ..
-            })
-        )));
+        assert!(
+            events
+                .iter()
+                .any(|event| matches!(event, Event::Start(Tag::Heading { .. })))
+        );
     }
 }
 

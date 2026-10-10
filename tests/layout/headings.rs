@@ -5,28 +5,21 @@ use tempfile::tempdir;
 fn braced_heading_text_survives_terminal_and_html_output() {
     for (args, expected) in [
         (
-            vec![
-                "--color",
-                "never",
-                "--line-numbers",
-                "source",
-                "--heading-layout",
-                "none",
-            ],
+            ["--line-numbers", "source", "--heading-layout", "none"].as_slice(),
             ["1 {Context Name}", "3 Heading {Other Name}"],
         ),
         (
-            vec!["--html"],
+            ["--html"].as_slice(),
             ["<h1>{Context Name}</h1>", "<h2>Heading {Other Name}</h2>"],
         ),
     ] {
         let output = mdv_cmd()
+            .args(["--color", "never"])
             .args(args)
             .write_stdin("# {Context Name}\n\n## Heading {Other Name}\n")
-            .output()
-            .expect("mdv renders braced headings");
-        assert!(output.status.success());
-        let stdout = String::from_utf8(output.stdout).unwrap();
+            .assert()
+            .success();
+        let stdout = std::str::from_utf8(&output.get_output().stdout).unwrap();
         for line in expected {
             assert!(stdout.lines().any(|actual| actual == line), "{stdout}");
         }

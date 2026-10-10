@@ -1,84 +1,67 @@
 # CI and Release Packaging
 
-[build.yml](../../.github/workflows/build.yml) runs on tag pushes and manual dispatches. A manual
-run builds and checks packages without publishing a GitHub release. Tag runs
-require the tag, with an optional `v` prefix, to match `Cargo.toml`.
-
-The release process is split across three files:
+[build.yml](../../.github/workflows/build.yml) runs on tag pushes and manual
+dispatches. Tags, with an optional `v` prefix, must match the version in
+`Cargo.toml`. Manual runs build and check packages without publishing a release.
 
 | Workflow | Responsibility |
 |---|---|
-| [build.yml](../../.github/workflows/build.yml) | Verify the publishable crate, call both build workflows, and publish the release after all checks pass. |
-| [build-platforms.yml](../../.github/workflows/build-platforms.yml) | Linux, macOS, and Windows binary builds, tests, ZIP archives, Debian, RPM, and Arch Linux packages. |
-| [build-packages.yml](../../.github/workflows/build-packages.yml) | Snap and Nix builds and package checks. |
+| [build.yml](../../.github/workflows/build.yml) | Verify the publishable crate, call the build workflows, and publish after all checks pass. |
+| [build-platforms.yml](../../.github/workflows/build-platforms.yml) | Linux, macOS, and Windows binaries, ZIP archives, Debian, RPM, and Arch packages. |
+| [build-packages.yml](../../.github/workflows/build-packages.yml) | Snap and Nix builds and checks. |
 
-The two build workflows use `workflow_call` and run only through the caller.
-Local workflow references use the caller's commit. Each called workflow defines
-`PROJECT_NAME: mdv`, because the caller's workflow-level environment is not
-inherited. All uploaded artifacts belong to the same run, so the release job
-downloads them after `package`, `platforms`, and `packages` succeed.
+The two build workflows use `workflow_call`. Publication requires `package`,
+`platforms`, and `packages` to succeed and consumes artifacts from that same run.
 
 ## Pull request and branch checks
 
 [ci.yml](../../.github/workflows/ci.yml) runs for pull requests targeting `main`
-and pushes to `main`. It creates four jobs:
+and pushes to `main`:
 
 | Job | Checks |
 |---|---|
-| `Checks` on Linux | Formatting and Clippy for mdv and `vendor/minus`, plus Python tests for packaging, release notes, and star history. |
+| `Checks` on Linux | Formatting and Clippy for mdv and `vendor/minus`, plus all Python helper tests. |
 | `Test (ubuntu-latest)` | mdv and pager tests, release build, and `mdv --version`. |
 | `Test (windows-latest)` | mdv and pager tests. |
 | `Test (macos-latest)` | mdv and pager tests. |
 
-Cargo compilation and test commands use the committed lockfiles. Pager tests use
-its own manifest with `dynamic_output,search`, because it is not a workspace
-member. All command steps use Bash, including Git Bash on Windows, so a failed
-command stops the step. Matrix failures do not cancel the other platforms.
-
-The workflow has read-only repository permissions and does not publish packages.
-Cargo caches cover both target directories and are saved on pushes to `main`;
-pull requests restore available caches. A new run cancels earlier runs for the
-same pull request or branch.
+CI uses committed lockfiles and read-only repository permissions. The vendored
+pager is a path dependency outside the workspace; its checks use
+`vendor/minus/Cargo.toml` with `dynamic_output,search`. Test jobs run independently
+on all three operating systems. CI does not publish packages.
 
 ## Build matrix
 
 | Target | Runner | Builder | Artifacts |
 |---|---|---|---|
 | `aarch64-unknown-linux-gnu` | `ubuntu-24.04-arm` | Native Cargo | ZIP, DEB, RPM |
-| `aarch64-unknown-linux-musl` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
+| `aarch64-unknown-linux-musl` | `ubuntu-latest` | Cross | ZIP, DEB |
 | `x86_64-unknown-linux-gnu` | `ubuntu-latest` | Native Cargo | ZIP, DEB, RPM, Arch Linux |
-| `x86_64-unknown-linux-musl` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
-| `i686-unknown-linux-gnu` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
-| `riscv64gc-unknown-linux-gnu` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
-| `sparc64-unknown-linux-gnu` | `ubuntu-latest` | Cross 0.2.5 | ZIP, DEB |
+| `x86_64-unknown-linux-musl` | `ubuntu-latest` | Cross | ZIP, DEB |
+| `i686-unknown-linux-gnu` | `ubuntu-latest` | Cross | ZIP, DEB |
+| `riscv64gc-unknown-linux-gnu` | `ubuntu-latest` | Cross | ZIP, DEB |
+| `sparc64-unknown-linux-gnu` | `ubuntu-latest` | Cross | ZIP, DEB |
 | `aarch64-apple-darwin` | `macos-latest` | Native Cargo | ZIP |
 | `x86_64-apple-darwin` | `macos-26-intel` | Native Cargo | ZIP |
 | `x86_64-pc-windows-msvc` | `windows-latest` | Native Cargo | ZIP |
 | `aarch64-pc-windows-msvc` | `windows-11-arm` | Native Cargo | ZIP |
 | Snap `amd64` | `ubuntu-24.04` | Snapcraft, LXD, core24 | Snap |
 | Snap `arm64` | `ubuntu-24.04-arm` | Snapcraft, LXD, core24 | Snap |
-| Nix `x86_64-linux` | `ubuntu-latest` | Nixpkgs 26.05 | Checked store output |
-| Nix `aarch64-linux` | `ubuntu-24.04-arm` | Nixpkgs 26.05 | Checked store output |
+| Nix `x86_64-linux` | `ubuntu-latest` | Nix | Checked store output |
+| Nix `aarch64-linux` | `ubuntu-24.04-arm` | Nix | Checked store output |
 
-Native Cargo jobs run the Rust test suite and execute the release binary with
-`--version`. macOS also checks the Mach-O architecture with `lipo`. Cross jobs
-check ELF architecture and packaging, but do not execute foreign binaries.
-Snap jobs install the resulting package and run it; each Nix job evaluates,
-builds, and runs its native package. Together, the two jobs cover both systems.
+Native Cargo jobs run Rust tests and the release binary with `--version`; macOS
+also verifies architecture with `lipo`. Cross jobs validate ELF architecture and
+packages without executing foreign binaries. Snap jobs install and run their
+packages; Nix jobs evaluate, build, and run the native package.
 
-The package job checks formatting, Clippy, Debian validator and release-note
-tests, and `cargo publish --dry-run --locked`. Publishing waits for this job and every
-platform job, including Nix. Only the release job receives `contents: write`.
-
-The `package` job in `build.yml` also runs formatting, Clippy with `-D warnings`, and unit tests
-against `vendor/minus/Cargo.toml` with `dynamic_output,search`. The fork is a
-path dependency rather than a workspace member, so the root command does not
-replace these checks.
+The `package` job checks formatting, Clippy, all Python helpers, the vendored
+pager, and `cargo publish --dry-run --locked`.
 
 ## Debian runtime dependencies
 
-Cargo.toml declares standard cargo-deb variants. The Linux matrix selects one
-explicitly, and the workflow invokes cargo-deb directly:
+[Cargo.toml](../../Cargo.toml) declares cargo-deb variants selected by the Linux
+matrix:
 
 ```text
 cargo deb --locked --no-build --variant VARIANT --target TARGET --output OUTPUT
@@ -91,195 +74,96 @@ cargo deb --locked --no-build --variant VARIANT --target TARGET --output OUTPUT
 | `glibc-2-27` | GNU riscv64 | `libc6 (>= 2.27), libgcc-s1` |
 | `musl` | Static amd64 and arm64 | None |
 
-The common `package.metadata.deb.name` keeps every variant's Debian package name
-as `mdv`. The glibc bounds come from the released ELF binaries and native build
-environment; they are explicit compatibility requirements, not compiler defaults.
-
-This avoids host-dependent `dpkg-shlibdeps` results: a foreign binary can
-otherwise produce an empty `Depends`, and i686 binaries analysed on amd64 can
-incorrectly depend on `libc6-i386` and `lib32gcc-s1`.
-
-After packaging, `.github/scripts/verify_deb.py` checks the ELF class, byte order,
-machine, shared libraries, Debian metadata, and payload. It reads the payload
-archive directly, requiring one regular `usr/bin/mdv` file with mode `0755`
-and the same hash as the already stripped Cargo release binary. Permissions
-come from the archive rather than the extraction user's filesystem access.
-The declared glibc minimum must cover every required glibc symbol version.
-Musl binaries must have neither shared libraries nor an ELF interpreter.
-Unrecognised runtime libraries or ABI versions fail validation.
-
-Packaging and validation do not modify Cargo.toml or Cargo.lock. If a compiler
-or runner update raises the binary's glibc requirement, validation fails: review
-the new compatibility baseline and adjust the variant/matrix or build environment.
-Run the validator regressions with:
-
-```text
-python3 .github/scripts/test_verify_deb.py
-```
+Explicit dependencies avoid host-dependent `dpkg-shlibdeps` results for foreign
+architectures. The glibc minimum must cover the binary's required symbol versions.
+[verify_deb.py](../../.github/scripts/verify_deb.py) checks ELF compatibility,
+dependencies, metadata, executable permissions, and binary identity. Musl
+packages must be static; unsupported libraries or ABI versions fail validation.
+If a toolchain or runner update raises the required glibc version, review the
+compatibility baseline before changing the variant.
 
 ## RPM and Arch Linux packages
 
-The two native GNU jobs reuse their already built release binaries for RPM
-packages. The x86_64 GNU job additionally creates an Arch Linux package. The
-existing platform matrix, ZIP archives, Debian packages, Snap jobs, and Nix
-checks retain their coverage.
+RPM packages for amd64 and arm64, and the Arch package for x86_64, reuse the
+native GNU release binaries. [linux_packages.py](../../.github/scripts/linux_packages.py)
+prepares and validates recipes using
+[mdv.spec.in](../../.github/packaging/mdv.spec.in) and
+[PKGBUILD.in](../../.github/packaging/PKGBUILD.in). Validation covers metadata,
+runtime dependencies, binary identity and permissions, and the MIT license.
+Both formats use the `glibc-2-39` compatibility baseline and preserve the
+already stripped executable.
 
-[linux_packages.py](../../.github/scripts/linux_packages.py) prepares recipes
-from Cargo.toml and the binary's ELF metadata, then verifies the package name,
-version, architecture, runtime dependencies, binary permissions and SHA-256,
-and the exact MIT license. Both formats install only `/usr/bin/mdv` and
-`/usr/share/licenses/mdv/LICENSE`, plus Arch's package metadata. The native GNU
-glibc baseline comes from the existing `glibc-2-39` Debian variant; a binary
-requiring a newer glibc fails validation.
-
-[mdv.spec.in](../../.github/packaging/mdv.spec.in) uses `rpmbuild -bb --target`
-with RPM's automatic ELF dependency generator enabled. Strip and comment/note
-post-processing are disabled to preserve the already stripped binary. Debug
-subpackages and build-id links are disabled, and the RPM format is v4. The
-Ubuntu 24.04 RPM package provides RPM 4.18.2; resolved tool versions are printed
-in each job. Each RPM is installed with dependency checks in a native Fedora 44
-container and tested with `--version` and a Markdown input.
-
-[PKGBUILD.in](../../.github/packaging/PKGBUILD.in) is built by `makepkg` as an
-unprivileged user in the official `archlinux:base-devel` container. SHA-256
-checksums cover the same-run binary and LICENSE. `!strip` and `!debug` preserve
-the executable and avoid an additional debug package. Dependencies are
-`glibc>=2.39` and `libgcc` when the binary needs `libgcc_s.so.1`. The resulting
-`.pkg.tar.zst` is verified, installed through pacman, and tested. Arch Linux
-supports x86_64; Arch Linux ARM requires separate tooling and is not part of
-this package job.
-
-Recipes and build directories live under `RUNNER_TEMP`; only validated packages
-are copied into the existing per-target artifact directories. Publication uses
-the existing release gate and upload/download steps. RPM and Arch archives are
-named by Rust target before receiving the release tag prefix.
-
-Primary references: [RPM 4.18.2 tools](https://packages.ubuntu.com/noble/rpm),
-[RPM ELF dependencies](https://github.com/rpm-software-management/rpm/blob/rpm-4.18.2-release/tools/elfdeps.c),
-[RPM post-processing](https://github.com/rpm-software-management/rpm/blob/rpm-4.18.2-release/platform.in),
-[PKGBUILD](https://man.archlinux.org/man/PKGBUILD.5.en),
-[makepkg](https://man.archlinux.org/man/makepkg.8.en),
-[Arch libgcc files](https://archlinux.org/packages/core/x86_64/libgcc/files/),
-[Fedora 44 image platforms](https://hub.docker.com/v2/repositories/library/fedora/tags/44),
-[Arch image platforms](https://hub.docker.com/v2/repositories/library/archlinux/tags/base-devel).
+RPMs are installed and tested in `fedora:44`; the Arch package is built as an
+unprivileged user, installed, and tested in `archlinux:base-devel`. Only validated
+packages are uploaded. Arch Linux ARM packages are outside the build matrix.
 
 ## Build tools
 
-The workflow files are the source of truth for tool references. Action major tags and
-the Rust `stable` reference receive upstream updates automatically. Cross uses
-its explicit stable release. The ARM64 cargo-deb installer builds from crates.io
-because the selected release has no ARM64 binary asset.
+Workflow files are the source of truth for runner and tool versions. Rust
+`stable`, Action major tags, and Snapcraft `9.x/stable` can resolve to newer
+releases. Cross is pinned; ARM64 installs cargo-deb from crates.io.
 
-Snapcraft 9.0.1's released `uv.lock` fixes Craft Parts to 2.33.0. For this ordinary
-Cargo package, that plugin generates `cargo install -f --locked --path . --root
-INSTALL_DIR`; `--locked` is already present. `rust-cargo-parameters` appends
-arguments and must not add it again. The plugin supplies its own build packages;
-mdv does not require OpenSSL.
+[snapcraft.yaml](../../snap/snapcraft.yaml) uses `core24` and the Rust plugin's
+defaults. Before adding Cargo arguments, check the resolved plugin's generated
+command to avoid duplicating flags such as `--locked`.
 
-Nixpkgs follows the stable 26.05 branch. No flake lock is committed, so separate
-builds can resolve different stable updates; the resolved revision appears in
-the Nix job log.
-
-Primary references: [cargo-deb 3.8.0](https://github.com/kornelski/cargo-deb/releases/tag/v3.8.0),
-[Snapcraft 9 migration](https://github.com/canonical/snapcraft/blob/9.0.1/docs/release-notes/snapcraft-9-0.rst),
-[Snapcraft lockfile](https://github.com/canonical/snapcraft/blob/9.0.1/uv.lock),
-[Rust plugin](https://github.com/canonical/craft-parts/blob/2.33.0/craft_parts/plugins/rust_plugin.py),
-[release action](https://github.com/softprops/action-gh-release/blob/v3.0.3/src/github.ts),
-[runner images](https://github.com/actions/runner-images#available-images).
+[flake.nix](../../flake.nix) follows `nixos-26.05`. No flake lock is committed, so
+the Nix input revision can change between builds.
 
 ## Release notes and verification
 
 Publish a new `mdv-minus` version before releasing mdv when the vendored pager
 API changes. Update the fork manifests and the root version requirement together.
-Cargo removes the path dependency when packaging mdv and uses the crates.io
-release during verification. The dry run blocks publication if that release
-does not contain the APIs used by mdv, even when local binary builds succeed.
+Cargo removes the path dependency when packaging mdv and verifies against the
+crates.io release; local success with the vendored source is not sufficient.
 
-mdv 6.0.2 requires the published `mdv-minus` 6.0.1 patch with the Clippy 1.99.0
-fix. The Unix-only `terminfo` 0.9.0 dependency reads terminfo files in Rust
-and adds no ncurses linkage or mandatory runtime database package.
+[release-notes.sh](../../.github/scripts/release-notes.sh) selects the matching
+changelog version, then the tag annotation or commit message if that section is
+absent or empty. [compose_release_notes.py](../../.github/scripts/compose_release_notes.py)
+combines this source with GitHub's generated notes in `release-notes.md`:
 
-`.github/scripts/release-notes.sh` selects the changelog section matching the
-release tag, stopping before the next version heading. If that section is absent
-or empty, it preserves the existing tag-annotation and commit-message priority.
-It writes this source body directly to `release-notes.md`.
+- PR-related changelog items form one collapsed PR block with the original
+  title, author, number, descriptions, and commit links. Ordinary commits stay
+  in their sections; emptied sections are removed.
+- PRs without changelog descriptions retain their generated title and author.
+- PRs with any item under a `Breaking Changes` changelog heading, including
+  nested headings, or in that generated category appear first under
+  `Breaking Changes`. Other PRs use `Other Changes` only when breaking PRs exist.
+- `New Contributors` and the comparison link are preserved. A horizontal rule
+  appears directly before `Full Changelog`.
 
-`.github/scripts/compose_release_notes.py` then obtains GitHub's generated notes
-for the tag through the REST API. Changelog list items associated with a PR in
-those notes move into one block per PR. Its summary contains the original title,
-author, and linked PR number; descriptions, multiline content, and commit links
-are preserved as bullets inside the block. All blocks
-are collapsed by default, including those with a single item or breaking changes.
-When breaking PRs exist, `What's Changed` groups them under `Breaking Changes`
-first and ordinary PRs under `Other Changes` second, omitting empty groups.
-Otherwise, PRs appear directly under `What's Changed` without a subgroup heading.
-A PR belongs to the breaking group
-if any related item is in a `Breaking Changes` changelog section, or the PR appears
-in that generated category. Nested headings inherit their parent's category.
-Each PR appears once, preserving its order within the group. Items for ordinary
-commits stay in their original sections, and sections emptied by the move are removed.
-PRs without changelog items retain GitHub's title and author as ordinary entries.
-GitHub's generated PR categories are regrouped; `New Contributors` and the comparison
-link are preserved. A horizontal rule separates the `Full Changelog` link from
-the preceding release notes.
-The source `CHANGELOG.md` is never rewritten.
+An explicit PR reference takes priority over commit association: use `PR #3`,
+`(#3)`, or `[#3](https://github.com/WhoSowSee/mdv/pull/3)`. References inside inline
+code or fenced examples are ignored. Plain issue numbers do not assign PRs.
+Otherwise, commit links for this repository identify merged PRs included in the
+generated notes. An item matching multiple PRs requires an explicit reference;
+ambiguity or API failures stop publication. The source `CHANGELOG.md` remains unchanged.
 
-An explicit PR reference in an item takes priority over commit association:
-use `PR #3`, `(#3)`, or `[#3](https://github.com/WhoSowSee/mdv/pull/3)`.
-References in inline code and fenced examples are ignored. Otherwise, commit
-URLs for the current repository are resolved through GitHub's associated-PR API,
-including merge, squash, and rebased commits. Only merged PRs appearing in the
-generated notes are eligible. Commit lookups are cached within the run and
-paginated. An item associated with multiple eligible PRs must specify one PR
-explicitly; composition fails on ambiguity or API errors rather than publishing
-incomplete notes.
-
-The compose step receives `GITHUB_TOKEN`; the release job has `contents: write`
-and `pull-requests: read`. The release action loads the finished body with
-`generate_release_notes: false`, so creation and updates publish the same composed
-text without appending another PR list. GitHub chooses the comparison base
-automatically for normal tag runs.
-Regression tests cover source selection, PR groups, collapsed details, commit
-links, attribution, HTTP requests, cached commit lookups, pagination, and API
-failures. Multiline text is never passed through a fixed `GITHUB_OUTPUT` delimiter.
+The release job grants `contents: write` and `pull-requests: read` and supplies
+`GITHUB_TOKEN` to the composer. The release action uses `body_path` with
+`generate_release_notes: false` to publish the composed text without appending
+another PR list.
 
 The artifact contract is 23 files: 11 ZIP archives, seven Debian packages, two
-RPM packages, one Arch Linux package, and two snaps.
-Each upload has a unique name; the release prefixes filenames with the tag.
-The Nix outputs gate publication but are not uploaded as release assets.
+RPM packages, one Arch Linux package, and two snaps. Asset names include the
+release tag; Nix outputs gate publication but are not uploaded.
 
-Local Windows/WSL checks do not substitute for hosted macOS, Windows ARM64,
-Cross/Docker, LXD/Snapcraft, or Nix builds. Before releasing, run the modified
-workflow through `workflow_dispatch` on a branch containing the changes and
-require every job to pass. Rerunning an existing tag uses that tag's commit,
-not later fixes in the working tree.
+Before releasing CI or packaging changes, run `build.yml` through
+`workflow_dispatch` and require every job to pass. Local checks do not replace
+the platform and package jobs. Rerunning a tag checks out that tag's commit.
 
 ## README star history
 
-`.github/workflows/star-history.yml` refreshes the English and Russian light and dark SVGs in
-`.github/assets/` every Monday and Thursday at 06:17 UTC, or by manual dispatch.
-The chart style follows [makerspet/oomwoo](https://github.com/makerspet/oomwoo).
-`.github/scripts/gen_star_history.py` reads GitHub's aggregate daily star history
-and renders SVGs using only Python's standard library. The job uses its read-only
-`GITHUB_TOKEN` to fetch star history. When charts change, it verifies that only the
-four SVGs are staged and uses a dedicated GitHub App token to commit and push them
-to the workflow's branch. Tag dispatches are skipped.
+[star-history.yml](../../.github/workflows/star-history.yml) refreshes four
+English/Russian light/dark charts every Monday and Thursday at 06:17 UTC, or by
+manual dispatch on a branch. [gen_star_history.py](../../.github/scripts/gen_star_history.py)
+uses the read-only `GITHUB_TOKEN` to fetch star history.
 
-The private App is installed only on `WhoSowSee/mdv` with `Contents: write` and
-the mandatory `Metadata: read` permission. Its Client ID is stored in the
-`STAR_HISTORY_APP_CLIENT_ID` repository variable, and its private key in the
-`STAR_HISTORY_APP_PRIVATE_KEY` repository secret. The token is restricted to the
-current repository and revoked after the job. The App is the sole bypass actor in
-the `CI checks for main` ruleset, allowing scheduled chart updates while the four
-CI checks remain required for other actors. App pushes trigger the regular CI
-workflow. The bypass applies to the App, so the staged-file check limits this
-workflow's commits to charts.
+Changed charts are committed with a dedicated GitHub App token. The workflow
+allows only the four SVGs to be staged. Configure `STAR_HISTORY_APP_CLIENT_ID`
+as a repository variable and `STAR_HISTORY_APP_PRIVATE_KEY` as a secret. The
+publisher App needs `Contents: write` and a bypass for required checks on the
+protected branch. Its token is scoped to this repository; App pushes trigger CI.
 
-Both README languages select the chart for the reader's color scheme using
-absolute `raw.githubusercontent.com` URLs. This also works on crates.io, which
-rewrites relative `img src` URLs but leaves `source srcset` URLs unchanged.
-README-RU uses the `star-history-light-ru.svg` and `star-history-dark-ru.svg`
-variants with Russian titles, star counts, and month labels. The SVGs provide
-their own headings, so the README files do not repeat them.
-The generator's pagination, cumulative counts, sampling, and empty/single-day
-rendering are checked by `.github/scripts/test_gen_star_history.py`.
+Both READMEs select charts by language and color scheme using absolute image URLs
+that work on GitHub and crates.io.
