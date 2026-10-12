@@ -10,7 +10,15 @@ from threading import Thread
 import unittest
 
 from release_notes_github import GitHubReleaseNotes
-from test_compose_release_notes import GENERATED, REPOSITORY, ROOT, SHA1, linked_change
+from test_compose_release_notes import (
+    FULL_CHANGELOG,
+    GENERATED,
+    REPOSITORY,
+    ROOT,
+    SHA1,
+    SHA2,
+    linked_change,
+)
 
 
 @contextmanager
@@ -114,28 +122,96 @@ class GitHubReleaseNotesTests(unittest.TestCase):
                 self.assertEqual(headers["Authorization"], "Bearer test-token")
                 self.assertEqual(headers["X-GitHub-Api-Version"], "2026-03-10")
 
-    def test_api_failure_stops_composition_and_preserves_the_input(self):
+    def test_cli_recovers_explicit_pr_after_its_merge_commit_was_rewritten(self):
+        generated = (
+            f"## What's Changed\n"
+            f"* Fixed headings by @WhoSowSee in {ROOT}/pull/5\n\n"
+            f"{FULL_CHANGELOG}\n"
+        )
+
+        def respond(method, path, data):
+            if path.endswith("releases/generate-notes"):
+                return 200, {"body": generated}
+            self.assertEqual(method, "GET")
+            self.assertIsNone(data)
+            if path.endswith("/pulls/6"):
+                return 200, {
+                    "number": 6,
+                    "merged_at": "2026-10-10",
+                    "title": "Fixed release notes",
+                    "user": {"login": "WhoSowSee"},
+                }
+            if "/compare/v6.0.1...v6.0.2?" in path:
+                return 200, {"commits": [{"sha": SHA1}, {"sha": SHA2}]}
+            if "/pulls/6/commits?" in path:
+                return 200, [{"sha": SHA2}]
+            self.fail(f"Unexpected request: {path}")
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            first = f"- Fixed: headings ([PR #5]({ROOT}/pull/5))"
+            second = f"- Fixed: release notes ([PR #6]({ROOT}/pull/6))"
+            third = "- Preserved: release metadata (PR #6)"
             path = root / "release-notes.md"
-            original = f"{linked_change('Fixed: comments', SHA1)}\n"
-            path.write_text(original, encoding="utf-8")
-            for failure_path in ("releases/generate-notes", f"commits/{SHA1}/pulls"):
+            path.write_text(
+                f"### Bug Fixes\n\n{first}\n\n### Maintenance\n\n{second}\n{third}\n",
+                encoding="utf-8",
+            )
+            with github_server(respond) as (url, requests):
+                result = self.run_composer(root, url)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            notes = path.read_text(encoding="utf-8")
+        self.assertEqual(notes.count("<details>"), 2)
+        for number in (5, 6):
+            self.assertEqual(notes.count(f'<a href="{ROOT}/pull/{number}">#{number}</a>'), 1)
+        for description in (first, second, third):
+            self.assertEqual(notes.count(description), 1)
+        self.assertNotIn("### Bug Fixes", notes)
+        self.assertNotIn("### Maintenance", notes)
+        self.assertEqual(notes.count(FULL_CHANGELOG), 1)
+        self.assertEqual(len(requests), 4)
 
-                def respond(method, request_path, data):
-                    if failure_path in request_path:
-                        return 403, {"message": "Forbidden"}
+    def test_api_failure_stops_composition_and_preserves_the_input(self):
+        original = (
+            f"{linked_change('Fixed: comments', SHA1)}\n"
+            "- Fixed: release notes (PR #6)\n"
+        )
+        pull = {
+            "number": 6, "merged_at": "2026-10-10",
+            "title": "Fixed release notes", "user": {"login": "WhoSowSee"},
+        }
+        for failure_path in (
+            "releases/generate-notes", f"commits/{SHA1}/pulls",
+            "/pulls/6", "/compare/", "/pulls/6/commits?",
+        ):
+            def respond(method, request_path, data):
+                if failure_path in request_path:
+                    return 403, {"message": "Forbidden"}
+                if request_path.endswith("releases/generate-notes"):
                     return 200, {"body": GENERATED}
+                if request_path.endswith("/pulls/6"):
+                    return 200, pull
+                if "/compare/" in request_path:
+                    return 200, {"commits": [{"sha": SHA2}]}
+                if "/pulls/6/commits?" in request_path:
+                    return 200, [{"sha": SHA2}]
+                if f"commits/{SHA1}/pulls" in request_path:
+                    return 200, [{"number": 3, "merged_at": "2026-10-08"}]
+                self.fail(f"Unexpected request: {request_path}")
 
-                with (
-                    self.subTest(failure_path=failure_path),
-                    github_server(respond) as (url, _),
-                ):
-                    result = self.run_composer(root, url)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertIn("403", result.stderr)
-                    self.assertNotIn("test-token", result.stderr)
-                    self.assertEqual(path.read_text(encoding="utf-8"), original)
+            with (
+                self.subTest(failure_path=failure_path),
+                tempfile.TemporaryDirectory() as directory,
+                github_server(respond) as (url, _),
+            ):
+                root = Path(directory)
+                path = root / "release-notes.md"
+                path.write_text(original, encoding="utf-8")
+                result = self.run_composer(root, url)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("403", result.stderr)
+                self.assertNotIn("test-token", result.stderr)
+                self.assertEqual(path.read_text(encoding="utf-8"), original)
 
 
 if __name__ == "__main__":

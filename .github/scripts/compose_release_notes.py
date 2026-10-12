@@ -112,7 +112,7 @@ def reference_patterns(repository, server_url):
     return re.compile(pull, re.IGNORECASE), re.compile(commit, re.IGNORECASE)
 
 
-def associated_pull(item, patterns, eligible, lookup):
+def changelog_references(item, patterns):
     visible = []
     fence = None
     for line in item:
@@ -126,18 +126,26 @@ def associated_pull(item, patterns, eligible, lookup):
         int(match[1] or match[2])
         for match in PR_NUMBER.finditer(MARKDOWN_LINK.sub("", text))
     )
+    if len(explicit) > 1:
+        raise ValueError(
+            "A changelog item refers to multiple pull requests; specify one PR explicitly"
+        )
+    return explicit, [match[1].lower() for match in commit_pattern.finditer(text)]
+
+
+def associated_pull(item, patterns, eligible, lookup):
+    explicit, commits = changelog_references(item, patterns)
     if explicit:
-        numbers = explicit
-    else:
-        numbers = set()
-        for match in commit_pattern.finditer(text):
-            numbers.update(lookup(match[1].lower()))
-        numbers &= eligible
+        return next(iter(explicit & eligible), None)
+    numbers = set()
+    for sha in commits:
+        numbers.update(lookup(sha))
+    numbers &= eligible
     if len(numbers) > 1:
         raise ValueError(
             "A changelog item refers to multiple pull requests; specify one PR explicitly"
         )
-    return next(iter(numbers & eligible), None)
+    return next(iter(numbers), None)
 
 
 def generated_pull_pattern(repository, server_url):
@@ -146,6 +154,21 @@ def generated_pull_pattern(repository, server_url):
         rf"^[-*+] (?P<title>.+) by @(?P<author>[\w\[\]-]+) "
         rf"in (?P<url>{root}/pull/(?P<number>[1-9]\d*))\s*$"
     )
+
+
+def include_referenced_pulls(lines, pull_rows, patterns, resolve, root):
+    checked = set(pull_rows)
+    for start, end, _ in list_items(lines):
+        numbers, _ = changelog_references(lines[start:end], patterns)
+        for number in sorted(numbers - checked):
+            checked.add(number)
+            pull = resolve(number)
+            if pull is not None:
+                url = f"{root}/pull/{number}"
+                pull_rows[number] = {
+                    **pull,
+                    "url": url,
+                }
 
 
 def grouped_pr_entries(entries, breaking_pulls):
@@ -166,7 +189,9 @@ def grouped_pr_entries(entries, breaking_pulls):
 
 
 def compose_notes(
-    custom, generated, repository, lookup, server_url="https://github.com"
+    custom, generated, repository, lookup,
+    server_url="https://github.com",
+    resolve_pull=None,
 ):
     custom = custom.rstrip("\r\n")
     generated_lines = generated.strip().splitlines()
@@ -187,7 +212,7 @@ def compose_notes(
             number = int(match["number"])
             if number in pull_rows:
                 raise ValueError(f"GitHub generated duplicate entries for PR #{number}")
-            pull_rows[number] = match
+            pull_rows[number] = {**match.groupdict(), "row": match[0]}
             generated_removed.add(index)
             generated_removed.update(position for _, _, position in sections)
             if breaking:
@@ -196,6 +221,12 @@ def compose_notes(
             raise ValueError(
                 "GitHub returned an unrecognized pull-request entry format"
             )
+    lines = custom.splitlines()
+    if resolve_pull is not None:
+        include_referenced_pulls(
+            lines, pull_rows, patterns, resolve_pull,
+            f"{server_url.rstrip('/')}/{repository}",
+        )
     eligible = set(pull_rows)
     cache = {}
 
@@ -204,7 +235,6 @@ def compose_notes(
             cache[sha] = lookup(sha)
         return cache[sha]
 
-    lines = custom.splitlines()
     removed = set()
     details = defaultdict(list)
     if eligible:
@@ -222,7 +252,7 @@ def compose_notes(
     for number, match in pull_rows.items():
         items = details.get(number)
         if not items:
-            entries[number] = match[0]
+            entries[number] = match["row"]
             continue
         summary = (
             f"<strong>{escape(match['title'])}</strong> by @{escape(match['author'])} "
@@ -232,7 +262,7 @@ def compose_notes(
         entries[number] = (
             f"<details>\n<summary>{summary}</summary>\n\n{descriptions}\n\n</details>"
         )
-    if entries:
+    if entries and generated_removed:
         position = min(generated_removed)
         generated_lines[position] = grouped_pr_entries(entries, breaking_pulls)
         generated_lines = [
@@ -240,6 +270,8 @@ def compose_notes(
             for index, line in enumerate(generated_lines)
             if index == position or index not in generated_removed
         ]
+    elif entries:
+        generated_lines.insert(0, grouped_pr_entries(entries, breaking_pulls) + "\n")
     for index, line in enumerate(generated_lines):
         if line.startswith("**Full Changelog**:"):
             start = index
@@ -274,12 +306,16 @@ def main():
     )
     try:
         generated = client.generate(args.tag)
+        server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
         notes = compose_notes(
             args.body.read_text(encoding="utf-8"),
             generated,
             args.repository,
             client.pulls_for_commit,
-            os.environ.get("GITHUB_SERVER_URL", "https://github.com"),
+            server_url,
+            resolve_pull=lambda number: client.pull_for_release(
+                number, generated, args.tag, server_url
+            ),
         )
         args.body.write_text(notes, encoding="utf-8", newline="\n")
     except (OSError, ValueError) as error:

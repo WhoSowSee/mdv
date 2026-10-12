@@ -136,7 +136,12 @@ An explicit PR reference takes priority over commit association: use `PR #3`,
 `(#3)`, or `[#3](https://github.com/WhoSowSee/mdv/pull/3)`. References inside inline
 code or fenced examples are ignored. Plain issue numbers do not assign PRs.
 Otherwise, commit links for this repository identify merged PRs included in the
-generated notes. An item matching multiple PRs requires an explicit reference;
+generated notes. Explicit references missing from that list are also grouped
+when the PR is merged and at least one of its commits appears in the release
+comparison. The comparison comes from GitHub's `Full Changelog` link and must
+end at the requested tag. Unmerged PRs and PRs outside the comparison stay
+in their original sections.
+An item matching multiple PRs requires an explicit reference;
 ambiguity or API failures stop publication. The source `CHANGELOG.md` remains unchanged.
 
 The release job grants `contents: write` and `pull-requests: read` and supplies
