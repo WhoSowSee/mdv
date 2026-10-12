@@ -28,7 +28,10 @@ def linked_change(description, sha):
 class ComposeReleaseNotesTests(unittest.TestCase):
     def compose(self, custom, associations, generated=GENERATED):
         lookup = Mock(side_effect=lambda sha: associations.get(sha, []))
-        notes = compose_notes(custom, generated, REPOSITORY, lookup)
+        notes = compose_notes(
+            custom, generated, REPOSITORY, lookup,
+            resolve_pull=Mock(side_effect=AssertionError("Unexpected PR metadata lookup")),
+        )
         return notes, lookup
 
     def test_groups_details_once_and_preserves_foreign_pr_and_commit_links(self):
@@ -104,7 +107,7 @@ class ComposeReleaseNotesTests(unittest.TestCase):
         self.assertIn(f"### Fixes\n\n{entry}\n\n## What's Changed", notes)
 
     def test_non_pr_references_do_not_override_commit_associations(self):
-        for reference in ("issue #9", "[#9](https://github.com/other/project/pull/9)"):
+        for reference in ("issue #9", "[#6](https://github.com/other/project/pull/6)"):
             with self.subTest(reference=reference):
                 entry = linked_change(f"Fixed: {reference}", SHA1)
                 notes, lookup = self.compose(entry, {SHA1: [3]})
@@ -117,14 +120,14 @@ class ComposeReleaseNotesTests(unittest.TestCase):
     def test_code_examples_do_not_create_pr_associations(self):
         for fence in ("```", "~~~"):
             with self.subTest(fence=fence):
-                example = f"  {fence}markdown\n## Empty example heading\n## Another example heading\n{linked_change('Example', SHA1)} PR #3\n  {fence}"
-                entry = linked_change("Fixed: literal `PR #9` text", SHA2)
+                example = f"  {fence}markdown\n## Empty example heading\n## Another example heading\n{linked_change('Example', SHA1)} PR #6\n  {fence}"
+                entry = linked_change("Fixed: literal `PR #6` text", SHA2)
                 entry += (
-                    f"\n\n  {fence}text\n  PR #9\n  {ROOT}/commit/{SHA1}\n  {fence}"
+                    f"\n\n  {fence}text\n  PR #6\n  {ROOT}/commit/{SHA1}\n  {fence}"
                 )
                 notes, lookup = self.compose(f"{example}\n\n{entry}", {SHA2: [3]})
                 self.assertIn(example, notes)
-                self.assertIn("- Fixed: literal `PR #9` text", notes)
+                self.assertIn("- Fixed: literal `PR #6` text", notes)
                 lookup.assert_called_once_with(SHA2)
 
     def test_all_moved_items_leave_no_empty_headings_or_extra_separator(self):
@@ -205,6 +208,21 @@ class ComposeReleaseNotesTests(unittest.TestCase):
                 notes, lookup = self.compose(custom + "\n", {SHA1: []}, generated)
                 self.assertEqual(notes, f"{custom}\n\n---\n\n{FULL_CHANGELOG}\n")
                 lookup.assert_not_called()
+
+    def test_explicit_references_can_add_missing_prs_without_generated_entries(self):
+        resolver = Mock(return_value={"title": "Recovered release notes", "author": "WhoSowSee"})
+        lookup = Mock()
+        entry = "- Fixed: release notes (PR #6)"
+        notes = compose_notes(
+            f"### Maintenance\n\n{entry}", FULL_CHANGELOG,
+            REPOSITORY, lookup, resolve_pull=resolver,
+        )
+        self.assertTrue(notes.startswith("## What's Changed"))
+        self.assertEqual(notes.count("<details>"), 1)
+        self.assertEqual(notes.count(entry), 1)
+        self.assertNotIn("### Maintenance", notes)
+        resolver.assert_called_once_with(6)
+        lookup.assert_not_called()
 
     def test_unrecognized_generated_pr_format_is_rejected(self):
         generated = (
