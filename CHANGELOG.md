@@ -1,5 +1,19 @@
 # Changelog
 
+## [6.0.3] - 2026-10-12
+
+### Bug Fixes
+
+- Fixed: literal text in heading braces remains visible in terminal and HTML output, including Markdown code blocks, while explicit heading attributes retain their meaning ([5d33cad](https://github.com/WhoSowSee/mdv/commit/5d33cad6e6f8a38ec42d549bbcf36cc8d23fc9ec))
+
+### Documentation
+
+- Simplified: CI and release documentation, synchronized the links in both README versions, and consolidated heading regression tests ([a9a9ad8](https://github.com/WhoSowSee/mdv/commit/a9a9ad8328ef3d99212410d83638e8cc057eb29d))
+
+### Maintenance
+
+- Fixed: release notes no longer duplicate changelog descriptions and generated PR entries; related descriptions appear once per PR, with breaking changes listed first ([PR #6](https://github.com/WhoSowSee/mdv/pull/6))
+
 ## [6.0.2] - 2026-10-09
 
 ### Bug Fixes
