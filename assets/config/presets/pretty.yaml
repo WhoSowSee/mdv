@@ -11,5 +11,4 @@ checkbox_style: square
 definition_marker_style: unicode
 table_borders: true
 front_matter: panel
-link_style: inlinetable
 link_overflow: cut

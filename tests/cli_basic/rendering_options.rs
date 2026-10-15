@@ -292,7 +292,6 @@ fn test_pretty_preset_matches_explicit_options() {
         "> [!TIP]+ Foldable tip\n> Some useful text.\n",
     );
     let explicit_args = [
-        "--link-style=inlinetable",
         "--link-overflow=cut",
         "--wrap=word",
         "--heading-layout=level",
