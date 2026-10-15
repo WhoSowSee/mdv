@@ -1,5 +1,23 @@
 # Changelog
 
+## [6.0.4] - 2026-10-15
+
+### Bug Fixes
+
+- Fixed: heading and list indentation, blockquote guides, and wrapping alignment in built-in pager views and source-numbered terminal output ([7f987a3](https://github.com/WhoSowSee/mdv/commit/7f987a395416c094e6db60476381a9dd41c36cd1))
+
+### Changes
+
+- Changed: the `pretty` preset inherits the configured link style instead of forcing `inlinetable`; the default is `clickable` ([8cfc451](https://github.com/WhoSowSee/mdv/commit/8cfc4516096c76dcb3f00191dfafccd56122b9ac))
+
+### Documentation
+
+- Updated: all four star history charts with current data for English and Russian, in light and dark variants ([ad1d7c4](https://github.com/WhoSowSee/mdv/commit/ad1d7c4c4689f6cfd9f647d5b3f300c3b6760890))
+
+### Maintenance
+
+- Fixed: release notes group explicitly referenced PRs omitted from GitHub-generated notes when they are merged and belong to the release comparison ([f694776](https://github.com/WhoSowSee/mdv/commit/f694776387f0c0d0c251be2d86a668efbf41d505))
+
 ## [6.0.3] - 2026-10-12
 
 ### Bug Fixes
