@@ -154,6 +154,8 @@ Add new behavior to a specialized handler and keep the core dispatcher compact.
 - distinguish the number and separator so themes can color them independently;
 - be removed by `strip_internal_markers` before final output.
 
+At the start of a content line, emit the active indentation and container prefix before its source marker. The invisible marker must not suppress heading or list indentation or blockquote guides in pager and source-numbered output.
+
 ## Extension invariants
 
 - Every event is processed exactly once.

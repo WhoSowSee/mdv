@@ -107,10 +107,7 @@ impl<'a> EventRenderer<'a> {
         } else if let Some(buffer) = self.pending_html_block_buffer.as_mut() {
             buffer.content.push_str(&marker);
         } else {
-            let starts_active_callout_line = (self.output.is_empty()
-                || self.output.ends_with('\n'))
-                && matches!(self.callout_stack.last(), Some(CalloutState::Active(_)));
-            if starts_active_callout_line {
+            if self.output.is_empty() || self.output.ends_with('\n') {
                 self.push_indent_for_line_start();
             }
             self.output.push_str(&marker);
