@@ -9,6 +9,8 @@ pub fn display_width(s: &str) -> usize {
 
 mod ansi;
 pub use ansi::{display_width_ansi, strip_ansi};
+mod wrapping;
+pub(crate) use wrapping::wrap_line_with_widths;
 
 pub(crate) fn escape_html_text(text: &str) -> String {
     let mut escaped = String::with_capacity(text.len());
@@ -38,24 +40,14 @@ pub enum WrapMode {
 
 /// Wrap text with specified wrapping mode
 pub fn wrap_text_with_mode(text: &str, width: usize, mode: WrapMode) -> String {
-    let wrap_line = match mode {
-        WrapMode::None => return text.to_string(),
-        WrapMode::Character => wrap_line_character,
-        WrapMode::Word => wrap_line_word,
-    };
-    if width == 0 {
+    if width == 0 || mode == WrapMode::None {
         return text.to_string();
     }
 
     let mut wrapped_lines = Vec::new();
 
     for line in text.split('\n') {
-        if line.trim().is_empty() {
-            wrapped_lines.push(String::new());
-            continue;
-        }
-
-        wrapped_lines.extend(wrap_line(line, width));
+        wrapped_lines.extend(wrap_line_with_widths(line, width, width, mode));
     }
 
     wrapped_lines.join("\n")
@@ -117,163 +109,6 @@ fn is_sgr_reset(sequence: &str) -> bool {
 
 fn is_visually_blank(text: &str) -> bool {
     strip_ansi(text).trim().is_empty()
-}
-
-/// Wrap a single line using character-based wrapping, handling ANSI codes
-fn wrap_line_character(line: &str, width: usize) -> Vec<String> {
-    let clean_line = strip_ansi(line);
-    if display_width(&clean_line) <= width {
-        return vec![line.to_string()];
-    }
-
-    let mut result = Vec::new();
-    let mut current_line = String::new();
-    let mut current_width = 0;
-    let mut ansi_stack = String::new(); // Track active ANSI codes
-    let mut pending_escape_start = None;
-
-    let mut chars = line.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        if ch == '\x1b' {
-            // Start of ANSI/OSC escape sequence
-            let sequence = consume_escape_sequence(&mut chars);
-            pending_escape_start.get_or_insert(current_line.len());
-            current_line.push_str(&sequence);
-
-            if is_sgr_sequence(&sequence) {
-                if is_sgr_reset(&sequence) {
-                    ansi_stack.clear();
-                } else {
-                    ansi_stack.push_str(&sequence);
-                }
-            }
-        } else if ch.is_whitespace() {
-            // Handle whitespace - good breaking point
-            let char_width = if ch == '\t' { 4 } else { 1 };
-
-            if current_width + char_width > width && !is_visually_blank(&current_line) {
-                // Need to wrap before this whitespace
-                let pending = pending_escape_start
-                    .take()
-                    .map(|start| current_line.split_off(start))
-                    .unwrap_or_default();
-                result.push(current_line.trim_end().to_string());
-                current_line = if pending.is_empty() {
-                    ansi_stack.clone()
-                } else {
-                    pending
-                };
-                current_width = 0;
-            } else {
-                current_line.push(ch);
-                current_width += char_width;
-            }
-            pending_escape_start = None;
-        } else {
-            // Regular character
-            let char_width = UnicodeWidthStr::width(ch.to_string().as_str());
-
-            if current_width + char_width > width && !is_visually_blank(&current_line) {
-                // Character-based wrapping: force break at current position
-                let pending = pending_escape_start
-                    .take()
-                    .map(|start| current_line.split_off(start))
-                    .unwrap_or_default();
-                result.push(current_line);
-                current_line = if pending.is_empty() {
-                    ansi_stack.clone()
-                } else {
-                    pending
-                };
-                current_width = 0;
-            }
-
-            current_line.push(ch);
-            current_width += char_width;
-            pending_escape_start = None;
-        }
-    }
-
-    if !is_visually_blank(&current_line) {
-        result.push(current_line);
-    }
-
-    if result.is_empty() {
-        result.push(String::new());
-    }
-
-    result
-}
-
-/// Wrap a single line using word-based wrapping, handling ANSI codes
-fn wrap_line_word(line: &str, width: usize) -> Vec<String> {
-    let clean_line = strip_ansi(line);
-    if display_width(&clean_line) <= width {
-        return vec![line.to_string()];
-    }
-
-    let mut result = Vec::new();
-    let mut current_line = String::new();
-    let mut current_width = 0;
-    let mut ansi_stack = String::new(); // Track active ANSI codes
-
-    // Split into words while preserving ANSI codes
-    let words = split_line_into_words_with_ansi(line);
-
-    for (word, is_whitespace) in words {
-        let clean_word = strip_ansi(&word);
-        let word_width = display_width(&clean_word);
-
-        // Update ANSI stack
-        if word.contains('\x1b') {
-            update_ansi_stack(&mut ansi_stack, &word);
-        }
-
-        if is_whitespace {
-            // Handle whitespace
-            if current_width + word_width <= width {
-                current_line.push_str(&word);
-                current_width += word_width;
-            } else if !is_visually_blank(&current_line) {
-                // Start new line
-                result.push(current_line.trim_end().to_string());
-                current_line = ansi_stack.clone();
-                current_width = 0;
-                // Skip leading whitespace on new line
-            }
-        } else {
-            // Handle word
-            if current_width + word_width <= width || is_visually_blank(&current_line) {
-                current_line.push_str(&word);
-                current_width += word_width;
-            } else {
-                // Word doesn't fit, start new line
-                result.push(current_line.trim_end().to_string());
-                current_line = format!("{}{}", ansi_stack, word);
-                current_width = word_width;
-            }
-        }
-    }
-
-    if !is_visually_blank(&current_line) {
-        result.push(current_line);
-    }
-
-    if result.is_empty() {
-        result.push(String::new());
-    }
-
-    result
-        .into_iter()
-        .flat_map(|line| {
-            if display_width_ansi(&line) > width {
-                wrap_line_character(&line, width)
-            } else {
-                vec![line]
-            }
-        })
-        .collect()
 }
 
 /// Split line into words while preserving ANSI codes

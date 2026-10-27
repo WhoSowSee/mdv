@@ -1,4 +1,5 @@
 use crate::support::mdv_cmd;
+use mdv::utils::{display_width_ansi, strip_ansi};
 
 use std::fs;
 use tempfile::NamedTempFile;
@@ -86,4 +87,83 @@ fn code_wrap_indent_none_preserves_legacy_alignment() {
         continuation_spaces, 1,
         "expected continuation to start immediately after border"
     );
+}
+
+#[test]
+fn code_wrap_indent_reserves_width_on_every_continuation() {
+    for body in [
+        "word ".repeat(24),
+        "слово ".repeat(24),
+        "界界 ".repeat(24),
+        "longtoken".repeat(16),
+    ] {
+        let markdown = format!("```lua\n  -- {}\n```\n", body.trim_end());
+        for style in ["basic", "simple", "pretty"] {
+            for wrap in ["char", "word"] {
+                for (indent, expected_spaces) in [("none", 0), ("base", 2), ("double", 4)] {
+                    for color in ["never", "always"] {
+                        let output = mdv_cmd()
+                            .args([
+                                "--no-config",
+                                "--cols=40",
+                                "--theme=catppuccin",
+                                "--code-block-style",
+                                style,
+                                "--code-wrap-indent",
+                                indent,
+                                "--wrap",
+                                wrap,
+                                "--color",
+                                color,
+                            ])
+                            .write_stdin(markdown.as_str())
+                            .assert()
+                            .success();
+                        let output = String::from_utf8(output.get_output().stdout.clone())
+                            .expect("valid UTF-8 stdout");
+                        let plain = strip_ansi(&output);
+                        let context = format!("{style}/{wrap}/{indent}/{color}: {plain}");
+                        assert!(
+                            output.lines().all(|line| display_width_ansi(line) <= 40),
+                            "row exceeds terminal width: {context}"
+                        );
+
+                        let content = plain
+                            .lines()
+                            .filter_map(|line| match style {
+                                "basic" => line.strip_prefix("  "),
+                                "simple" => line.strip_prefix("│ "),
+                                "pretty" => line
+                                    .strip_prefix("│ ")
+                                    .and_then(|line| line.strip_suffix(" │")),
+                                _ => unreachable!(),
+                            })
+                            .collect::<Vec<_>>();
+                        assert!(
+                            content.len() > 2,
+                            "expected several wrapped rows: {context}"
+                        );
+                        for line in content.iter().skip(1) {
+                            assert_eq!(
+                                line.chars().take_while(|ch| *ch == ' ').count(),
+                                expected_spaces,
+                                "incorrect continuation indent: {context}"
+                            );
+                        }
+                        let rendered = content.concat();
+                        let visible_content = |text: &str| {
+                            text.chars()
+                                .filter(|ch| !ch.is_whitespace())
+                                .collect::<String>()
+                        };
+                        assert_eq!(
+                            visible_content(&rendered),
+                            visible_content(&format!("-- {body}")),
+                            "wrapped content changed: {context}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }
