@@ -147,19 +147,22 @@ impl<'a> EventRenderer<'a> {
             }
         };
 
-        let raw_wrapped = if should_wrap && width > 0 {
-            crate::utils::wrap_text_with_mode(highlighted_line, width, wrap_mode)
+        let indent_width = display_width(&continuation_indent);
+        let continuation_width = if indent_width < width {
+            width - indent_width
         } else {
-            highlighted_line.to_string()
+            width
         };
-
-        let mut segments_raw: Vec<String> = raw_wrapped
-            .split('\n')
-            .map(|part| part.to_string())
-            .collect();
-        if segments_raw.is_empty() {
-            segments_raw.push(String::new());
-        }
+        let segments_raw = if should_wrap && width > 0 {
+            crate::utils::wrap_line_with_widths(
+                highlighted_line,
+                width,
+                continuation_width,
+                wrap_mode,
+            )
+        } else {
+            vec![highlighted_line.to_string()]
+        };
 
         let mut segments = Vec::with_capacity(segments_raw.len());
         for (idx, mut segment) in segments_raw.into_iter().enumerate() {
@@ -168,7 +171,7 @@ impl<'a> EventRenderer<'a> {
             if idx > 0 && !continuation_indent.is_empty() {
                 let candidate = format!("{}{}", continuation_indent, segment);
                 let candidate_width = display_width_ansi(&candidate);
-                if !should_wrap || width == 0 || candidate_width <= width {
+                if candidate_width <= width {
                     segment = candidate;
                     visible_width = candidate_width;
                 }

@@ -34,6 +34,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [user_themes.rs](../../src/user_themes.rs) | User-theme facade. | [themes](themes-and-styling.md) |
 | [utils.rs](../../src/utils.rs) | Display width, ANSI stripping, and text wrapping. | [architecture](architecture.md) |
 | [utils/ansi.rs](../../src/utils/ansi.rs) | SGR/OSC 8 removal and visible Unicode string width. | [renderer content](renderer-content.md) |
+| [utils/wrapping.rs](../../src/utils/wrapping.rs) | ANSI-aware word and character wrapping with separate first-row and continuation widths. | [renderer code](renderer-code.md) |
 | [editor.rs](../../src/editor.rs) | Editor discovery and launch. | [interactive/pager](interactive-and-pager.md) |
 
 Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [list_marker/tests.rs](../../src/list_marker/tests.rs), and [utils/tests.rs](../../src/utils/tests.rs).
