@@ -1,13 +1,14 @@
 use super::SgrState;
 
 #[test]
-fn sgr_prefix_compacts_attributes_with_existing_reset_detection() {
+fn sgr_prefix_compacts_attributes() {
     for (input, expected) in [
         ("\x1b[1;2;22;1m", "\x1b[22m\x1b[1m"),
         ("\x1b[1;31m\x1b[0;3;32m", ""),
         ("\x1b[1;31m\x1b[m", ""),
         ("\x1b[1;;4m", ""),
-        ("\x1b[3;38;2;0;255;0m", ""),
+        ("\x1b[3;38;2;0;255;0m", "\x1b[3m\x1b[38;2;0;255;0m"),
+        ("\x1b[48;2;0;0;0;58;5;0m", "\x1b[48;2;0;0;0m\x1b[58;5;0m"),
         (
             "\x1b[4;38;5;42;48;2;1;2;3m",
             "\x1b[4m\x1b[38;5;42m\x1b[48;2;1;2;3m",
