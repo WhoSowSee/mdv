@@ -2,7 +2,7 @@ use super::{
     WrapMode, consume_escape_sequence, display_width, display_width_ansi, is_visually_blank,
     sgr::SgrState, split_line_into_words_with_ansi, strip_ansi,
 };
-use unicode_width::UnicodeWidthStr;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub(crate) fn wrap_line_with_widths(
     line: &str,
@@ -19,11 +19,25 @@ pub(crate) fn wrap_line_with_widths(
 }
 
 fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) -> Vec<String> {
-    let clean_line = strip_ansi(line);
+    let mut clean_line = strip_ansi(line);
     if display_width(&clean_line) <= width {
         return vec![line.to_string()];
     }
 
+    if line.contains('\x1b') {
+        let mut visible = String::with_capacity(clean_line.len());
+        let mut chars = line.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if ch == '\x1b' {
+                consume_escape_sequence(&mut chars);
+            } else {
+                visible.push(ch);
+            }
+        }
+        clean_line = visible;
+    }
+    let mut graphemes = clean_line.graphemes(true);
+    let mut remaining_grapheme_bytes = 0;
     let mut result = Vec::new();
     let mut current_line = String::new();
     let mut current_width = 0;
@@ -38,7 +52,18 @@ fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) 
             pending_escape_start.get_or_insert(current_line.len());
             current_line.push_str(&sequence);
             style.apply_sequence(&sequence);
-        } else if ch.is_whitespace() {
+            continue;
+        }
+        if remaining_grapheme_bytes > 0 {
+            current_line.push(ch);
+            remaining_grapheme_bytes -= ch.len_utf8();
+            pending_escape_start = None;
+            continue;
+        }
+        // ANSI codes inside a grapheme do not introduce wrap boundaries.
+        let grapheme = graphemes.next().expect("visible character has a grapheme");
+        remaining_grapheme_bytes = grapheme.len() - ch.len_utf8();
+        if grapheme.chars().all(char::is_whitespace) {
             let char_width = if ch == '\t' { 4 } else { 1 };
 
             if current_width + char_width > width && !is_visually_blank(&current_line) {
@@ -60,7 +85,7 @@ fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) 
             }
             pending_escape_start = None;
         } else {
-            let char_width = UnicodeWidthStr::width(ch.to_string().as_str());
+            let char_width = display_width(grapheme);
 
             if current_width + char_width > width && !is_visually_blank(&current_line) {
                 let pending = pending_escape_start

@@ -13,6 +13,41 @@ fn render(input: &str, cols: usize, color: &str) -> String {
 }
 
 #[test]
+fn narrow_wrapping_keeps_compound_emoji_intact() {
+    let text = "👩‍💻".repeat(3);
+    for (input, cols) in [
+        (format!("**{text}**"), "2"),
+        (format!("```text\n{text}\n```\n"), "4"),
+    ] {
+        for wrap in ["char", "word"] {
+            let output = mdv_cmd()
+                .args([
+                    "--no-config",
+                    "--color=always",
+                    "--cols",
+                    cols,
+                    "--wrap",
+                    wrap,
+                    "--code-block-style=basic",
+                    "--code-wrap-indent=none",
+                ])
+                .write_stdin(input.as_str())
+                .assert()
+                .success();
+            let stdout = String::from_utf8(output.get_output().stdout.clone()).unwrap();
+            assert_eq!(
+                strip_ansi(&stdout)
+                    .lines()
+                    .map(str::trim)
+                    .collect::<Vec<_>>(),
+                vec!["👩‍💻"; 3],
+                "{wrap}: {input:?}"
+            );
+        }
+    }
+}
+
+#[test]
 fn narrow_headings_wrap_once_with_consistent_indentation() {
     let text = "abcdefghijklmnopqrstuvwxyz".repeat(3);
     for (cols, color) in [(16, "never"), (30, "always")] {

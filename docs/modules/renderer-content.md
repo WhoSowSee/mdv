@@ -34,11 +34,11 @@ This section covers ordinary text, inline formatting, wrapping, headings, lists,
 - an escape sequence cannot be split across lines;
 - a continuation line retains the correct list, blockquote, or code indentation.
 
-Word mode extracts words and oversized units; character mode splits on Unicode characters. Visible width is measured with `unicode-width` after ANSI and OSC sequences are removed.
+Word mode extracts words and oversized units; character mode splits on extended grapheme clusters. Oversized words use the same grapheme boundaries, preserving compound emoji and combining marks. Visible width is measured with `unicode-width` after ANSI and OSC sequences are removed.
 
 Wrapping units borrow slices from their text event; only oversized words that need rewriting allocate new strings. ANSI removal preserves its two-stage contract (SGR first, then OSC 8), and visible width uses the complete resulting Unicode string so emoji sequences remain intact across style boundaries.
 
-Character units stream from `CharIndices` through `text/units.rs` without an
+Character units stream from `Graphemes` through `text/units.rs` without an
 intermediate vector. The ANSI word splitter borrows plain tokens and owns only
 tokens whose escape sequences need rearranging.
 
