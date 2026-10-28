@@ -1,6 +1,44 @@
 use super::*;
 
 #[test]
+fn html_ordered_list_counter_overflow_reports_an_error() {
+    for (attributes, boundary) in [("", i64::MAX), (" reversed", i64::MIN)] {
+        for source in [
+            format!("<ol{attributes} start=\"{boundary}\"><li>one</li><li>two</li></ol>"),
+            format!(
+                "<ol{attributes}><li>before</li><li value=\"{boundary}\">one</li><li>two</li></ol>"
+            ),
+        ] {
+            mdv_cmd()
+                .args(["--render-html", "--color", "never", "--cols", "80", "-"])
+                .write_stdin(source)
+                .assert()
+                .code(1)
+                .stdout("")
+                .stderr(predicate::str::contains(
+                    "HTML ordered list counter overflow",
+                ));
+        }
+    }
+}
+
+#[test]
+fn html_ordered_list_counter_accepts_boundary_and_reset() {
+    for (attributes, boundary, next) in [("", i64::MAX, 2), (" reversed", i64::MIN, 0)] {
+        mdv_cmd()
+            .args(["--render-html", "--color", "never", "--cols", "80", "-"])
+            .write_stdin(format!(
+                "<ol{attributes} start=\"{boundary}\"><li>one</li><li value=\"1\">reset</li><li>next</li><li value=\"{boundary}\">last</li></ol>"
+            ))
+            .assert()
+            .success()
+            .stdout(format!(
+                "{boundary}. one\n1. reset\n{next}. next\n{boundary}. last\n"
+            ));
+    }
+}
+
+#[test]
 fn test_render_html_ordered_list_attributes() {
     let temp_file = NamedTempFile::new().unwrap();
     fs::write(

@@ -36,7 +36,7 @@ pub(super) fn html_list_marker_state(
             1
         };
         return HtmlListMarkerState::Ordered {
-            current: parse_html_integer_attr(element, "start").unwrap_or(default_start),
+            next: Some(parse_html_integer_attr(element, "start").unwrap_or(default_start)),
             step: if reversed { -1 } else { 1 },
             kind: html_ordered_list_marker_kind(element)
                 .unwrap_or(HtmlOrderedListMarkerKind::Decimal),
