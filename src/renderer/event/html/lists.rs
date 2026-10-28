@@ -16,7 +16,7 @@ impl<'a> EventRenderer<'a> {
             if let Some(child_element) = ElementRef::wrap(child)
                 && child_element.value().name().eq_ignore_ascii_case("li")
             {
-                let marker = marker_state.next_marker(child_element);
+                let marker = marker_state.next_marker(child_element)?;
                 let pretty_level = (!ordered).then_some(context.list_depth.saturating_add(1));
                 self.render_html_list_item(child_element, context, &marker, pretty_level)?;
                 continue;

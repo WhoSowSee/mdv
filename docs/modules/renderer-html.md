@@ -72,6 +72,10 @@ Ordered lists support:
 - `li[value]`;
 - decimal, alphabetic, and Roman marker types.
 
+Numbering supports the signed 64-bit range. If an implicit item number would
+exceed this range, rendering returns an error. A final item at either boundary
+is valid, and an explicit `li[value]` can restart numbering after that boundary.
+
 An unordered marker is selected from tag attributes or style. An HTML checkbox inside a list item becomes a task marker rather than an independent form control.
 
 ## HTML tables

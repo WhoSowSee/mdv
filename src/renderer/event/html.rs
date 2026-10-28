@@ -41,7 +41,7 @@ enum HtmlOrderedListMarkerKind {
 #[derive(Clone, Copy, Debug)]
 enum HtmlListMarkerState {
     Ordered {
-        current: i64,
+        next: Option<i64>,
         step: i64,
         kind: HtmlOrderedListMarkerKind,
     },
@@ -51,22 +51,20 @@ enum HtmlListMarkerState {
 }
 
 impl HtmlListMarkerState {
-    fn next_marker(&mut self, item: ElementRef<'_>) -> String {
+    fn next_marker(&mut self, item: ElementRef<'_>) -> Result<String> {
         match self {
-            Self::Ordered {
-                current,
-                step,
-                kind,
-            } => {
-                if let Some(value) = parse_html_integer_attr(&item, "value") {
-                    *current = value;
-                }
+            Self::Ordered { next, step, kind } => {
+                let value = parse_html_integer_attr(&item, "value")
+                    .or(*next)
+                    .ok_or_else(|| anyhow::anyhow!("HTML ordered list counter overflow"))?;
                 let item_kind = html_ordered_list_marker_kind(&item).unwrap_or(*kind);
-                let marker = format!("{}. ", format_html_ordered_marker(*current, item_kind));
-                *current += *step;
-                marker
+                *next = value.checked_add(*step);
+                Ok(format!(
+                    "{}. ",
+                    format_html_ordered_marker(value, item_kind)
+                ))
             }
-            Self::Unordered { marker } => (*marker).to_string(),
+            Self::Unordered { marker } => Ok((*marker).to_string()),
         }
     }
 }
