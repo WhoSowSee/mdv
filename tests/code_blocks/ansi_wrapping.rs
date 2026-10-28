@@ -64,7 +64,7 @@ fn ansi_wrapping_preserves_comment_style() {
                     style,
                     "--wrap",
                     wrap,
-                    "--custom-code-theme=comment=#01ff01",
+                    "--custom-code-theme=comment=#00ff00",
                 ],
             );
             let mut green = false;
@@ -76,7 +76,7 @@ fn ansi_wrapping_preserves_comment_style() {
                         green = false;
                         italic = false;
                     }
-                    "\x1b[38;2;1;255;1m" => green = true,
+                    "\x1b[38;2;0;255;0m" => green = true,
                     "\x1b[3m" => italic = true,
                     "\x1b[23m" => italic = false,
                     sgr if sgr.starts_with("\x1b[38;") || sgr == "\x1b[39m" => green = false,

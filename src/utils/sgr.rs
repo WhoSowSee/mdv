@@ -1,4 +1,4 @@
-use super::{consume_escape_sequence, is_sgr_reset};
+use super::consume_escape_sequence;
 use std::fmt::Write;
 
 #[derive(Clone, Copy, Debug)]
@@ -55,16 +55,16 @@ impl SgrState {
         else {
             return;
         };
-        if is_sgr_reset(sequence) {
-            *self = Self::default();
-            return;
-        }
         let mut next = *self;
         let mut parts = parameters.split(';');
         while let Some(part) = parts.next() {
             let Some(parameter) = parse_parameter(part, &mut parts) else {
                 return;
             };
+            if matches!(parameter, Parameter::Code(0)) {
+                *self = Self::default();
+                return;
+            }
             next.apply(parameter);
         }
         *self = next;
@@ -133,7 +133,11 @@ fn parse_parameter<'a>(
     if part.contains(':') {
         return parse_colon_parameter(part);
     }
-    let code = part.parse().ok()?;
+    let code = if part.is_empty() {
+        0
+    } else {
+        part.parse().ok()?
+    };
     if !matches!(code, 38 | 48 | 58) {
         return Some(Parameter::Code(code));
     }

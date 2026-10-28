@@ -55,7 +55,7 @@ Code wraps as highlighted segments, preserving color on continuation lines. `Cod
 
 The first row uses the full available width. Continuation rows reserve the selected hanging indent before wrapping by words or characters, so a full row does not lose its indent.
 
-Shared ANSI wrapping stores a bounded set of SGR attributes for continuation prefixes. Superseded colors do not accumulate, keeping the output size linear in the source length. Existing reset detection and wrap-boundary ordering are preserved.
+Shared ANSI wrapping stores a bounded set of SGR attributes for continuation prefixes. Superseded colors do not accumulate, keeping the output size linear in the source length. Reset detection distinguishes zero-valued RGB components and color indexes from reset commands. Wrap-boundary ordering is preserved.
 
 ## Code line numbers
 

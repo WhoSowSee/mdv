@@ -93,21 +93,6 @@ fn consume_escape_sequence(chars: &mut Peekable<Chars<'_>>) -> String {
     sequence
 }
 
-fn is_sgr_sequence(sequence: &str) -> bool {
-    sequence.starts_with("\x1b[") && sequence.ends_with('m')
-}
-
-fn is_sgr_reset(sequence: &str) -> bool {
-    if !is_sgr_sequence(sequence) {
-        return false;
-    }
-
-    let inner = &sequence[2..sequence.len().saturating_sub(1)];
-    inner
-        .split(';')
-        .any(|param| param.trim().is_empty() || param.trim() == "0")
-}
-
 fn is_visually_blank(text: &str) -> bool {
     strip_ansi(text).trim().is_empty()
 }
