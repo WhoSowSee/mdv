@@ -9,6 +9,7 @@ pub fn display_width(s: &str) -> usize {
 
 mod ansi;
 pub use ansi::{display_width_ansi, strip_ansi};
+mod sgr;
 mod wrapping;
 pub(crate) use wrapping::wrap_line_with_widths;
 
@@ -166,25 +167,6 @@ fn split_line_into_words_with_ansi(line: &str) -> Vec<(std::borrow::Cow<'_, str>
     }
 
     result
-}
-
-/// Update ANSI stack with new codes from a word
-fn update_ansi_stack(ansi_stack: &mut String, word: &str) {
-    let mut chars = word.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        if ch == '\x1b' {
-            let sequence = consume_escape_sequence(&mut chars);
-
-            if is_sgr_sequence(&sequence) {
-                if is_sgr_reset(&sequence) {
-                    ansi_stack.clear();
-                } else {
-                    ansi_stack.push_str(&sequence);
-                }
-            }
-        }
-    }
 }
 
 #[cfg(test)]

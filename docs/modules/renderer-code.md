@@ -55,6 +55,8 @@ Code wraps as highlighted segments, preserving color on continuation lines. `Cod
 
 The first row uses the full available width. Continuation rows reserve the selected hanging indent before wrapping by words or characters, so a full row does not lose its indent.
 
+Shared ANSI wrapping stores a bounded set of SGR attributes for continuation prefixes. Superseded colors do not accumulate, keeping the output size linear in the source length. Existing reset detection and wrap-boundary ordering are preserved.
+
 ## Code line numbers
 
 `--code-line-numbers` and the `code_line_numbers` YAML key reset numbering for each block and apply to `basic`, `simple`, and `pretty` layouts. The default rendered target numbers every wrapped terminal row. The `source` target numbers the first segment of each physical code line and leaves wrapped continuations blank. The `separator` modifier uses the same independently themed number and separator colors as document line numbers.

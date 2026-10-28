@@ -1,7 +1,6 @@
 use super::{
-    WrapMode, consume_escape_sequence, display_width, display_width_ansi, is_sgr_reset,
-    is_sgr_sequence, is_visually_blank, split_line_into_words_with_ansi, strip_ansi,
-    update_ansi_stack,
+    WrapMode, consume_escape_sequence, display_width, display_width_ansi, is_visually_blank,
+    sgr::SgrState, split_line_into_words_with_ansi, strip_ansi,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -28,7 +27,7 @@ fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) 
     let mut result = Vec::new();
     let mut current_line = String::new();
     let mut current_width = 0;
-    let mut ansi_stack = String::new();
+    let mut style = SgrState::default();
     let mut pending_escape_start = None;
 
     let mut chars = line.chars().peekable();
@@ -38,14 +37,7 @@ fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) 
             let sequence = consume_escape_sequence(&mut chars);
             pending_escape_start.get_or_insert(current_line.len());
             current_line.push_str(&sequence);
-
-            if is_sgr_sequence(&sequence) {
-                if is_sgr_reset(&sequence) {
-                    ansi_stack.clear();
-                } else {
-                    ansi_stack.push_str(&sequence);
-                }
-            }
+            style.apply_sequence(&sequence);
         } else if ch.is_whitespace() {
             let char_width = if ch == '\t' { 4 } else { 1 };
 
@@ -56,7 +48,7 @@ fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) 
                     .unwrap_or_default();
                 result.push(current_line.trim_end().to_string());
                 current_line = if pending.is_empty() {
-                    ansi_stack.clone()
+                    style.prefix()
                 } else {
                     pending
                 };
@@ -77,7 +69,7 @@ fn wrap_line_character(line: &str, mut width: usize, continuation_width: usize) 
                     .unwrap_or_default();
                 result.push(current_line);
                 current_line = if pending.is_empty() {
-                    ansi_stack.clone()
+                    style.prefix()
                 } else {
                     pending
                 };
@@ -112,7 +104,7 @@ fn wrap_line_word(line: &str, initial_width: usize, continuation_width: usize) -
     let mut result = Vec::new();
     let mut current_line = String::new();
     let mut current_width = 0;
-    let mut ansi_stack = String::new();
+    let mut style = SgrState::default();
 
     let words = split_line_into_words_with_ansi(line);
 
@@ -120,9 +112,7 @@ fn wrap_line_word(line: &str, initial_width: usize, continuation_width: usize) -
         let clean_word = strip_ansi(&word);
         let word_width = display_width(&clean_word);
 
-        if word.contains('\x1b') {
-            update_ansi_stack(&mut ansi_stack, &word);
-        }
+        style.update(&word);
 
         if is_whitespace {
             if current_width + word_width <= width {
@@ -130,7 +120,7 @@ fn wrap_line_word(line: &str, initial_width: usize, continuation_width: usize) -
                 current_width += word_width;
             } else if !is_visually_blank(&current_line) {
                 result.push(current_line.trim_end().to_string());
-                current_line = ansi_stack.clone();
+                current_line = style.prefix();
                 current_width = 0;
                 width = continuation_width;
             }
@@ -140,7 +130,8 @@ fn wrap_line_word(line: &str, initial_width: usize, continuation_width: usize) -
                 current_width += word_width;
             } else {
                 result.push(current_line.trim_end().to_string());
-                current_line = format!("{}{}", ansi_stack, word);
+                current_line = style.prefix();
+                current_line.push_str(&word);
                 current_width = word_width;
                 width = continuation_width;
             }
