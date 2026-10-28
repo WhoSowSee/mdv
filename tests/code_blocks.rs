@@ -1,3 +1,5 @@
+#[path = "code_blocks/ansi_wrapping.rs"]
+mod ansi_wrapping;
 #[path = "code_blocks/basic.rs"]
 mod basic;
 #[path = "code_blocks/blockquotes.rs"]

@@ -34,10 +34,13 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [user_themes.rs](../../src/user_themes.rs) | User-theme facade. | [themes](themes-and-styling.md) |
 | [utils.rs](../../src/utils.rs) | Display width, ANSI stripping, and text wrapping. | [architecture](architecture.md) |
 | [utils/ansi.rs](../../src/utils/ansi.rs) | SGR/OSC 8 removal and visible Unicode string width. | [renderer content](renderer-content.md) |
+| [utils/sgr.rs](../../src/utils/sgr.rs) | Bounded SGR state for restoring active colors and attributes at wrapping boundaries. | [renderer code](renderer-code.md) |
 | [utils/wrapping.rs](../../src/utils/wrapping.rs) | ANSI-aware word and character wrapping with separate first-row and continuation widths. | [renderer code](renderer-code.md) |
 | [editor.rs](../../src/editor.rs) | Editor discovery and launch. | [interactive/pager](interactive-and-pager.md) |
 
 Top-level companion unit tests: [editor/tests.rs](../../src/editor/tests.rs), [list_marker/tests.rs](../../src/list_marker/tests.rs), and [utils/tests.rs](../../src/utils/tests.rs).
+
+SGR compaction tests: [utils/sgr/tests.rs](../../src/utils/sgr/tests.rs).
 
 ## `src/cli/`
 
@@ -339,7 +342,7 @@ Harness: [tests/integration.rs](../../tests/integration.rs).
 - Callout tables and links: [inline_links.rs](../../tests/callouts/tables_links/inline_links.rs), [references.rs](../../tests/callouts/tables_links/references.rs), and [tables.rs](../../tests/callouts/tables_links/tables.rs).
 - Checkboxes: [basic.rs](../../tests/checkboxes/basic.rs), [colors.rs](../../tests/checkboxes/colors.rs), [custom_states.rs](../../tests/checkboxes/custom_states.rs), and [layout_and_lists.rs](../../tests/checkboxes/layout_and_lists.rs).
 - CLI: [general.rs](../../tests/cli_basic/general.rs), [config_and_pager.rs](../../tests/cli_basic/config_and_pager.rs), [html_content.rs](../../tests/cli_basic/html_content.rs), [html_details.rs](../../tests/cli_basic/html_details.rs), [html_lists_tables.rs](../../tests/cli_basic/html_lists_tables.rs), [html_semantics.rs](../../tests/cli_basic/html_semantics.rs), [monitor.rs](../../tests/cli_basic/monitor.rs), and [rendering_options.rs](../../tests/cli_basic/rendering_options.rs).
-- Code blocks: [basic.rs](../../tests/code_blocks/basic.rs), [blockquotes.rs](../../tests/code_blocks/blockquotes.rs), [icons.rs](../../tests/code_blocks/icons.rs), [line_numbers.rs](../../tests/code_blocks/line_numbers.rs), [pretty.rs](../../tests/code_blocks/pretty.rs), [spacing.rs](../../tests/code_blocks/spacing.rs), [tab_indent.rs](../../tests/code_blocks/tab_indent.rs), and [wrap_indent.rs](../../tests/code_blocks/wrap_indent.rs).
+- Code blocks: [ansi_wrapping.rs](../../tests/code_blocks/ansi_wrapping.rs), [basic.rs](../../tests/code_blocks/basic.rs), [blockquotes.rs](../../tests/code_blocks/blockquotes.rs), [icons.rs](../../tests/code_blocks/icons.rs), [line_numbers.rs](../../tests/code_blocks/line_numbers.rs), [pretty.rs](../../tests/code_blocks/pretty.rs), [spacing.rs](../../tests/code_blocks/spacing.rs), [tab_indent.rs](../../tests/code_blocks/tab_indent.rs), and [wrap_indent.rs](../../tests/code_blocks/wrap_indent.rs).
 - Tab-indented code blocks: [deep_indent.rs](../../tests/code_blocks/tab_indent/deep_indent.rs), [fences.rs](../../tests/code_blocks/tab_indent/fences.rs), and [paragraphs.rs](../../tests/code_blocks/tab_indent/paragraphs.rs).
 - Footnotes: [attached.rs](../../tests/footnotes/attached.rs), [ordering.rs](../../tests/footnotes/ordering.rs), [placement.rs](../../tests/footnotes/placement.rs), and [validation.rs](../../tests/footnotes/validation.rs).
 - Layout: [blockquotes.rs](../../tests/layout/blockquotes.rs), [headings.rs](../../tests/layout/headings.rs), [margins.rs](../../tests/layout/margins.rs), [narrow_wrapping.rs](../../tests/layout/narrow_wrapping.rs), and [spacing.rs](../../tests/layout/spacing.rs).
