@@ -1,6 +1,36 @@
 use super::*;
 
 #[test]
+fn wrapping_preserves_graphemes_across_ansi_sequences() {
+    for grapheme in ["👩‍💻", "👍🏽", "🇺🇳", "e\u{301}"] {
+        let text = grapheme.repeat(3);
+        let styled = text
+            .chars()
+            .map(|ch| format!("\x1b[31m{ch}\x1b[0m"))
+            .collect::<String>();
+        for mode in [WrapMode::Character, WrapMode::Word] {
+            for source in [&text, &styled] {
+                let output = wrap_text_with_mode(source, display_width(grapheme), mode);
+                assert_eq!(
+                    strip_ansi(&output).lines().collect::<Vec<_>>(),
+                    vec![grapheme; 3],
+                    "{mode:?}: {source:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn wrapping_preserves_text_after_bell_terminated_osc() {
+    let text = "\x1b]8;;url\x07ab\x1b\\longlong";
+    let expected = "\x1b]8;;url\x07ab\x1b\\l\non\ngl\non\ng";
+    for mode in [WrapMode::Character, WrapMode::Word] {
+        assert_eq!(wrap_text_with_mode(text, 2, mode), expected, "{mode:?}");
+    }
+}
+
+#[test]
 fn ansi_width_preserves_unicode_sequences_across_styles() {
     for text in [
         "👩‍💻",
