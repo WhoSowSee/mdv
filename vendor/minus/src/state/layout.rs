@@ -1,6 +1,6 @@
 use super::{
     AppendStyle, Cow, EOF_SCROLL_MARGIN_ROWS, LineNumbers, PagerState, PromptError, TryInto,
-    display, minus_core, screen, slice_chars, strip_ansi,
+    minus_core, screen,
 };
 
 impl PagerState {
@@ -90,39 +90,12 @@ impl PagerState {
     }
 
     pub(super) fn horizontal_scroll_view<'a>(&self, row: &'a str) -> (Cow<'a, str>, usize) {
-        let (first_end, second_start, second_end) = display::get_horizontal_scroll_bounds(
+        screen::horizontal_scroll_view(
             row,
             self.content_columns(),
             self.left_mark,
-            self.line_numbers.is_on(),
-            self.screen.line_count(),
-        );
-        let skipped_chars = self.horizontal_scroll_char_offset(row);
-
-        if self.left_mark < row.len() {
-            if self.line_numbers.is_on() {
-                (
-                    format!("{}{}", &row[..first_end], &row[second_start..second_end]).into(),
-                    skipped_chars,
-                )
-            } else {
-                (row[second_start..second_end].into(), skipped_chars)
-            }
-        } else {
-            (Cow::Borrowed(""), skipped_chars)
-        }
-    }
-
-    pub(super) fn horizontal_scroll_char_offset(&self, row: &str) -> usize {
-        let visible = strip_ansi(row);
-        let visible_len = visible.chars().count();
-        let content_start = self.line_number_padding().min(visible_len);
-        let content = slice_chars(&visible, content_start, visible_len);
-        let mut byte_offset = self.left_mark.min(content.len());
-        while byte_offset < content.len() && !content.is_char_boundary(byte_offset) {
-            byte_offset += 1;
-        }
-        content[..byte_offset].chars().count()
+            self.line_number_padding(),
+        )
     }
 
     pub(crate) const fn line_number_padding(&self) -> usize {

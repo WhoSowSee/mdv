@@ -43,7 +43,7 @@ fn selected_text_handles_line_numbers_and_unicode_horizontal_scroll() {
     let mut ps = PagerState::new().unwrap();
     ps.line_numbers = LineNumbers::Enabled;
     ps.screen.line_wrapping = false;
-    ps.left_mark = "é".len();
+    ps.left_mark = 1;
     ps.screen.orig_text = "éabcdefghij\nklmnopqrst\nuvwxyz\n".to_string();
     ps.reformat_display().unwrap();
 
@@ -53,7 +53,7 @@ fn selected_text_handles_line_numbers_and_unicode_horizontal_scroll() {
 
     assert_eq!(
         ps.selected_text().as_deref(),
-        Some("abcdefghij\nklmnopqrst\nuvwx")
+        Some("abcdefghij\nklmnopqrst\nuvw")
     );
 }
 
@@ -73,6 +73,17 @@ fn selected_text_spans_wrapped_rows() {
     });
 
     assert_eq!(ps.selected_text().as_deref(), Some("cdefghi\njklm"));
+}
+
+#[test]
+fn appending_a_variation_selector_updates_scroll_width() {
+    for (prefix, expected) in [("", 1), ("ab\n", 2)] {
+        let mut ps = PagerState::new().unwrap();
+        ps.append_str(&format!("{prefix}⌚")).unwrap();
+        assert_eq!(ps.screen.get_max_line_length(), 2);
+        ps.append_str("\u{fe0e}").unwrap();
+        assert_eq!(ps.screen.get_max_line_length(), expected);
+    }
 }
 
 #[test]
@@ -114,6 +125,14 @@ fn selection_ignores_ansi_and_uses_display_width() {
     );
     ps.selection_anchor = ps.selection_from_coordinates(2, 0);
     ps.selection = ps.selection_from_coordinates(3, 0);
+    assert_eq!(ps.selected_text().as_deref(), Some("界b"));
+
+    ps.cols = 3;
+    ps.left_mark = 1;
+    let rows = ps.render_rows_for_display(0, 1);
+    assert_eq!(super::strip_ansi(&rows[0]), "界b");
+    ps.selection_anchor = ps.selection_from_coordinates(0, 0);
+    ps.selection = ps.selection_from_coordinates(2, 0);
     assert_eq!(ps.selected_text().as_deref(), Some("界b"));
 }
 

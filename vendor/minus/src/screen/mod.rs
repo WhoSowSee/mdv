@@ -11,6 +11,9 @@ use regex::Regex;
 
 use std::{borrow::Cow, fmt};
 
+mod horizontal;
+pub(crate) use horizontal::horizontal_scroll_view;
+
 #[cfg(feature = "search")]
 use crate::search::{self, SearchMatch, SearchRange};
 
@@ -95,7 +98,7 @@ impl Screen {
         self.line_count
     }
 
-    /// Get the length of the longest [Line] in the text.
+    /// Get the longest line's display width in terminal columns, excluding ANSI sequences.
     #[must_use]
     pub const fn get_max_line_length(&self) -> usize {
         self.max_line_length
@@ -140,6 +143,14 @@ impl Screen {
             };
             format_text_block(append_opts)
         };
+        // A presentation selector can shrink the line that owns the cached maximum.
+        let widest_tail_shrank = !clean_append
+            && append_props.max_line_length < self.max_line_length
+            && self
+                .orig_text
+                .lines()
+                .next_back()
+                .is_some_and(|line| horizontal::line_width(line) == self.max_line_length);
         self.orig_text.push_str(text);
 
         let (num_unterminated, lines_formatted, max_line_length) = (
@@ -149,9 +160,15 @@ impl Screen {
         );
 
         self.line_count = old_lc + lines_formatted.saturating_sub(usize::from(!clean_append));
-        if max_line_length > self.max_line_length {
-            self.max_line_length = max_line_length;
-        }
+        self.max_line_length = if widest_tail_shrank {
+            self.orig_text
+                .lines()
+                .map(horizontal::line_width)
+                .max()
+                .unwrap_or(0)
+        } else {
+            self.max_line_length.max(max_line_length)
+        };
 
         self.unterminated = num_unterminated;
         append_props
@@ -307,7 +324,7 @@ where
     let (last_idx, last_line_text) = lines.last().copied().unwrap();
     for (idx, line) in lines.iter().take(lines.len().saturating_sub(1)) {
         fr.lines_to_row_map.insert(formatted_row_count, true);
-        fr.max_line_length = fr.max_line_length.max(line.len());
+        fr.max_line_length = fr.max_line_length.max(horizontal::line_width(line));
 
         let rows = format_line(
             line,
@@ -351,7 +368,9 @@ where
     let last_line_rows = last_line.size_hint().1.unwrap();
 
     fr.lines_to_row_map.insert(formatted_row_count, true);
-    fr.max_line_length = fr.max_line_length.max(last_line_text.len());
+    fr.max_line_length = fr
+        .max_line_length
+        .max(horizontal::line_width(last_line_text));
 
     #[cfg(feature = "search")]
     {

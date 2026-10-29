@@ -5,8 +5,9 @@ fn prompt_renderer_tracks_prompt_updates_and_horizontal_scroll() {
     let mut ps = PagerState::new().unwrap();
     ps.cols = 5;
     ps.screen.line_wrapping = false;
-    ps.screen.orig_text = "0123456789".to_string();
+    ps.screen.orig_text = "\x1b[31m界éabcdefg\x1b[0m".to_string();
     ps.reformat_display().unwrap();
+    assert_eq!(ps.screen.get_max_line_length(), 10);
     let mut command_queue = CommandQueue::new_zero();
     let is_exited = Arc::new(AtomicBool::new(false));
 
@@ -41,6 +42,15 @@ fn prompt_renderer_tracks_prompt_updates_and_horizontal_scroll() {
     .unwrap();
 
     assert_eq!(ps.displayed_prompt, "upd…1\x1b[0m");
+
+    handle_event(
+        Command::UserInput(InputEvent::UpdateLeftMark(6)),
+        &mut ps,
+        &mut command_queue,
+        &is_exited,
+    )
+    .unwrap();
+    assert_eq!(ps.left_mark, 1);
 
     ps.cols = 80;
     handle_event(
