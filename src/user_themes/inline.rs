@@ -10,8 +10,8 @@ pub(crate) struct InlineFile {
 impl InlineFile {
     pub(super) fn resolve(&self, base: &InlineTheme) -> InlineTheme {
         InlineTheme {
-            text: pick(&self.text, &base.text),
-            background: self.background.resolve(&base.background),
+            text: pick(self.text.as_ref(), &base.text),
+            background: self.background.resolve(base.background.as_ref()),
         }
     }
 
@@ -25,21 +25,21 @@ impl InlineFile {
                 .as_ref()
                 .map(|color| color.0.clone())
                 .or_else(|| base.text.clone()),
-            background: self.background.resolve(&base.background),
+            background: self.background.resolve(base.background.as_ref()),
         }
     }
 
     pub(super) fn into_complete(self, name: &str, section: &str) -> Result<InlineTheme> {
         Ok(InlineTheme {
             text: required(self.text, name, &format!("{section}:text"))?,
-            background: self.background.resolve(&None),
+            background: self.background.resolve(None),
         })
     }
 
     pub(super) fn into_optional(self) -> InlineTheme<Option<Color>> {
         InlineTheme {
             text: self.text.map(|color| color.0),
-            background: self.background.resolve(&None),
+            background: self.background.resolve(None),
         }
     }
 }
@@ -62,7 +62,7 @@ impl HighlightFile {
                 .as_ref()
                 .map(|color| color.0.clone())
                 .or_else(|| base.text.clone()),
-            background: pick(&self.background, &base.background),
+            background: pick(self.background.as_ref(), &base.background),
         }
     }
 

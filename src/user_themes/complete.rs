@@ -69,9 +69,9 @@ impl ThemeFile {
                 .highlight
                 .with_context(|| format!("Embedded theme '{name}' is missing 'highlight'"))?
                 .into_complete(&name)?,
-            background: self.background.resolve(&None),
-            horizontal_rule: self.horizontal_rule.resolve(&None),
-            footnote_separator: self.footnote_separator.resolve(&None),
+            background: self.background.resolve(None),
+            horizontal_rule: self.horizontal_rule.resolve(None),
+            footnote_separator: self.footnote_separator.resolve(None),
             line_number: self
                 .line_number
                 .with_context(|| format!("Embedded theme '{name}' is missing 'line_number'"))?
@@ -100,7 +100,7 @@ impl ThemeFile {
                 .todo
                 .with_context(|| format!("Embedded theme '{name}' is missing 'todo'"))?
                 .into_complete(&name)?,
-            details_border: self.details_border.resolve(&None),
+            details_border: self.details_border.resolve(None),
             callout: self
                 .callout
                 .with_context(|| format!("Embedded theme '{name}' is missing 'callout'"))?
@@ -129,7 +129,7 @@ impl TableFile {
     pub(super) fn into_complete(self, name: &str) -> Result<TableTheme> {
         Ok(TableTheme {
             header: required(self.header, name, "table:header")?,
-            border: self.border.resolve(&None),
+            border: self.border.resolve(None),
         })
     }
 }
@@ -138,7 +138,7 @@ impl MathFile {
     pub(super) fn into_complete(self, name: &str) -> Result<MathTheme> {
         Ok(MathTheme {
             text: required(self.text, name, "math:text")?,
-            border: self.border.resolve(&None),
+            border: self.border.resolve(None),
         })
     }
 }
@@ -149,7 +149,7 @@ impl FrontMatterFile {
             title: required(self.title, name, "front_matter:title")?,
             key: required(self.key, name, "front_matter:key")?,
             value: required(self.value, name, "front_matter:value")?,
-            border: self.border.resolve(&None),
+            border: self.border.resolve(None),
         })
     }
 }
@@ -158,7 +158,7 @@ impl CodeBlockFile {
     pub(super) fn into_complete(self, name: &str) -> Result<CodeBlockTheme> {
         Ok(CodeBlockTheme {
             label: required(self.label, name, "code_block:label")?,
-            border: self.border.resolve(&None),
+            border: self.border.resolve(None),
         })
     }
 }
@@ -204,8 +204,8 @@ impl CalloutPaletteFile {
 impl CalloutFile {
     pub(super) fn into_complete(self, name: &str) -> Result<CalloutTheme> {
         Ok(CalloutTheme {
-            label: self.label.resolve(&None),
-            border: self.border.resolve(&None),
+            label: self.label.resolve(None),
+            border: self.border.resolve(None),
             palette: self
                 .palette
                 .with_context(|| format!("Embedded theme '{name}' is missing 'callout:palette'"))?

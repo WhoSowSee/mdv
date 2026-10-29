@@ -542,7 +542,7 @@ where
 
 pub(crate) fn format_lines_into(
     buffer: &mut Rows,
-    text: &String,
+    text: &str,
     line_numbers: LineNumbers,
     cols: usize,
     line_wrapping: bool,

@@ -36,19 +36,17 @@ impl<'de> Deserialize<'de> for OptionalColorYaml {
 }
 
 impl OptionalColorYaml {
-    pub(super) fn resolve(&self, base: &Option<Color>) -> Option<Color> {
+    pub(super) fn resolve(&self, base: Option<&Color>) -> Option<Color> {
         match self {
-            Self::Inherit => base.clone(),
+            Self::Inherit => base.cloned(),
             Self::Uncolored => None,
             Self::Color(color) => Some(color.0.clone()),
         }
     }
 }
 
-pub(super) fn pick(value: &Option<ColorYaml>, base: &Color) -> Color {
-    value
-        .as_ref()
-        .map_or_else(|| base.clone(), |color| color.0.clone())
+pub(super) fn pick(value: Option<&ColorYaml>, base: &Color) -> Color {
+    value.map_or_else(|| base.clone(), |color| color.0.clone())
 }
 
 pub(super) fn required(value: Option<ColorYaml>, name: &str, field: &str) -> Result<Color> {

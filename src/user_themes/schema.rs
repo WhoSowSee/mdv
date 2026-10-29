@@ -58,14 +58,14 @@ pub(crate) struct SyntaxFile {
 impl SyntaxFile {
     pub(super) fn resolve(&self, base: &SyntaxTheme) -> SyntaxTheme {
         SyntaxTheme {
-            keyword: pick(&self.keyword, &base.keyword),
-            string: pick(&self.string, &base.string),
-            comment: pick(&self.comment, &base.comment),
-            number: pick(&self.number, &base.number),
-            operator: pick(&self.operator, &base.operator),
-            function: pick(&self.function, &base.function),
-            variable: pick(&self.variable, &base.variable),
-            type_name: pick(&self.type_name, &base.type_name),
+            keyword: pick(self.keyword.as_ref(), &base.keyword),
+            string: pick(self.string.as_ref(), &base.string),
+            comment: pick(self.comment.as_ref(), &base.comment),
+            number: pick(self.number.as_ref(), &base.number),
+            operator: pick(self.operator.as_ref(), &base.operator),
+            function: pick(self.function.as_ref(), &base.function),
+            variable: pick(self.variable.as_ref(), &base.variable),
+            type_name: pick(self.type_name.as_ref(), &base.type_name),
         }
     }
 }
@@ -84,20 +84,20 @@ impl ThemeFile {
                 .pager
                 .as_ref()
                 .map_or_else(|| base.pager.clone(), |value| value.resolve(&base.pager)),
-            text: pick(&self.text, &base.text),
-            text_light: pick(&self.text_light, &base.text_light),
-            h1: pick(&self.h1, &base.h1),
-            h2: pick(&self.h2, &base.h2),
-            h3: pick(&self.h3, &base.h3),
-            h4: pick(&self.h4, &base.h4),
-            h5: pick(&self.h5, &base.h5),
-            h6: pick(&self.h6, &base.h6),
+            text: pick(self.text.as_ref(), &base.text),
+            text_light: pick(self.text_light.as_ref(), &base.text_light),
+            h1: pick(self.h1.as_ref(), &base.h1),
+            h2: pick(self.h2.as_ref(), &base.h2),
+            h3: pick(self.h3.as_ref(), &base.h3),
+            h4: pick(self.h4.as_ref(), &base.h4),
+            h5: pick(self.h5.as_ref(), &base.h5),
+            h6: pick(self.h6.as_ref(), &base.h6),
             code: self
                 .code
                 .as_ref()
                 .map_or_else(|| base.code.clone(), |group| group.resolve(&base.code)),
-            quote: pick(&self.quote, &base.quote),
-            link: pick(&self.link, &base.link),
+            quote: pick(self.quote.as_ref(), &base.quote),
+            link: pick(self.link.as_ref(), &base.link),
             emphasis: self.emphasis.as_ref().map_or_else(
                 || base.emphasis.clone(),
                 |group| group.resolve(&base.emphasis),
@@ -110,8 +110,8 @@ impl ThemeFile {
                 || base.strikethrough.clone(),
                 |group| group.resolve(&base.strikethrough),
             ),
-            error: pick(&self.error, &base.error),
-            warning: pick(&self.warning, &base.warning),
+            error: pick(self.error.as_ref(), &base.error),
+            warning: pick(self.warning.as_ref(), &base.warning),
             strong_emphasis: self.strong_emphasis.as_ref().map_or_else(
                 || base.strong_emphasis.clone(),
                 |group| group.resolve_optional(&base.strong_emphasis),
@@ -120,9 +120,11 @@ impl ThemeFile {
                 || base.highlight.clone(),
                 |group| group.resolve(&base.highlight),
             ),
-            background: self.background.resolve(&base.background),
-            horizontal_rule: self.horizontal_rule.resolve(&base.horizontal_rule),
-            footnote_separator: self.footnote_separator.resolve(&base.footnote_separator),
+            background: self.background.resolve(base.background.as_ref()),
+            horizontal_rule: self.horizontal_rule.resolve(base.horizontal_rule.as_ref()),
+            footnote_separator: self
+                .footnote_separator
+                .resolve(base.footnote_separator.as_ref()),
             line_number: self.line_number.as_ref().map_or_else(
                 || base.line_number.clone(),
                 |group| group.resolve(&base.line_number),
@@ -151,7 +153,7 @@ impl ThemeFile {
                 .todo
                 .as_ref()
                 .map_or_else(|| base.todo.clone(), |group| group.resolve(&base.todo)),
-            details_border: self.details_border.resolve(&base.details_border),
+            details_border: self.details_border.resolve(base.details_border.as_ref()),
             callout: self.callout.as_ref().map_or_else(
                 || base.callout.clone(),
                 |group| group.resolve(&base.callout),

@@ -24,15 +24,15 @@ pub(crate) struct PagerHighlightFile {
 impl PagerHighlightFile {
     fn resolve(&self, base: &InlineTheme<Option<Color>>) -> InlineTheme<Option<Color>> {
         InlineTheme {
-            text: self.text.resolve(&base.text),
-            background: self.background.resolve(&base.background),
+            text: self.text.resolve(base.text.as_ref()),
+            background: self.background.resolve(base.background.as_ref()),
         }
     }
 
     fn into_complete(self) -> InlineTheme<Option<Color>> {
         InlineTheme {
-            text: self.text.resolve(&None),
-            background: self.background.resolve(&None),
+            text: self.text.resolve(None),
+            background: self.background.resolve(None),
         }
     }
 }
@@ -41,11 +41,11 @@ impl PagerFile {
     pub(super) fn resolve(&self, base: &PagerTheme) -> PagerTheme {
         PagerTheme {
             transparent: self.transparent.unwrap_or(base.transparent),
-            title: self.title.resolve(&base.title),
-            help: self.help.resolve(&base.help),
-            file_name: self.file_name.resolve(&base.file_name),
-            progress: self.progress.resolve(&base.progress),
-            matches: self.matches.resolve(&base.matches),
+            title: self.title.resolve(base.title.as_ref()),
+            help: self.help.resolve(base.help.as_ref()),
+            file_name: self.file_name.resolve(base.file_name.as_ref()),
+            progress: self.progress.resolve(base.progress.as_ref()),
+            matches: self.matches.resolve(base.matches.as_ref()),
             selection: self.selection.as_ref().map_or_else(
                 || base.selection.clone(),
                 |value| value.resolve(&base.selection),
@@ -66,11 +66,11 @@ impl PagerFile {
             transparent: self.transparent.with_context(|| {
                 format!("Embedded theme '{name}' is missing 'pager:transparent'")
             })?,
-            title: self.title.resolve(&None),
-            help: self.help.resolve(&None),
-            file_name: self.file_name.resolve(&None),
-            progress: self.progress.resolve(&None),
-            matches: self.matches.resolve(&None),
+            title: self.title.resolve(None),
+            help: self.help.resolve(None),
+            file_name: self.file_name.resolve(None),
+            progress: self.progress.resolve(None),
+            matches: self.matches.resolve(None),
             selection: self.selection.unwrap_or_default().into_complete(),
             search: self.search.unwrap_or_default().into_complete(),
             search_current: self.search_current.unwrap_or_default().into_complete(),

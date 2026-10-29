@@ -212,8 +212,6 @@ where
     let initial_upper_mark = iso.initial_upper_mark;
     let initial_left_mark = iso.initial_left_mark;
 
-    let should_proceed = so.compiled_regex.is_some() && incremental_search_condition(so);
-
     // Failed or disabled previews restore the exact pre-search viewport.
     let reset_screen = |out: &mut O, so: &SearchOpts<'_>| -> crate::Result {
         display::write_text_checked(
@@ -231,12 +229,13 @@ where
         Ok(())
     };
 
-    if !should_proceed {
-        reset_screen(out, so)?;
-        return Ok(None);
-    }
-
-    let query = so.compiled_regex.as_ref().unwrap();
+    let query = match so.compiled_regex.as_ref() {
+        Some(query) if incremental_search_condition(so) => query,
+        _ => {
+            reset_screen(out, so)?;
+            return Ok(None);
+        }
+    };
 
     let Some(preview) = incremental_preview(iso, query) else {
         reset_screen(out, so)?;
