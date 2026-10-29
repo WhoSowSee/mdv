@@ -10,6 +10,7 @@ pub fn display_width(s: &str) -> usize {
 mod ansi;
 pub use ansi::{display_width_ansi, strip_ansi};
 mod sgr;
+pub(crate) use sgr::SgrState;
 mod wrapping;
 pub(crate) use wrapping::wrap_line_with_widths;
 
