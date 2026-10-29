@@ -134,7 +134,9 @@ current numbering mode, discarding work from a refreshed document. Named
 `InteractiveOptions` and `PagerCapabilities` carry routing and help settings.
 
 The vendored pager restores the preceding panic hook at the end of every
-session, including unwinding paths. Search text positions and word indices use
+session, including unwinding paths. Its run mode resets when initialization or
+paging returns, including errors and unwinding, so a failed setup allows retry.
+Search text positions and word indices use
 `usize`; only final cursor coordinates are bounded to the terminal dimensions.
 
 For the built-in backend, the document stores these values separately:
