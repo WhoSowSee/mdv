@@ -159,7 +159,7 @@ fn highlight_code_reset_closes_last_line_without_phantom_row() {
     );
 }
 #[test]
-fn footnote_highlighting_accepts_sgr_between_marker_characters() {
+fn footnote_highlighting_preserves_unicode_offsets_and_sgr() {
     let config = Config {
         missing_footnote_style: crate::cli::MissingFootnoteStyle::Hide,
         ..Config::default()
@@ -168,8 +168,37 @@ fn footnote_highlighting_accepts_sgr_between_marker_characters() {
     let syntax_set = SyntaxSet::load_defaults_newlines();
     let code_theme = test_code_theme();
     let renderer = test_renderer(&config, &theme, &syntax_set, &code_theme);
-    let input = "[\x1b[31m^note]";
-    let output = renderer.highlight_footnote_markers_in_ansi(input);
-    assert_ne!(output, input);
-    assert_eq!(strip_ansi(&output), "[^note]");
+    let style = create_style(&theme, ThemeElement::Link);
+    for (input, markers, restored_tail) in [
+        ("[\x1b[31m^note]", &["[\x1b[31m^note]"][..], "\x1b[31m"),
+        (
+            "-- тест 👩‍💻 [^a] foo [^прим] 尾 [^b] end",
+            &["[^a]", "[^прим]", "[^b]"][..],
+            " end",
+        ),
+        (
+            "\x1b[31m\x1b[3m-- тест [^a] foo",
+            &["[^a]"][..],
+            "\x1b[3m\x1b[31m foo",
+        ),
+        ("\x1b[0;31m[^a] tail", &["[^a]"][..], "\x1b[31m tail"),
+        (
+            "\x1b[1m\x1b[44m[\x1b[32m^note] tail",
+            &["[\x1b[32m^note]"][..],
+            "\x1b[1m\x1b[32m\x1b[44m tail",
+        ),
+    ] {
+        let output = renderer.highlight_footnote_markers_in_ansi(input);
+        assert_eq!(strip_ansi(&output), strip_ansi(input));
+        for marker in markers {
+            assert!(
+                output.contains(&style.apply(marker, crate::terminal::OutputStyle::Enabled)),
+                "marker {marker:?} was not highlighted: {output:?}"
+            );
+        }
+        assert!(
+            output.ends_with(restored_tail),
+            "lost source style: {output:?}"
+        );
+    }
 }

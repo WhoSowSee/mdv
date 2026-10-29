@@ -34,12 +34,12 @@ enum Parameter {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub(super) struct SgrState {
+pub(crate) struct SgrState {
     attributes: [Option<Parameter>; ATTRIBUTE_COUNT],
 }
 
 impl SgrState {
-    pub(super) fn update(&mut self, text: &str) {
+    pub(crate) fn update(&mut self, text: &str) {
         let mut chars = text.chars().peekable();
         while let Some(character) = chars.next() {
             if character == '\x1b' {
@@ -62,10 +62,10 @@ impl SgrState {
                 return;
             };
             if matches!(parameter, Parameter::Code(0)) {
-                *self = Self::default();
-                return;
+                next = Self::default();
+            } else {
+                next.apply(parameter);
             }
-            next.apply(parameter);
         }
         *self = next;
     }
@@ -104,7 +104,7 @@ impl SgrState {
         self.attributes[attribute as usize] = Some(parameter);
     }
 
-    pub(super) fn prefix(&self) -> String {
+    pub(crate) fn prefix(&self) -> String {
         let mut output = String::new();
         for parameter in self.attributes.iter().flatten() {
             match parameter {

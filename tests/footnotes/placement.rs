@@ -95,3 +95,32 @@ fn footnotes_render_inside_code_blocks() {
         stdout
     );
 }
+
+#[test]
+fn code_footnote_highlighting_uses_unicode_offsets() {
+    let output = mdv_cmd()
+        .args([
+            "--no-config",
+            "--theme=catppuccin",
+            "--color=always",
+            "--color-depth=truecolor",
+            "--cols=80",
+            "--code-block-style=basic",
+            "--custom-theme=link=#010203",
+            "--custom-code-theme=comment=#112233",
+        ])
+        .write_stdin("```lua\n-- тест [^a] foo\n```\n\n[^a]: note\n")
+        .assert()
+        .success();
+    let stdout = String::from_utf8(output.get_output().stdout.clone()).unwrap();
+    let line = stdout.lines().find(|line| line.contains("тест")).unwrap();
+    assert!(
+        line.contains("\x1b[38;2;1;2;3m[^a]\x1b[0m"),
+        "footnote color is not applied to the marker: {line:?}"
+    );
+    assert_eq!(strip_ansi(line).trim(), "-- тест [^a] foo");
+    assert!(
+        line.contains("\x1b[3m\x1b[38;2;17;34;51m foo"),
+        "comment color and italics are not restored: {line:?}"
+    );
+}

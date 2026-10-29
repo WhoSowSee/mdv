@@ -31,6 +31,9 @@ Code rendering combines a language hint, optional heuristic detection, `syntect`
 
 `CodeBlockRenderInput` supplies layout functions with prepared values only: highlighted text, label, wrapping mode, terminal width, and original code body.
 
+Footnote markers use the link style. After each marker, the complete source SGR
+state is restored so following code retains its colors and font attributes.
+
 ## Code-block styles
 
 | Style | Behavior |

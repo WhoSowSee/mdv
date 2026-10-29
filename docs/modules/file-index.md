@@ -34,7 +34,7 @@ This index reflects the current `src/` and `tests/` structure. Topic documents d
 | [user_themes.rs](../../src/user_themes.rs) | User-theme facade. | [themes](themes-and-styling.md) |
 | [utils.rs](../../src/utils.rs) | Display width, ANSI stripping, and text wrapping. | [architecture](architecture.md) |
 | [utils/ansi.rs](../../src/utils/ansi.rs) | SGR/OSC 8 removal and visible Unicode string width. | [renderer content](renderer-content.md) |
-| [utils/sgr.rs](../../src/utils/sgr.rs) | Bounded SGR state for restoring active colors and attributes at wrapping boundaries. | [renderer code](renderer-code.md) |
+| [utils/sgr.rs](../../src/utils/sgr.rs) | Bounded SGR state for restoring active colors and attributes after wrapping and code footnote markers. | [renderer code](renderer-code.md) |
 | [utils/wrapping.rs](../../src/utils/wrapping.rs) | ANSI-aware word and character wrapping with separate first-row and continuation widths. | [renderer code](renderer-code.md) |
 | [editor.rs](../../src/editor.rs) | Editor discovery and launch. | [interactive/pager](interactive-and-pager.md) |
 

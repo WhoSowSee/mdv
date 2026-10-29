@@ -1,4 +1,5 @@
 use super::*;
+use crate::utils::SgrState;
 
 impl<'a> EventRenderer<'a> {
     pub(in crate::renderer::event) fn highlight_code(
@@ -56,9 +57,7 @@ impl<'a> EventRenderer<'a> {
             return line.to_string();
         }
 
-        // Build mapping from visible char index to byte range and last SGR sequence.
-        let mut mapping: Vec<(usize, usize, Option<String>)> = Vec::new();
-        let mut current_sgr: Option<String> = None;
+        let mut mapping: Vec<(usize, usize)> = Vec::new();
         let bytes = line.as_bytes();
         let mut i = 0usize;
         while i < line.len() {
@@ -68,7 +67,6 @@ impl<'a> EventRenderer<'a> {
                 && let Some(rel) = line[i + 2..].find('m')
             {
                 let end = i + 2 + rel;
-                current_sgr = Some(line[i..=end].to_string());
                 i = end + 1;
                 continue;
             }
@@ -76,20 +74,26 @@ impl<'a> EventRenderer<'a> {
             let ch = line[i..].chars().next().unwrap_or('\0');
             let start = i;
             i += ch.len_utf8();
-            mapping.push((start, i, current_sgr.clone()));
+            mapping.push((start, i));
         }
 
         let style = create_style(self.theme, ThemeElement::Link);
         let mut result = String::new();
         let mut prev_end = 0usize;
+        let mut clean_byte_offset = 0usize;
+        let mut clean_char_offset = 0usize;
+        let mut source_style = SgrState::default();
 
         for capture in regex.captures_iter(&clean) {
             let Some(matched) = capture.get(0) else {
                 continue;
             };
 
-            let start_v = matched.start();
-            let end_v = matched.end();
+            let start_v =
+                clean_char_offset + clean[clean_byte_offset..matched.start()].chars().count();
+            let end_v = start_v + matched.as_str().chars().count();
+            clean_byte_offset = matched.end();
+            clean_char_offset = end_v;
 
             if start_v >= mapping.len() || end_v == 0 || end_v > mapping.len() {
                 continue;
@@ -102,7 +106,7 @@ impl<'a> EventRenderer<'a> {
 
             let start_byte = mapping[start_v].0;
             let end_byte = mapping[end_v - 1].1;
-            let restore = mapping[start_v].2.clone();
+            source_style.update(&line[prev_end..end_byte]);
 
             // Append text before the marker
             result.push_str(&line[prev_end..start_byte]);
@@ -110,9 +114,7 @@ impl<'a> EventRenderer<'a> {
             let marker = &line[start_byte..end_byte];
             if self.should_highlight_footnote_reference(name) {
                 let mut styled = style.apply(marker, self.output_style);
-                if let Some(sgr) = restore {
-                    styled.push_str(&sgr);
-                }
+                styled.push_str(&source_style.prefix());
                 result.push_str(&styled);
             } else {
                 result.push_str(marker);
