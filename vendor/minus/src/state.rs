@@ -132,7 +132,7 @@ pub struct PagerState {
     pub(crate) displayed_prompt_panel: Vec<String>,
     pub(crate) show_prompt: bool,
     #[cfg(feature = "static_output")]
-    pub(crate) run_no_overflow: bool,
+    pub(crate) overflow_policy: crate::static_pager::OverflowPolicy,
     pub(crate) lines_to_row_map: LinesRowMap,
     pub(crate) follow_output: bool,
     pub(crate) output_styling: bool,
@@ -189,7 +189,7 @@ impl PagerState {
             displayed_prompt_panel: Vec::new(),
             show_prompt: true,
             #[cfg(feature = "static_output")]
-            run_no_overflow: false,
+            overflow_policy: crate::static_pager::OverflowPolicy::PageOnOverflow,
             #[cfg(feature = "search")]
             search_mode: SearchMode::default(),
             #[cfg(feature = "search")]

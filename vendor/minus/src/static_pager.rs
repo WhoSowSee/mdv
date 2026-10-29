@@ -2,6 +2,13 @@
 use crate::minus_core::init;
 use crate::{Pager, error::MinusError};
 
+/// Controls whether static content that fits on screen opens an interactive pager.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OverflowPolicy {
+    PageOnOverflow,
+    AlwaysPage,
+}
+
 /// Pages preloaded content, writing it directly when paging is unnecessary.
 ///
 /// [`Pager::set_run_no_overflow`] can force the pager to open for content that fits on screen.

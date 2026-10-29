@@ -119,7 +119,7 @@ fn deleting_selected_query_returns_an_empty_cancelled_draft() {
         search_opts.ev = Some(make_event_from_keycode(key_code));
         handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
 
-        assert!(search_opts.string.is_empty());
+        assert_eq!(search_opts.string, "");
         assert_eq!(search_opts.cursor_position, 1);
         assert!(search_opts.compiled_regex.is_none());
         assert_eq!(search_opts.input_status, InputStatus::Active);
@@ -127,7 +127,7 @@ fn deleting_selected_query_returns_an_empty_cancelled_draft() {
         search_opts.ev = Some(make_event_from_keycode(KeyCode::Esc));
         handle_key_press(&mut out, &mut search_opts, |_| false).unwrap();
 
-        assert!(search_opts.string.is_empty());
+        assert_eq!(search_opts.string, "");
         assert_eq!(search_opts.input_status, InputStatus::Cancelled);
     }
 }

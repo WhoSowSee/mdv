@@ -66,11 +66,9 @@ mod tests {
                         counter.fetch_add(1, Ordering::SeqCst);
                     },
                     || {
-                        if should_panic {
-                            panic!("session panic");
-                        }
+                        assert!(!should_panic, "session panic");
                     },
-                )
+                );
             });
             assert_eq!(result.is_err(), should_panic);
         }

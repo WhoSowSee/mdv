@@ -77,7 +77,9 @@ pub fn init_core(
             )?;
             return Ok(());
         }
-        if ps.screen.formatted_lines_count() <= ps.rows && !ps.run_no_overflow {
+        if ps.screen.formatted_lines_count() <= ps.rows
+            && ps.overflow_policy == crate::static_pager::OverflowPolicy::PageOnOverflow
+        {
             let rows = ps.render_rows_for_display(0, ps.screen.formatted_lines_count());
             write_raw_lines(&mut out, &rows, Some("\r"))?;
             ps.exit();

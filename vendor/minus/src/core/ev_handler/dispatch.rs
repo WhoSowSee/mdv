@@ -363,7 +363,13 @@ pub fn handle_event(
             p.reformat_display()?;
         }
         #[cfg(feature = "static_output")]
-        Command::SetRunNoOverflow(val) => p.run_no_overflow = val,
+        Command::SetRunNoOverflow(val) => {
+            p.overflow_policy = if val {
+                crate::static_pager::OverflowPolicy::AlwaysPage
+            } else {
+                crate::static_pager::OverflowPolicy::PageOnOverflow
+            };
+        }
         #[cfg(feature = "search")]
         Command::IncrementalSearchCondition(cb) => p.search_state.incremental_search_condition = cb,
         Command::SetInputClassifier(clf) => p.input_classifier = clf,

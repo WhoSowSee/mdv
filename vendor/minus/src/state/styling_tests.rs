@@ -20,7 +20,7 @@ fn limited_depth_covers_prompts_search_selection_and_navigation() {
         Ok(PromptLine::new().left(PromptSpan::new("footer", style)?))
     }));
     state.prompt_panel = vec![PromptLine::new().left(PromptSpan::new("help", style).unwrap())];
-    state.search_state.search_term = Some(regex::Regex::new("target").unwrap());
+    state.search_state.search_term = Some(regex::Regex::new(r"\btarget\b").unwrap());
     state.reformat_display().unwrap();
     state.begin_line_navigation().unwrap();
     state.finish_line_navigation(Some(2)).unwrap();
@@ -80,7 +80,7 @@ fn disabled_styling_preserves_navigation_search_and_selection() {
         )
         .unwrap();
     let mut state = PagerState::generate_initial_state(&handle.rx).unwrap();
-    state.search_state.search_term = Some(regex::Regex::new("target").unwrap());
+    state.search_state.search_term = Some(regex::Regex::new(r"\btarget\b").unwrap());
     state.reformat_display().unwrap();
     assert_eq!(state.search_state.search_matches.len(), 2);
     state.begin_line_navigation().unwrap();
@@ -102,7 +102,6 @@ fn disabled_styling_preserves_navigation_search_and_selection() {
 
 #[cfg(feature = "search")]
 #[test]
-#[allow(clippy::trivial_regex)]
 fn custom_highlight_palette_reaches_rows_and_color_conversion() {
     let handle = Pager::new();
     handle
@@ -123,7 +122,7 @@ fn custom_highlight_palette_reaches_rows_and_color_conversion() {
         .unwrap();
     handle.push_str("target other target\n").unwrap();
     let mut state = PagerState::generate_initial_state(&handle.rx).unwrap();
-    state.search_state.search_term = Some(regex::Regex::new("target").unwrap());
+    state.search_state.search_term = Some(regex::Regex::new(r"\btarget\b").unwrap());
     state.reformat_display().unwrap();
     state.selection_anchor = Some(Selection {
         absolute_row: 0,

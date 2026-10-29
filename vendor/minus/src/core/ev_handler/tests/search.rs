@@ -61,7 +61,7 @@ fn manually_cleared_search_input_forgets_the_saved_query() {
     )
     .unwrap();
 
-    assert!(ps.search_state.last_search_query.is_empty());
+    assert_eq!(ps.search_state.last_search_query, "");
     assert!(ps.search_state.search_term.is_none());
     assert!(ps.search_state.search_matches.is_empty());
     assert_eq!(ps.search_mode, crate::search::SearchMode::Unknown);
@@ -71,7 +71,7 @@ fn manually_cleared_search_input_forgets_the_saved_query() {
     );
 
     ps.search_state.search_mode = crate::search::SearchMode::Forward;
-    assert!(crate::search::SearchOpts::from(&ps).string.is_empty());
+    assert_eq!(crate::search::SearchOpts::from(&ps).string, "");
 }
 
 #[cfg(feature = "search")]

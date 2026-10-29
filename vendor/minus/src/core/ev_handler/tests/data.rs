@@ -48,18 +48,25 @@ fn append_str() {
 #[test]
 #[cfg(feature = "static_output")]
 fn set_run_no_overflow() {
-    let mut ps = PagerState::new().unwrap();
-    let ev = Command::SetRunNoOverflow(true);
-    let mut command_queue = CommandQueue::new_zero();
+    use crate::static_pager::OverflowPolicy;
 
-    handle_event(
-        ev,
-        &mut ps,
-        &mut command_queue,
-        &Arc::new(AtomicBool::new(false)),
-    )
-    .unwrap();
-    assert!(ps.run_no_overflow);
+    let mut ps = PagerState::new().unwrap();
+    let mut command_queue = CommandQueue::new_zero();
+    assert_eq!(ps.overflow_policy, OverflowPolicy::PageOnOverflow);
+
+    for (force_paging, expected) in [
+        (true, OverflowPolicy::AlwaysPage),
+        (false, OverflowPolicy::PageOnOverflow),
+    ] {
+        handle_event(
+            Command::SetRunNoOverflow(force_paging),
+            &mut ps,
+            &mut command_queue,
+            &Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+        assert_eq!(ps.overflow_policy, expected);
+    }
 }
 
 #[test]

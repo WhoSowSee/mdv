@@ -120,7 +120,7 @@ mod accurate {
     use super::*;
     #[test]
     fn correct_ascii_sequence_placement() {
-        let orig = format!("{ESC}test{NONE} this {ESC}is a te{NONE}st again {ESC}yeah{NONE} test",);
+        let orig = format!("{ESC}test{NONE} this {ESC}is a te{NONE}st again {ESC}yeah{NONE} test");
 
         let res = highlight_line_matches(&orig, &Regex::new("test").unwrap(), true);
         assert_eq!(

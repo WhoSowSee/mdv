@@ -31,7 +31,7 @@ mod highlighting;
 mod incremental;
 mod input;
 #[cfg(test)]
-pub(crate) use highlighting::highlight_line_matches;
+use highlighting::highlight_line_matches;
 #[cfg(test)]
 use incremental::incremental_preview;
 use incremental::run_incremental_search;

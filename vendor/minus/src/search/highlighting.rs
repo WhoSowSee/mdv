@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn highlight_matches_args<'a, 'b>(
+fn highlight_matches_args<'a, 'b>(
     line: &'a str,
     query: &'b Regex,
     accurate: bool,
@@ -82,7 +82,7 @@ pub(super) fn highlight_line_matches_ansi(
 }
 
 #[cfg(test)]
-pub(crate) fn highlight_line_matches(
+pub(super) fn highlight_line_matches(
     line: &str,
     query: &regex::Regex,
     accurate: bool,
@@ -91,7 +91,7 @@ pub(crate) fn highlight_line_matches(
     (highlighted.to_string(), highlighted.is_match)
 }
 
-pub(crate) struct HighlightMatchesArgs<'a, 'b> {
+struct HighlightMatchesArgs<'a, 'b> {
     line: &'a str,
     query: &'b Regex,
     accurate: bool,

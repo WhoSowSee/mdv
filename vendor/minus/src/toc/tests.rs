@@ -246,13 +246,15 @@ fn hint_waits_for_keyboard_navigation_and_stays_dismissed_after_reload() {
     act(&mut state, InputEvent::ToggleToc);
     assert!(!state.toc_hint_visible());
     assert!(state.toc_visible());
-    assert!(state.toc_entries().is_empty());
+    assert_eq!(state.toc_entries(), []);
     assert_eq!(state.active_toc(), 0);
     act(&mut state, InputEvent::MoveToc(1));
 }
 
 #[test]
 fn sidebar_requests_new_layout_before_wrapping_and_preserves_source_anchor() {
+    use crate::minus_core::{CommandQueue, commands::Command, ev_handler::handle_event};
+    use std::sync::atomic::AtomicBool;
     use std::sync::{Arc, Mutex};
     let mut state = state();
     let widths = Arc::new(Mutex::new(Vec::new()));
@@ -279,8 +281,6 @@ fn sidebar_requests_new_layout_before_wrapping_and_preserves_source_anchor() {
     act(&mut state, InputEvent::ToggleToc);
     assert_eq!(state.upper_mark, 19);
     assert_eq!(*widths.lock().unwrap(), vec![44, 80]);
-    use crate::minus_core::{CommandQueue, commands::Command, ev_handler::handle_event};
-    use std::sync::atomic::AtomicBool;
     let mut queue = CommandQueue::new_zero();
     let exited = Arc::new(AtomicBool::new(false));
     handle_event(

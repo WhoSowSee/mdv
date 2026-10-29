@@ -1,12 +1,16 @@
-use crate::error::{CleanupError, MinusError, SetupError};
+#[cfg(not(test))]
+use crate::error::SetupError;
+use crate::error::{CleanupError, MinusError};
+#[cfg(not(test))]
+use crossterm::tty::IsTty;
 use crossterm::{
     cursor, event, execute, queue,
     terminal::{self, Clear},
-    tty::IsTty,
 };
 use std::io;
 
 // Keep setup and cleanup adjacent; cleanup must reverse this sequence.
+#[cfg(not(test))]
 pub fn setup(
     out: &mut io::Stdout,
     use_alternate_screen: bool,
