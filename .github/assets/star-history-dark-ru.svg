@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="820" height="420" viewBox="0 0 820 420" role="img" aria-labelledby="chart-title" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
 <title id="chart-title">WhoSowSee/mdv — История звёзд: 16</title>
 <rect width="820" height="420" rx="6" fill="#0d1117"/>
-<text x="76" y="30" fill="#e6edf3" font-size="17" font-weight="600">История звёзд</text>
+<text x="56" y="30" fill="#e6edf3" font-size="17" font-weight="600">История звёзд</text>
 <text x="792" y="30" text-anchor="end" fill="#8b949e" font-size="13">WhoSowSee/mdv &#183; Звёзд: 16</text>
 <line x1="76" y1="368.0" x2="792" y2="368.0" stroke="#21262d"/>
 <text x="68" y="372.0" text-anchor="end" fill="#8b949e" font-size="11">0</text>

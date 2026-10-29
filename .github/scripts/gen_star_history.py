@@ -116,7 +116,7 @@ def render_svg(repository, series, created_at, theme, language="en"):
         'font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">',
         f'<title id="chart-title">{escape(labels["title"].format(repository=repository, total=total))}</title>',
         f'<rect width="{width}" height="{height}" rx="6" fill="{background}"/>',
-        f'<text x="{left}" y="30" fill="{title}" font-size="17" '
+        f'<text x="{left - 20}" y="30" fill="{title}" font-size="17" '
         f'font-weight="600">{labels["heading"]}</text>',
         f'<text x="{right}" y="30" text-anchor="end" fill="{text}" font-size="13">'
         f'{escape(repository)} &#183; {labels["stars"].format(total=total)}</text>',
