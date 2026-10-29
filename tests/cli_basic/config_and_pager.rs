@@ -159,6 +159,29 @@ fn test_pager_mode_prints_to_stdout_when_output_is_not_a_terminal() {
 }
 
 #[test]
+fn builtin_pager_setup_errors_allow_retries() {
+    const CHILD_ENV: &str = "MDV_TEST_PAGER_SETUP_RETRY";
+    if std::env::var_os(CHILD_ENV).is_none() {
+        Command::from_std(std::process::Command::new(std::env::current_exe().unwrap()))
+            .arg("builtin_pager_setup_errors_allow_retries")
+            .env(CHILD_ENV, "1")
+            .timeout(Duration::from_secs(5))
+            .assert()
+            .success();
+        return;
+    }
+
+    for start in [minus::dynamic_paging, minus::dynamic_paging_in_place] {
+        assert!(matches!(
+            start(minus::Pager::new()),
+            Err(minus::MinusError::Setup(
+                minus::error::SetupError::InvalidTerminal
+            ))
+        ));
+    }
+}
+
+#[test]
 fn test_invalid_mdv_pager_is_rejected_before_cli_override() {
     let output = mdv_cmd()
         .env("MDV_PAGER", "")

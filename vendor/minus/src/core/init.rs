@@ -31,6 +31,14 @@ use parking_lot::Mutex;
 
 use super::{CommandQueue, RUNMODE, utils::display::draw_for_change};
 
+struct RunModeGuard;
+
+impl Drop for RunModeGuard {
+    fn drop(&mut self) {
+        *RUNMODE.lock() = RunMode::Uninitialized;
+    }
+}
+
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
 pub fn init_core(
@@ -55,6 +63,7 @@ pub fn init_core(
     #[allow(unused_mut)]
     let mut ps = crate::state::PagerState::generate_initial_state(&pager.rx)?;
     *super::RUNMODE.lock() = rm;
+    let _run_mode_guard = RunModeGuard;
     ps.run_hooks(Hook::PrePagerStart);
 
     #[cfg(all(feature = "static_output", not(test)))]
@@ -66,14 +75,12 @@ pub fn init_core(
                 &[ps.color_depth.adapt(&ps.screen.orig_text)],
                 None,
             )?;
-            *RUNMODE.lock() = RunMode::Uninitialized;
             return Ok(());
         }
         if ps.screen.formatted_lines_count() <= ps.rows && !ps.run_no_overflow {
             let rows = ps.render_rows_for_display(0, ps.screen.formatted_lines_count());
             write_raw_lines(&mut out, &rows, Some("\r"))?;
             ps.exit();
-            *RUNMODE.lock() = RunMode::Uninitialized;
             return Ok(());
         }
     }
@@ -157,7 +164,6 @@ pub fn init_core(
                 .unwrap_or_else(|payload| panic::resume_unwind(payload));
 
             if r1.is_err() || r2.is_err() {
-                *RUNMODE.lock() = RunMode::Uninitialized;
                 term::cleanup(&mut out, true, use_alternate_screen)?;
             }
 
@@ -198,9 +204,6 @@ fn start_reactor(
             if is_exited.load(Ordering::SeqCst) {
                 term::cleanup(&mut out_lock, true, use_alternate_screen)?;
                 ps.lock().run_hooks(Hook::PostPagerExit);
-                let mut rm = RUNMODE.lock();
-                *rm = RunMode::Uninitialized;
-                drop(rm);
                 break;
             }
 
@@ -233,11 +236,6 @@ fn start_reactor(
             if is_exited.load(Ordering::SeqCst) {
                 term::cleanup(&mut out_lock, true, use_alternate_screen)?;
                 ps.lock().run_hooks(Hook::PostPagerExit);
-
-                let mut rm = RUNMODE.lock();
-                *rm = RunMode::Uninitialized;
-                drop(rm);
-
                 break;
             }
             let next_command = if command_queue.is_empty() {
