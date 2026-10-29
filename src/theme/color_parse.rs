@@ -57,6 +57,12 @@ fn parse_hex_color(value: &str) -> Result<Color> {
     let hex = value.trim_start_matches('#');
 
     let (r, g, b) = match hex.len() {
+        3 | 6 if !hex.is_ascii() => {
+            bail!(
+                "Color '{}' must contain only ASCII hexadecimal digits.",
+                value
+            );
+        }
         6 => {
             let r = u8::from_str_radix(&hex[0..2], 16)
                 .map_err(|_| anyhow!("Failed to parse R component from '{}'.", value))?;

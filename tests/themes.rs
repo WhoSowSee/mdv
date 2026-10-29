@@ -164,3 +164,18 @@ fn callout_palette_is_independent_of_quote_and_other_element_colors() {
         "{overridden}"
     );
 }
+
+#[test]
+fn non_ascii_hex_colors_are_reported_as_errors() {
+    for color in ["#éa", "#💻ab"] {
+        mdv_cmd()
+            .args(["--no-config", "--custom-theme", &format!("link={color}")])
+            .write_stdin("# Heading\n")
+            .assert()
+            .code(1)
+            .stdout("")
+            .stderr(predicates::str::contains(
+                "must contain only ASCII hexadecimal digits",
+            ));
+    }
+}
