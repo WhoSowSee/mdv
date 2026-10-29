@@ -49,6 +49,11 @@ fn normalize_line_number_args(args: impl IntoIterator<Item = OsString>) -> Vec<O
     let mut normalized = Vec::new();
 
     while let Some(mut argument) = args.next() {
+        if argument == "--" {
+            normalized.push(argument);
+            normalized.extend(args);
+            break;
+        }
         let has_explicit_mode = args
             .peek()
             .and_then(|value| value.to_str())

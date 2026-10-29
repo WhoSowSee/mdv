@@ -46,7 +46,7 @@ orthogonal: it controls whether table columns are fitted, split into blocks, or 
 
 `--line-numbers` and `--code-line-numbers` share the same optional modes. Startup normalizes a
 bare flag to rendered numbering unless it is followed by an explicit mode, keeping the following
-Markdown path positional.
+Markdown path positional. The `--` separator and all following arguments pass through unchanged.
 
 `--front-matter` controls an exact `---`-delimited YAML property mapping whose opening delimiter is the first line. `hidden` is the default; `panel` uses the callout renderer; `table` uses the two-column table renderer; `plain` emits key/value lines; `inline` emits one wrapping paragraph; `blocks` uses definition-list layout; `code` uses the YAML code-block path; and `source` bypasses front matter recognition so the complete input follows ordinary Markdown parsing.
 
