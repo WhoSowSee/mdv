@@ -11,6 +11,7 @@
 
 [package]
 edition = "2024"
+rust-version = "1.95.0"
 name = "mdv-minus"
 version = "6.0.1"
 authors = ["Arijit Dey <arijid79@gmail.com>", "WhoSowSee"]
@@ -106,7 +107,7 @@ default-features = false
 features = ["bracketed-paste", "events", "windows"]
 
 [dependencies.parking_lot]
-version = "0.12.1"
+version = "0.13.0"
 
 [dependencies.regex]
 version = "^1"

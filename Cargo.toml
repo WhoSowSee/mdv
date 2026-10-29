@@ -10,7 +10,7 @@ license = "MIT"
 repository = "https://github.com/WhoSowSee/mdv"
 keywords = ["markdown", "terminal", "viewer", "cli"]
 categories = ["command-line-utilities", "text-processing"]
-rust-version = "1.89.0"
+rust-version = "1.95.0"
 
 exclude = [
     "docs/images",
@@ -34,7 +34,7 @@ path = "tests/integration.rs"
 
 [dependencies]
 clap = { version = "4.6.7", features = ["derive", "color"] }
-pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html", "simd"] }
+pulldown-cmark = { version = "0.13.5", default-features = false, features = ["html", "simd"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_yaml = "0.9.34"
 syntect = { version = "5.3.0", default-features = false, features = [
@@ -48,31 +48,31 @@ crossterm = { version = "0.29.0", default-features = false, features = [
     "events",
     "windows",
 ] }
-jiff = "0.2.37"
+jiff = "0.2.38"
 anyhow = "1.0.104"
-thiserror = "2.0.20"
+thiserror = "2.0.21"
 regex = "1.13.1"
 dirs = "7.0.0"
-notify = "8.2.0"
-unicode-width = "0.2.2"
+notify = "8.2.1"
+unicode-width = "0.2.3"
 unicode-segmentation = { version = "1.13.3", default-features = false }
 log = "0.4.34"
 env_logger = "0.11.11"
-comfy-table = { version = "8.0.0", default-features = false, features = ["custom_styling"] }
+comfy-table = { version = "8.0.1", default-features = false, features = ["custom_styling"] }
 minus = { package = "mdv-minus", path = "vendor/minus", version = "6.0.1", features = ["dynamic_output", "search"] }
-arboard = { version = "3.6.1", default-features = false }
-scraper = { version = "0.27.0", default-features = false }
-ego-tree = "0.11.0"
-ignore = "0.4.33"
+arboard = { version = "3.7.0", default-features = false }
+scraper = { version = "0.29.0", default-features = false }
+ego-tree = "0.11.1"
+ignore = "0.4.34"
 fuzzy-matcher = "0.3.7"
-unicode-normalization = "0.1.25"
+unicode-normalization = "0.1.26"
 
 [target.'cfg(windows)'.dependencies]
 winsplit = "0.1.0"
 
 [target.'cfg(not(windows))'.dependencies]
 shell-words = "1.1.1"
-libc = "0.2.189"
+libc = "0.2.191"
 
 [target.'cfg(unix)'.dependencies]
 terminfo = "0.9.0"

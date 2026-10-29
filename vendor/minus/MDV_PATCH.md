@@ -2,6 +2,8 @@
 
 `mdv-minus` 6.0.1 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name. The fork's version is independent of the upstream version.
 
+The fork requires Rust 1.95 or newer.
+
 Depend on the fork under that library name:
 
 ```toml

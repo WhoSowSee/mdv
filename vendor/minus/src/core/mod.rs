@@ -9,7 +9,7 @@ mod panic_hook;
 pub mod utils;
 
 // Tests must reset this process-global state between pager runs.
-pub static RUNMODE: parking_lot::Mutex<RunMode> = parking_lot::const_mutex(RunMode::Uninitialized);
+pub static RUNMODE: parking_lot::Mutex<RunMode> = parking_lot::Mutex::new(RunMode::Uninitialized);
 
 use commands::Command;
 

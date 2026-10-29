@@ -36,7 +36,7 @@
 >
 > ### Required dependencies:
 >
-> - Rust toolchain for installation from crates.io or source
+> - Rust 1.95 or newer for installation from crates.io or source
 > - Terminal with ANSI color support for the best experience
 
 ## Installation
