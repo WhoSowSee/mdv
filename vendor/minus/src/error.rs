@@ -31,19 +31,19 @@ pub enum SetupError {
     InvalidTerminal,
 
     #[error("Failed to switch to alternate screen")]
-    AlternateScreen(TermError),
+    AlternateScreen(#[source] TermError),
 
     #[error("Failed to enable raw mode")]
-    RawMode(TermError),
+    RawMode(#[source] TermError),
 
     #[error("Failed to hide the cursor")]
-    HideCursor(TermError),
+    HideCursor(#[source] TermError),
 
     #[error("Failed to enable mouse capture")]
-    EnableMouseCapture(TermError),
+    EnableMouseCapture(#[source] TermError),
 
     #[error("Couldn't determine the terminal size")]
-    TerminalSize(TermError),
+    TerminalSize(#[source] TermError),
 }
 
 /// Errors that can occur during clean up.
@@ -51,16 +51,16 @@ pub enum SetupError {
 #[allow(clippy::module_name_repetitions)]
 pub enum CleanupError {
     #[error("Failed to disable mouse capture")]
-    DisableMouseCapture(TermError),
+    DisableMouseCapture(#[source] TermError),
 
     #[error("Failed to show the cursor")]
-    ShowCursor(TermError),
+    ShowCursor(#[source] TermError),
 
     #[error("Failed to disable raw mode")]
-    DisableRawMode(TermError),
+    DisableRawMode(#[source] TermError),
 
     #[error("Failed to switch back to main screen")]
-    LeaveAlternateScreen(TermError),
+    LeaveAlternateScreen(#[source] TermError),
 }
 
 /// Errors that can happen during runtime.
@@ -77,7 +77,7 @@ pub enum MinusError {
     Draw(#[from] std::io::Error),
 
     #[error("Failed to handle terminal event")]
-    HandleEvent(TermError),
+    HandleEvent(#[source] TermError),
 
     #[error("Failed to do an operation on the cursor")]
     Cursor(#[from] TermError),
@@ -109,5 +109,47 @@ pub enum MinusError {
 impl From<regex::Error> for MinusError {
     fn from(e: regex::Error) -> Self {
         Self::SearchExpError(RegexError::from(e))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error;
+
+    #[test]
+    fn terminal_error_chains_preserve_the_system_cause() {
+        let failure = || {
+            TermError::from(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "access denied",
+            ))
+        };
+        let setup = [
+            SetupError::AlternateScreen,
+            SetupError::RawMode,
+            SetupError::HideCursor,
+            SetupError::EnableMouseCapture,
+            SetupError::TerminalSize,
+        ]
+        .map(|wrap| MinusError::Setup(wrap(failure())));
+        let cleanup = [
+            CleanupError::DisableMouseCapture,
+            CleanupError::ShowCursor,
+            CleanupError::DisableRawMode,
+            CleanupError::LeaveAlternateScreen,
+        ]
+        .map(|wrap| MinusError::Cleanup(wrap(failure())));
+        for error in setup
+            .into_iter()
+            .chain(cleanup)
+            .chain([MinusError::HandleEvent(failure())])
+        {
+            let mut cause: &dyn Error = &error;
+            while let Some(source) = cause.source() {
+                cause = source;
+            }
+            assert_eq!(cause.to_string(), "access denied", "{error:?}");
+        }
     }
 }

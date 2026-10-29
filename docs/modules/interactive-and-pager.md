@@ -139,6 +139,9 @@ paging returns, including errors and unwinding, so a failed setup allows retry.
 Search text positions and word indices use
 `usize`; only final cursor coordinates are bounded to the terminal dimensions.
 
+Terminal setup, cleanup, and event errors retain their underlying system cause
+through `std::error::Error::source()` for error-chain diagnostics.
+
 For the built-in backend, the document stores these values separately:
 
 - lazily prepared unnumbered, rendered-numbered, and source-numbered ANSI views with their source-line maps, or one static output for non-Markdown pager content;
