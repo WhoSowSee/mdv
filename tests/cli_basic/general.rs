@@ -133,6 +133,21 @@ fn test_basic_markdown_rendering() {
 }
 
 #[test]
+fn double_dash_preserves_line_number_flag_filenames() {
+    let directory = TempDir::new().unwrap();
+    for filename in ["--line-numbers", "-N", "--code-line-numbers", "-K"] {
+        fs::write(directory.path().join(filename), "Literal filename\n").unwrap();
+        mdv_cmd()
+            .current_dir(directory.path())
+            .args(["--no-config", "--color=never", "--", filename])
+            .assert()
+            .success()
+            .stdout("Literal filename\n")
+            .stderr("");
+    }
+}
+
+#[test]
 fn test_stdin_input() {
     let mut cmd = mdv_cmd();
     cmd.arg("-");
