@@ -1,14 +1,21 @@
 # mdv-minus
 
-`mdv-minus` 6.0.1 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name. The fork's version is independent of the upstream version.
+`mdv-minus` 6.1.0 is the mdv-maintained fork of `minus` 5.7.2 from the upstream `v5.7.2` tag. It remains available under the original MIT/Apache-2.0 license, and its library target intentionally keeps the `minus` name. The fork's version is independent of the upstream version.
 
 The fork requires Rust 1.95 or newer.
 
 Depend on the fork under that library name:
 
 ```toml
-minus = { package = "mdv-minus", version = "6.0.1" }
+minus = { package = "mdv-minus", version = "6.1.0" }
 ```
+
+## Changes in 6.1.0
+
+- Fixed horizontal scrolling of Unicode text and ANSI style handling.
+- Fixed pager retries after initialization errors and preserved system error causes.
+- Fixed unused-code warnings in test builds and Clippy warnings across all targets and features.
+- Updated dependencies and raised the minimum supported Rust version to 1.95.
 
 ## Changes in 6.0.1
 
