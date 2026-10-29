@@ -204,6 +204,12 @@ The outline uses the terminal's default background and the interactive browser's
 
 At 72 columns or wider the panel reserves up to 36 columns and the pager reformats content within the remaining width. Narrow terminals use an overlay. Selection coordinates account for the document offset; full and selection redraws restore the panel. Search and source-line prompts close it before taking input. Reload preserves visibility and replaces entries atomically, clearing obsolete outline positions. The panel uses the same output-styling and color-depth policy as the pager, with a visible active marker even without colors.
 
+[`screen/horizontal.rs`](../../vendor/minus/src/screen/horizontal.rs) calculates
+horizontal scrolling in terminal columns and preserves ANSI/OSC sequences and
+the fixed line-number gutter. A left edge inside a grapheme advances to the next
+grapheme boundary; a grapheme that cannot fit at the right edge is omitted.
+Display, selection, and search use the same cropped text and skipped-character count.
+
 ## Watcher
 
 `ActiveWatcher` watches the parent directory but compares the canonical or normalized event path with one target. `Modify` and `Create` events use a 100 ms debounce interval. Dropping the watcher sets a stop flag and joins its thread.

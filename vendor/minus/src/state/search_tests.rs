@@ -1,6 +1,6 @@
 #![allow(clippy::trivial_regex)]
 
-use super::{PagerState, Selection};
+use super::{PagerState, Selection, strip_ansi};
 
 #[test]
 fn backgrounds_follow_foreground_colors() {
@@ -38,7 +38,7 @@ fn only_current_occurrence_uses_current_background() {
     const OTHER_BACKGROUND: &str = "\x1b[48;2;43;53;75m";
 
     let mut pager = PagerState::new().unwrap();
-    pager.screen.orig_text = format!("{FOREGROUND}match and match\x1b[0m\n");
+    pager.screen.orig_text = format!("{FOREGROUND}é match and match\x1b[0m\n");
     pager.search_state.search_term = Some(regex::Regex::new("match").unwrap());
     pager.reformat_display().unwrap();
 
@@ -54,6 +54,16 @@ fn only_current_occurrence_uses_current_background() {
     assert_eq!(second.matches(CURRENT_BACKGROUND).count(), 1);
     assert_eq!(second.matches(OTHER_BACKGROUND).count(), 1);
     assert!(second.find(OTHER_BACKGROUND) < second.find(CURRENT_BACKGROUND));
+
+    pager.cols = 5;
+    pager.left_mark = 12;
+    pager.screen.line_wrapping = false;
+    pager.reformat_display().unwrap();
+    pager.search_state.search_mark = 1;
+    let scrolled = pager.render_rows_for_display(0, 1).remove(0);
+    assert_eq!(strip_ansi(&scrolled), "match");
+    assert_eq!(scrolled.matches(CURRENT_BACKGROUND).count(), 1);
+    assert!(!scrolled.contains(OTHER_BACKGROUND));
 }
 
 #[test]

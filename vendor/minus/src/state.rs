@@ -12,10 +12,7 @@ use crate::{
     input::{self, HashedEventRegister},
     minus_core::{
         self, CommandQueue,
-        utils::{
-            LinesRowMap,
-            display::{self, AppendStyle},
-        },
+        utils::{LinesRowMap, display::AppendStyle},
     },
     screen::{self, Screen},
 };

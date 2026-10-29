@@ -78,11 +78,9 @@ pub fn handle_event(
             command_queue.push_back(Command::Io(IoCommand::SetUpperMark(um)));
         }
         Command::UserInput(InputEvent::UpdateLeftMark(lm)) if !p.screen.line_wrapping => {
-            let max_scrollable = p
-                .screen
-                .get_max_line_length()
-                .saturating_add(p.line_number_padding());
-            if lm.saturating_add(p.cols) > max_scrollable && lm > p.left_mark {
+            let available = p.content_columns().saturating_sub(p.line_number_padding());
+            let max_left = p.screen.get_max_line_length().saturating_sub(available);
+            if lm > max_left && lm > p.left_mark {
                 return Ok(());
             }
             p.left_mark = lm;

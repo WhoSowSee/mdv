@@ -722,41 +722,29 @@ mod draw_for_change_tests {
     }
 }
 
-#[cfg(test)]
-mod horizontal_scroll_bounds_tests {
-    use super::super::get_horizontal_scroll_bounds;
-
-    #[test]
-    fn basic_bounds_no_line_numbers() {
-        let line = "0123456789";
-        let bounds = get_horizontal_scroll_bounds(line, 5, 2, false, 10);
-        assert_eq!(bounds, (0, 2, 7));
-    }
-
-    #[test]
-    fn basic_bounds_with_line_numbers() {
-        let line = format!(
-            "{:5}{}10.{} 0123456789",
-            "",
-            crossterm::style::Attribute::Bold,
-            crossterm::style::Attribute::Reset
+#[test]
+fn horizontal_scroll_uses_visible_columns() {
+    for (line, columns, start, expected) in [
+        ("naïve", 3, 0, "naï"),
+        ("naïve", 4, 0, "naïv"),
+        ("e\u{301}x", 1, 0, "e\u{301}"),
+        ("👩‍💻x", 2, 0, "👩‍💻"),
+        ("a界b", 1, 2, "b"),
+        ("界b", 1, 0, ""),
+        ("\x1b[31ma界b\x1b[0m", 2, 1, "\x1b[31m界\x1b[0m"),
+        (
+            "\x1b]8;;https://example.com\x07a界b\x1b]8;;\x07",
+            2,
+            1,
+            "\x1b]8;;https://example.com\x07界\x1b]8;;\x07",
+        ),
+    ] {
+        let mut output = Vec::new();
+        super::write_lines_in_horizontal_scroll(&mut output, &[line], columns, start, false, 1)
+            .unwrap();
+        assert_eq!(
+            String::from_utf8(output).unwrap(),
+            format!("\r{expected}\n")
         );
-
-        let bounds = get_horizontal_scroll_bounds(&line, 5, 2, true, 10);
-        assert_eq!(bounds, (17, 19, 19));
-    }
-
-    #[test]
-    fn non_ascii_bounds() {
-        let line = "├── 0123456789";
-        let bounds = get_horizontal_scroll_bounds(line, 5, 1, false, 10);
-        assert_eq!(bounds, (0, 3, 6));
-    }
-
-    #[test]
-    fn overflow_bounds() {
-        let line = "0123";
-        let bounds = get_horizontal_scroll_bounds(line, 10, 0, false, 10);
-        assert_eq!(bounds, (0, 0, 4));
     }
 }

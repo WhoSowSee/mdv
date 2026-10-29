@@ -297,7 +297,7 @@ pub fn write_lines<L: Display + AsRef<str>>(
     }
 }
 
-pub fn write_lines_in_horizontal_scroll<L: Display + AsRef<str>>(
+pub fn write_lines_in_horizontal_scroll<L: AsRef<str>>(
     out: &mut impl Write,
     lines: &[L],
     cols: usize,
@@ -305,79 +305,17 @@ pub fn write_lines_in_horizontal_scroll<L: Display + AsRef<str>>(
     line_numbers: bool,
     line_count: usize,
 ) -> crate::Result {
-    for line in lines {
-        let line_str = line.as_ref();
-        let (first_end, second_start, second_end) =
-            get_horizontal_scroll_bounds(line_str, cols, start, line_numbers, line_count);
-
-        if start < line.as_ref().len() {
-            if line_numbers {
-                writeln!(
-                    out,
-                    "\r{}{}",
-                    &line_str[0..first_end],
-                    &line_str[second_start..second_end]
-                )?;
-            } else {
-                writeln!(out, "\r{}", &line_str[second_start..second_end])?;
-            }
-        } else {
-            writeln!(out, "\r")?;
-        }
-    }
-    Ok(())
-}
-
-#[must_use]
-pub fn get_horizontal_scroll_bounds(
-    line: &str,
-    cols: usize,
-    start: usize,
-    line_numbers: bool,
-    line_count: usize,
-) -> (usize, usize, usize) {
-    let line_number_ascii_seq_len = if line_numbers { 8 } else { 0 };
-    let line_number_padding = if line_numbers {
+    let prefix_width = if line_numbers {
         minus_core::utils::digits(line_count) + LineNumbers::EXTRA_PADDING + 2
     } else {
         0
     };
-    let shifted_start = if line_numbers {
-        start + line_number_padding + line_number_ascii_seq_len
-    } else {
-        start
-    };
-
-    let end = if line_numbers {
-        shifted_start
-            + cols
-                .saturating_sub(line_number_padding)
-                .min(line.len().saturating_sub(shifted_start))
-    } else {
-        shifted_start + cols.min(line.len().saturating_sub(shifted_start))
-    };
-
-    // Byte offsets advance to the next UTF-8 boundary before slicing.
-    if line_numbers {
-        let first_end = (line_number_padding + line_number_ascii_seq_len).min(line.len());
-        let second_start = shifted_start.min(line.len());
-        let second_end = end.min(line.len());
-
-        let mut i = second_start;
-        while i < second_end && !line.is_char_boundary(i) {
-            i += 1;
-        }
-        (first_end, i, second_end)
-    } else {
-        let resolved_start = shifted_start.min(line.len());
-        let resolved_end = end.min(line.len());
-
-        let mut i = resolved_start;
-        while i < resolved_end && !line.is_char_boundary(i) {
-            i += 1;
-        }
-        (0, i, resolved_end)
+    for line in lines {
+        let (view, _) =
+            crate::screen::horizontal_scroll_view(line.as_ref(), cols, start, prefix_width);
+        writeln!(out, "\r{view}")?;
     }
+    Ok(())
 }
 
 pub fn write_raw_lines<L: Display>(
