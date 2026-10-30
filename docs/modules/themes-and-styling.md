@@ -2,38 +2,11 @@
 
 The theme subsystem separates the semantic role of a Markdown element from terminal escape sequences. A renderer selects `ThemeElement`; `theme::create_style` then creates `AnsiStyle` from the active theme and inline-style overrides.
 
-## Theme files
-
-| File | Responsibility |
-|---|---|
-| [src/theme.rs](../../src/theme.rs) | Public re-exports and module facade. |
-| [src/theme/types.rs](../../src/theme/types.rs) | `Theme`, `SyntaxTheme`, and inline colors. |
-| [src/theme/pager.rs](../../src/theme/pager.rs) | Pager footer, selection, and search colors plus transparency. |
-| [src/theme/sections.rs](../../src/theme/sections.rs) | Typed color groups for inline foreground/background pairs, numbers, tables, math, metadata, labels, lists, and tasks. |
-| [src/theme/colors.rs](../../src/theme/colors.rs) | Independent `Color` type and conversion to `crossterm::Color`. |
-| [src/theme/element.rs](../../src/theme/element.rs) | `ThemeElement` roles for text, headings, links, tables, and other semantics. |
-| [src/theme/builtin.rs](../../src/theme/builtin.rs) | Embedded YAML themes and lazy `BUILTIN_THEMES`. |
-| [src/theme/manager.rs](../../src/theme/manager.rs) | Theme lookup, insertion, file loading, and luminosity sorting. |
-| [src/theme/color_parse.rs](../../src/theme/color_parse.rs) | Named, hex, RGB, and ANSI-index parsing plus luminosity. |
-| [src/theme/overrides.rs](../../src/theme/overrides.rs) | `key=value` overrides for terminal and syntax themes. |
-| [src/theme/overrides/merging.rs](../../src/theme/overrides/merging.rs) | Merge color assignments by source across both theme-override settings. |
-| [src/theme/priority.rs](../../src/theme/priority.rs) | Color-source priorities and syntax override origins. |
-| [src/theme/syntax.rs](../../src/theme/syntax.rs) | Shared syntax field parsing and color access. |
-| [src/theme/display.rs](../../src/theme/display.rs) | Theme listings and `ThemeElement` → `AnsiStyle` conversion. |
-
 ## Embedded themes
 
-`builtin.rs` embeds YAML with `include_str!` for:
-
-- `terminal`;
-- `monokai`;
-- `solarized-dark`;
-- `nord`;
-- `tokyonight`;
-- `kanagawa`;
-- `gruvbox`;
-- `material-ocean`;
-- `catppuccin`.
+Embedded themes are loaded from [assets/config/themes/](../../assets/config/themes/).
+`terminal` defines the default palette. See the [file index](file-index.md#srctheme-and-srcuser_themes)
+for loading, schema, and override modules.
 
 Every bundled theme explicitly lists the full schema, including all optional colors and all five attributes for each of the six `inline_style` elements. The meaning of null colors and attributes is described in [Inheritance and null](#inheritance-and-null).
 
@@ -56,24 +29,13 @@ A complete theme contains:
 
 ## User themes
 
-| File | Responsibility |
-|---|---|
-| [src/user_themes.rs](../../src/user_themes.rs) | Paths under `themes/*.yaml` and the public loader. |
-| [src/user_themes/schema.rs](../../src/user_themes/schema.rs) | Partial root schema and inheritance. |
-| [src/user_themes/groups.rs](../../src/user_themes/groups.rs) | Partial nested color groups and inheritance. |
-| [src/user_themes/inline.rs](../../src/user_themes/inline.rs) | Partial inline foreground/background groups and embedded validation. |
-| [src/user_themes/pager.rs](../../src/user_themes/pager.rs) | Pager palette inheritance and explicit color clearing. |
-| [src/user_themes/colors.rs](../../src/user_themes/colors.rs) | Color parsing and explicit-null handling. |
-| [src/user_themes/complete.rs](../../src/user_themes/complete.rs) | Strict embedded-theme validation and construction. |
-| [src/user_themes/loading.rs](../../src/user_themes/loading.rs) | File sorting, `extends`, loading, and diagnosable skipping of invalid files. |
-
 User themes are read from `<config_dir>/themes/*.yaml|*.yml` in lexical order. `extends` may refer to an embedded theme or an already loaded user theme. Unspecified fields inherit from the base; without `extends`, the base is `Theme::default()`.
 
 Unlike the partial user schema, an embedded theme must define every required color, its description, syntax palette, and status-bar transparency flag.
 
 Errors while enumerating individual directory entries propagate with directory
 context; they are distinct from the documented warning-and-skip policy for an
-invalid theme file. Theme-name getters return borrowed `&str` values.
+invalid theme file.
 
 ## Theme field reference
 
@@ -133,7 +95,7 @@ Color assignments are combined in source order: selected theme, configuration fi
 
 Terminal and code themes may be different. Inline decorations apply over semantic defaults and the selected theme in the same configuration → preset → CLI order.
 
-In `config.yaml` and preset files, `custom_theme` accepts nested YAML mappings or `section:field=value` strings; root fields use `key=value`. `custom_code_theme` accepts syntax paths, bare syntax keys, or YAML mappings. Mapping values may use the same named, hexadecimal, RGB, ANSI, boolean, and optional `null` forms as the corresponding string overrides. This changes only deserialization; application order remains the same.
+In `config.yaml` and preset files, `custom_theme` accepts nested YAML mappings or `section:field=value` strings; root fields use `key=value`. `custom_code_theme` accepts syntax paths, bare syntax keys, or YAML mappings. Mapping values may use the same named, hexadecimal, RGB, ANSI, boolean, and optional `null` forms as the corresponding string overrides. String and mapping forms follow the same application order.
 
 ## Color formats
 
@@ -151,8 +113,7 @@ Optional color overrides also accept `null` or `none`; theme files use YAML `nul
 
 [src/terminal.rs](../../src/terminal.rs) owns `OutputStyle`, `AnsiStyle`, and color
 helpers. Runtime consumers import `terminal::OutputStyle`; `cli::OutputStyle`
-remains a public re-export for existing library callers. `ColorMode` remains a
-CLI/configuration value and resolves to the terminal-owned runtime policy.
+remains a public re-export for existing library callers. `ColorMode` stores the CLI/configuration setting and resolves to this runtime policy.
 
 `AnsiStyle` accumulates foreground, background, bold, italic, underline, and strikethrough. `apply` emits one coherent escape sequence when the resolved `OutputStyle` is enabled and returns the original text when it is disabled.
 
@@ -188,14 +149,6 @@ conventional ANSI palette because the actual terminal palette is user-defined.
 
 ## Inline styles
 
-[src/inline_style.rs](../../src/inline_style.rs) defines:
-
-- `InlineStyleKind`: emphasis, strong, combined strong-emphasis, code, strikethrough, and highlight;
-- `InlineStyle`: resolved foreground, background, and attributes;
-- `InlineStyleOverride`: a partial override;
-- `InlineStyleOverrides`: the user map;
-- `InlineStyleSet`: the fully resolved theme set.
-
 Each `inline_style` element accepts `backticks`, `bold`, `italic`, `underline`, and `strikethrough`. Colors remain in the matching theme section.
 
 | Element | Markdown | Default decoration |
@@ -211,15 +164,9 @@ Partial overrides merge per element and property. Duplicate properties in a stri
 
 ## Callouts, lists, checkboxes, and code labels
 
-Visual extensions are parsed before rendering:
-
-- [src/callout.rs](../../src/callout.rs) - custom callout icon and color;
-- [src/list_marker.rs](../../src/list_marker.rs) - pretty, uniform, and per-level list markers;
-- [src/checkbox.rs](../../src/checkbox.rs) - standard square and circle icons;
-- [src/checkbox_override.rs](../../src/checkbox_override.rs) - custom checkbox states;
-- [src/custom_code_block.rs](../../src/custom_code_block.rs) - code label, icon, and aliases.
-
-The main configuration and presets may express custom callouts, code blocks, checkbox states, and list levels as nested YAML mappings. CLI arguments retain their compact string syntax. These settings merge by entry and property across the configuration file, preset, and CLI; omitted values remain intact, explicit null clears an override, and an explicitly supplied aliases list replaces its earlier list.
+Custom callout, code-label, checkbox, and list settings are compiled into `Config` before
+rendering. Their [structured forms and merge rules](cli-configuration.md#structured-yaml-settings)
+apply to YAML and the corresponding CLI strings.
 
 Callout palettes are independent of ordinary quotes and other element colors. Color selection compares source priority before specificity. At equal source priority, per-type `custom_callout` colors win over `callout.label`, then `callout.palette`. Checkbox-state and list-level colors likewise win ties with the corresponding theme colors. An icon-only override retains the source priority of its inherited color. Clearing `callout.label` removes only the common override; type colors still apply. Frames use their own border fields. Code titles and icons share `code_block.label` in every layout.
 
@@ -249,6 +196,6 @@ See [Structured YAML settings](cli-configuration.md#structured-yaml-settings) fo
 | `search.text`, `search.background` | Ordinary search matches. |
 | `search_current.text`, `search_current.background` | Current match, including incremental search. |
 
-All colors inherit per field; see [Inheritance and null](#inheritance-and-null) for clearing and terminal defaults. Footer foregrounds preserve the previous RGB defaults in all bundled themes. Color-depth limits and `--color never` apply to pager styles.
+All colors inherit per field; see [Inheritance and null](#inheritance-and-null) for clearing and terminal defaults. Color-depth limits and `--color never` apply to pager styles.
 
 `pager.transparent` replaces the root `pager_status_bar_transparent` field; the root field and its former CLI alias are rejected. `PagerDocument` carries the resolved palette through document, help, reflow, and editor sessions. The vendored pager applies the highlight palette to final rows and incremental previews before color-depth conversion.

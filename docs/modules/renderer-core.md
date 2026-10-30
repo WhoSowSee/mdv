@@ -1,166 +1,86 @@
 # Renderer Facade and Event Core
 
-Rendering is split between an outer document facade and one stateful `EventRenderer`.
+`TerminalRenderer` prepares document-wide resources. `EventRenderer` owns the mutable state
+of one terminal-rendering pass. See the [file index](file-index.md#srcrenderer) for handlers
+and supporting modules.
 
-## Root files
+## TerminalRenderer
 
-| File | Responsibility |
-|---|---|
-| [src/renderer/mod.rs](../../src/renderer/mod.rs) | Declares the terminal renderer, event handlers, line numbering, and syntax resources. |
-| [src/renderer/terminal.rs](../../src/renderer/terminal.rs) | `TerminalRenderer`: themes, syntax set, code theme, and event-stream ANSI/HTML entry points. |
-| [src/renderer/terminal/pager.rs](../../src/renderer/terminal/pager.rs) | Builds unnumbered, rendered-numbered, and source-numbered pager variants with source-line maps. |
-| [src/renderer/front_matter.rs](../../src/renderer/front_matter.rs) | Front matter panel, table, normalized text, blocks, YAML source, and HTML event formatting. |
-| [src/renderer/line_numbers.rs](../../src/renderer/line_numbers.rs) | Source and rendered gutters plus removal of internal line markers. |
-| [src/renderer/syntax_set.rs](../../src/renderer/syntax_set.rs) | Cached embedded `SyntaxSet` with optional user `.sublime-syntax` files. |
-| [src/renderer/syntax_theme.rs](../../src/renderer/syntax_theme.rs) | Adapts a `syntect` code theme to the terminal palette. |
-| [src/renderer/event/mod.rs](../../src/renderer/event/mod.rs) | Shared imports and registration of all event-handler groups. |
+The facade owns a `Config` snapshot, terminal theme, shared `SyntaxSet`, code-highlight theme,
+and resolved `OutputStyle`. Construction loads theme and syntax resources and applies the
+[source-ordered overrides](themes-and-styling.md#application-order).
 
-## `TerminalRenderer`
-
-`TerminalRenderer` owns the prepared resources for one render configuration:
-
-- a cloned `Config`;
-- the selected terminal `Theme`;
-- an `Arc<SyntaxSet>`;
-- a `CodeHighlightTheme`;
-- a resolved `terminal::OutputStyle`, separate from the serialized `Config.color` mode; `cli::OutputStyle` remains a compatible public re-export.
-
-### Construction
-
-`TerminalRenderer::new(config, output_style)`:
-
-1. builds a `ThemeManager` from embedded and user themes;
-2. selects the terminal theme;
-3. applies source-ordered theme color assignments and inline-style overrides;
-4. loads the syntax set, including `syntaxes_dir`;
-5. selects or builds the code theme.
-
-Construction does not inspect process stdout or color environment variables.
-Library callers explicitly select `OutputStyle::Enabled`/`Disabled` or resolve
-`config.color` for their own destination. Nested renderers and table layouts
-inherit the same policy. Disabled styling prevents generation of SGR and OSC 8;
-it is not implemented by stripping all ANSI from the completed document.
+Library callers supply the output policy explicitly. Renderers do not inspect process
+stdout or color environment variables. Disabled styling prevents SGR and OSC 8 generation;
+structural terminal controls remain the responsibility of interactive adapters.
 
 ### Rendering
 
-`render(events)` chooses one of three paths:
+A pass resolves available width once and shares it with layout helpers and nested renderers.
+Document margins and line-number gutters reduce content width. The left margin is added to
+nonempty output rows; the right margin reserves space without appending padding.
 
-- no line numbers: call `render_events` directly;
-- rendered line numbers: render first, then number visual rows;
-- source line numbers: decode markers emitted by the Markdown pipeline.
-
-Pager rendering supplies a factory for unnumbered, rendered-numbered, and source-numbered output with an independent source-line map for each layout. The pager prepares only the selected variant for its first screen and caches other variants on first use. Every variant passes through the same renderer, theme, gutter-width, margin, wrapping, and separator logic as ordinary CLI output. The configured line-number target selects the initial pager variant.
-
-Only the left margin is added to output lines at the end. The right margin reduces available width but does not append spaces.
-
-Each event-rendering pass resolves terminal width once into a local configuration
-snapshot. Layout helpers and nested renderers reuse that width, avoiding repeated
-Unix `tput` subprocesses when no TTY is available. A subsequent render resolves
-the width again, including monitor refreshes; pager passes retain their explicit
-layout width.
-
-`to_html(events)` is a separate export backend and does not treat ANSI output as an intermediate representation.
-
-`render_document(parsed_document)` and `to_html_document(parsed_document)` convert front matter into synthetic callout, table, paragraph, definition-list, code-block, or HTML events before using the existing event-only entry points. Source mode bypasses front matter extraction entirely. The properties callout uses dedicated title, key, value, and border theme roles and defers wrapping until the frame width is known. Generated property rows have an empty source-number gutter; rendered numbering includes them as ordinary visual rows.
-
-In reverse mode, front matter follows the reversed Markdown body so it remains at the visible end of long terminal output.
-
-## `EventRenderer`
-
-[src/renderer/event/core.rs](../../src/renderer/event/core.rs) defines the only stateful renderer for the event stream. Its fields are grouped by subsystem:
-
-| Group | Example state |
+| Numbering | Layout |
 |---|---|
-| Output and layout | `output`, `current_indent`, and heading/content indentation. |
-| Blockquotes and callouts | quote depth, `callout_stack`, and pending marker buffers; colors come from the theme's independent palette. |
-| Lists and definitions | `list_stack`, prepared spacing queues, and the definition-list stack. |
-| Tables and HTML | optional `TableState` and pending HTML-block buffer. |
-| Links | current link text, paragraph/document references, and counters. |
-| Code | code-block buffer, language, plaintext depth, and captured references. |
-| Math | shared `Rc<MathDiagnostics>` for the current document render. |
-| Footnotes | definitions, order, occurrences, scan buffer, and suppression flags. |
-| Inline formatting | semantic formatting stack and active backtick style. |
-| Paragraph spacing | content flags, blank-line streak, and soft-break suppression. |
+| Off | Render content without a document gutter. |
+| Rendered | Number visual rows after wrapping. |
+| Source | Decode the Markdown pipeline's source markers; continuation and generated rows may have blank gutters. |
 
-Fields use `pub(super)` in `event/core.rs`, so sibling handlers within
-`renderer::event` can share state while the outer facade cannot read its fields.
-The type, constructor, render entry point, and `max_code_line_number_width()`
-accessor are scoped to `renderer`. The accessor supplies the gutter measurement
-required by the facade's iterative layout without exposing mutable state.
+The pager uses the same rendering rules for its
+[cached views](interactive-and-pager.md#pagerdocument). Monitor refreshes resolve width again;
+pager reflow supplies an explicit layout width.
 
-## `event/core` files
+`render_document` and `to_html_document` accept front matter alongside body events. Property
+views use the configured callout, table, paragraph, definition-list, or code layout with
+independent theme roles. Generated property rows participate in rendered numbering but have
+no source number. In reverse mode, front matter follows the reversed body. Source mode
+bypasses front matter extraction.
 
-| File | Responsibility |
+HTML export consumes parsed events directly, without going through ANSI output.
+
+## EventRenderer
+
+Element handlers share one renderer's state within `renderer::event`. The facade can obtain
+code-gutter measurements through a renderer-scoped accessor without accessing mutable fields.
+
+| State | Responsibility |
 |---|---|
-| [core/state.rs](../../src/renderer/event/core/state.rs) | `ListState`, `TableState`, and callout, footnote, link, and HTML state types. |
-| [core/constructor.rs](../../src/renderer/event/core/constructor.rs) | Complete initialization in `EventRenderer::new`. |
-| [core/render.rs](../../src/renderer/event/core/render.rs) | Document lifecycle, gutter measurement, and smart-indent pre-analysis. |
-| [core/process.rs](../../src/renderer/event/core/process.rs) | Dispatch one `Event` and process source markers. |
-| [core/output.rs](../../src/renderer/event/core/output.rs) | Replace output spacing while rebasing positions held by open blocks. |
-| [core/start_tags.rs](../../src/renderer/event/core/start_tags.rs) | Route `Event::Start(Tag)` to specialized handlers. |
-| [core/end_tags.rs](../../src/renderer/event/core/end_tags.rs) | Route `Event::End(TagEnd)` and hard breaks. |
-| [core/end_paragraph.rs](../../src/renderer/event/core/end_paragraph.rs) | Finish paragraphs, references, attached footnotes, and spacing. |
-| [core/end_blockquote.rs](../../src/renderer/event/core/end_blockquote.rs) | Close a quote or callout and restore indentation state. |
-| [core/end_lists.rs](../../src/renderer/event/core/end_lists.rs) | Close lists and items while reconciling nesting. |
-| [core/callouts.rs](../../src/renderer/event/core/callouts.rs) | Resolve callout type and its declared palette entry. |
+| Output and indentation | Position tracking, container prefixes, heading scope, and spacing. |
+| Formatting | Active semantic styles and inline backticks. |
+| Containers | Lists, quotes/callouts, tables, HTML buffers, and definition descriptions. |
+| Links and footnotes | Definitions, counters, ownership, and deferred output. |
+| Code | Active block content, language, recursive rendering depth, and gutters. |
+| Math diagnostics | Warning deduplication shared by layouts of one document. |
+
+Rendering borrows the event slice and its text payloads. Only content that outlives a pass,
+such as buffered HTML and footnote bodies, becomes owned. Nested renders share the relevant
+reference stores, styling policy, and math diagnostics.
 
 ## Document lifecycle
 
-`core/subsystems.rs` groups `LinkState`, `CodeState`, and `FootnoteState` under
-the same event renderer. Active links and fenced code blocks use `Option`;
-link destinations distinguish direct URLs, scoped references, and callout
-labels. Temporary string keys such as `current_N` are no longer used.
+Before dispatch, the renderer extracts footnote definitions, prepares block-spacing boundaries,
+and calculates smart heading indentation when enabled. Specialized handlers process the
+remaining event stream in order.
 
-Internal rendering borrows the original event slice and its text payloads.
-Repeated gutter/layout passes do not clone the full owned event stream. Only
-events that outlive the current pass, such as captured HTML details and footnote
-bodies, become owned.
+Closing a container completes the references and attached footnotes it owns. At document end,
+the renderer closes pending inline formatting, flushes buffered HTML and heading placeholders,
+and emits document references and endnotes. Mathematical layout metadata is removed after
+all containers finish, and output ends with one newline.
 
-`render_events` runs these operations in order:
+New element behavior belongs in its specialized handler. Add finalization at the owning
+end-tag boundary or document boundary; emitting a deferred block early can move it outside
+its callout, table, or code container.
 
-1. Extract footnote definitions from the primary event stream.
-2. Prepare block-spacing queues.
-3. For `heading_layout=level` with smart indentation, build the heading-level map.
-4. Call `process_event` for every event.
-5. Close unfinished inline backticks.
-6. Flush buffered HTML.
-7. Complete a pending empty-heading placeholder.
-8. Complete attached footnotes.
-9. Render document link references.
-10. Render endnote footnotes.
-11. Remove mathematical layout metadata after all containers finish.
-12. Normalize the trailing newline to one.
+## Line-number markers
 
-Ordering matters. A link inside code, a table, or a callout may defer its reference block until the containing element closes.
+Source markers occupy zero display columns, survive styling and wrapping, and distinguish
+number and separator colors. At line start, container prefixes and indentation precede the
+marker. Final output removes the internal encoding.
 
-## Dispatch
+## Layout invariants
 
-`process_event` contains routing rather than element implementations. It sends:
-
-- start and end tags to `start_tags.rs` and `end_tags.rs`;
-- text to `text/handling.rs`;
-- inline and block code to `code/*`;
-- HTML to `html/*` or the literal HTML handler;
-- links, images, math, footnotes, task markers, and rules to their dedicated modules.
-
-Add new behavior to a specialized handler and keep the core dispatcher compact.
-
-## Line numbers
-
-`renderer/line_numbers.rs` uses an invisible internal marker encoding. Markers must:
-
-- occupy zero display columns;
-- survive ANSI styling and wrapping;
-- distinguish the number and separator so themes can color them independently;
-- be removed by `strip_internal_markers` before final output.
-
-At the start of a content line, emit the active indentation and container prefix before its source marker. The invisible marker must not suppress heading or list indentation or blockquote guides in pager and source-numbered output.
-
-## Extension invariants
-
-- Every event is processed exactly once.
-- A handler must not instantiate another `EventRenderer` to bypass current state.
-- Deferred blocks finish at the boundary owned by their paragraph, table, callout, or document.
-- All width operations use `display_width`, never `str::len`.
-- Finalization for new state belongs in `render_events` or the corresponding end-tag handler.
-- Removing or replacing existing spacing must rebase the saved byte positions of open paragraphs, quotes, headings, lists, and definition descriptions before those positions are reused.
+- Measure visible text in terminal columns with Unicode-aware width helpers.
+- Preserve the ANSI/OSC state of wrapped content without counting escape bytes as columns.
+- Rebase saved output positions when spacing changes inside open blocks.
+- Complete deferred output within its owning scope.
+- Keep source-line metadata out of user-visible terminal and HTML output.

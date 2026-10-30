@@ -1,98 +1,64 @@
 # Architecture
 
-`mdv` is a single Rust package with a binary entry point and a reusable library API. It transforms Markdown into an owned event stream and then into ANSI-compatible terminal text or an HTML document.
+mdv is a Rust package with a CLI entry point and a library API. It parses Markdown into
+owned events and renders them as terminal text or an HTML document.
 
-## Layers
+## Component boundaries
 
-| Layer | Primary files | Responsibility |
-|---|---|---|
-| Startup and routing | `src/main.rs`, `src/lib.rs` | Parse arguments, select a mode, read input, and deliver output. |
-| User configuration | `src/cli.rs`, `src/config.rs`, `src/preset.rs` | Define the CLI contract, load YAML and presets, and normalize the effective `Config`. |
-| Markdown pipeline | `src/markdown.rs`, `src/markdown/*` | Preprocess source, run `pulldown-cmark`, and normalize events. |
-| Terminal facade | `src/renderer/terminal.rs` | Initialize themes and syntaxes, render line numbers and margins, and export HTML. |
-| Event renderer | `src/renderer/event/*` | Process the Markdown event stream with element-specific stateful handlers. |
-| Low-level presentation | `src/theme/*`, `src/terminal.rs`, `src/table/*`, `src/utils.rs` | Colors, ANSI/OSC sequences, display width, wrapping, and table borders. |
-| Interactive output | `src/interactive/*`, `src/pager/*`, `src/monitor.rs` | Browse documents, page output, refresh files, and integrate with an editor. |
+- The application selects input, execution mode, and output destination.
+- Configuration assembly resolves CLI, YAML, presets, and environment values into `Config`.
+- `MarkdownProcessor` extracts front matter, normalizes syntax, and preserves source positions.
+- `TerminalRenderer` owns themes and syntax resources. Its `EventRenderer` manages the state
+  of one terminal-rendering pass.
+- The browser, pager, and monitor reuse document rendering through callbacks.
 
-## Primary data flow
+See the [file index](file-index.md) for implementation locations and
+[application routing](application.md#mode-selection) for execution modes.
+
+## Document flow
 
 ```mermaid
 flowchart LR
-    A["main.rs: Clap"] --> B["lib.rs: run"]
-    B --> C["Config::from_cli"]
-    C --> D["MarkdownProcessor::parse_document"]
-    D --> E["ParsedDocument"]
-    E --> F["TerminalRenderer"]
-    F --> G["EventRenderer"]
-    G --> H["ANSI output"]
-    F --> I["HTML output"]
-    H --> J["stdout"]
-    H --> K["pager"]
-    H --> L["interactive browser"]
+    A["File, stdin, or browser selection"] --> B["MarkdownProcessor"]
+    C["Config"] --> B
+    B --> D["ParsedDocument"]
+    D --> E["TerminalRenderer"]
+    C --> E
+    E --> F["EventRenderer"]
+    F --> G["Terminal text"]
+    E --> H["HTML document"]
+    G --> I["stdout or pager"]
 ```
 
-1. `main` initializes logging and creates both `Cli` and `ArgMatches`.
-2. `run` handles service modes such as help, configuration initialization, and theme or preset information.
-3. `Config::from_cli` produces one validated settings snapshot.
-4. `MarkdownProcessor::parse_document` returns owned front matter plus `Vec<Event<'static>>`; renderers do not borrow the source string.
-5. `TerminalRenderer` chooses themes and syntaxes, creates `EventRenderer`, and applies line numbers and margins.
-6. The result is printed, passed to the pager, or used by interactive mode.
-
-## Mode routing
-
-`lib::run` chooses exactly one primary execution path:
-
-- help and configuration generation finish before Markdown input is read;
-- `--preset-info` and `--theme-info` without a file print metadata and return;
-- `--interactive`, or an implicitly selected interactive target, enters `interactive::run`;
-- an ordinary file or standard input goes through `render_document`;
-- `--pager[=<COMMAND>]` with terminal output passes a `PagerDocument` to the selected built-in or external backend through `pager::page`;
-- `--monitor` with a file and no active pager owns one initial snapshot and later refreshes through the shared document pipeline, reusing its prepared renderer.
+`ParsedDocument` owns front matter and `Vec<Event<'static>>`, allowing input storage to be
+released independently. Rendering passes borrow this event stream. The terminal and HTML
+backends consume parsed content independently; HTML export does not parse ANSI output.
 
 ## State ownership
 
-| State | Owner | Reason |
+| State | Owner | Contract |
 |---|---|---|
-| Effective user settings | `Config` | Downstream modules must not parse CLI arguments or YAML again. |
-| Markdown preprocessing | `MarkdownProcessor` | Front matter extraction and all source transformations happen before terminal output is constructed. |
-| Current document state | `EventRenderer` | Lists, links, footnotes, tables, and callouts depend on event order. |
-| Theme and syntax set | `TerminalRenderer` | Document-wide resources are selected once and shared by event handlers. |
-| Built-in pager document | `RwLock<PagerDocument>` | The watcher and input classifier update one coherent snapshot. |
-| Browser state | `interactive::browser::BrowserState` | The UI owns filtering, selection, pages, and discovery errors. |
+| Effective settings | `Config` | Renderers receive validated settings without re-reading CLI or YAML. |
+| Source transformations | `MarkdownProcessor` | Every transformation preserves the source-line map. |
+| Themes and syntaxes | `TerminalRenderer` | Resources are reused across layouts and refreshes. |
+| Open Markdown elements | `EventRenderer` | Nested handlers share one rendering pass and its reference scopes. |
+| Paged document and cached views | `RwLock<PagerDocument>` | Refresh installs source, output, and navigation data as one document. |
+| Browser selection and discovery | `BrowserState` | Results can arrive while filtering and navigation remain available. |
 
-## Key types
+## Rendering contracts
 
-| Type | File | Contract |
-|---|---|---|
-| `Cli` | `src/cli.rs` | Stable Clap surface and raw argument values. |
-| `Config` | `src/config.rs` | Runtime settings after all sources and overrides are applied. |
-| `OutputStyle` | `src/terminal.rs` | Resolved terminal styling and palette; the original `cli::OutputStyle` path remains a public re-export. |
-| `MarkdownProcessor` | `src/markdown.rs` | Converts `&str` into a `ParsedDocument` with optional YAML front matter and normalized events. |
-| `ParsedDocument` | `src/markdown.rs` | Owns document metadata and the Markdown body event stream. |
-| `TerminalRenderer` | `src/renderer/terminal.rs` | Facade for rendering one document to ANSI or HTML. |
-| `EventRenderer<'a>` | `src/renderer/event/core.rs` | Stateful machine that consumes the Markdown event stream. |
-| `Theme` | `src/theme/types.rs` | Complete semantic palette for Markdown and syntax highlighting. |
-| `TableRenderer` | `src/table.rs` | Low-level table rendering with Unicode-aware width calculations. |
-| `PagerDocument` | `src/pager/document.rs` | Rendered output, source text, title, and status-bar transparency. |
+Visible widths exclude ANSI and OSC sequences and use Unicode display columns. Source-line
+markers occupy no columns and are removed before final output. Table layout receives plain
+cell content; link styling is restored after geometry is calculated.
 
-## Architectural invariants
+Event handlers share renderer-owned state within `renderer::event`. Deferred references,
+footnotes, and buffered containers finish at their owning block or document boundary.
+Changes to output spacing must keep the saved positions of open blocks valid.
 
-- Renderers receive a normalized `Config`; event handlers never read the environment or YAML.
-- Handlers under `renderer/event/` mutate one `EventRenderer` and do not create competing pipelines.
-- `EventRenderer` fields are visible only inside `renderer::event`; the outer facade obtains code-gutter width through a renderer-scoped method.
-- Ordinary and monitored documents share front matter handling, backend selection, and leading-BOM normalization.
-- Visible width is calculated after ANSI and OSC metadata is removed; byte length is never treated as terminal width.
-- Source-line markers are internal and must disappear before output reaches the user.
-- Table links restore ANSI and OSC sequences after `comfy-table` layout, because escape sequences would corrupt width calculation.
-- Themes and user overrides become semantic `ThemeElement` values rather than positional string modifications.
-- Pager refresh updates both rendered output and source; copying without a selection uses the original Markdown.
-- Errors propagate through `anyhow::Result` or `MdvError`; hidden fallback branches are not part of the design.
+Ordinary output, monitor refreshes, and pager views use the same document pipeline.
+The [pager](interactive-and-pager.md#selection-and-copying) copies selected rendered text;
+without a selection, copy commands leave the clipboard unchanged.
 
-## Subsystem dependencies
-
-- `markdown` depends on `Config`, but not on the renderer.
-- `renderer` depends on `Config`, `theme`, `table`, `terminal`, `utils`, and specialized parsers.
-- `theme` uses `user_themes` for embedded and user YAML; the renderer builds the final `ThemeManager`.
-- `interactive` and `pager` reuse the library render path through callbacks instead of duplicating the Markdown pipeline.
-- `monitor` uses the prepared-renderer entry point of that same document pipeline.
-- Integration tests exercise the public binary contract; unit tests protect local module invariants.
+Configuration, source normalization, and rendering remain separate responsibilities:
+`markdown` depends on `Config`, while `renderer` also uses themes, tables, terminal styles,
+and width utilities. Interactive adapters own terminal sessions and file watching.

@@ -1,188 +1,98 @@
 # Testing
 
-The project combines unit tests beside implementation modules with one integration harness that runs the compiled binary through `assert_cmd`.
+Unit tests protect local contracts. The integration harness in
+[tests/integration.rs](../../tests/integration.rs) runs the compiled CLI through
+`assert_cmd`. Use the [file index](file-index.md#integration-tests) to find topic suites.
 
 ## Commands
 
-[rust-toolchain.toml](../../rust-toolchain.toml) selects the stable toolchain with
-`rustfmt` and `clippy`. [rustfmt.toml](../../rustfmt.toml) sets the language and
-style editions to 2024, a width of 100, and field initialization shorthand.
-Both mdv and `vendor/minus` use this formatting configuration.
+Run the standard checks from the repository root:
 
-```text
+```sh
 cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
-cargo test --no-fail-fast
-cargo build --release
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo build --release --locked
 ```
 
-The [CI workflow](../../.github/workflows/ci.yml) runs these checks for pull
-requests and pushes to `main`, with mdv and pager tests on Linux, Windows, and
-macOS. The release build runs on Linux. See [CI details](ci-release.md#pull-request-and-branch-checks)
-for helper tests, caching, and job responsibilities.
+The vendored pager is a separate package, outside the workspace. Its checks are:
 
-The root [justfile](../../justfile) provides optional shortcuts with `just` 1.56.0 or newer. Run `just` or `just --list` to list recipes. `just check` runs the formatting check, Clippy with `-D warnings`, `cargo test`, and the release build in order, stopping on failure. `just check-pager` checks formatting, Clippy, and library tests for `vendor/minus` with `dynamic_output,search`; the fork is a path dependency rather than a workspace member. `just check-all` adds justfile syntax/formatting checks and the Debian validator tests to both Rust check groups. Packaging tests require Python 3.11+ (`python` on Windows, `python3` on Unix).
+```sh
+cargo fmt --manifest-path vendor/minus/Cargo.toml --all -- --check
+cargo clippy --manifest-path vendor/minus/Cargo.toml --locked --lib --features dynamic_output,search -- -D warnings
+cargo test --manifest-path vendor/minus/Cargo.toml --locked --lib --features dynamic_output,search
+```
 
-`just fmt` formats the justfile and both crates. `just fmt-just` and `just check-just` format and check the justfile independently; `just fmt-check`, `just lint`, `just test`, and `just build` run individual mdv checks. `just test config::tests -- --nocapture` forwards a test filter and harness options to Cargo. Recipes require PowerShell 7.4+ (`pwsh.exe` on `PATH`) on Windows, use `sh` on Unix, and work from repository subdirectories. Windows uses `-CommandWithArgs`; parameterized recipes preserve argument boundaries, empty arguments, embedded quotes, the `-` stdin argument, and Cargo exit codes.
+For changes affecting pager features or examples, also run:
 
-`just run` forwards application arguments to `cargo run`; `just run-dev` uses the optimized, incremental `dev-opt` profile. `just demo compact` renders `docs/examples/sample.md` with that profile and the selected preset. `just demo-monitor` watches the same file until Ctrl+C. Both demo recipes default to `showcase`.
+```sh
+cargo clippy --manifest-path vendor/minus/Cargo.toml --locked --all-targets --all-features -- -D warnings
+cargo test --manifest-path vendor/minus/Cargo.toml --locked --all-features
+```
 
-`just test-packaging` runs `.github/scripts/test_verify_deb.py`. `just check-package` runs `cargo publish --dry-run --locked` separately from the local check groups; it requires a clean checkout, registry access, and a published pager fork with the APIs used by mdv. See [release verification](ci-release.md#release-notes-and-verification).
+Run release and packaging helper tests with Python 3.11 or newer:
 
-RPM and Arch package validation has regressions in
-`.github/scripts/test_linux_packages.py`: manifest-derived versions, source
-checksums, architecture and dependency mismatches, stale staging directories,
-glibc compatibility, license contents, and unexpected payload files. Run all
-helper checks with `python -m unittest discover -s .github/scripts -p 'test_*.py'`;
-release CI runs the same suite. Native package installation checks run in Fedora
-44 and Arch containers in the platform workflow.
+```sh
+python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+```
 
-Use `cargo test <name> -- --nocapture` to inspect a specific test's standard output.
+On Windows, use `python` and make Git Bash available as `bash` on `PATH` for the shell
+release-note tests. The [CI workflow](../../.github/workflows/ci.yml) tests Rust code on
+Linux, Windows, and macOS; [package installation checks](ci-release.md#rpm-and-arch-linux-packages)
+run in Linux containers.
 
-## Rendering performance
+The optional [justfile](../../justfile) requires just 1.56.0 or newer. `just check` runs
+the root Rust checks, `just check-pager` checks the pager, and `just check-all` adds
+justfile and Debian-validator checks. `just fmt` formats both crates and the justfile.
+Windows recipes require PowerShell 7.4 or newer (`pwsh.exe` on `PATH`).
 
-For CLI comparisons, save the reference executable before editing, check successful exit codes, and compare raw stdout bytes under the same configuration, terminal environment, width, and color policy. Alternate reference/candidate runs with no concurrent builds; report medians and distinguish end-to-end times from the in-process benchmark. Include both the original document and larger inputs to detect repeated work that grows faster than document size.
+`just check-package` runs `cargo publish --dry-run --locked`. It needs a clean checkout,
+registry access, and a published pager version matching the root requirement; see
+[release verification](ci-release.md#release-notes-and-verification).
 
-## Unit tests
+## Test isolation
 
-After large source files were split, large inline `mod tests` blocks moved into companion modules. The primary groups are:
+Use [tests/support.rs](../../tests/support.rs) to construct CLI processes. It sets an empty
+configuration directory, removes ambient color and pager overrides, and supplies a stable
+True Color terminal environment. Tests that need user configuration replace the directory
+explicitly. Request `--color always` for ANSI/OSC assertions and `--color never` for plain
+output; captured non-TTY stdout exercises the default color policy.
 
-| Implementation | Tests |
-|---|---|
-| `src/cli.rs` | `src/cli/tests.rs` and `src/cli/tests/{contract,parsing,styles}.rs` |
-| `src/config.rs` | `src/config/tests.rs` and `src/config/tests/{loading,environment,structured,custom_overrides,writing}.rs` |
-| `src/markdown.rs` | `src/markdown/tests.rs`, with additional tests in `raw_html.rs` and `source_lines.rs` |
-| `src/table.rs` | `src/table/tests.rs` and `src/table/tests/{rendering,styles,links}.rs` |
-| `src/theme.rs` | `src/theme/tests.rs` |
-| `src/user_themes.rs` | `src/user_themes/tests.rs` |
-| `src/pager.rs` | `src/pager/tests.rs`, `footer/tests.rs`, and `help/tests.rs` |
-| `src/interactive/browser.rs` | `src/interactive/browser/tests.rs`, plus screen tests in `src/interactive/screen/tests.rs` |
-| `src/editor.rs` | `src/editor/tests.rs` |
-| `src/list_marker.rs` | `src/list_marker/tests.rs` |
-| `src/utils.rs` | `src/utils/tests.rs` |
-| Renderer | `renderer/terminal/tests.rs`, `event/code/tests.rs`, `syntax_theme/tests.rs`, and local modules |
-
-Unit tests cover parsers, semantic defaults, width helpers, state transitions, and internal invariants that are difficult to observe through the CLI alone.
-
-All structured configuration tests acquire the existing environment mutex
-before invoking the environment-dependent loader. Cold pager layout/numbering
-regressions coordinate render workers with channels and check document-lock
-availability during rendering. Subprocess tests cover HTML depth errors and
-an early stdout close. The fork isolates panic-hook regression tests in a child
-process and covers search positions beyond 65,535 characters.
-
-## Integration harness
-
-[tests/integration.rs](../../tests/integration.rs) explicitly includes topic modules because `Cargo.toml` defines one `integration` target and disables automatic creation of separate test crates.
-
-| Group | Primary coverage |
-|---|---|
-| `tests/cli_basic*` | Help/version, input modes, embedded HTML, themes, presets, configuration, pager routing, and monitor snapshots. |
-| `tests/cli_basic/terminal_width.rs` | Unix terminal-size query counts remain bounded as documents grow, with child processes detached from the controlling terminal. |
-| `tests/color.rs` | Color settings reaching the renderer, loader diagnostics, pipe/redirection, HTML, and fast commands. |
-| `tests/themes.rs` | Nested theme/config/CLI parity, combined label colors, independent list/task colors, and detached callout palettes. |
-| `tests/themes/precedence.rs` | Theme/config/preset/CLI color priority across both override parameters, preservation of partial values, and explicit clearing of preset settings. |
-| `tests/themes/source_priority.rs` | Source priority across common and individual colors, selected code palettes, and preservation of unmodified syntax colors. |
-| `tests/themes/backgrounds.rs` | Omitted, cleared, and reset optional colors through CLI theme loading, uncolored inherited borders, and rejection of the removed global border. |
-| `tests/callouts*` | Syntax, custom styles, wrapping, frames, headings, tables, and links. |
-| `tests/checkboxes*` | Shapes, custom states/colors, lists, and nested indentation. |
-| `tests/code_blocks*` | Styles, labels/icons, line-number gutters, blockquotes, spacing, wrapping, and tab-indented fences. |
-| `tests/layout*` | Headings, blockquotes, margins, blank lines, reflow, and block spacing. |
-| `tests/links_tables*` | Link styles, truncation, references, smart indentation, and code-block interaction. |
-| `tests/footnotes*` | Attached/endnote modes, ordering, placement, and invalid or missing definitions. |
-| `tests/front_matter.rs` | Strict first-line YAML recognition, display modes, HTML, line numbers, and reverse mode. |
-| `tests/definition_lists.rs` | Markdown definition-list rendering. |
-| `tests/html_table_content.rs` | Block and inline content inside HTML table cells. |
-| `tests/inline_styles.rs` | Semantic attributes and theme overrides. |
-| `tests/line_numbers.rs` | Source/rendered targets and gutters. |
-| `tests/math.rs` | Inline, display, and fenced math. |
-| `tests/media.rs` | Image, video, and audio markers. |
-| `tests/syntax_palette.rs` | Code-theme palette and ANSI output. |
-| `tests/visibility.rs` | Empty elements, comments, and visibility options. |
-
-## Nested integration modules
-
-Large topic files act as facades with explicit `#[path = "..."]` declarations:
-
-- `tests/cli_basic/`: general behavior, HTML content/semantics/lists, rendering options, configuration, and pager;
-- `tests/cli_basic/html_comments.rs`: comment visibility with `--render-html`, multiline and nested comments, container-like text inside comments, source numbering, wrapping, and unclosed comments;
-- `tests/callouts/formatting/`: wrapping, rules, and headings;
-- `tests/callouts/dialects.rs`: all seven additional dialect families, nested blocks, metadata, structured bodies, title options, source numbering, and HTML export; reusable input lives in `tests/files/callout-dialects.md`;
-- `tests/callouts/regressions.rs`: quoted-list preservation, bounded completion with unmatched openers, multiline inline-code protection, and literal hashes in callout titles;
-- `tests/callouts/boundaries.rs`: code fences in list items, Quarto heading indentation, and parent delimiters around legacy bang blocks;
-- `tests/callouts/tables_links/`: tables, references, and inline links;
-- `tests/checkboxes/`: basic behavior, colors, custom states, and list layout;
-- `tests/code_blocks/tab_indent/`: fences, deep indentation, and paragraphs;
-- `tests/layout/spacing/`: backslashes, paragraphs, block spacing, and inline HTML;
-- `tests/links_tables/basic/` and `references/`: core table/link behavior and reference scopes.
-- `tests/math/contexts.rs`: table headers, source mapping, callout labels and nested frames, HTML scripts, and impossible-width timeout regressions.
-
-The callout dialect and regression modules share the CLI rendering helper in `tests/callouts.rs`. Syntax and boundary invariants use one terminal layout or HTML structure; layout-dependent options retain their style matrix. Source-number mapping is covered through the CLI after the full preprocessing pipeline.
-
-Shared helpers remain in the facade module and are imported by child tests through `use super::*`. Theme tests share temporary-file setup and command execution. Related source-priority and clearing cases use tables within focused tests; parameter syntax, inheritance, and rendered output remain covered separately.
-
-Integration modules import the shared `mdv_cmd` constructor directly instead of
-declaring identical forwarding functions. Color tests retain boundary regressions
-and reuse render/error helpers; parser failures use valid Markdown input so an
-unrelated missing file cannot satisfy the assertion.
-
-Color value/flag parsing is covered in CLI unit tests, and exact mode precedence
-in configuration unit tests. End-to-end tests cover their application to actual
-stdout and startup diagnostics rather than repeating those matrices. The mixed
-document output matrix also verifies that unrelated color environment variables
-have no effect. Pager unit regressions keep prompt, search-preview, selection,
-and source-navigation formatting paths covered independently.
-
-`tests/support.rs` supplies both assert-command and streaming-process constructors
-with the same environment. It isolates `MDV_COLOR` and uses an empty temporary configuration
-directory for child processes. Tests requesting real configuration override that
-directory explicitly. The common helper does not force a color mode: ANSI/OSC
-tests request `--color always`, plain-output tests request `--color never`, and
-default behavior is verified with captured non-TTY stdout. Unit environment
-tests use the existing mutex and restoring guards.
-
-`tests/cli_basic/monitor.rs` waits for watcher readiness before updating an
-in-place temporary file. One terminal/HTML matrix checks explicit initial and
-refreshed output, including front matter, BOM handling, and a single initial
-rendering. A separate regression checks reuse of a prepared theme after its source
-file is removed. Refresh counts depend on native filesystem events; assertions
-cover document content instead. Process and stdout-reader cleanup runs on assertion
-failures as well as successful tests.
-
-The shared CLI helper supplies a deterministic True Color terminal environment.
-Color-depth coverage checks configuration priority, explicit detection snapshots,
-palette/SGR invariants, and mixed-document output. Browser and pager tests check
-color limits after their own dynamic highlighting.
+Unit tests that change environment variables use the shared mutex and restoring guards.
+Tests of process-wide panic hooks run in child processes. Monitor tests wait for watcher
+readiness before changing a file and clean up child processes on assertion failure.
+Assertions compare document content, since native filesystem event counts can vary.
 
 ## Fixtures
 
-- `tests/files/` contains reusable Markdown fixtures.
-- `tests/files/math-layout.md` covers extended delimiters and structured math across ordinary text, callouts, and tables.
-- `tests/files/color-mode.md` compares visible mixed Markdown/HTML layout across color policies.
-- `tests/math.rs` verifies all three math containers and their independence from code-block options; theme tests cover the dedicated content and border colors.
-- A small, scenario-specific document is created with `NamedTempFile` directly in its test.
-- `docs/examples/config.yaml` is the reference for the complete configuration schema.
-- Root `test_*.md` files support manual visual checks and do not replace assertions.
+Put reusable Markdown inputs in `tests/files/` with lowercase, hyphenated names. Create
+one-off inputs inside the test. [docs/examples/config.yaml](../examples/config.yaml) is
+the compatibility reference for settings; its bundled copy must stay synchronized.
 
 ## Minimum checks by change
 
-| Change | Minimum validation |
+| Change | Coverage |
 |---|---|
-| CLI or configuration | Unit parsing/merge tests and the corresponding `cli_basic` scenario. |
-| Markdown preprocessing | Unit event test plus an end-to-end rendering case. |
-| Wrapping or layout | Unicode width, ANSI-stripped width, and a narrow-terminal case. |
-| Links or tables | Plain text, ANSI colors, OSC 8, and fragmented wrapping. |
-| Themes | YAML parsing, overrides, and all `--color` modes. |
-| Pager or interactive mode | Pure key/action helpers; manually exercise terminal integration when necessary. |
+| CLI or configuration | Parsing, precedence, validation, and an end-to-end command. |
+| Markdown normalization | Transformed events, source positions, protected code/HTML, and rendered output. |
+| Wrapping or layout | Unicode graphemes, visible widths, ANSI/OSC boundaries, and narrow terminals. |
+| Links, tables, or footnotes | Reference ownership, numbering, nesting, and final placement. |
+| Themes or styling | YAML inheritance, overrides, palette limits, and all color modes. |
+| Pager or browser | State transitions, selection, refresh, and terminal handoff when affected. |
+| Packaging | Helper tests and native installation checks for each affected format. |
+| Documentation | Relative links, examples, and consistency with implementation and templates. |
 
-Pager cache tests count requested renders across initial snapshots, navigation, cycling, refresh, and width changes. Deferred-navigation state transitions and failure handling also run in the vendored pager with `cargo test --manifest-path vendor/minus/Cargo.toml --lib --features dynamic_output,search`.
+Test observable behavior and failure cases. Check errors using otherwise valid input so an
+unrelated failure cannot satisfy the assertion. Keep syntax parsing and precedence matrices
+in unit tests; integration tests verify their effect at the CLI boundary.
 
-Warmup tests check the five-second deadline from the first-screen signal, cancellation on exit, reset after refresh or width changes, unchanged visible output, and cache sharing with user requests. Channels coordinate active renders without timing assumptions; tests expire the internal deadline after validating it to avoid waiting five seconds per scenario.
+Pager cache tests cover first use, width and numbering changes, refresh invalidation, and
+reuse of active renders. Coordinate background work through channels. Test warmup deadlines
+without waiting for the real five-second delay.
 
-## Test invariants
+## Rendering performance
 
-- A test asserts a user-visible effect or a subtle internal contract rather than duplicating implementation.
-- ANSI assertions distinguish visible content from escape sequences.
-- TUI assertions distinguish decorative styling from necessary terminal-control sequences.
-- Temporary environment variables are protected by the shared mutex and restored by a guard.
-- Add a regression to an existing topic group unless a separate module materially improves navigation.
+Compare reference and candidate binaries with the same input, width, configuration, terminal
+environment, and color policy. Verify exit status and raw stdout before timing. Alternate
+runs without concurrent builds, report medians, and distinguish whole-process time from
+in-process measurements. Include larger inputs to detect growth with document size.

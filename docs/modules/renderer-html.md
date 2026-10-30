@@ -1,44 +1,18 @@
 # Renderer Embedded HTML
 
-This module serves `--render-html`: HTML fragments embedded in Markdown become terminal content. It is not the backend for `--html`, which creates an HTML document through the separate `TerminalRenderer::to_html` path.
+`--render-html` converts HTML fragments embedded in Markdown into terminal content.
+`--html` exports an HTML document through `TerminalRenderer::to_html`.
+The [file index](file-index.md#srcrenderereventhtml) lists HTML handlers.
 
 ## Model
 
-[src/renderer/event/html.rs](../../src/renderer/event/html.rs) uses `scraper` and `ego-tree` for DOM-like traversal and defines:
-
-- `HtmlContext`, including alignment, whitespace preservation, highlighting, script position, and list depth;
-- `HtmlAlignment`;
-- ordered and unordered list-marker state;
-- shared helper imports.
-
-Every HTML node passes through `render_html_node`; element dispatch selects the specialized renderer for its tag.
+[src/renderer/event/html.rs](../../src/renderer/event/html.rs) uses `scraper` and `ego-tree`
+to traverse HTML. `HtmlContext` carries alignment, whitespace preservation, inline styling,
+script position, list state, and DOM depth into specialized tag handlers.
 
 `HtmlContext` carries the DOM depth through every traversal path. Terminal HTML
 rendering rejects nesting beyond 64 elements with a regular error before another
 recursive call, including lists, details, definition lists, and table cells.
-
-## Module files
-
-| File | Responsibility |
-|---|---|
-| [html/dispatch.rs](../../src/renderer/event/html/dispatch.rs) | Traverse nodes, elements, and children, classify void elements, and dispatch by tag. |
-| [html/blocks.rs](../../src/renderer/event/html/blocks.rs) | Common block, heading, link, code, abbreviation, literal, `pre`, and `textarea` elements, including preformatted-text normalization. |
-| [html/text.rs](../../src/renderer/event/html/text.rs) | Text collapsing, separators, and `<br>`. |
-| [html/styles.rs](../../src/renderer/event/html/styles.rs) | Alignment and CSS-like inline styles mapped to `ThemeElement`. |
-| [html/layout.rs](../../src/renderer/event/html/layout.rs) | Block boundaries, indentation/alignment spans, and table-cell line context. |
-| [html/spacing.rs](../../src/renderer/event/html/spacing.rs) | Map HTML blocks to shared spacing settings and preserve trailing spacing when leaving containers. |
-| [html/buffer.rs](../../src/renderer/event/html/buffer.rs) | Accumulate HTML containers that include Markdown events. |
-| [html/buffer_helpers.rs](../../src/renderer/event/html/buffer_helpers.rs) | Buffered-tag lists and block/inline-container classification. |
-| [html/blockquotes.rs](../../src/renderer/event/html/blockquotes.rs) | Render `<blockquote>` through the shared quote context. |
-| [html/definitions.rs](../../src/renderer/event/html/definitions.rs) | Render `<dl>`, `<dt>`, `<dd>`, `<figure>`, and `<figcaption>`. |
-| [html/lists.rs](../../src/renderer/event/html/lists.rs) | Render `<ol>`, `<ul>`, `<li>`, standalone `<summary>`, and styled block lines. |
-| [html/details.rs](../../src/renderer/event/html/details.rs) | Buffer nested `<details>` and render expanded compact trees. |
-| [html/list_helpers.rs](../../src/renderer/event/html/list_helpers.rs) | Checkbox detection plus `start`, `reversed`, `value`, alpha, and Roman markers. |
-| [html/forms.rs](../../src/renderer/event/html/forms.rs) | Static terminal representation of input, button, and select controls. |
-| [html/media.rs](../../src/renderer/event/html/media.rs) | Extract sources and labels and render markers and lines for image, video, audio, and source elements. |
-| [html/tables.rs](../../src/renderer/event/html/tables.rs) | HTML table sections, rows, and cells. |
-| [html/table_cells.rs](../../src/renderer/event/html/table_cells.rs) | Nested block elements inside table cells. |
-| [html/table_helpers.rs](../../src/renderer/event/html/table_helpers.rs) | Alignment attributes/styles and rectangular-table normalization. |
 
 ## Buffered containers
 
@@ -63,6 +37,10 @@ HTML `p`, `pre`, `blockquote`, `dl`, and top-level lists use paragraph, code-blo
 - `<sup>` and `<sub>` use `math::convert_script` when a Unicode representation exists.
 - `<mark>` enables highlight context.
 
+Raw `code`, `pre`, and `textarea` content is combined before Markdown smart punctuation,
+preserving quotes, dashes, and ellipses. Preformatted blocks use the shared code layouts;
+`pre` language hints can come from `language-*`/`lang-*` classes or language attributes.
+
 ## Lists
 
 Ordered lists support:
@@ -83,6 +61,9 @@ An unordered marker is selected from tag attributes or style. An HTML checkbox i
 An HTML table is first normalized to a rectangular structure. `thead`, `tbody`, `tfoot`, `tr`, `th`, and `td` populate the same `TableState` consumed by the shared `event/tables` renderer.
 
 Cells support headings, blockquotes, figures, preformatted blocks, and horizontal rules. The internal `HTML_TABLE_HORIZONTAL_RULE` marker carries a rule through the intermediate string model and expands before final table rendering using the same `horizontal_rule_style` and theme color as rules outside tables.
+
+Block-level nesting in cells requires HTML and `--render-html`. GFM Markdown tables accept
+inline content; Markdown syntax alone does not create nested block lists or tables in cells.
 
 ## Media and forms
 

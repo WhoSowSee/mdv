@@ -2,17 +2,9 @@
 
 The `markdown` module separates optional YAML front matter and converts the Markdown body into a stable stream of `pulldown_cmark::Event<'static>`. It neither chooses colors nor constructs terminal output.
 
-## Facade
-
-[src/markdown.rs](../../src/markdown.rs) contains:
-
-- `MarkdownProcessor { config, options }`;
-- `ParsedDocument { events, front_matter }` and `FrontMatter { raw, properties }`;
-- the internal `BLANK_LINE_MARKER`;
-- declarations for specialized submodules;
-- re-exports for code-language detection.
-
-The public contract remains `MarkdownProcessor::new(config)` and `parse(markdown)`. Application rendering uses the crate-internal `parse_document(markdown)` to retain front matter alongside body events.
+`MarkdownProcessor::new(config).parse(markdown)` returns body events. Application rendering
+uses `parse_document` to retain front matter alongside those events in `ParsedDocument`.
+See the [file index](file-index.md#srcmarkdown) for preprocessing modules.
 
 ## `parse` stages
 
@@ -47,38 +39,18 @@ flowchart LR
 
 Most transformations go through `source_lines::apply_transform`. Admonition conversion carries source positions directly through nested blocks, removed metadata, and generated separators; it does not infer those changes from a text diff.
 
-## Module files
-
-| File | Responsibility |
-|---|---|
-| [src/markdown/parsing.rs](../../src/markdown/parsing.rs) | Constructor, front matter extraction, `parse`, preprocessing, and `--from` filtering. |
-| [src/markdown/admonitions.rs](../../src/markdown/admonitions.rs) | Normalize callout dialects, retain source positions, and restore per-block presentation events. |
-| [src/markdown/admonitions/syntax.rs](../../src/markdown/admonitions/syntax.rs) | Dialect headers, fence terminators, and type/title parsing. |
-| [src/markdown/admonitions/attributes.rs](../../src/markdown/admonitions/attributes.rs) | Balanced brackets and quoted attribute values. |
-| [src/markdown/admonitions/scanner.rs](../../src/markdown/admonitions/scanner.rs) | Block conversion, indentation, and source positions. |
-| [src/markdown/admonitions/boundaries.rs](../../src/markdown/admonitions/boundaries.rs) | Precomputed block endpoints, including unmatched openers. |
-| [src/markdown/admonitions/protected.rs](../../src/markdown/admonitions/protected.rs) | Protected code/HTML lines, including multiline inline code. |
-| [src/markdown/admonitions/containers.rs](../../src/markdown/admonitions/containers.rs) | Callouts inside Markdown blockquotes and list items. |
-| [src/markdown/admonitions/metadata.rs](../../src/markdown/admonitions/metadata.rs) | Directive options, Quarto headings, and internal presentation events. |
-| [src/markdown/blockquotes.rs](../../src/markdown/blockquotes.rs) | Parse `>` prefixes, nesting, and explicit blank lines inside blockquotes. |
-| [src/markdown/fences.rs](../../src/markdown/fences.rs) | Find fence markers and normalize tab-indented fences without losing inner indentation. |
-| [src/markdown/heading_attributes.rs](../../src/markdown/heading_attributes.rs) | Preserve literal braced heading text while retaining explicit heading attributes. |
-| [src/markdown/math.rs](../../src/markdown/math.rs) | Recognize extended TeX delimiters outside protected Markdown ranges. |
-| [src/markdown/math/dollars.rs](../../src/markdown/math/dollars.rs) | Protect table separators inside dollar-delimited formulas. |
-| [src/markdown/math/protected.rs](../../src/markdown/math/protected.rs) | Build protected ranges from Markdown offset events. |
-| [src/markdown/task_lists.rs](../../src/markdown/task_lists.rs) | Terminate task-list blocks and normalize alternative checkbox spelling. |
-| [src/markdown/structure.rs](../../src/markdown/structure.rs) | Recognize list, callout, and setext structural lines. |
-| [src/markdown/events.rs](../../src/markdown/events.rs) | Postprocess offset events, source markers, and special-case indented code. |
-| [src/markdown/conversion.rs](../../src/markdown/conversion.rs) | Convert borrowed events and tags to `'static`, expand tabs, and reverse events. |
-| [src/markdown/detection.rs](../../src/markdown/detection.rs) | Extract explicit language hints and heuristically detect source languages. |
-| [src/markdown/raw_html.rs](../../src/markdown/raw_html.rs) | Merge raw-text HTML containers such as `pre` and `textarea` into one event. |
-| [src/markdown/source_lines.rs](../../src/markdown/source_lines.rs) | Encode and decode the internal source-line map. |
-
 ## Admonitions and callouts
 
 `admonitions.rs` does not render a frame. It emits Markdown blockquotes with `[!kind]` markers. Material for MkDocs, Docusaurus, VitePress, MyST/Sphinx, Quarto, PyMdown Blocks, and GitBook headers share this path; native GitHub/Obsidian markers retain their existing parser. Reusable dialect inputs live in [the test fixture](../../tests/files/callout-dialects.md).
 
-Fenced dialects require a matching closing delimiter. MkDocs bodies follow four-column indentation and retain blank paragraphs; the existing unindented `!!! type Title` paragraph form is still accepted. A containing fenced callout's closing delimiter also bounds the legacy paragraph form. Block endpoints are computed from the end of each scope and reused for nested lookups, including unmatched openers; boundary discovery does not recurse or retry failed nested searches. Parsed headers are passed to conversion alongside their endpoints rather than parsed again. Openers without any later closing marker of the same family are rejected without scanning their body. List and quote contexts are normalized recursively. Indentation uses the Markdown pipeline's shared tab-stop calculation, and type-name validation is shared with native callouts and custom-callout configuration.
+Fenced dialects require a matching closing delimiter. MkDocs bodies follow four-column
+indentation and retain blank paragraphs. The unindented `!!! type Title` paragraph form
+is also accepted and stops at the containing callout's closing delimiter. List and quote
+contexts are normalized recursively using the same tab stops as Markdown indentation.
+
+Boundary lookups reuse scoped block endpoints. Unmatched openers must not trigger repeated
+scans of the remaining source. Type-name validation is shared with native callouts and
+custom-callout configuration.
 
 Fenced code, indented code, HTML blocks, and multiline inline code are protected before either opening or closing callout markers are matched. Boundary protection includes code nested inside lists and quotes, while conversion traverses those containers to reach their actual callouts. Inline code within a callout title does not protect the preceding opener. Quarto promotes an initial ATX heading only at an indentation of zero to three columns; indented code remains in the body. Quarto and PyMdown ATX titles remove a closing hash sequence only when separated from the title by a space or tab, preserving text such as `C#` and escaped hashes.
 
@@ -94,13 +66,18 @@ CSS classes and IDs are recognized as metadata; CSS, site configuration, JavaScr
 
 ## Heading attributes
 
-`heading_attributes.rs` preserves literal text such as `{Context Name}` while retaining explicit IDs, classes, and valued attributes. It protects omitted closing braces after math normalization, preserving inline formatting, reference links, code content, and source-line positions. Indented-block reparsing and nested Markdown code blocks share the same normalization. Unchanged input is reused without copying.
+`heading_attributes.rs` preserves literal text such as `{Context Name}` while retaining
+explicit IDs, classes, and valued attributes. This normalization applies to ordinary headings,
+reparsed indented blocks, and nested Markdown code blocks, preserving inline formatting and
+source positions.
 
 ## Extended math delimiters
 
-Terminal parsing accepts the dollar delimiters implemented by `pulldown-cmark` plus `\(…\)` and `\[…\]`. The scanner uses offset events to exclude inline/fenced code, raw HTML, heading attributes, inline link destinations, autolinks, and reference destinations. An unclosed delimiter remains ordinary Markdown. CLI HTML export disables this normalization so its existing output contract remains unchanged.
+Terminal parsing accepts the dollar delimiters implemented by `pulldown-cmark` plus `\(…\)` and `\[…\]`. The scanner uses offset events to exclude inline/fenced code, raw HTML, heading attributes, inline link destinations, autolinks, and reference destinations. An unclosed delimiter remains ordinary Markdown. HTML export leaves the extended delimiters as source text.
 
-Library callers opt into the same terminal-specific normalization with `MarkdownProcessor::with_extended_math(true)`; `MarkdownProcessor::new` alone keeps the original delimiter behavior because the processor does not know which output backend will consume its events.
+Library callers opt into terminal-specific normalization with
+`MarkdownProcessor::with_extended_math(true)`. It is disabled by default because the
+processor does not select the output backend.
 
 Collision-checked internal placeholders protect dollar signs, table pipes, and delimiter-edge whitespace until parsing completes. They are restored in math events and in text/code/HTML events when Markdown does not recognize a formula. The math parser therefore receives the original TeX rather than Markdown escape characters. Math pipes are protected with table parsing disabled so they cannot prevent header recognition. Display delimiter lines are protected while explicit blank-line preprocessing runs, so TeX `\\` row separators remain part of the formula. Every transformation still passes through the source-line remapper.
 
@@ -122,14 +99,15 @@ Markers must never reach ANSI or HTML output or contribute to visible width.
 
 ## Event postprocessing
 
-`postprocess_events` performs four important operations:
+Event postprocessing:
 
 - restore source blank markers between non-overlapping byte ranges;
 - turn a synthetic blank paragraph into `Event::Html(BLANK_LINE_MARKER)`;
 - merge content inside raw-text HTML containers;
 - convert every event, tag, text value, and code value to owned `'static` data.
 
-Only then does `reverse_events` run when reverse mode is enabled.
+Reverse mode then reorders complete top-level blocks. Nesting inside a paragraph, list,
+quote, or table is preserved; reversing individual events would break their boundaries.
 
 Blank-line lookup starts with a binary search in the sorted line offsets and scans only the current source gap. Admonition scanning skips protected-range parsing when no possible dialect opener occurs anywhere in the scope; the normal line-ending and source-map normalization still runs.
 
@@ -139,5 +117,4 @@ Blank-line lookup starts with a binary search in the sorted line offsets and sca
 - Front matter is recognized only at byte zero, apart from the BOM removed by application input handling, with exact `---` delimiter lines and a top-level YAML mapping.
 - Every line transformation must preserve the source-line map.
 - `MarkdownProcessor` contains no terminal-specific ANSI logic.
-- `code_guessing` disables language heuristics; an explicit language hint always wins.
 - New syntax normalization requires a unit test in `src/markdown/tests.rs` or an integration test in the relevant `tests/` group.

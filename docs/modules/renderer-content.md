@@ -2,30 +2,18 @@
 
 This section covers ordinary text, inline formatting, wrapping, headings, lists, blockquotes, callouts, definition lists, and media markers.
 
+Use the [file index](file-index.md#srcrenderereventtext-and-formatting) to locate handlers.
+
 ## Text pipeline
 
-| File | Responsibility |
-|---|---|
-| [event/text.rs](../../src/renderer/event/text.rs) | Shared highlight/callout parsing types and text-submodule registration. |
-| [event/text/handling.rs](../../src/renderer/event/text/handling.rs) | Main `handle_text` entry point and state-dependent routing. |
-| [event/text/segments.rs](../../src/renderer/event/text/segments.rs) | Split text into highlighted and non-highlighted segments. |
-| [event/text/styled.rs](../../src/renderer/event/text/styled.rs) | Regular, underlined, and strikethrough paths. |
-| [event/text/wrapping.rs](../../src/renderer/event/text/wrapping.rs) | Word and character wrapping with styles and hanging indentation. |
-| [event/text/callouts.rs](../../src/renderer/event/text/callouts.rs) | Buffer and parse `[!kind]`, a fold marker, and a custom title. |
-
-`handle_text` first checks active containers: code block, link, table cell, HTML buffer, footnote scan, and callout marker. Ordinary and styled text share the same per-unit wrapping path; strikethrough and underlined fragments retain continuous decoration.
+Text is accumulated by its active code, link, table, HTML, or callout container before ordinary
+paragraph rendering. Plain and styled text share wrapping rules; underlines and strikethroughs
+remain continuous across fragments.
 
 ## Inline formatting
 
-| File | Responsibility |
-|---|---|
-| [event/formatting.rs](../../src/renderer/event/formatting.rs) | Shared imports, the default callout icon, and layout metadata helpers. |
-| [event/formatting/inline.rs](../../src/renderer/event/formatting/inline.rs) | Semantic style stack, highlighting, and inline-backtick synchronization. |
-| [event/formatting/spacing.rs](../../src/renderer/event/formatting/spacing.rs) | Contextual newlines, prefixes, blank-line normalization, and effective width. |
-| [event/formatting/blockquotes.rs](../../src/renderer/event/formatting/blockquotes.rs) | Quote prefixes and available width for nested blockquotes. |
-| [event/formatting/borders.rs](../../src/renderer/event/formatting/borders.rs) | Code/callout border pieces and display-width prefix trimming. |
-
-`formatting_stack` stores `ThemeElement` values rather than prepared ANSI fragments. At emission time, `create_style(theme, element)` combines the semantic theme with inline-style attributes.
+The formatting stack stores semantic `ThemeElement` values. Styles are resolved from the
+active theme and inline attributes when visible text is emitted.
 
 ## Wrapping
 
@@ -38,10 +26,6 @@ Word mode extracts words and oversized units; character mode splits on extended 
 
 Wrapping units borrow slices from their text event; only oversized words that need rewriting allocate new strings. ANSI removal preserves its two-stage contract (SGR first, then OSC 8), and visible width uses the complete resulting Unicode string so emoji sequences remain intact across style boundaries.
 
-Character units stream from `Graphemes` through `text/units.rs` without an
-intermediate vector. The ANSI word splitter borrows plain tokens and owns only
-tokens whose escape sequences need rearranging.
-
 Inline heading content is collected without wrapping. Heading finalization wraps it once, after adding optional Markdown markers and subtracting the actual heading prefix width; continuation lines receive that prefix exactly once.
 
 Heading finalization replaces only the current heading span in the output buffer. It does not copy the preceding document for each heading.
@@ -50,29 +34,24 @@ Pretty-callout text reserves the frame overhead and the outer indentation saved 
 
 ## Callout pipeline
 
-A callout passes through several stages:
-
-1. `markdown/admonitions.rs` converts alternative syntax into a blockquote marker.
-2. `text/callouts.rs` buffers initial characters and parses marker, type, fold state, and title.
-   A preceding internal presentation event supplies hidden-title and hidden-icon options for that blockquote.
-3. `core/callouts.rs` selects the semantic kind and its independent theme palette entry.
-4. `formatting/callout_label.rs` builds the label and selected Nerd Font or portable ASCII icon and applies case options.
-5. Ordinary text renders inside callout state.
-6. On close, pretty style passes through `callout_render.rs` and `callout_frame.rs`.
-
-| File | Responsibility |
-|---|---|
-| [formatting/callout_label.rs](../../src/renderer/event/formatting/callout_label.rs) | Label override, default/custom icon, fold icon, and header. |
-| [formatting/callout_render.rs](../../src/renderer/event/formatting/callout_render.rs) | Assemble the complete pretty-callout block. |
-| [formatting/callout_frame.rs](../../src/renderer/event/formatting/callout_frame.rs) | Frame, padding, in-frame wrapping, and single-character-tail normalization. |
+Callouts use blockquote state. The Markdown pipeline normalizes alternative dialects into
+markers; the text handler collects the type, fold state, and label before body rendering.
+Private presentation events carry per-block title and icon options. The theme supplies the
+type palette, while label formatting resolves custom icons and case options.
 
 A pretty callout first accumulates logical content and is framed afterward. Handlers must not print border segments directly in the middle of the block.
 
-The optional `callout.border` color applies to both `simple` markers and `pretty` frame pieces. Without it, borders use the terminal text color. Titles and icons share `callout.label`. Color selection compares CLI, preset, config, and theme sources first; within one source, per-type custom colors override the common label, followed by the type palette. Ordinary blockquotes use `quote`; properties use `front_matter.title`, `.key`, `.value`, and `.border`. HTML details guides use `details_border` and no global border value.
+The optional `callout.border` color applies to simple markers and pretty frames; titles and
+icons share `callout.label`. Other containers use independent theme roles. See
+[presentation overrides](themes-and-styling.md#callouts-lists-checkboxes-and-code-labels)
+for color precedence.
 
-A link inside a pending custom label collects its visible text and inline math in `current_link_text`. Link end appends that complete text to the pending label without emitting body content or registering URL references. The label keeps the original order of text around the link.
+Links, inline math, and inline code inside a pending label contribute visible text in source
+order without emitting body content or URL references.
 
-Inline code inside a pending label follows the same collection contract. Hidden titles omit the simple header or the pretty-frame label without consuming body lines. Per-block icon suppression leaves the independently configured fold indicator available. Fold states never hide terminal content.
+Hidden titles omit the simple header or the pretty-frame label without consuming body lines.
+Per-block icon suppression leaves the independently configured fold indicator available.
+Fold states never hide terminal content.
 
 A list starting inside a pending ordinary blockquote ends callout detection for that quote, so a list item's literal `[!note]` cannot become a callout header. A new blockquote inside the list establishes its own pending state. Block-spacing classification follows the same distinction.
 
@@ -80,36 +59,31 @@ A list starting inside a pending ordinary blockquote ends callout detection for 
 
 ## Headings and spacing
 
-[event/headings.rs](../../src/renderer/event/headings.rs) owns:
-
-- heading-level mapping to `ThemeElement` and `BlockElement`;
-- `level`, `center`, `flat`, and `none` layouts;
-- smart heading and content indentation;
-- optional Markdown markers;
-- placeholders for empty headings.
-
-[event/spacing.rs](../../src/renderer/event/spacing.rs) maps the event sequence to `BlockElement` values in advance, keeping per-element spacing independent of incidental intermediate events.
+[Heading layout](../../src/renderer/event/headings.rs) supports level-based, centered, flat,
+and unindented headings, optional Markdown markers, and smart content indentation. Empty
+heading placeholders are retained only when visibility settings or following content require
+them. Block spacing is calculated from semantic element boundaries before rendering.
 
 ## Lists, task markers, and definition lists
 
-- List starts, ends, and item boundaries are handled by `core/start_tags.rs` and `core/end_lists.rs`.
-- [event/misc.rs](../../src/renderer/event/misc.rs) selects a regular, pretty, or custom marker and removes the bullet before a checkbox.
-- [event/definition_lists.rs](../../src/renderer/event/definition_lists.rs) maintains a separate description stack and applies `PrettyDefinitionStyle`.
-- `list_marker::ListMarkerConfig` is already compiled in `Config`; the renderer resolves the icon/override for the current depth, while default colors distinguish ordered/unordered markers and checked/unchecked task states.
+List nesting owns marker positions and counters. Task checkboxes replace the list bullet;
+empty items are removed before spacing and numbering are finalized. Marker configuration is
+compiled in `Config`, with per-depth icons and independent ordered/unordered and task-state
+colors. Definition descriptions maintain their own nesting stack and marker style.
 
 ## Soft breaks, hard breaks, and rules
 
-| File | Behavior |
-|---|---|
-| [event/soft_breaks.rs](../../src/renderer/event/soft_breaks.rs) | Preserve the source break or collapse it during reflow. |
-| `core/end_tags.rs` | Render a hard break with the active container prefix. |
-| [event/misc.rs](../../src/renderer/event/misc.rs) | Render a horizontal rule at the available width and nesting level; `horizontal_rule_style` selects decorative endpoints or a continuous line, and optional `horizontal_rule` sets its color. |
+Source soft breaks become spaces only when `reflow` and text wrapping are enabled; otherwise
+they remain newlines. Hard breaks retain the active container prefix. Horizontal rules use
+the available nested width, `horizontal_rule_style`, and the optional `horizontal_rule` color.
 
 Explicit blank-line markers are separate from soft and hard breaks and must not accumulate with block spacing.
 
 ## Images and media
 
-[event/images.rs](../../src/renderer/event/images.rs) classifies extensions and data URIs, then builds a terminal marker for an image, video, audio file, SVG, or GIF. Destination and alternative text accumulate between `handle_image_start` and `handle_image_end`.
+[event/images.rs](../../src/renderer/event/images.rs) represents images, video, audio, SVG,
+and GIF sources as typed text markers with their label and destination. Classification uses
+extensions and data URIs; media is not downloaded or displayed inline.
 
 HTML media elements such as `img`, `video`, `audio`, and `source` are handled separately in `event/html/media.rs`, but share the same marker helpers.
 

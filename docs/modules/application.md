@@ -1,149 +1,86 @@
 # Application Startup and Routing
 
-## Entry points
+[src/main.rs](../../src/main.rs) parses arguments and calls `mdv::run` in
+[src/lib.rs](../../src/lib.rs). The application retains `ArgMatches` so configuration
+assembly can distinguish explicit options from Clap defaults.
 
-| File | Responsibility |
+## Mode selection
+
+Help, version, configuration generation, and palette/preset listings can complete without
+reading Markdown. `--init-config` writes the reference template before color settings are
+loaded. Other rendering modes resolve configuration, pager selection, and output styling
+before opening a document.
+
+| Input or option | Behavior |
 |---|---|
-| [src/main.rs](../../src/main.rs) | Minimal binary wrapper: logging, Clap parsing, and the call to `mdv::run`. |
-| [src/version.rs](../../src/version.rs) | Plain build-information output for `--version` and `-V`. |
-| [build/version.rs](../../build/version.rs) | Compile-time package revision, target triple, and Rust compiler version. |
-| [src/lib.rs](../../src/lib.rs) | Crate root, module declarations, and routing for every execution mode. |
-| [src/document.rs](../../src/document.rs) | Shared document rendering, prepared-resource entry point, metadata prefixes, and BOM-normalized file reading. |
-| [src/error.rs](../../src/error.rs) | Typed `MdvError` variants for configuration, themes, Markdown, rendering, monitoring, I/O, and syntax highlighting. |
-| [src/monitor.rs](../../src/monitor.rs) | Standalone file monitoring with one initial snapshot and shared refresh rendering. |
+| `--preset-info` or `--theme-info` without a file | Print metadata and return. |
+| No arguments with terminal stdin and stdout | Browse the current directory. |
+| A directory, or explicit `--interactive` | Select an interactive target. |
+| `--pager` with terminal stdout | Open the selected pager, bypassing the browser. |
+| A file with `--monitor`, without active paging | Print the initial document and watch for changes. |
+| A file, `-`, or piped stdin | Render once; redirected stdout suppresses paging. |
 
-## `main.rs`
+`mdv help` uses the configured pager when both input and output are terminals and prints
+directly otherwise. Pager command precedence and validation are defined in
+[Pager policy](cli-configuration.md#pager-policy).
 
-`main` intentionally contains no application logic:
+## Input and document rendering
 
-1. Initialize `env_logger` with plain diagnostics.
-2. Build `clap::ArgMatches` through `Cli::command()`. Handle Clap's `DisplayVersion` by printing build information; other help/error exits retain Clap behavior.
-3. Construct `Cli` with `Cli::from_arg_matches`.
-4. Pass both values to `mdv::run`.
+[src/document.rs](../../src/document.rs) provides the shared parsing and rendering path.
+Files and stdin are read as UTF-8, with a leading BOM removed before front matter recognition.
+The same normalization applies when a file is refreshed.
 
-`ArgMatches` remains available because configuration assembly must distinguish explicit user input from Clap-provided defaults.
+Ordinary output renders the configured line-number view. The built-in pager retains source
+metadata and prepares additional views on demand; see [PagerDocument](interactive-and-pager.md#pagerdocument).
+The monitor supplies a prepared renderer so refreshes reuse theme and syntax resources.
 
-Both version flags print `mdv` followed by aligned `Version`, `Debug`, `Triple`,
-and `Rustc` fields before configuration or input is loaded. `Debug` reflects the
-binary's `debug_assertions`; the target triple comes from Cargo's `TARGET`, with
-OS/architecture from the compiled target. Version requests launch no external commands.
+## Output
 
-`build/version.rs`, selected by `package.build` in `Cargo.toml`, embeds the package
-version and compiler's `--version` output. A local
-`.git` directory or worktree file adds the abbreviated HEAD hash and committer
-date to `Version`. Git HEAD, refs, and existing packed refs are tracked so a
-revision change updates an incremental build. Source archives, crates.io
-packages, and Nix sources without `.git` print the package version without Git
-metadata. Failures to read an existing checkout or query the compiler fail the
-build rather than embedding placeholder values.
+Application routing resolves `OutputStyle` from the destination and color settings once,
+then passes it to rendering, the browser, the pager, and refresh callbacks. Piped stdin
+does not disable colors when stdout is a terminal. Styling settings and depth detection
+are described in [Color policy](cli-configuration.md#color-policy).
 
-## `lib.rs`
+Disabled styling suppresses generated SGR and OSC 8 sequences while retaining layout and
+visible symbols. Full-screen modes still need cursor, screen-buffer, and mouse controls.
+Clap diagnostics, version output, and stderr diagnostics are plain.
 
-### Public surface
+`--html` exports a document through `TerminalRenderer::to_html`. `--render-html` enables
+[terminal rendering of embedded HTML](renderer-html.md).
 
-The crate publicly exposes reusable modules such as `cli`, `config`, `markdown`, `renderer`, `table`, `terminal`, `theme`, and `utils`, together with `run`. Interactive-mode and pager implementation details remain crate-private.
+## Version information
 
-### `run`
+[src/version.rs](../../src/version.rs) prints `Version`, `Debug`, `Triple`, and `Rustc`
+for `--version` and `-V`, before configuration or input is loaded. `Debug` reflects
+`debug_assertions`; `Triple` identifies the compiled target.
 
-`run(mut cli, matches)` evaluates branches in a fixed order:
-
-1. `--init-config` writes the reference configuration without loading color settings.
-2. The effective `Config` and pager backend are resolved, then `OutputStyle` is resolved from stdout TTY and the requested or detected color depth.
-3. `mdv help` builds the extended help document using the effective configuration and styling policy.
-4. `--preset-info` without a file prints the preset catalog.
-5. `--theme-info` without a file prints active theme information.
-6. `interactive::select_interactive_target` decides whether to open the document browser or page a specific file or standard input.
-7. The ordinary path reads input and builds one `RenderOptions` value.
-8. `--monitor` with a file and no active pager enters `watch_file_with_options`, which prints the initial document once and owns refresh output.
-9. Other paths call `render_document`; with an active pager the result becomes `PagerDocument` and is sent to the selected backend.
-10. Without an active pager or monitor, the result is written directly.
-
-This ordering prevents metadata and setup commands from opening input or initializing a renderer unnecessarily.
-
-### Main symbols
-
-| Symbol | Role |
-|---|---|
-| `show_help` | Selects regular Clap help or the full-screen help view. |
-| `build_help_document` | Builds themed Markdown/ANSI content for pager help. |
-| `render_document` | Runs the shared `MarkdownProcessor` → `TerminalRenderer` → ANSI/HTML pipeline. |
-| `render_document_with_renderer` | Runs that pipeline with prepared theme and syntax resources. |
-| `render_document_file` | Re-reads a file for the pager refresh callback. |
-| `read_document_source` | Reads a UTF-8 file and removes its leading BOM. |
-| `format_current_themes` | Formats the active terminal and code themes. |
-| `get_input_content` | Selects a file, `-`, piped standard input, or `--from` and returns its text. |
-| `strip_leading_bom` | Removes a UTF-8 BOM only when it occurs at the beginning of input. |
-| `RenderedOutput` | Carries rendered text, optional line-navigation data, styling policy, and pager status-bar transparency. |
-
-`RenderOptions`, the document render entry points, `read_document_source`, and
-`format_current_themes` live in `document.rs`. Both render entry points share
-parsing and presentation; ordinary rendering creates resources after parsing,
-while monitor supplies its prepared renderer. Pager reflow owns its renderer;
-borrowing a prepared renderer does not clone resources for ordinary snapshots.
-Input selection and mode routing remain in `lib.rs`.
-
-## Input handling
-
-The application accepts three input sources:
-
-- a path supplied as positional `FILE`;
-- `-` or non-terminal standard input;
-- a Markdown file selected by the interactive browser.
-
-Input is converted to one UTF-8 `String` before the Markdown pipeline starts, so files and pipes receive identical preprocessing.
-
-File input and refreshes use `read_document_source`; stdin uses the same
-leading-BOM normalization before rendering. Front matter recognition therefore
-does not depend on whether a document was just opened or refreshed.
-
-Pager rendering retains source-line metadata and prepares unnumbered, rendered-numbered, and source-numbered views. The configured mode selects the initial view; ordinary output still renders only that one configured line-number mode.
-
-## ANSI output and HTML
-
-`--color` and `MDV_COLOR` choose `auto`, `always`, or `never`, with CLI precedence
-over environment, presets, and configuration. `auto` enables styling only when
-stdout is a terminal. Piped stdin does not disable styling in a terminal.
-The resolved `OutputStyle` is passed to document renderers, browser, pager,
-monitor, and refresh callbacks without mutating `Config.color`.
-
-Pager backend selection is resolved independently as explicit
-`--pager=<COMMAND>` over `MDV_PAGER` over the default backend, currently
-`builtin`. The special value `default` selects that default explicitly, while a
-bare `--pager` enables paging without overriding the environment-selected
-backend. Because color is resolved before pager dispatch, built-in and external
-backends receive the same styled or plain rendering. External commands are not
-started when stdout is redirected. External paging renders one selected view;
-the built-in backend prepares the additional line-number and navigation views.
-
-Disabled styling suppresses generated SGR and OSC 8, preserving visible text
-and layout. Full-screen terminal-control commands remain necessary in `never`.
-Fast Clap help/version/errors and stderr diagnostics are always plain.
-
-`--html` selects `TerminalRenderer::to_html` and emits an HTML document. `--render-html` serves a different purpose: it allows HTML embedded in Markdown to become terminal elements. The options are not interchangeable.
+[build/version.rs](../../build/version.rs) embeds the package version and compiler version.
+Git checkouts also include the abbreviated HEAD and committer date. HEAD, refs, and packed
+refs are tracked for incremental builds. Sources without `.git`, including crates.io
+packages, print the package version alone. Version requests run no external commands;
+failures to read an existing checkout or query the compiler fail the build.
 
 ## Ordinary monitor mode
 
-[src/monitor.rs](../../src/monitor.rs) uses `notify` and observes `Modify` and `Create` events for one file.
+[src/monitor.rs](../../src/monitor.rs) watches one file for `Modify` and `Create` events.
+The watcher is registered before the initial snapshot is printed; the readiness message
+follows that snapshot. Updates are coalesced until 100 ms after the last relevant event.
 
-- The watcher is registered before the initial snapshot is printed. The monitoring message follows that snapshot and confirms readiness for updates.
-- The CLI supplies its already-read source and output options, so the initial document is printed once.
-- Changes are coalesced until 100 ms after the last relevant event, including changes immediately after startup.
-- A new `MarkdownProcessor` is created for each refresh.
-- The `TerminalRenderer` is reused because configuration and themes do not change.
-- Initial and repeated rendering use `render_document_with_renderer`, preserving front matter, HTML export, metadata prefixes, and resolved `OutputStyle`.
-- An individual refresh error is written to standard error without terminating the watcher loop.
+Each refresh parses the new source with the existing renderer and the original output
+options, including front matter, HTML export, and styling. Refresh errors go to stderr
+without terminating the watch loop. The public `monitor::watch_file` entry point uses
+default terminal-output options; application routing supplies CLI options through
+`watch_file_with_options`.
 
-The public `monitor::watch_file(filename, config, output_style)` signature is
-unchanged. It reads the initial file with BOM normalization and uses the same
-watch loop with default terminal-output options. Application routing uses the
-crate-private `watch_file_with_options` to retain its CLI-specific options.
-
-The pager has a separate watcher in `src/pager/watcher.rs`. These mechanisms intentionally remain separate: ordinary monitor mode prints successive snapshots, while the pager replaces the current document in place.
+The pager's [watcher](interactive-and-pager.md#watcher) replaces the displayed document
+in place, while ordinary monitor mode prints successive snapshots.
 
 ## Errors
 
-`output.rs` performs fallible stdout writes and flushes. The binary treats
-`BrokenPipe` as successful completion when a downstream reader exits early;
-other output errors remain errors. `theme::list_themes` returns `io::Result<()>`.
+`MdvError` identifies configuration, theme, parsing, rendering, monitoring, I/O, and syntax
+errors. Application boundaries return `anyhow::Result` with file or operation context.
+Low-level errors propagate to the boundary that can explain them.
 
-`MdvError` supplies user-facing error categories, while public application boundaries return `anyhow::Result`. File, theme, or operation context is attached where that information becomes available. Low-level helpers must propagate failures instead of substituting plausible-looking output.
+[src/output.rs](../../src/output.rs) uses fallible writes and flushes. A `BrokenPipe`
+caused by a downstream reader exiting early is successful completion; other output
+errors remain failures.

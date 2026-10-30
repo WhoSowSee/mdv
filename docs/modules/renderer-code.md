@@ -2,34 +2,18 @@
 
 Code rendering combines a language hint, optional heuristic detection, `syntect`, the terminal palette, and one of three layout styles.
 
-## Code-renderer files
+See the [file index](file-index.md#srcrenderereventcode) for code handlers and
+[math modules](file-index.md#srcmath).
 
-| File | Responsibility |
-|---|---|
-| [event/code.rs](../../src/renderer/event/code.rs) | Shared constants and types such as `CodeBlockRenderInput`, plaintext results, and submodule registration. |
-| [event/code/block.rs](../../src/renderer/event/code/block.rs) | Finish a fenced code block and select the math, plaintext, or highlighted path. |
-| [event/code/inline.rs](../../src/renderer/event/code/inline.rs) | Inline code with backticks, semantic styling, and wrapping. |
-| [event/code/hint.rs](../../src/renderer/event/code/hint.rs) | Separate the language hint from additional tokens. |
-| [event/code/aliases.rs](../../src/renderer/event/code/aliases.rs) | Normalize and expand language aliases for syntax lookup. |
-| [event/code/syntax.rs](../../src/renderer/event/code/syntax.rs) | Find a `SyntaxReference` in the loaded `SyntaxSet`. |
-| [event/code/labels.rs](../../src/renderer/event/code/labels.rs) | Human-readable labels, custom icons/labels/aliases, and icon width. |
-| [event/code/highlighting.rs](../../src/renderer/event/code/highlighting.rs) | Run `syntect`, emit terminal escapes, and highlight footnote markers specially. |
-| [event/code/line_numbers.rs](../../src/renderer/event/code/line_numbers.rs) | Build per-block source/rendered gutters and reserve their width before wrapping. |
-| [event/code/plaintext.rs](../../src/renderer/event/code/plaintext.rs) | Markdown/plaintext blocks, embedded link-reference blocks, and width estimation. |
-| [event/code/rendering.rs](../../src/renderer/event/code/rendering.rs) | `basic` and `simple` layouts. |
-| [event/code/pretty.rs](../../src/renderer/event/code/pretty.rs) | Pretty frames, labels, segment wrapping, and border rendering. |
+## Code-block rendering
 
-## Code-block lifecycle
+Code content and its language hint are buffered until the block closes. The handler selects
+math, Markdown/plaintext, or syntax highlighting, then passes prepared text, label, wrapping
+mode, width, and original source to the chosen layout.
 
-1. `core/start_tags.rs` enables `in_code_block` and stores the language hint.
-2. Text and code events accumulate in `code_block_content`.
-3. `handle_code_block_end` chooses a specialized math/plaintext path or a syntax.
-4. Without an explicit syntax, `detect_source_code` may run when `code_guessing` is enabled.
-5. `highlight_code` converts `syntect` spans to terminal escape sequences.
-6. The `basic`, `simple`, or `pretty` renderer builds the block layout.
-7. Captured or deferred reference blocks return to the owner of the current container.
-
-`CodeBlockRenderInput` supplies layout functions with prepared values only: highlighted text, label, wrapping mode, terminal width, and original code body.
+The Markdown/plaintext path parses content with a nested processor and renderer. Its depth
+guard prevents repeated recursive interpretation. Definitions and reference blocks are
+reconciled with the enclosing callout, table, or document so they retain their scope.
 
 Footnote markers use the link style. After each marker, the complete source SGR
 state is restored so following code retains its colors and font attributes.
@@ -68,14 +52,12 @@ The gutter width participates in wrapping before content is laid out. The render
 
 ## Syntax resources
 
-| File | Responsibility |
-|---|---|
-| [renderer/syntax_set.rs](../../src/renderer/syntax_set.rs) | Lazy cache of embedded syntaxes and loading of custom `.sublime-syntax` files. |
-| [renderer/syntax_theme.rs](../../src/renderer/syntax_theme.rs) | `CodeHighlightTheme`: a native `syntect` theme or a palette derived from the terminal theme. |
-| [renderer/syntax_theme/builder.rs](../../src/renderer/syntax_theme/builder.rs) | Build a `syntect::Theme` from semantic `SyntaxTheme` values. |
-| [renderer/syntax_theme/terminal.rs](../../src/renderer/syntax_theme/terminal.rs) | Convert `syntect` spans and font-style differences to ANSI foreground/style sequences. |
+Embedded `syntect` themes provide standalone code palettes. A terminal-derived code theme
+maps `Theme.syntax` roles to syntax scopes.
 
-`DEFAULT_THEME_SET` stores embedded `syntect` themes. For a terminal-derived code theme, the builder creates scope rules from `Theme.syntax`, and the terminal adapter serializes the resulting spans.
+The syntax set is loaded from `assets/syntaxes.bin` through a shared fallible cache.
+User `.sublime-syntax` definitions under `syntaxes_dir` take priority over the embedded set.
+A missing directory, invalid definition, or invalid embedded dump fails renderer construction.
 
 ## Language resolution
 
@@ -87,37 +69,9 @@ Syntax selection follows this order:
 4. heuristic detection, only when `code_guessing=true`;
 5. plaintext, when the language is explicitly plain/Markdown or no syntax matches.
 
-An unsupported user `.sublime-syntax` file produces a diagnosable loading error.
-
-The embedded dump is decoded through a fallible shared cache. Invalid embedded
-data fails renderer construction instead of substituting syntect defaults.
-
 ## Math
 
 Math rendering does not depend on `syntect`, although fenced blocks with `math`, `latex`, `tex`, `katex`, or `mathjax` hints enter through the code-block handler.
-
-| File | Responsibility |
-|---|---|
-| [src/math.rs](../../src/math.rs) | `MathMode`, `render_math`, language-hint detection, and parser facade. |
-| [src/math/ast.rs](../../src/math/ast.rs) | Structured math nodes and parser diagnostics. |
-| [src/math/diagnostics.rs](../../src/math/diagnostics.rs) | Warning deduplication shared by all layouts of one document render. |
-| [src/math/fonts.rs](../../src/math/fonts.rs) | Unicode script, Fraktur, bold Latin, and bold Greek alphabets. |
-| [src/math/parser.rs](../../src/math/parser.rs) | Recursive groups, scripts, arguments, and parser limits. |
-| [src/math/parser/commands.rs](../../src/math/parser/commands.rs) | TeX commands, delimiters, accents, and annotations. |
-| [src/math/parser/environment.rs](../../src/math/parser/environment.rs) | Nested environments and depth-aware row/cell splitting. |
-| [src/math/parser/input.rs](../../src/math/parser/input.rs) | Cursor movement, whitespace modes, comments, and balanced raw input. |
-| [src/math/layout.rs](../../src/math/layout.rs) | Baseline-aware terminal boxes and horizontal/vertical composition. |
-| [src/math/layout/decorations.rs](../../src/math/layout/decorations.rs) | Accents, annotations, and braces. |
-| [src/math/layout/environment.rs](../../src/math/layout/environment.rs) | Matrices, aligned rows, cases, and array columns. |
-| [src/math/layout/scripts.rs](../../src/math/layout/scripts.rs) | Compact scripts plus side and centered operator limits. |
-| [src/math/layout/structures.rs](../../src/math/layout/structures.rs) | Root grouping and vertical binomial layout. |
-| [src/math/rendering.rs](../../src/math/rendering.rs) | Compact inline output and display layout. |
-| [src/math/rendering/boundaries.rs](../../src/math/rendering/boundaries.rs) | AST boundaries for operator spacing and nested-fraction grouping. |
-| [src/math/rendering/fractions.rs](../../src/math/rendering/fractions.rs) | Compact fractions and validation of complete outer parentheses. |
-| [src/math/rendering/wrapping.rs](../../src/math/rendering/wrapping.rs) | Flat-expression wrapping at word or grapheme boundaries. |
-| [src/math/scripts.rs](../../src/math/scripts.rs) | Atomic Unicode superscript/subscript conversion. |
-| [src/math/symbols.rs](../../src/math/symbols.rs) | Commands, delimiters, operators, spacing, literals, and `mathbb` symbols. |
-| [event/math.rs](../../src/renderer/event/math.rs) | Inline/display events and fenced math blocks in the current renderer context. |
 
 The parser builds a math tree before rendering. Inline math becomes one compact Unicode sequence; display math becomes a `MathBox` with a line buffer, width, and baseline (its height is the line count), allowing fractions and matrix cells to compose without losing alignment. Ordinary source newlines collapse to spaces and an explicit TeX `\\` creates a mathematical row.
 

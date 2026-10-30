@@ -2,44 +2,14 @@
 
 CLI arguments and YAML converge into one `Config` value. Every downstream module receives this effective snapshot and does not inspect `ArgMatches` itself.
 
-## CLI files
-
-| File | Types and responsibility |
-|---|---|
-| [src/cli.rs](../../src/cli.rs) | `Cli`: arguments, aliases, conflicts, help groups, and Clap defaults. |
-| [src/cli/commands.rs](../../src/cli/commands.rs) | `CliCommand`, including full-format help. |
-| [src/cli/color.rs](../../src/cli/color.rs) | `ColorMode` settings and resolution to `terminal::OutputStyle`. |
-| [src/cli/color_depth.rs](../../src/cli/color_depth.rs) | `ColorDepth` CLI values and YAML string/numeric parsing. |
-| [src/cli/layout.rs](../../src/cli/layout.rs) | `TextWrapMode`, `TableWrapMode`, `MathBlockStyle`, and `HeadingLayout`. |
-| [src/cli/links.rs](../../src/cli/links.rs) | `LinkStyle`, `LinkTruncationStyle`, `FootnoteStyle`, and `MissingFootnoteStyle`. |
-| [src/cli/line_numbers.rs](../../src/cli/line_numbers.rs) | Shared `LineNumberOptions` and `LineNumberTarget` values for document and code-block gutters. |
-| [src/cli/margins.rs](../../src/cli/margins.rs) | Parsing, serde support, and total width for `HorizontalMargins`. |
-| [src/cli/callouts.rs](../../src/cli/callouts.rs) | Callout, checkbox, definition-list styles, and `CalloutStyleConfig`. |
-| [src/cli/code_blocks.rs](../../src/cli/code_blocks.rs) | `CodeBlockStyleConfig`, `CodeBlockStyle`, and `CodeWrapIndent`. |
-| [src/cli/help.rs](../../src/cli/help.rs) | Long help text kept outside the Clap structure. |
+## Option parsing
 
 `Cli` retains `Option<T>` for values that may have Clap defaults. `arg_has_user_value(matches, id)` determines whether a value came from the user or from Clap.
 
-Help uses a concise action summary for every option in `-h`, explaining its
-purpose and scope even when this needs a longer sentence. Do not shorten a
-description to a technical term that assumes the reader already knows the feature.
-Long help adds
-syntax, value or option descriptions, constraints, and an `Examples:` block where
-needed. Compound values use `Format:` and single-quoted examples containing the
-option name. Enum value descriptions belong on the values themselves so Clap
-can render them without a second manually maintained list. `mdv help` displays
-the same long help as `--help`, using the selected pager when appropriate.
-
-## Argument groups
-
-| Group | Examples | Consumer |
-|---|---|---|
-| Output and flow | `--pager`, `--interactive`, `--html`, `--render-html`, `--color`, `--monitor`, `--reverse` | `lib::run`, `Config`, or an output adapter. |
-| Layout and wrapping | `--cols`, `--margin`, `--wrap`, `--table-wrap`, `--heading-layout`, `--block-spacing`, `--horizontal-rule-style` | Runtime layout and the event renderer. |
-| Themes and code | `--theme`, `--code-theme`, `--code-block-style`, `--math-block-style`, `--code-line-numbers`, `--syntaxes-dir` | Theme, syntax, code-block, and math-block rendering. |
-| Callouts and lists | `--callout-style`, `--checkbox-style`, `--list-style`, custom overrides | Normalized maps and settings in `Config`. |
-| Links and footnotes | `--link-style`, `--link-overflow`, footnote options | Link and footnote event handlers. |
-| Configuration | `--config-file`, `--no-config`, `--preset`, `--init-config` | Configuration and preset loading. |
+`-h` presents action summaries. Long help adds formats, value descriptions, constraints,
+and examples. Compound-value examples include the option name and quote the value.
+Descriptions of enum values live on the values themselves so Clap can generate the list.
+`mdv help` shows the same long help through the selected pager when appropriate.
 
 `--wrap` selects breakpoints for prose, code, callouts, and table cells. `--table-wrap` is
 orthogonal: it controls whether table columns are fitted, split into blocks, or left unconstrained.
@@ -49,21 +19,6 @@ bare flag to rendered numbering unless it is followed by an explicit mode, keepi
 Markdown path positional. The `--` separator and all following arguments pass through unchanged.
 
 `--front-matter` controls an exact `---`-delimited YAML property mapping whose opening delimiter is the first line. `hidden` is the default; `panel` uses the callout renderer; `table` uses the two-column table renderer; `plain` emits key/value lines; `inline` emits one wrapping paragraph; `blocks` uses definition-list layout; `code` uses the YAML code-block path; and `source` bypasses front matter recognition so the complete input follows ordinary Markdown parsing.
-
-## Configuration files
-
-| File | Responsibility |
-|---|---|
-| [src/config.rs](../../src/config.rs) | `Config`, defaults, serde helpers, environment helpers, and the module facade. |
-| [src/config/files.rs](../../src/config/files.rs) | Discover, read, and create `config.yaml` or `config.yml`. |
-| [src/config/deserialization.rs](../../src/config/deserialization.rs) | Reject removed top-level settings while retaining typed serde errors. |
-| [src/config/from_cli.rs](../../src/config/from_cli.rs) | Assemble `Config` from files, presets, environment, and explicit CLI input. |
-| [src/config/merge.rs](../../src/config/merge.rs) | Overlay non-empty or non-default values from one configuration onto another. |
-| [src/config/runtime.rs](../../src/config/runtime.rs) | Derived widths, wrapping flags, margin validation, and compiled overrides. |
-| [src/config/structured.rs](../../src/config/structured.rs) | Deserialize structured theme overrides. |
-| [src/config/structured/custom.rs](../../src/config/structured/custom.rs) | Preserve omitted and cleared custom entry properties in YAML. |
-| [src/config/custom_overrides.rs](../../src/config/custom_overrides.rs) | Merge custom entries and track each color's source. |
-| [src/config/custom_overrides/parsing.rs](../../src/config/custom_overrides/parsing.rs) | Parse named and legacy custom entry forms and explicit clears. |
 
 ## Precedence
 
@@ -162,16 +117,9 @@ Redirected stdout still suppresses paging. Color resolution remains independent:
 the selected `OutputStyle` is applied before either backend receives the output,
 and mdv does not add color-preserving flags to a user-supplied pager command.
 
-## `Config` field groups
+## Runtime settings
 
-- Display and layout: colors, width, margins, tabs, wrapping, headings, spacing, visibility, front matter, and document line numbers.
-- Code, math, callouts, and lists: language guessing, custom syntaxes, independent code/math styles, code-block line numbers, and compiled override maps.
-- Themes: terminal theme, code theme, inline styles, and custom palette mappings or legacy strings.
-- Links and footnotes: link presentation plus footnote placement and missing-definition behavior.
-- Content filtering: `from_text` and reverse output.
-- Runtime paths: the loaded `config_file` and its `config_dir`.
-
-Fields marked `#[serde(skip)]` are derived runtime data and must not appear in YAML.
+Fields marked `#[serde(skip)]` are derived runtime data and do not appear in YAML.
 
 `color_priorities` records the sources of theme colors, syntax overrides, code-theme selection, and individual callout/list/checkbox colors. Preset application preserves these origins across its serialization step. Renderers compare source priority before setting specificity. Within a source, syntax settings apply as `custom_theme` → `code_theme` → `custom_code_theme`.
 
@@ -179,15 +127,15 @@ Configuration fields are declared once for the public `Config` and a private
 serde schema. The public `Deserialize` implementation validates removed keys
 before delegating to that schema, so direct decoder calls cannot bypass validation.
 
-## Runtime helpers
+## Width and margins
 
-`src/config/runtime.rs` centralizes calculations that must remain consistent across renderers:
+An explicit CLI `--cols` sets output width. Otherwise, a detected terminal width of at least
+20 columns takes precedence over configured `cols`; if neither is available, width is 80.
+Content width subtracts horizontal margins and the document line-number gutter.
+The reserved width must be smaller than the total width.
 
-- terminal and content width after margins;
-- conversion from `TextWrapMode` to `utils::WrapMode`;
-- source and rendered line-number activation;
-- validation that margins leave usable content width;
-- compilation of custom callout, code, checkbox, and list definitions.
+Margins accept `left:N`, `right:N`, or both separated by `;`. Omitted sides are zero;
+YAML `null` disables margins. HTML export does not apply terminal margins.
 
 ## Presets
 
@@ -200,21 +148,10 @@ The embedded catalog contains `compact`, `pretty`, `reader`, and `showcase`. `pr
 - Files are sorted lexically for deterministic diagnostics.
 - `PresetFile::apply_to` changes only fields present in the preset.
 
-## Specialized setting parsers
-
-| File | Purpose |
-|---|---|
-| [src/block_spacing.rs](../../src/block_spacing.rs) | Per-element blank lines and merging of partial overrides. |
-| [src/callout.rs](../../src/callout.rs) | `name:icon=...,color=...` custom callout definitions. |
-| [src/checkbox_override.rs](../../src/checkbox_override.rs) | One checkbox state with an optional icon and color. |
-| [src/custom_code_block.rs](../../src/custom_code_block.rs) | Custom label, icon, and aliases for a code-block language. |
-| [src/list_marker.rs](../../src/list_marker.rs) | Unicode or Nerd Font list styles, a uniform marker, and per-level overrides. |
-| [src/inline_style.rs](../../src/inline_style.rs) | Semantic foreground, background, and attributes for inline elements. |
-| [src/config/structured.rs](../../src/config/structured.rs) | YAML mappings for theme, callout, code-block, checkbox, and list overrides. |
-
-These parsers reject unknown keys, duplicates, and malformed values. A valid partial override inherits remaining values from defaults or the active theme.
-
 ## Structured YAML settings
+
+Setting parsers reject unknown keys, duplicates, and malformed values. Partial overrides
+inherit unspecified properties from defaults, the theme, or a lower-priority layer.
 
 `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list`, and `callout_style` accept native YAML mappings in configuration and preset files. Their legacy scalar syntax remains accepted and is still used by CLI arguments. Deserialization preserves omission and explicit null separately until custom entries are merged and compiled.
 
@@ -235,7 +172,7 @@ The reference is [docs/examples/config.yaml](../examples/config.yaml). When `Con
 
 - existing keys still deserialize, or are rejected by an explicit compatibility test;
 - structured and legacy scalar forms produce the same runtime behavior;
-- preset and explicit CLI priority remains field-based for structured settings;
+- preset and CLI overrides follow the setting-specific merge rules in [Precedence](#precedence);
 - new runtime-only fields use `serde(skip)`;
 - a CLI override is not activated solely by a Clap default;
 - `MDV_COLOR` accepts exactly `auto`, `always`, or `never` and overrides configuration files and presets.

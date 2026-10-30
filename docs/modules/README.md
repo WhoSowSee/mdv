@@ -1,41 +1,28 @@
-# mdv Module Documentation
+# Developer Documentation
 
-This section documents the internal architecture of `mdv` after large source files were split into focused modules. It is written for contributors and describes state ownership, data flow, contracts, and the responsibility of each file.
+These documents describe mdv's architecture, configuration contracts, rendering rules,
+and validation procedures. Use the [file index](file-index.md) to locate implementation
+and test files.
 
-## Documentation map
-
-| Document | Contents |
+| Topic | Read when working on |
 |---|---|
-| [architecture.md](architecture.md) | Application layers, primary data flow, and architectural invariants. |
-| [application.md](application.md) | Entry points, mode routing, input handling, monitoring, and errors. |
-| [cli-configuration.md](cli-configuration.md) | CLI types, final `Config`, precedence, presets, and custom settings. |
-| [markdown.md](markdown.md) | Markdown preprocessing, `pulldown-cmark`, source-line markers, and event normalization. |
-| [renderer-core.md](renderer-core.md) | `TerminalRenderer`, `EventRenderer`, render state, and event dispatch. |
-| [renderer-content.md](renderer-content.md) | Text, formatting, headings, lists, callouts, images, and definition lists. |
-| [renderer-code.md](renderer-code.md) | Code blocks, `syntect` highlighting, labels, aliases, and math rendering. |
-| [renderer-html.md](renderer-html.md) | Terminal rendering of embedded HTML and HTML tables. |
-| [links-footnotes-tables.md](links-footnotes-tables.md) | Links, footnotes, and the two table-rendering layers. |
-| [themes-and-styling.md](themes-and-styling.md) | Themes, ANSI styles, inline styles, user themes, and visual overrides. |
-| [interactive-and-pager.md](interactive-and-pager.md) | Interactive document browser, pager, editor integration, and file watching. |
-| [testing.md](testing.md) | Unit and integration test organization, fixtures, and validation commands. |
-| [ci-release.md](ci-release.md) | PR checks, reusable build workflows, platform matrix, package checks, and release publishing. |
-| [file-index.md](file-index.md) | Complete index of Rust source and test files with links to topic documents. |
+| [Architecture](architecture.md) | Component boundaries, data flow, and state ownership. |
+| [Application](application.md) | Input, execution modes, output, monitoring, and errors. |
+| [CLI and configuration](cli-configuration.md) | Option parsing, precedence, discovery, presets, and YAML. |
+| [Markdown pipeline](markdown.md) | Preprocessing, supported dialects, and source-line mapping. |
+| [Renderer core](renderer-core.md) | Rendering resources, event state, and document finalization. |
+| [Text and blocks](renderer-content.md) | Wrapping, headings, lists, callouts, and media. |
+| [Code and math](renderer-code.md) | Syntax highlighting, code layout, and mathematical expressions. |
+| [Embedded HTML](renderer-html.md) | HTML fragments rendered as terminal content. |
+| [Links, footnotes, and tables](links-footnotes-tables.md) | Reference scopes, table geometry, and link styling. |
+| [Themes and styling](themes-and-styling.md) | Theme schema, inheritance, colors, and terminal styling. |
+| [Interactive mode and pager](interactive-and-pager.md) | Browser, paging, selection, refresh, and editor integration. |
+| [Testing](testing.md) | Checks, fixtures, test isolation, and regression coverage. |
+| [CI and releases](ci-release.md) | Build matrix, package validation, and publication. |
 
-## Suggested reading paths
+Start with the architecture for changes spanning several subsystems. For configuration
+examples, use [config.yaml](../examples/config.yaml); source code and tests define the
+behavior when documentation differs.
 
-- Application startup: `architecture.md` → `application.md` → `cli-configuration.md`.
-- Markdown syntax changes: `markdown.md` → `renderer-core.md` → the relevant renderer document.
-- Link or table changes: `links-footnotes-tables.md` → `testing.md`.
-- Theme or visual override changes: `themes-and-styling.md` → `../examples/config.yaml`.
-- Ownership of a specific file: `file-index.md`.
-
-## Scope
-
-- `src/` is the source of truth for internal contracts.
-- `../examples/config.yaml` is the reference for user-facing YAML configuration.
-- `tests/` defines observable CLI behavior and takes precedence if documentation differs.
-- This documentation complements the user-facing root `README.md`; it focuses on code organization.
-
-## Maintenance rule
-
-When moving a file, changing a public type, or transferring state ownership, update the relevant topic document and [file-index.md](file-index.md). Internal helper changes normally require no documentation update when their contract and data flow remain unchanged.
+Update the relevant topic when a contract or component boundary changes. Keep file
+locations in the file index and place API details beside their declarations in rustdoc.
