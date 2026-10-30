@@ -1,5 +1,37 @@
 # Changelog
 
+## [6.1.0] - 2026-10-30
+
+### Bug Fixes
+
+- Fixed: hanging indentation and width reservation on wrapped code-block continuation lines ([bb994db](https://github.com/WhoSowSee/mdv/commit/bb994dbe9a4c793fc6b8c23b85b1e4163875246f))
+- Fixed: quadratic ANSI output growth when wrapping highlighted code ([3541fa5](https://github.com/WhoSowSee/mdv/commit/3541fa5fd404a4b12f7432238ef37003de830c48))
+- Fixed: signed 64-bit overflow in HTML ordered-list numbering; out-of-range implicit counters now return an error ([37ffeb3](https://github.com/WhoSowSee/mdv/commit/37ffeb35a3de80a7f547b88a7fca4080f1cd1998))
+- Fixed: loss of RGB colors containing zero components when wrapping code ([bfd9917](https://github.com/WhoSowSee/mdv/commit/bfd99174dc4a102cb770733972731855bbbe6cbd))
+- Fixed: compound emoji and combining marks splitting during text wrapping ([9dd04b8](https://github.com/WhoSowSee/mdv/commit/9dd04b8ad3ae6af603c5d3987727cdaaca398d73))
+- Fixed: footnote-marker highlighting and restoration of code colors and font attributes after each marker ([4060612](https://github.com/WhoSowSee/mdv/commit/4060612d716d200f5900d304cf9131d678792737))
+- Fixed: panics when parsing non-ASCII hexadecimal colors; invalid values now produce a regular error ([ed32b15](https://github.com/WhoSowSee/mdv/commit/ed32b15de0ab6f974a1cf99e1413d165e37e3d24))
+- Fixed: horizontal pager scrolling to use terminal columns while preserving Unicode graphemes, ANSI styles, and line-number gutters ([a21c1d9](https://github.com/WhoSowSee/mdv/commit/a21c1d92bc8602edd9c49dab5aa58f08275b111a))
+- Fixed: pager retries after initialization errors by resetting the run mode when a session returns or unwinds ([f8adf61](https://github.com/WhoSowSee/mdv/commit/f8adf61ecb069602092528ec48897393951c73f1))
+- Fixed: line-number argument normalization modifying filenames after the `--` option separator ([f3dcafb](https://github.com/WhoSowSee/mdv/commit/f3dcafb467a1073f7fa6c950f7a79f7a59c5ccf8))
+- Fixed: missing system causes in pager setup, cleanup, and terminal-event error chains ([8a91940](https://github.com/WhoSowSee/mdv/commit/8a91940c13d6d4db47fe342f32d4b736cfe7f35e))
+
+### Documentation
+
+- Updated: all four star history charts with current data for English and Russian, in light and dark variants ([1a47773](https://github.com/WhoSowSee/mdv/commit/1a4777325e9452be417519b9afbcaa10c7b579c8))
+- Fixed: star history title alignment ([8c7828a](https://github.com/WhoSowSee/mdv/commit/8c7828ad64c7700bd0ba215973856d11548d05e2))
+- Simplified: developer documentation, removed duplicate file inventories and implementation narration, and corrected behavior descriptions ([3b2fcf2](https://github.com/WhoSowSee/mdv/commit/3b2fcf27c7054e0f43ba6fa628b0f5cb58aae683))
+
+### Internal
+
+- Refined: internal borrowed parameter types and search checks without changing behavior ([c39db7f](https://github.com/WhoSowSee/mdv/commit/c39db7faa4005ec322a61c6271153ce249703e1b))
+
+### Maintenance
+
+- Updated: Cargo dependencies and raised the minimum supported Rust version from 1.89 to 1.95 for source builds and Cargo installation ([f9a5ca0](https://github.com/WhoSowSee/mdv/commit/f9a5ca05973dab9add2cc50e095675827537cc12))
+- Fixed: unused-code warnings in pager test builds and Clippy warnings across all pager targets and features ([d2d8890](https://github.com/WhoSowSee/mdv/commit/d2d88903e3e262a79e564c65ea1170ca8983cd01))
+- Updated: mdv-minus to v6.1.0 ([391de8f](https://github.com/WhoSowSee/mdv/commit/391de8f2ee6b4ff5fc66be0ec746cfaf55759dbb))
+
 ## [6.0.4] - 2026-10-15
 
 ### Bug Fixes
