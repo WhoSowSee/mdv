@@ -43,16 +43,4 @@ const isDocumentation = Astro.url.pathname.startsWith(links.docs);
     button.title = label;
     document.documentElement.classList.toggle('motion-paused', paused);
   });
-  const language = document.querySelector<HTMLAnchorElement>('[data-language-toggle]');
-  if (language) {
-    const anchors: Record<string, string> = JSON.parse(language.dataset.languageAnchors!);
-    const updateLanguageLink = () => {
-      const hash = decodeURIComponent(location.hash.slice(1));
-      const target = new URL(language.href);
-      target.hash = hash in anchors ? anchors[hash] : hash;
-      language.href = target.href;
-    };
-    updateLanguageLink();
-    window.addEventListener('hashchange', updateLanguageLink);
-  }
 </script>
