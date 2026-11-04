@@ -32,329 +32,50 @@
 > - **Live monitoring** - Watch files with `--monitor` to refresh the view whenever the source changes.
 > - **Script friendly CLI** - Read from stdin, jump to sections with `--from`, and share configuration files across machines.
 
-> [!IMPORTANT]
->
-> ### Required dependencies:
->
-> - Rust 1.95 or newer for installation from crates.io or source
-> - Terminal with ANSI color support for the best experience
-
 ## Installation
 
-### Install a binary in one command
+**Cargo.** Requires Rust 1.95 or newer.
 
-Windows PowerShell 5.1 or PowerShell 7 (x64 and ARM64):
-
-```powershell
-irm https://whosowsee.github.io/mdv/install.ps1 | iex
+```sh
+cargo install mdv
 ```
 
-Linux and macOS (x86_64 and ARM64):
+**macOS and Linux.** Supports x86_64 and ARM64.
 
 ```sh
 curl -fsSL https://whosowsee.github.io/mdv/install.sh | sh
 ```
 
-The scripts download the latest GitHub release and verify SHA-256 before replacing the binary. Rust is not required. Windows installs to `%LOCALAPPDATA%\Programs\mdv` and adds it to the user and current-session `PATH`; Linux/macOS installs to `~/.local/bin` without editing shell profiles. The sh installer requires `curl`, `unzip` and `sha256sum` (Linux) or `shasum` (macOS). Run the same command to update. See the [installation guide](website/src/content/docs/installation.md#select-a-version-or-directory) for version selection, custom directories, PATH setup and removal.
+**Windows.** PowerShell 5.1 or PowerShell 7 on x64 and ARM64.
 
-### Install from crates.io
-
-```bash
-cargo install mdv
+```powershell
+irm https://whosowsee.github.io/mdv/install.ps1 | iex
 ```
 
-This installs the latest published release from crates.io into your Cargo bin directory.
+The scripts download the latest GitHub release and verify its SHA-256 digest. Rust is not required. Run the same command to update.
 
-### Install RPM or Arch Linux packages
+See the [installation guide](https://whosowsee.github.io/mdv/docs/installation/) for RPM and Arch Linux packages, Nix, source builds, version selection and removal.
 
-Download the package for your system from [Releases](https://github.com/WhoSowSee/mdv/releases), or use the commands below with `curl`. RPM packages support x86_64 and ARM64 Linux and require glibc 2.39 or newer. Arch Linux packages support x86_64.
-
-For Fedora and compatible RPM systems:
-
-```bash
-curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
-sudo dnf install "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
-```
-
-For Arch Linux:
-
-```bash
-curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
-sudo pacman -U "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
-```
-
-Replace every `<VERSION>` with the release version. For ARM64 RPM packages, replace `x86_64` with `aarch64` in both lines. If you downloaded the file manually, run only the second line. These packages include the executable and license; the Rust toolchain is not required.
-
-### Install with Nix (Flake)
-
-```bash
-nix run github:WhoSowSee/mdv
-nix profile install github:WhoSowSee/mdv
-```
-
-The Nix flake builds mdv from `flake.nix` and installs the `mdv` binary into the Nix profile. Use `nix run` to try it without installing, or `nix profile install` for a persistent install.
-
-It uses the stable Nixpkgs 26.05 branch and supports x86_64 and ARM64 Linux.
-
-### Install from source
-
-```bash
-git clone https://github.com/WhoSowSee/mdv.git
-cd mdv
-cargo install --path .
-```
-
-The command above builds mdv and places the binary into the Cargo bin directory (usually `~/.cargo/bin`).
-
-### Run locally without installing
-
-```bash
-cargo build --release
-./target/release/mdv README.md
-```
-
-Use the `mdv` binary from `target/release` directly or add it to your PATH.
-
-## Development
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for reporting issues, preparing pull requests, and contribution guidelines.
-
-For AI-assisted contributions, read the [AI Policy](AI_POLICY.md).
-
-Local development uses [rust-toolchain.toml](rust-toolchain.toml) to select stable Rust with `rustfmt` and `clippy`. Formatting settings are in [rustfmt.toml](rustfmt.toml).
-
-CI checks, package builds, and release publishing are described in the [CI and release documentation](docs/modules/ci-release.md).
-
-The optional [justfile](justfile) provides development commands. Install [just](https://just.systems/man/en/) 1.56.0 or newer with `cargo install --locked just`.
-
-```text
-just --list
-just check-all
-just fmt
-just run-dev README.md
-```
-
-Windows requires PowerShell 7.4+ (`pwsh.exe` on `PATH`); `check-all` also requires Python 3.11+. See [development and testing documentation](docs/modules/testing.md) for all commands and details.
-
-### Website
-
-The project website lives in [website/](website/README.md) and uses Astro,
-TypeScript, and Tailwind CSS. Use Bun 1.4.4 or newer and Node.js 22.23.4 or newer:
+## Quick start
 
 ```sh
-cd website
-bun install --frozen-lockfile
-bun run dev
+mdv README.md                     # render a file
+mdv --theme catppuccin README.md  # choose a theme
+mdv --preset reader README.md     # apply a preset
+mdv --monitor README.md           # re-render when the file changes
+mdv -i                            # browse Markdown files in the current directory
+cat notes.md | mdv                # read from a pipe
 ```
 
-The printed local URL includes `/mdv/`. `bun run build` refreshes release package
-links, checks types and generates `website/dist/`; it requires GitHub API access.
-The [website workflow](.github/workflows/website.yml) checks pull requests and
-publishes successful main builds to GitHub Pages, including after a tag release.
-Select **GitHub Actions** in **Settings > Pages > Source** once.
-
-The website includes complete user guides and CLI/YAML references at `/mdv/docs/`,
-with navigation, full-text search, and page outlines. Its Markdown sources live in
-`website/src/content/docs/`.
-The language icon switches the current page between English and Russian.
-Russian pages start at `/mdv/ru/`, with documentation at `/mdv/ru/docs/`.
-
-## Usage
-
-```text
-mdv [OPTIONS] [FILE]
-mdv help
-```
-
-Also, mdv supports reading from standard input (stdin) and working in pipelines
-
-```text
-mdv [OPTIONS] -
-cat <FILE> | mdv
-```
-
-### Output and workflow
-
-- `--html` - prints HTML instead of terminal formatting.
-- `-E, --render-html` - renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally. HTML nesting is limited to 64 DOM elements.
-- `-N, --line-numbers [<MODE>]` - prefixes terminal and pager rows with line numbers. Without a mode, it numbers rendered rows; `source` uses physical Markdown source lines, `separator` adds a separator, and `"source;separator"` combines both.
-- `--color <auto|always|never>` - controls terminal styling. `auto` enables ANSI and OSC 8 only when stdout is a terminal, `always` preserves styling through pipes, and `never` emits plain rendered output.
-- `--color-depth <auto|16|256|truecolor>` - detects the terminal palette or sets its limit explicitly. Applies to document colors and the interactive interface; default `auto`.
-- `--hide-comments` - removes Markdown comments from the rendered output.
-- `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` - controls an exact `---`-delimited YAML property mapping beginning on the first line. `hidden` omits it; `panel` renders a property panel; `table` uses Property/Value columns; `plain` emits normalized key/value lines; `inline` joins properties into one flowing row; `blocks` places each value below its key; `code` renders highlighted YAML; and `source` parses the complete input as ordinary Markdown.
-- `--theme-info [FILE]` - shows the active palette; when `FILE` is provided it renders the file along with palette information.
-- `--from <TEXT>` - starts rendering from the first match of `<TEXT>`. Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
-- `-r, --reverse` - renders the document starting from the end while keeping block formatting intact.
-- `-p, --pager[=<COMMAND>]` - opens the rendered output in a pager. A bare flag uses `MDV_PAGER` when set and the default pager otherwise. `--pager=default` selects the default backend (currently the built-in `minus`), `--pager=builtin` explicitly selects `minus`, and a command such as `--pager="less -R"` receives the rendered output on stdin.
-- `-i, --interactive` - opens the interactive document browser. Running `mdv` without arguments in a terminal opens the current directory, and passing a directory opens that directory. Redirected output does not open the browser implicitly. The browser recursively finds Markdown files while honoring hidden-file and `.gitignore` rules.
-- `--monitor` - watches the source file and re-renders when it changes.
-- `-F, --config-file <CONFIG_DIR>` - reads configuration from the provided directory.
-- `-P, --preset <NAME>` - applies a built-in or user preset above the configuration file and below explicit CLI options.
-- `--preset-info` - lists available presets when no positional `FILE` is provided. `mdv --preset-info FILE --preset NAME` renders the document and prints `Current preset: NAME`; with `FILE` but no `--preset`, the flag does not alter rendering.
-- `-n, --no-config` - skips `config.yaml`/`config.yml`; presets remain available.
-- `--init-config [CONFIG_DIR]` - creates the default config file. Uses the provided directory, `--config-file`, `MDV_CONFIG_PATH`, or the default config directory.
-
-### Theming
-
-- `-t, --theme <NAME>` - chooses a built-in theme (default `terminal`).
-- `-T, --code-theme <NAME>` - sets the syntax highlight palette (default `terminal`).
-- `--syntaxes-dir <DIR>` - recursively loads custom `.sublime-syntax` files on top of the embedded syntax set. Custom entries take precedence over matching built-in syntaxes.
-- `-b, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` - selects an indented borderless block, a single gutter, or a boxed frame. Labels are hidden by default; `show-name` displays the language name, `show-icon` displays its icon, and both options may be combined (default `basic`).
-- `--math-block-style <basic|simple|pretty>` - selects the presentation for display formulas and fenced `math`/`latex`/`tex` blocks.
-- `-K, --code-line-numbers [<MODE>]` - numbers rows inside each code block. Without a mode, every wrapped terminal row is numbered; `source` numbers physical code lines and leaves wrapped continuations unnumbered, `separator` adds a separator, and `"source;separator"` combines both modes.
-- `--custom-theme <key=value;...>` - overrides UI colors on top of the selected theme.
-- `--inline-style <STYLES>` - overrides decorations for `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, and `highlight`. Use `element:property=true,property=false` entries separated by `;`; properties are `backticks`, `bold`, `italic`, `underline`, and `strikethrough` (for example `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
-- `--custom-code-theme <key=value;...>` - overrides syntax colors using the same format as `--custom-theme`.
-- `--custom-code-block <lang:icon=...,label=...,aliases=...>[;...]` - overrides the icon, label, and aliases for specific code block languages. Multiple languages are separated by `;`, options within one language by `,`, and aliases by `|` (for example, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Works for any language hint, even if it is not in the built-in icon mapping. Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic. Use `default:icon=...` to set the fallback icon for unknown languages.
-
-### Callouts
-
-- `-C, --callout-style <pretty|simple>[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]` - sets the callout layout and label behavior. `show-icons` uses Nerd Font glyphs; `show-simple-icons` uses portable ASCII markers such as `[i]`, `[*]`, `[!]`, and `[x]`. The two icon options cannot be combined.
-  `label-inside` is only supported with `pretty`, `fold-icons` requires `show-icons`.
-- `--custom-callout <name:icon=...,color=...;...>` - overrides or adds callout labels.
-  `icon` and `color` are optional; color formats match `--custom-theme`.
-- A Nerd Font is required in the terminal for icons enabled by `show-icons` and `fold-icons` to render correctly. `show-simple-icons` does not require a Nerd Font.
-
-### Checkboxes
-
-- `-x, --checkbox-style <square|circle>` - renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers. Requires a Nerd Font in the terminal.
-- `--custom-checkbox <PAIRS>` - overrides built-in checkbox icons or adds new states (only with `--checkbox-style`). Each semicolon-separated pair is either `<char>:<icon>[:<color>]` or `<char>:<color>`. The color-only form keeps an existing icon or uses the default unchecked icon for a new state. Colors accept named, hex, rgb, and `ansi(N)` values.
-  - Override:  `--custom-checkbox ' :󰀦'`          replace the unchecked icon
-  - Add:       `--custom-checkbox '*:󰞋'`          add a new `[*]` checkbox state
-  - Color:     `--custom-checkbox ' :󰀦:yellow'`   or `#ff0000`, `128,1,1`, `ansi(200)`
-  - Iconless:  `--custom-checkbox '?:red'`           keep the default `[?]` icon, apply red color
-  - New iconless state: `--custom-checkbox '*:yellow'` use the default unchecked icon, apply yellow
-
-### Lists
-
-- `-L, --list-style <style>` - replaces the default `-` unordered-list markers with a level-aware icon set. The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--list-style 'type:unicode;size:small'`.
-  - `size` changes only Nerd Font markers. Unicode accepts either value but renders the same markers; their spacing may vary by font. Verified with Nerd Font families, especially JetBrainsMono Nerd Font.
-- `-D, --definition-marker-style <unicode|nerd-font>` - renders definition descriptions with a built-in Unicode or Nerd Font marker.
-- `--uniform-list-marker <level:1-4|icon:glyph>` - uses one marker at every nesting level (only with `--list-style`). `level:2` reuses level 2 from the selected set; `icon:*` uses a custom glyph.
-- `--custom-list <level>:<icon>[:<color>];...` - overrides the marker icon and/or color for specific nesting levels (only with `--list-style`). Level is 1-based; icon is the marker glyph. Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`), and `ansi(N)` values.
-  - Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
-  - Icon only:     `--custom-list '1:>'`          marker `>` in theme color
-  - Color only:    `--custom-list '1:red'`        keep built-in icon, red color
-
-### Layout and wrapping
-
-- `-c, --cols <N>` - enforces the output width. When omitted mdv uses the detected terminal width or a fallback of 80 columns.
-- `-m, --margin <right:N;left:N>` - reserves separate left and right terminal margins. An omitted side defaults to `0`.
-- `--tab-length <N>` - replaces tab characters with `N` spaces (default `4`).
-- `-w, --wrap <char|word|none>` - selects the break strategy for text, code, callouts, and table cells (default `char`).
-- `--reflow` - collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens. Requires wrapping to be enabled; hard breaks are preserved.
-- `-W, --table-wrap <fit|wrap|none>` - chooses table geometry: fit cells, split columns into blocks, or allow overflow (default `fit`). Cell breaks still follow `--wrap`.
-- `-B, --table-borders` - restores full rounded table borders.
-- `-S, --table-smart-indent` - automatic table indent adjustment based on available width.
-- `-H, --heading-layout <level|center|flat|none>` - controls heading indentation (default `level`).
-- `--show-heading-markers` - prefixes headings with markdown-style markers matching their level.
-- `-I, --smart-indent` - smooths indentation jumps between heading levels in `level` mode.
-- `--code-wrap-indent <none|base|double>` - sets the hanging indent applied to wrapped code block lines (default `double`).
-- `--block-spacing <spec>` - overrides top and bottom blank lines per block. Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
-- `--horizontal-rule-style <pretty|simple>` - draws Markdown rules and HTML `<hr>` with decorative endpoints or as a continuous line.
-
-### Content visibility
-
-- `--show-empty-elements` - keeps normally hidden empty headings, lists, block quotes, code blocks, and tables in the output.
-- `--no-code-guessing` - disables heuristic detection of code block languages (unknown blocks remain plain text).
-
-### Links
-
-- `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` - changes how links are displayed (default `clickable`).
-- `-l, --link-overflow <wrap|cut|tablecut|none>` - controls whether links wrap, are shortened, or overflow the available width (default `wrap`).
-
-### Footnotes
-
-- `--footnote-style <endnotes|attached>` - places footnotes at the end of the document or immediately after the block that references them, including paragraphs, tables, and list items.
-- `--missing-footnote-style <show|hide>` - controls placeholder entries for missing, invalid, or empty footnote definitions.
-  `show` renders a placeholder message in the footnote block
-  `hide` omits those entries entirely.
-
-### Information
-
-- `mdv help` - opens the full `mdv --help` output in the selected pager. It uses `MDV_PAGER` when set and the built-in pager otherwise; when input or output is redirected, it prints the same help directly.
-- `-h` - shows a concise option summary.
-- `--help` - shows full help with value descriptions, formats, and examples.
-- `-V, --version` - prints the current version.
+Run `mdv --help` for the full option list.
 
 ## Configuration
 
-mdv merges settings from several sources in the following order of precedence:
+Create a configuration file with `mdv --init-config`. CLI options have highest priority, followed by the `--preset` selection, the configuration file and built-in defaults. For `color`, `MDV_COLOR` takes priority over the preset and configuration file.
 
-1. CLI options (highest priority).
-2. The preset selected with `--preset`.
-3. The configuration loaded from `--config-file`, `MDV_CONFIG_PATH`, or the user-level directory.
-4. Built-in defaults.
-
-Create the default user config with `mdv --init-config`. Add a directory path (`mdv --init-config custom/dir`), use `--config-file <CONFIG_DIR>`, or set `MDV_CONFIG_PATH` to write it somewhere else.
-
-Configuration files must be written in YAML (`.yaml` or `.yml`). See the [configuration template](docs/examples/config.yaml) for all settings and examples:
-
-```yaml
-# docs/examples/config.yaml
-theme: "terminal"
-code_theme: null
-inline_style: {}
-wrap: "char"
-table_wrap: "fit"
-table_borders: false
-heading_layout: "level"
-smart_indent: false
-block_spacing: null
-code_wrap_indent: "double"
-link_style: "clickable"
-link_overflow: "wrap"
-```
-
-### Structured complex settings
-
-Configuration files and presets accept YAML mappings for `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list`, and `callout_style`. CLI options use the corresponding compact strings, which remain valid in YAML too.
-
-Theme colors, `inline_style`, and the four custom-entry settings merge by field, preserving omitted properties and entries. For example, `--custom-callout 'note:color=red'` changes only the note color, retaining its icon and other callouts.
-
-For custom entries, `null` clears a property or entry; root `null` or `{}` clears the entire setting. An explicitly supplied `aliases` list replaces the earlier list; `[]` clears it.
-
-Configuration and preset `block_spacing` mappings replace the earlier mapping; `--block-spacing` merges only the specified elements and sides. Other structured settings use whole-value replacement. See the [configuration reference](docs/modules/cli-configuration.md#structured-yaml-settings) for detailed merge and clearing rules.
-
-## Presets
-
-mdv ships with four presets:
-
-- `reader` - word wrapping, paragraph reflow, attached footnotes, an inline link table, and the `nord` theme for long-form reading.
-- `compact` - flat headings, simple code/callout blocks, hidden code labels, and end-of-document links for dense terminal output.
-- `pretty` - framed tables and code blocks, with list and checkbox icons. Icons require a Nerd Font.
-- `showcase` - centered headings, `tokyonight`, rich code/callout frames, checkboxes, and list icons. This preset requires a Nerd Font for its icons.
-
-Select one with `mdv --preset reader README.md`. Explicit CLI options override the selected preset, so `mdv --preset compact --cols 100 README.md` uses the compact preset at 100 columns.
-
-User presets are `*.yaml` or `*.yml` files under `<config_dir>/presets/`. The directory follows the same resolution order as `config.yaml`: `--config-file`, `MDV_CONFIG_PATH`, then `~/.config/mdv/`. It is optional, and `--no-config` does not disable it.
-
-```yaml
-# <config_dir>/presets/project-docs.yaml
-name: project-docs
-theme: monokai
-wrap: word
-reflow: true
-table_wrap: wrap
-link_style: inlinetable
-inline_style:
-  code:
-    backticks: false
-```
-
-Every preset accepts the same keys and values as [`docs/examples/config.yaml`](docs/examples/config.yaml), plus the required non-empty `name` field. Presets are partial layers: omitted settings remain unchanged, while explicit values-including `false`, default-valued options, and `null`-override the configuration beneath them. A user preset with the same name as a built-in replaces the built-in. Run `mdv --preset-info` to list the active catalog. When a file and preset are both provided, `mdv --preset-info FILE --preset NAME` renders the file with `Current preset: NAME`; without `--preset`, the flag does not alter file rendering.
-
-## Environment variables
-
-- `MDV_CONFIG_PATH` - custom path to a configuration directory; also used by `mdv --init-config` when no directory is provided.
-- `MDV_EDITOR` - editor opened from pager mode; takes priority over `EDITOR`. Known GUI editors launch asynchronously while terminal editors block until exit; Emacs and Vim modes are selected from their CLI arguments. Unknown commands are treated as terminal editors. Malformed commands and non-Unicode editor settings are reported as errors.
-- `MDV_EDITOR_MODE` - optional editor launch mode: `tui` waits for the editor to exit, while `gui` launches it asynchronously. When unset, the mode is detected automatically. Explicit `tui` may be used with GUI launchers to pause the pager; explicit `gui` overrides unknown commands but is rejected for known terminal editors to prevent both processes from controlling the same terminal. Invalid values and conflicts are reported in the pager without launching the editor.
-- `MDV_PAGER` - pager command, optionally with quoted paths and arguments (for example, `less -R`). It selects the backend for `--pager`, `mdv help`, and documents opened from the interactive browser, but does not enable paging for ordinary output by itself. An explicit `--pager=<COMMAND>` has higher priority; `default` selects the default backend (currently built-in `minus`), while `builtin` explicitly selects `minus`. Empty, malformed, non-Unicode, and recursive `mdv` commands are errors. Commands are split into a program and arguments and run directly without shell interpretation.
-- `MDV_COLOR` - sets `auto`, `always`, or `never`; an explicit `--color` has higher priority.
+The built-in themes are `terminal` (default), `solarized-dark`, `nord`, `tokyonight`, `kanagawa`, `gruvbox`, `monokai`, `material-ocean` and `catppuccin`. The built-in presets are `reader`, `compact`, `pretty` and `showcase`. User themes and presets are YAML files in the configuration directory. See [Themes](https://whosowsee.github.io/mdv/docs/themes/) and [Presets](https://whosowsee.github.io/mdv/docs/presets/) for previews and file formats.
 
 ## Themes
-
-Built-in themes include:
 
 <details>
   <summary><code>terminal</code></summary>
@@ -482,57 +203,19 @@ Built-in themes include:
   </div>
 </details>
 
-Switch between them with `--theme` or set a default in your configuration file.
+## Documentation
 
-Use `--custom-theme` to override colors: `key=value` for root fields, `section:field=value` for grouped fields, separated by semicolons:
+Full documentation is on the [project website](https://whosowsee.github.io/mdv/docs/) ([Русский](https://whosowsee.github.io/mdv/ru/docs/)).
 
-```sh
-mdv README.md --custom-theme 'code:text=darkgrey;emphasis:background=null;details_border=grey;syntax:number=magenta'
-```
+- **Getting started** · [Introduction](https://whosowsee.github.io/mdv/docs/), [Installation](https://whosowsee.github.io/mdv/docs/installation/), [Usage](https://whosowsee.github.io/mdv/docs/usage/)
+- **Reading** · [Document browser](https://whosowsee.github.io/mdv/docs/browser/), [Pager and editor](https://whosowsee.github.io/mdv/docs/pager/), [Live monitoring](https://whosowsee.github.io/mdv/docs/monitoring/)
+- **Formatting** · [Layout and wrapping](https://whosowsee.github.io/mdv/docs/rendering/), [Code blocks](https://whosowsee.github.io/mdv/docs/code-blocks/), [Math](https://whosowsee.github.io/mdv/docs/math/), [Callouts](https://whosowsee.github.io/mdv/docs/callouts/), [Lists and checkboxes](https://whosowsee.github.io/mdv/docs/lists/), [Links and footnotes](https://whosowsee.github.io/mdv/docs/links/), [Front matter](https://whosowsee.github.io/mdv/docs/front-matter/), [HTML](https://whosowsee.github.io/mdv/docs/html/)
+- **Customization** · [Themes](https://whosowsee.github.io/mdv/docs/themes/), [Theme field reference](https://whosowsee.github.io/mdv/docs/theme-reference/), [Presets](https://whosowsee.github.io/mdv/docs/presets/), [Custom syntaxes](https://whosowsee.github.io/mdv/docs/syntaxes/)
+- **Reference** · [Configuration](https://whosowsee.github.io/mdv/docs/configuration/), [YAML reference](https://whosowsee.github.io/mdv/docs/configuration-reference/), [Environment variables](https://whosowsee.github.io/mdv/docs/environment/), [Complete CLI reference](https://whosowsee.github.io/mdv/docs/cli/)
 
-`code_theme` selects the syntax palette; `--custom-code-theme` overrides individual syntax colors, accepting both `keyword=blue` and `syntax:keyword=blue`. See [theme override priorities](docs/modules/themes-and-styling.md#application-order) and [color formats](docs/modules/themes-and-styling.md#color-formats).
+## Development
 
-Run `mdv --theme-info` to preview the active palette, or `mdv --theme-info README.md` to see it applied to a document.
-
-### User themes
-
-Drop one or more `*.yaml`/`*.yml` files into `<config_dir>/themes/` to register your own themes. The directory follows the same resolution order as `config.yaml` (the `--config-file` flag, `$MDV_CONFIG_PATH`, then `~/.config/mdv/`). Two ready-to-use examples ship with the repository:
-
-- [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) - uses `extends: monokai` to override just a handful of fields.
-- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - example of a standalone palette.
-
-```yaml
-# <config_dir>/themes/warm.yaml
-name: warm
-description: Warm red accent layered on top of monokai.
-extends: monokai
-pager:
-  transparent: true
-
-h1: "#ff5577"
-link: "#66ccff"
-background: "#1c1c1c"
-
-inline_style:
-  code:
-    backticks: false
-    underline: true
-
-syntax:
-  keyword: "#ff5577"
-```
-
-Theme file basics:
-
-- `name` (required) - the value accepted by `--theme`.
-- `description` (optional) - shown in `mdv --theme-info`; inherits from the base theme.
-- `extends` (optional) - a built-in theme or a user theme loaded earlier in alphabetical order. Without it, missing fields inherit from `terminal`.
-- `pager` - footer colors, transparency, selection, and search highlighting in the built-in pager.
-- `inline_style` - inline Markdown decorations; colors belong to the corresponding color sections.
-
-Colors inherit per field. Explicit `null` clears an inherited optional border or background color override; `reset` uses the terminal's default color. See the [field reference](docs/modules/themes-and-styling.md#theme-field-reference) and [inheritance rules](docs/modules/themes-and-styling.md#inheritance-and-null) for the full schema and special cases. The [bundled theme files](assets/config/themes/) show all fields; [terminal.yaml](assets/config/themes/terminal.yaml) defines the default palette.
-
-A user theme with the same name as a built-in takes precedence and fully replaces it, which is the supported way to fork a built-in without copying every field. Broken or unrecognized files are skipped with a warning, so a single bad theme does not break the rest.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for issues and pull requests, and the [AI Policy](AI_POLICY.md) for AI-assisted contributions. The toolchain, `just` commands, tests, CI and the website sources are described in the [development guide](https://whosowsee.github.io/mdv/docs/development/).
 
 ---
 

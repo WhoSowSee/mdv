@@ -32,329 +32,50 @@
 > - **Живой мониторинг** - Следите за файлами с `--monitor`, чтобы видеть обновления сразу после сохранения.
 > - **CLI, удобный для скриптов** - Чтение из stdin, прыжки к разделам через `--from`, перенос конфигурации между машинами.
 
-> [!IMPORTANT]
->
-> ### Требования
->
-> - Rust 1.95 или новее для установки с crates.io или из исходников
-> - Терминал с поддержкой ANSI-цветов для полноценного отображения
-
 ## Установка
 
-### Установка готового файла одной командой
+**Cargo.** Требуется Rust 1.95 или новее.
 
-Windows PowerShell 5.1 или PowerShell 7 (x64 и ARM64):
-
-```powershell
-irm https://whosowsee.github.io/mdv/install.ps1 | iex
+```sh
+cargo install mdv
 ```
 
-Linux и macOS (x86_64 и ARM64):
+**macOS и Linux.** Поддерживаются x86_64 и ARM64.
 
 ```sh
 curl -fsSL https://whosowsee.github.io/mdv/install.sh | sh
 ```
 
-Скрипты скачивают последний релиз GitHub и проверяют SHA-256 перед заменой бинарника. Rust не нужен. Windows устанавливает в `%LOCALAPPDATA%\Programs\mdv` и добавляет каталог в пользовательский `PATH` и текущую сессию; Linux/macOS устанавливает в `~/.local/bin` без правки профилей оболочек. Для sh-установщика нужны `curl`, `unzip` и `sha256sum` (Linux) или `shasum` (macOS). Повторите команду для обновления. Выбор версии и каталога, настройка PATH и удаление описаны в [руководстве по установке](website/src/content/docs/ru/installation.md#выбор-версии-и-каталога).
+**Windows.** PowerShell 5.1 или PowerShell 7 на x64 и ARM64.
 
-### Установка с crates.io
-
-```bash
-cargo install mdv
+```powershell
+irm https://whosowsee.github.io/mdv/install.ps1 | iex
 ```
 
-Так вы установите последнюю опубликованную версию из crates.io в каталог бинарников Cargo.
+Скрипты скачивают последний релиз GitHub и проверяют SHA-256. Rust не нужен. Для обновления повторите ту же команду.
 
-### Установка RPM-пакетов и пакетов Arch Linux
+Установка RPM и пакетов Arch Linux, Nix, сборка из исходников, выбор версии и удаление описаны в [руководстве по установке](https://whosowsee.github.io/mdv/ru/docs/installation/).
 
-Скачайте пакет для своей системы из [Releases](https://github.com/WhoSowSee/mdv/releases) или используйте команды с `curl` ниже. RPM-пакеты поддерживают Linux x86_64 и ARM64 и требуют glibc 2.39 или новее. Пакеты Arch Linux поддерживают x86_64.
-
-Для Fedora и совместимых RPM-систем:
-
-```bash
-curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
-sudo dnf install "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
-```
-
-Для Arch Linux:
-
-```bash
-curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
-sudo pacman -U "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
-```
-
-Замените все `<VERSION>` номером релиза. Для RPM на ARM64 замените `x86_64` на `aarch64` в обеих строках. Если файл скачан вручную, выполните только вторую строку. Эти пакеты содержат бинарник и лицензию; Rust для их установки не требуется.
-
-### Установка через Nix (Flake)
-
-```bash
-nix run github:WhoSowSee/mdv
-nix profile install github:WhoSowSee/mdv
-```
-
-Nix-пакет собирает mdv из `flake.nix` и устанавливает бинарник `mdv` в Nix-профиль. `nix run` запускает без установки, `nix profile install` - для постоянной установки.
-
-Используется стабильная ветка Nixpkgs 26.05; поддерживаются Linux x86_64 и ARM64.
-
-### Установка из исходников
-
-```bash
-git clone https://github.com/WhoSowSee/mdv.git
-cd mdv
-cargo install --path .
-```
-
-Команда соберёт mdv и установит бинарник в каталог Cargo (обычно `~/.cargo/bin`).
-
-### Запуск без установки
-
-```bash
-cargo build --release
-./target/release/mdv README.md
-```
-
-Можно запускать бинарник из `target/release` напрямую или добавить путь к нему в `PATH`.
-
-## Разработка
-
-Порядок сообщения о проблемах, подготовки pull request и правила участия описаны в [CONTRIBUTING.md](CONTRIBUTING.md).
-
-При использовании AI для подготовки изменений прочитайте [AI Policy](AI_POLICY.md).
-
-Для локальной разработки [rust-toolchain.toml](rust-toolchain.toml) выбирает стабильный Rust с `rustfmt` и `clippy`. Настройки форматирования находятся в [rustfmt.toml](rustfmt.toml).
-
-Проверки CI, сборка пакетов и публикация релизов описаны в [документации CI и релизов](docs/modules/ci-release.md).
-
-Необязательный [justfile](justfile) содержит команды для разработки. Установите [just](https://just.systems/man/en/) версии 1.56.0 или новее командой `cargo install --locked just`.
-
-```text
-just --list
-just check-all
-just fmt
-just run-dev README.md
-```
-
-На Windows нужен PowerShell 7.4+ (`pwsh.exe` в `PATH`); для `check-all` также требуется Python 3.11+. Все команды и подробности — в [документации разработки и тестирования](docs/modules/testing.md).
-
-### Сайт
-
-Сайт проекта находится в [website/](website/README.md) и использует Astro,
-TypeScript и Tailwind CSS. Нужны Bun 1.4.4 или новее и Node.js 22.23.4 или новее:
+## Быстрый старт
 
 ```sh
-cd website
-bun install --frozen-lockfile
-bun run dev
+mdv README-RU.md                     # Открыть Markdown-файл
+mdv --theme catppuccin README-RU.md  # Выбрать тему
+mdv --preset reader README-RU.md     # Применить пресет
+mdv --monitor README-RU.md           # Обновлять вывод при изменении файла
+mdv -i                               # Выбрать Markdown-файл в текущем каталоге
+cat notes.md | mdv                   # Прочитать Markdown из конвейера
 ```
 
-Выведенный локальный адрес уже содержит путь `/mdv/`. `bun run build` обновляет
-ссылки на пакеты релиза, проверяет типы и собирает `website/dist/`; нужен доступ к GitHub API.
-[Workflow сайта](.github/workflows/website.yml) проверяет pull request и публикует
-успешные сборки main в GitHub Pages, в том числе после релиза по тегу.
-Один раз выберите **GitHub Actions** в **Settings > Pages > Source**.
-
-Сайт включает полные пользовательские руководства и справочники CLI/YAML по адресу
-`/mdv/docs/`, с навигацией, полнотекстовым поиском и оглавлениями. Исходники Markdown находятся в
-`website/src/content/docs/`.
-Значок языка переключает текущую страницу между английским и русским.
-Русская версия начинается с `/mdv/ru/`, документация находится в `/mdv/ru/docs/`.
-
-## Использование
-
-```text
-mdv [OPTIONS] [FILE]
-mdv help
-```
-
-Также, mdv поддерживает чтение из стандартного ввода (stdin) и работу в конвейерах (pipe)
-
-```text
-mdv [OPTIONS] -
-cat <FILE> | mdv
-```
-
-### Вывод и рабочий процесс
-
-- `--html` - печать HTML вместо терминального форматирования.
-- `-E, --render-html` - рендер встроенных HTML-фрагментов как форматированного терминального содержимого вместо буквального показа тегов. Вложенность HTML ограничена 64 DOM-элементами.
-- `-N, --line-numbers [<MODE>]` - добавление номеров строк в терминальный вывод и pager. Без режима нумеруются отрендеренные строки; `source` использует физические строки Markdown, `separator` добавляет разделитель, а `"source;separator"` сочетает оба режима.
-- `--color <auto|always|never>` - управление терминальным оформлением. `auto` включает ANSI и OSC 8 только при выводе в терминал, `always` сохраняет оформление в pipe, а `never` выводит отрендерированный текст без оформления.
-- `--color-depth <auto|16|256|truecolor>` - автоматическое определение палитры терминала или её явное ограничение. Действует на цвета документа и интерактивного интерфейса; по умолчанию `auto`.
-- `--hide-comments` - скрытие Markdown-комментариев в итоговом выводе.
-- `--front-matter <hidden|panel|table|plain|inline|blocks|code|source>` - управление YAML-словарём свойств с точными разделителями `---`, начинающимся с первой строки. `hidden` скрывает его; `panel` показывает панель свойств; `table` выводит колонки «Property» и «Value»; `plain` - нормализованные строки «ключ: значение»; `inline` объединяет свойства в одну переносимую строку; `blocks` помещает значение под ключом; `code` выводит YAML с подсветкой; `source` разбирает весь ввод как обычный Markdown.
-- `--theme-info [FILE]` - показ активной палитры; при указании `FILE` рендерит документ вместе со сведениями о теме.
-- `--from <TEXT>` - рендер начиная с первой строки, содержащей `<TEXT>`. Добавление `:<lines>` ограничит число строк (например, `--from "Install:20"`).
-- `-r, --reverse` - рендер документа с конца, сохраняя форматирование блоков.
-- `-p, --pager[=<COMMAND>]` - открыть результат в pager. Голый флаг использует `MDV_PAGER`, если переменная задана, иначе pager по умолчанию. `--pager=default` выбирает backend по умолчанию (сейчас встроенный `minus`), `--pager=builtin` явно выбирает `minus`, а команда вроде `--pager="less -R"` получает отрендерированный вывод через stdin
-- `-i, --interactive` - открыть интерактивный браузер документов. Запуск `mdv` без аргументов в терминале открывает текущий каталог, а путь к каталогу открывает указанный каталог. При перенаправленном выводе браузер автоматически не запускается. Браузер рекурсивно находит Markdown-файлы с учётом скрытых путей и `.gitignore`.
-- `--monitor` - наблюдение за файлом и автоматический перерендер при изменениях.
-- `-F, --config-file <CONFIG_DIR>` - чтение настроек из указанного каталога.
-- `-P, --preset <NAME>` - применение встроенного или пользовательского пресета поверх конфигурационного файла и до явных параметров CLI.
-- `--preset-info` - вывод списка доступных пресетов, если позиционный `FILE` не указан. Команда `mdv --preset-info FILE --preset NAME` рендерит документ и печатает `Current preset: NAME`; с `FILE`, но без `--preset`, флаг не меняет рендеринг.
-- `-n, --no-config` - игнорирование `config.yaml`/`config.yml`; пресеты остаются доступными.
-- `--init-config [CONFIG_DIR]` - создание конфигурационного файла по умолчанию. Используется указанный каталог, `--config-file`, `MDV_CONFIG_PATH` или каталог по умолчанию.
-
-### Темы
-
-- `-t, --theme <NAME>` - выбор встроенной темы (по умолчанию `terminal`).
-- `-T, --code-theme <NAME>` - выбор палитры подсветки кода (по умолчанию `terminal`).
-- `--syntaxes-dir <DIR>` - рекурсивная загрузка пользовательских `.sublime-syntax` поверх встроенного набора. Пользовательские определения имеют приоритет при совпадении со встроенными.
-- `-b, --code-block-style <basic|simple|pretty>[:show-name;show-icon]` - стиль оформления блоков кода: безрамочный блок с отступом, одинарная граница или полная рамка. По умолчанию подпись скрыта; `show-name` показывает название языка, `show-icon` - его иконку, обе опции можно комбинировать (по умолчанию `basic`).
-- `--math-block-style <basic|simple|pretty>` - стиль display-формул и fenced-блоков `math`/`latex`/`tex`.
-- `-K, --code-line-numbers [<MODE>]` - нумерация строк внутри каждого блока кода. Без режима нумеруется каждая перенесённая терминальная строка; `source` нумерует физические строки кода и оставляет продолжения без номера, `separator` добавляет разделитель, а `"source;separator"` сочетает оба режима.
-- `--custom-theme <key=value;...>` - переопределение цветов интерфейса поверх выбранной темы.
-- `--inline-style <STYLES>` - переопределение оформления `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough` и `highlight`. Записи формата `element:property=true,property=false` разделяются `;`; доступны свойства `backticks`, `bold`, `italic`, `underline` и `strikethrough` (например, `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
-- `--custom-code-theme <key=value;...>` - переопределение цветов подсветки кода в том же формате, что и `--custom-theme`.
-- `--custom-code-block <lang:icon=...,label=...,aliases=...|...>` - переопределение иконки, подписи и псевдонимов для конкретных языков блоков кода. Несколько языков разделяются `;`, опции внутри одного языка - `,`, а псевдонимы - `|` (например, `python:icon=*,label=Python,aliases=py|py3;rust:icon=`). Работает для любого указанного языка, даже если его нет во встроенной карте иконок. Подсветка синтаксиса применяется только к языкам, которые поддерживает текущая логика подсветки mdv. Используйте `default:icon=...`, чтобы задать fallback-иконку для неизвестных языков.
-
-### Callout-блоки
-
-- `-C, --callout-style <pretty|simple>[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]` - стиль callout-блоков и правила отображения подписи. `show-icons` использует глифы Nerd Font, а `show-simple-icons` - переносимые ASCII-маркеры вроде `[i]`, `[*]`, `[!]` и `[x]`. Эти два параметра нельзя комбинировать.
-  `label-inside` поддерживается только с `pretty`, `fold-icons` требует `show-icons`.
-- `--custom-callout <name:icon=...,color=...;...>` - переопределение или добавление подписей callout.
-  `icon` и `color` можно указывать по отдельности; формат цвета как в `--custom-theme`.
-- Для корректного отображения иконок, включённых через `show-icons` и `fold-icons`, нужны шрифты Nerd Fonts в терминале. Для `show-simple-icons` они не требуются.
-
-### Чекбоксы
-
-- `-x, --checkbox-style <square|circle>` - рендерит чекбоксы task-list как иконки Nerd Font вместо стандартных `[ ]` / `[x]`. Требует шрифт Nerd Font в терминале.
-- `--custom-checkbox <PAIRS>` - переопределяет встроенные иконки чекбоксов или добавляет новые состояния (только с `--checkbox-style`). Каждая разделённая точкой с запятой пара задаётся как `<char>:<icon>[:<color>]` или `<char>:<color>`. Форма только с цветом сохраняет существующую иконку, а для нового состояния использует стандартную иконку неотмеченного чекбокса. Цвета принимают именованные, hex, rgb и `ansi(N)`.
-  - Переопределение:  `--custom-checkbox ' :󰀦'`         заменить иконку неотмеченного
-  - Добавление:       `--custom-checkbox '*:󰞋'`         добавить состояние `[*]`
-  - Цвет:             `--custom-checkbox ' :󰀦:yellow'`  или `#ff0000`, `128,1,1`, `ansi(200)`
-  - Без иконки:       `--custom-checkbox '?:red'`          оставить иконку `[?]`, применить красный
-  - Новое состояние без иконки: `--custom-checkbox '*:yellow'` стандартная иконка неотмеченного, жёлтый цвет
-
-### Списки
-
-- `-L, --list-style <стиль>` - заменяет стандартные маркеры `-` неупорядоченных списков на набор иконок по уровням. Значение обязательно и задаётся в формате `type:<nerd-font|unicode>;size:<large|small>`, например `--list-style 'type:unicode;size:small'`.
-  - `size` меняет только маркеры Nerd Font. Для Unicode принимаются оба значения, но набор остаётся одинаковым; его отображение зависит от шрифта. Проверено на семействах Nerd Font, особенно JetBrainsMono Nerd Font.
-- `-D, --definition-marker-style <unicode|nerd-font>` - выводит описания definition list со встроенным Unicode- или Nerd Font-маркером.
-- `--uniform-list-marker <level:1-4|icon:глиф>` - использует один маркер на всех уровнях вложенности (только с `--list-style`). `level:2` берёт второй маркер выбранного набора, а `icon:*` задаёт собственный глиф.
-- `--custom-list <уровень>:<иконка>[:<цвет>];...` - переопределяет иконку и/или цвет маркера для конкретных уровней вложенности (только с `--list-style`). Уровень - 1-based; иконка - глиф маркера. Цвета принимают именованные (`red`), hex (`#ff0000`), rgb (`255,0,0`) и `ansi(N)`.
-  - Иконка + цвет:  `--custom-list '1:*:yellow'`   маркер `*` жёлтого цвета
-  - Только иконка:  `--custom-list '1:>'`          маркер `>` в цвете темы
-  - Только цвет:    `--custom-list '1:red'`        встроенная иконка, красный цвет
-
-### Разметка и переносы
-
-- `-c, --cols <N>` - фиксированная ширина вывода. Если не задана, mdv использует ширину терминала или запасное значение 80.
-- `-m, --margin <right:N;left:N>` - задаёт левый и/или правый отступ. Неуказанная сторона равна `0`.
-- `--tab-length <N>` - замена символов табуляции на `N` пробелов (по умолчанию `4`).
-- `-w, --wrap <char|word|none>` - стратегия переноса текста, кода, callout-блоков и содержимого ячеек таблиц (по умолчанию `char`).
-- `--reflow` - склеивает внутриабзацные мягкие переносы строк (soft breaks) и заново заполняет каждую строку до ширины переноса, так что жёстко разбитый исходник перетекает под узкие экраны. Требует включённого переноса; жёсткие переносы сохраняются.
-- `-W, --table-wrap <fit|wrap|none>` - геометрия таблиц: подогнать ячейки, разделить колонки на блоки или разрешить переполнение (по умолчанию `fit`). Точки переноса в ячейках определяет `--wrap`.
-- `-B, --table-borders` - возвращает полные скруглённые рамки у таблиц.
-- `-S, --table-smart-indent` - автоматический подбор отступа таблицы в зависимости от доступной ширины.
-- `-H, --heading-layout <level|center|flat|none>` - схема выравнивания заголовков (по умолчанию `level`).
-- `--show-heading-markers` - добавляет перед заголовками markdown-маркеры, соответствующие их уровню.
-- `-I, --smart-indent` - сглаживание скачков отступов между уровнями заголовков в режиме `level`.
-- `--code-wrap-indent <none|base|double>` - управляет «висячим» отступом при переносе строк внутри блоков кода (по умолчанию `double`).
-- `--block-spacing <спецификация>` - переопределяет количество пустых строк сверху и снизу для отдельных блоков. Неуказанные стороны сохраняют стандартные значения, а отступы соседних блоков схлопываются до большего значения.
-- `--horizontal-rule-style <pretty|simple>` - рисует разделители Markdown и HTML `<hr>` с декоративными символами по краям или сплошной линией.
-
-### Видимость элементов
-
-- `--show-empty-elements` - отображение обычно скрытых пустых заголовков, списков, цитат, блоков кода и таблиц.
-- `--no-code-guessing` - отключение эвристики определения языка; неизвестные блоки остаются текстом.
-
-### Ссылки
-
-- `-u, --link-style <clickable|fclickable|inline|inlinetable|endtable|hide>` - способ отображения ссылок (по умолчанию `clickable`).
-- `-l, --link-overflow <wrap|cut|tablecut|none>` - определяет, переносить, обрезать или разрешать переполнение длинных ссылок (по умолчанию `wrap`).
-
-### Сноски
-
-- `--footnote-style <endnotes|attached>` - размещение сносок в конце документа или сразу после блока со ссылкой, включая абзацы, таблицы и элементы списков.
-- `--missing-footnote-style <show|hide>` - поведение для отсутствующих, некорректных или пустых определений сносок.
-  `show` выводит сообщение-заглушку в блоке сносок
-  `hide` полностью скрывает такие записи.
-
-### Справочная информация
-
-- `mdv help` - открывает полный вывод `mdv --help` в выбранном pager. Если задан `MDV_PAGER`, используется он, иначе встроенный pager; при перенаправлении ввода или вывода та же справка печатается напрямую.
-- `-h` - краткая сводка параметров.
-- `--help` - полная справка с описаниями значений, форматами и примерами.
-- `-V, --version` - отображение текущей версии.
+Команда `mdv --help` выводит полный список параметров.
 
 ## Конфигурация
 
-mdv объединяет настройки из нескольких источников в порядке уменьшения приоритета:
+Создайте файл конфигурации командой `mdv --init-config`. Параметры CLI имеют наивысший приоритет, далее идут пресет `--preset`, файл конфигурации и встроенные значения. Для настройки `color` переменная `MDV_COLOR` имеет приоритет над пресетом и файлом конфигурации.
 
-1. Параметры командной строки (максимальный приоритет).
-2. Пресет, выбранный через `--preset`.
-3. Конфигурация из `--config-file`, `MDV_CONFIG_PATH` или пользовательского каталога.
-4. Встроенные значения по умолчанию.
-
-Создать конфиг по умолчанию можно командой `mdv --init-config`. Укажите каталог (`mdv --init-config custom/dir`), используйте `--config-file <CONFIG_DIR>` или задайте `MDV_CONFIG_PATH`, чтобы записать его в другой путь.
-
-Файлы конфигурации поддерживают YAML (`.yaml` или `.yml`). Все настройки и примеры приведены в [шаблоне конфигурации](docs/examples/config.yaml):
-
-```yaml
-# docs/examples/config.yaml
-theme: "terminal"
-code_theme: null
-inline_style: {}
-wrap: "char"
-table_wrap: "fit"
-table_borders: false
-heading_layout: "level"
-smart_indent: false
-block_spacing: null
-code_wrap_indent: "double"
-link_style: "clickable"
-link_overflow: "wrap"
-```
-
-### Структурированные сложные параметры
-
-Конфиг и пресеты принимают вложенные YAML-объекты для `custom_theme`, `custom_code_theme`, `block_spacing`, `custom_callout`, `custom_code_block`, `custom_checkbox`, `custom_list` и `callout_style`. В CLI используются соответствующие компактные строки; они также остаются допустимыми в YAML.
-
-Цвета темы, `inline_style` и четыре настройки пользовательских элементов объединяются по полям, сохраняя пропущенные свойства и записи. Например, `--custom-callout 'note:color=red'` меняет только цвет note, сохраняя его иконку и остальные callout.
-
-Для пользовательских элементов `null` очищает свойство или запись, а корневой `null` или `{}` — всю настройку. Явно заданный список `aliases` заменяет предыдущий; `[]` очищает его.
-
-Объекты `block_spacing` из конфига и пресета заменяют предыдущий объект; `--block-spacing` объединяет только указанные элементы и стороны. Остальные структурированные настройки заменяются целиком. Подробные правила объединения и очистки приведены в [справочнике конфигурации](docs/modules/cli-configuration.md#structured-yaml-settings).
-
-## Пресеты
-
-В mdv встроены четыре пресета:
-
-- `reader` - перенос по словам, переформатирование абзацев, прикреплённые сноски, инлайн-таблица ссылок и тема `nord` для чтения длинных текстов.
-- `compact` - плоские заголовки, простые блоки кода и callout, скрытые подписи кода и ссылки в конце документа для плотного вывода в терминале.
-- `pretty` - рамки для таблиц и блоков кода, иконки списков и чекбоксов. Для иконок требуется Nerd Font.
-- `showcase` - центрированные заголовки, тема `tokyonight`, расширенные рамки кода и callout, чекбоксы и иконки списков. Для иконок требуется Nerd Font.
-
-Выберите пресет командой `mdv --preset reader README.md`. Явные параметры CLI имеют приоритет: например, `mdv --preset compact --cols 100 README.md` применит пресет `compact` с шириной 100 столбцов.
-
-Пользовательские пресеты - это файлы `*.yaml` или `*.yml` в каталоге `<config_dir>/presets/`. Каталог определяется в том же порядке, что и `config.yaml`: `--config-file`, `MDV_CONFIG_PATH`, затем `~/.config/mdv/`. Он необязателен, а `--no-config` не отключает его.
-
-```yaml
-# <config_dir>/presets/project-docs.yaml
-name: project-docs
-theme: monokai
-wrap: word
-reflow: true
-table_wrap: wrap
-link_style: inlinetable
-inline_style:
-  code:
-    backticks: false
-```
-
-В пресете доступны те же ключи и значения, что и в [`docs/examples/config.yaml`](docs/examples/config.yaml), а также обязательное непустое поле `name`. Пресеты являются частичными слоями: пропущенные настройки остаются без изменений, а явно заданные значения - включая `false`, значения по умолчанию и `null` - переопределяют нижележащую конфигурацию. Пользовательский пресет с именем встроенного заменяет его. Команда `mdv --preset-info` выводит активный каталог. Если одновременно переданы файл и пресет, `mdv --preset-info FILE --preset NAME` рендерит файл со строкой `Current preset: NAME`; без `--preset` этот флаг не меняет рендеринг файла.
-
-## Переменные окружения
-
-- `MDV_CONFIG_PATH` - кастомный путь к каталогу с конфигурацией; также используется `mdv --init-config`, если каталог не указан.
-- `MDV_EDITOR` - редактор, открываемый из режима pager; имеет приоритет над `EDITOR`. Известные GUI-редакторы запускаются асинхронно, а терминальные блокируют pager до выхода; режим Emacs и Vim определяется по аргументам CLI. Неизвестные команды считаются терминальными редакторами. Некорректные команды и настройки редактора, не являющиеся Unicode, диагностируются как ошибки.
-- `MDV_EDITOR_MODE` - необязательный режим запуска редактора: `tui` ожидает его завершения, а `gui` запускает асинхронно. Если переменная не задана, режим определяется автоматически. Явный `tui` можно использовать с GUI-launcher, чтобы приостановить pager; явный `gui` переопределяет режим неизвестных команд, но отклоняется для известных терминальных редакторов, чтобы два процесса не управляли одним терминалом. Некорректные значения и конфликты показываются в pager, редактор при этом не запускается.
-- `MDV_PAGER` - команда pager с необязательными аргументами и путями в кавычках (например, `less -R`). Она выбирает backend для `--pager`, `mdv help` и документов, открытых из интерактивного браузера, но сама по себе не включает paging обычного вывода. Явный `--pager=<COMMAND>` имеет больший приоритет; `default` выбирает backend по умолчанию (сейчас встроенный `minus`), а `builtin` явно выбирает `minus`. Пустые, синтаксически некорректные, не-Unicode и рекурсивные команды `mdv` считаются ошибкой. Команда разбирается на программу и аргументы и запускается напрямую, без интерпретации shell.
-- `MDV_COLOR` - принимает `auto`, `always` или `never`; явно переданный `--color` имеет больший приоритет.
+Встроенные темы включают `terminal` (по умолчанию), `solarized-dark`, `nord`, `tokyonight`, `kanagawa`, `gruvbox`, `monokai`, `material-ocean` и `catppuccin`. Встроенные пресеты включают `reader`, `compact`, `pretty` и `showcase`. Пользовательские темы и пресеты хранятся в YAML-файлах в каталоге конфигурации. Превью и форматы файлов описаны в разделах [«Темы»](https://whosowsee.github.io/mdv/ru/docs/themes/) и [«Пресеты»](https://whosowsee.github.io/mdv/ru/docs/presets/).
 
 ## Темы
-
-Доступны встроенные темы:
 
 <details>
   <summary><code>terminal</code></summary>
@@ -482,57 +203,19 @@ inline_style:
   </div>
 </details>
 
-Выбирайте их параметром `--theme` или задавайте по умолчанию в конфигурации.
+## Документация
 
-Для изменения цветов используйте `--custom-theme`: `ключ=значение` для корневых полей, `секция:поле=значение` для сгруппированных. Записи разделяются точкой с запятой:
+Полная документация доступна на [сайте проекта](https://whosowsee.github.io/mdv/ru/docs/) ([English](https://whosowsee.github.io/mdv/docs/)).
 
-```sh
-mdv README.md --custom-theme 'code:text=darkgrey;emphasis:background=null;details_border=grey;syntax:number=magenta'
-```
+- **Начало работы** · [Введение](https://whosowsee.github.io/mdv/ru/docs/), [Установка](https://whosowsee.github.io/mdv/ru/docs/installation/), [Использование](https://whosowsee.github.io/mdv/ru/docs/usage/)
+- **Чтение** · [Выбор документов](https://whosowsee.github.io/mdv/ru/docs/browser/), [Просмотр и редактор](https://whosowsee.github.io/mdv/ru/docs/pager/), [Обновление на лету](https://whosowsee.github.io/mdv/ru/docs/monitoring/)
+- **Оформление** · [Разметка и переносы](https://whosowsee.github.io/mdv/ru/docs/rendering/), [Блоки кода](https://whosowsee.github.io/mdv/ru/docs/code-blocks/), [Математика](https://whosowsee.github.io/mdv/ru/docs/math/), [Выноски](https://whosowsee.github.io/mdv/ru/docs/callouts/), [Списки и чекбоксы](https://whosowsee.github.io/mdv/ru/docs/lists/), [Ссылки и сноски](https://whosowsee.github.io/mdv/ru/docs/links/), [Front matter](https://whosowsee.github.io/mdv/ru/docs/front-matter/), [HTML](https://whosowsee.github.io/mdv/ru/docs/html/)
+- **Настройка** · [Темы](https://whosowsee.github.io/mdv/ru/docs/themes/), [Поля темы](https://whosowsee.github.io/mdv/ru/docs/theme-reference/), [Пресеты](https://whosowsee.github.io/mdv/ru/docs/presets/), [Свои синтаксисы](https://whosowsee.github.io/mdv/ru/docs/syntaxes/)
+- **Справочники** · [Конфигурация](https://whosowsee.github.io/mdv/ru/docs/configuration/), [Справочник YAML](https://whosowsee.github.io/mdv/ru/docs/configuration-reference/), [Переменные окружения](https://whosowsee.github.io/mdv/ru/docs/environment/), [Полный справочник CLI](https://whosowsee.github.io/mdv/ru/docs/cli/)
 
-`code_theme` выбирает палитру синтаксиса; `--custom-code-theme` меняет отдельные цвета, принимая как `keyword=blue`, так и `syntax:keyword=blue`. Подробнее о [приоритетах переопределений](docs/modules/themes-and-styling.md#application-order) и [форматах цветов](docs/modules/themes-and-styling.md#color-formats).
+## Разработка
 
-Команда `mdv --theme-info` показывает активную палитру, а `mdv --theme-info README.md` — её применение к документу.
-
-### Пользовательские темы
-
-Положите один или несколько файлов `*.yaml`/`*.yml` в каталог `<config_dir>/themes/`, чтобы зарегистрировать собственные темы. Каталог ищется в том же порядке, что и `config.yaml` (флаг `--config-file`, переменная `MDV_CONFIG_PATH`, затем `~/.config/mdv/`). В репозитории есть два готовых примера:
-
-- [`docs/examples/themes/theme-warm.yaml`](docs/examples/themes/theme-warm.yaml) - использует `extends: monokai` и переопределяет лишь несколько полей.
-- [`docs/examples/themes/theme-custom.yaml`](docs/examples/themes/theme-custom.yaml) - пример самостоятельной палитры.
-
-```yaml
-# <config_dir>/themes/warm.yaml
-name: warm
-description: Тёплый красный акцент поверх monokai.
-extends: monokai
-pager:
-  transparent: true
-
-h1: "#ff5577"
-link: "#66ccff"
-background: "#1c1c1c"
-
-inline_style:
-  code:
-    backticks: false
-    underline: true
-
-syntax:
-  keyword: "#ff5577"
-```
-
-Основные поля файла темы:
-
-- `name` (обязательно) - значение, принимаемое параметром `--theme`.
-- `description` (необязательно) - описание для `mdv --theme-info`; наследуется от базовой темы.
-- `extends` (необязательно) - встроенная тема или пользовательская тема, загруженная раньше по алфавиту. Без него пропущенные поля наследуются от `terminal`.
-- `pager` - цвета нижней панели, прозрачность, выделение и подсветка поиска во встроенном pager.
-- `inline_style` - начертания строчных элементов Markdown; цвета задаются в соответствующих цветовых секциях.
-
-Цвета наследуются по отдельным полям. Явный `null` очищает унаследованное необязательное переопределение цвета рамки или фона; `reset` использует цвет терминала по умолчанию. Полная схема и особые случаи описаны в [справочнике полей](docs/modules/themes-and-styling.md#theme-field-reference) и [правилах наследования](docs/modules/themes-and-styling.md#inheritance-and-null). Все поля можно посмотреть в [файлах встроенных тем](assets/config/themes/), а палитру по умолчанию — в [terminal.yaml](assets/config/themes/terminal.yaml).
-
-Пользовательская тема с тем же именем, что и встроенная, имеет приоритет и полностью её заменяет - это поддерживаемый способ сделать форк встроенной темы, не копируя каждое поле. Нечитаемые или повреждённые файлы пропускаются с предупреждением, поэтому одна битая тема не ломает остальные.
+Как сообщить о проблеме и подготовить pull request, описано в [CONTRIBUTING.md](CONTRIBUTING.md). Для изменений с помощью ИИ действуют правила [AI Policy](AI_POLICY.md). Инструменты, команды `just`, тесты, CI и исходники сайта описаны в [руководстве по разработке](https://whosowsee.github.io/mdv/ru/docs/development/).
 
 ---
 
