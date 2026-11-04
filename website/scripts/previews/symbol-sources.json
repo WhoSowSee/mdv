@@ -1,0 +1,14 @@
+{
+  "nerd": {
+    "file": "JetBrainsMonoNerdFont-Regular.ttf",
+    "url": "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.3.0/patched-fonts/JetBrainsMono/Ligatures/Regular/JetBrainsMonoNerdFont-Regular.ttf",
+    "sha256": "c8af9dfd91f01293a7e0fa6f3481c2827042c853d2d5a71dbf5f012fdee6925f",
+    "wideCodepoints": [59019, 61302, 61504]
+  },
+  "unicode": {
+    "file": "NotoSansSymbols2-Regular.ttf",
+    "url": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/notosanssymbols2/NotoSansSymbols2-Regular.ttf",
+    "sha256": "7d5fb73b7ca67a6798101741f5d280a3d016a56a197afcd4199dbb57b4b82a21",
+    "codepoints": [9900, 10625, 129078]
+  }
+}

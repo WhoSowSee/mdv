@@ -41,6 +41,22 @@
 
 ## Installation
 
+### Install a binary in one command
+
+Windows PowerShell 5.1 or PowerShell 7 (x64 and ARM64):
+
+```powershell
+irm https://whosowsee.github.io/mdv/install.ps1 | iex
+```
+
+Linux and macOS (x86_64 and ARM64):
+
+```sh
+curl -fsSL https://whosowsee.github.io/mdv/install.sh | sh
+```
+
+The scripts download the latest GitHub release and verify SHA-256 before replacing the binary. Rust is not required. Windows installs to `%LOCALAPPDATA%\Programs\mdv` and adds it to the user and current-session `PATH`; Linux/macOS installs to `~/.local/bin` without editing shell profiles. The sh installer requires `curl`, `unzip` and `sha256sum` (Linux) or `shasum` (macOS). Run the same command to update. See the [installation guide](website/src/content/docs/installation.md#select-a-version-or-directory) for version selection, custom directories, PATH setup and removal.
+
 ### Install from crates.io
 
 ```bash
@@ -51,21 +67,23 @@ This installs the latest published release from crates.io into your Cargo bin di
 
 ### Install RPM or Arch Linux packages
 
-Download the package for your system from [Releases](https://github.com/WhoSowSee/mdv/releases). RPM packages support x86_64 and ARM64 Linux and require glibc 2.39 or newer. Arch Linux packages support x86_64.
+Download the package for your system from [Releases](https://github.com/WhoSowSee/mdv/releases), or use the commands below with `curl`. RPM packages support x86_64 and ARM64 Linux and require glibc 2.39 or newer. Arch Linux packages support x86_64.
 
 For Fedora and compatible RPM systems:
 
 ```bash
+curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
 sudo dnf install "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
 ```
 
 For Arch Linux:
 
 ```bash
+curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
 sudo pacman -U "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
 ```
 
-Replace `<VERSION>` with the release version. For ARM64 RPM packages, use the `aarch64-unknown-linux-gnu` filename. These packages include the executable and license; the Rust toolchain is not required.
+Replace every `<VERSION>` with the release version. For ARM64 RPM packages, replace `x86_64` with `aarch64` in both lines. If you downloaded the file manually, run only the second line. These packages include the executable and license; the Rust toolchain is not required.
 
 ### Install with Nix (Flake)
 
@@ -117,6 +135,29 @@ just run-dev README.md
 ```
 
 Windows requires PowerShell 7.4+ (`pwsh.exe` on `PATH`); `check-all` also requires Python 3.11+. See [development and testing documentation](docs/modules/testing.md) for all commands and details.
+
+### Website
+
+The project website lives in [website/](website/README.md) and uses Astro,
+TypeScript, and Tailwind CSS. Use Bun 1.4.4 or newer and Node.js 22.23.4 or newer:
+
+```sh
+cd website
+bun install --frozen-lockfile
+bun run dev
+```
+
+The printed local URL includes `/mdv/`. `bun run build` refreshes release package
+links, checks types and generates `website/dist/`; it requires GitHub API access.
+The [website workflow](.github/workflows/website.yml) checks pull requests and
+publishes successful main builds to GitHub Pages, including after a tag release.
+Select **GitHub Actions** in **Settings > Pages > Source** once.
+
+The website includes complete user guides and CLI/YAML references at `/mdv/docs/`,
+with navigation, full-text search, and page outlines. Its Markdown sources live in
+`website/src/content/docs/`.
+The language icon switches the current page between English and Russian.
+Russian pages start at `/mdv/ru/`, with documentation at `/mdv/ru/docs/`.
 
 ## Usage
 

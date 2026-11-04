@@ -1,0 +1,61 @@
+---
+import Page from './Page.astro';
+import '../styles/home.css';
+import '../styles/wordmark.css';
+import Hero from '../components/Hero.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import CardGrid from '../components/CardGrid.astro';
+import FeatureShowcase from '../components/FeatureShowcase.astro';
+import Install from '../components/Install.astro';
+import CopyButton from '../components/CopyButton.astro';
+import { cargoInstallCommand } from '../data/site';
+import { getCopy, getLocale, siteLinks } from '../i18n';
+const locale = getLocale(Astro.url.pathname);
+const { sections: copy, hero, usage, features, questions } = getCopy(locale);
+const links = siteLinks(locale);
+---
+<Page>
+  <Hero />
+  <FeatureShowcase />
+  <section id="features" class="page-section">
+    <SectionHeading title={copy.features} lead={copy.featuresLead} />
+    <CardGrid items={features} />
+  </section>
+  <Install />
+  <section id="usage" class="page-section">
+    <SectionHeading title={copy.usage} lead={copy.usageLead} />
+    <div class="pixel-box usage-examples">
+      {usage.map((example) => (
+        <div><p># {example.description}</p><pre tabindex="0"><code><span class="accent" aria-hidden="true">$ </span>{example.command}</code></pre></div>
+      ))}
+    </div>
+  </section>
+  <section class="page-section faq">
+    <SectionHeading title={copy.faq} lead={copy.faqLead} />
+    {questions.map((item, index) => (
+      <div class="pixel-box faq-item">
+        <details open={index === 0} data-expanded={String(index === 0)}>
+          <summary><span class="faq-toggle" aria-hidden="true"></span><span>{item.question}</span></summary>
+          <div class="faq-answer"><p>{item.answer}</p></div>
+        </details>
+      </div>
+    ))}
+  </section>
+  <section class="final-cta page-section" aria-labelledby="final-heading">
+    <h2 id="final-heading">{copy.finalFirst}{' '}<span class="accent">{copy.finalLast}</span></h2>
+    <p class="final-lead">{copy.finalLead}</p>
+    <div class="pixel-box final-command">
+      <code><span class="dim" aria-hidden="true">$ </span>{cargoInstallCommand}</code>
+      <CopyButton command={cargoInstallCommand} />
+    </div>
+    <a class="pixel-button" href={links.docs}>{hero.docs}</a>
+  </section>
+</Page>
+<script>
+  import { setupCodeFocus } from '../scripts/code-focus';
+  import { setupCopyButtons } from '../scripts/copy';
+  import { setupFaq } from '../scripts/faq';
+  setupCodeFocus(document);
+  setupCopyButtons(document);
+  setupFaq();
+</script>

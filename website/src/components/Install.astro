@@ -1,0 +1,41 @@
+---
+import SectionHeading from './SectionHeading.astro';
+import CopyButton from './CopyButton.astro';
+import { getCopy, getLocale, siteLinks } from '../i18n';
+const locale = getLocale(Astro.url.pathname);
+const { install: copy, installMethods } = getCopy(locale);
+const links = siteLinks(locale);
+---
+<section id="install" class="page-section" data-install>
+  <SectionHeading title={copy.title} lead={copy.lead} />
+  <div class="install-tabs flex flex-wrap gap-4" role="tablist" aria-label={copy.method}>
+    {installMethods.map((method, index) => (
+      <button type="button" class="install-tab" role="tab" id={`tab-${method.id}`}
+        aria-selected={index === 0 ? 'true' : 'false'} aria-controls={`panel-${method.id}`}>{method.label}</button>
+    ))}
+  </div>
+  {installMethods.map((method, index) => (
+    <div id={`panel-${method.id}`} role="tabpanel" aria-labelledby={`tab-${method.id}`} hidden={index !== 0}>
+      <div class="pixel-box install-command">
+        <div class="install-code" data-command-scroll>
+          <pre tabindex="0"><code>{method.command}</code></pre>
+          <div class="command-scrollbar" hidden>
+            <input type="range" min="0" max="0" value="0" step="1" tabindex="-1" aria-label={copy.scrollLabel} />
+          </div>
+        </div>
+        <CopyButton command={method.command} />
+      </div>
+      <p class="install-note">{method.note}</p>
+      {method.downloads && (
+        <p class="package-downloads flex flex-wrap gap-x-5 gap-y-2">
+          {method.downloads.map((download) => <a class="text-link" href={download.href}>{download.label} ↗</a>)}
+        </p>
+      )}
+    </div>
+  ))}
+  <p class="install-note">{copy.binary} <a class="text-link" href={links.releases}>{copy.download}</a></p>
+</section>
+<script>
+  import { setupInstall } from '../scripts/install';
+  setupInstall();
+</script>

@@ -1,0 +1,47 @@
+---
+import SectionHeading from './SectionHeading.astro';
+import { palettes } from '../data/site';
+import { getCopy, getLocale } from '../i18n';
+const copy = getCopy(getLocale(Astro.url.pathname)).showcase;
+---
+<section id="showcase" class="page-section">
+  <SectionHeading title={copy.title} lead={copy.lead} />
+  <div class="feature-row">
+    <div>
+      <h3>{copy.themes}</h3>
+      <p>{copy.themesText}</p>
+    </div>
+    <div class="pixel-box palette-grid" aria-label={copy.colors}>
+      {palettes.map((palette) => (
+        <div class="palette-row">
+          <span>{palette.name}</span>
+          {palette.colors.map((color) => <i style={{ backgroundColor: color }} aria-hidden="true"></i>)}
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="feature-row">
+    <div class="pixel-box monitor-preview md:order-first">
+      <p><span class="accent">$</span> mdv --monitor notes.md</p>
+      <div class="monitor-source"><span class="dim">notes.md</span><br />{copy.draft}<br />{copy.draftText}</div>
+      <p class="accent">{copy.refresh}</p>
+    </div>
+    <div class="order-first md:order-last">
+      <h3>{copy.monitor}</h3>
+      <p>{copy.monitorBefore}<code>--monitor</code>{copy.monitorAfter}</p>
+    </div>
+  </div>
+  <div class="feature-row">
+    <div>
+      <h3>{copy.layout}</h3>
+      <p>{copy.layoutText}</p>
+    </div>
+    <div class="pixel-box layout-preview" aria-label={copy.settings}>
+      <code><span>--cols</span><span>100</span></code>
+      <code><span>--wrap</span><span>word</span></code>
+      <code><span>--heading-layout</span><span>level</span></code>
+      <code><span>--link-style</span><span>inlinetable</span></code>
+      <code><span>--table-wrap</span><span>fit</span></code>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,80 @@
+.docs-layout { --docs-panel-top: 68px; }
+.docs-layout [data-docs-panel] { position: sticky; top: 68px; }
+.docs-panel-heading { display: flex; align-items: center; }
+.docs-panel-heading h2 { margin: 0; }
+.docs-toc .docs-panel-heading { margin-bottom: 8px; }
+.docs-panel-scroll { min-width: 0; min-height: 0; }
+.docs-panel-outline { display: none; position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--color-line); pointer-events: none; }
+.docs-panel-trigger {
+  position: fixed; top: var(--docs-panel-top); bottom: 16px; width: 20px; padding: 0;
+  border: 0; background: transparent; z-index: 16; cursor: pointer; overflow: clip;
+}
+.docs-panel-trigger-left { left: 0; --docs-edge-shift: -6px; }
+.docs-panel-trigger-right { right: 0; --docs-edge-shift: 6px; }
+.docs-panel-trigger .docs-edge-handle {
+  position: absolute; top: 50%; transform: translate(0, -50%); width: 3px; height: 17px;
+  color: var(--color-accent); opacity: 1;
+  transition: opacity 200ms ease-in-out, transform 260ms cubic-bezier(.22, 1, .36, 1), color 180ms ease;
+}
+.docs-panel-trigger-left .docs-edge-handle { left: 3px; }
+.docs-panel-trigger-right .docs-edge-handle { right: 3px; }
+.docs-edge-handle::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 3px;
+  background: currentColor; box-shadow: 0 7px 0 currentColor, 0 14px 0 currentColor;
+}
+.docs-panel-trigger:is(:hover, [aria-expanded="true"]) .docs-edge-handle {
+  color: var(--color-accent-hover);
+}
+.docs-panel-trigger:focus-visible { outline: 0; }
+.docs-panel-trigger:focus-visible .docs-edge-handle { color: var(--color-peach); }
+.docs-panel-trigger[aria-expanded="true"] .docs-edge-handle { opacity: 0; transform: translate(var(--docs-edge-shift), -50%); }
+.docs-panel-trigger[aria-expanded="true"] { pointer-events: none; }
+
+.docs-layout [data-docs-panel][data-panel-floating="true"] {
+  position: fixed; top: var(--docs-panel-top); bottom: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  width: min(var(--docs-panel-width), calc(100% - 8px)); padding: 16px; margin: 0;
+  box-sizing: border-box; z-index: 15;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  clip-path: var(--pixel-outer-shape);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  visibility: hidden; opacity: 0; pointer-events: none;
+  transform: translateX(var(--docs-panel-shift));
+  transition: transform 280ms cubic-bezier(.22, 1, .36, 1), opacity 220ms ease-in-out, visibility 0s linear 280ms;
+}
+#docs-pages-panel[data-panel-floating="true"] {
+  --docs-panel-width: 320px; --docs-panel-shift: -4px; left: 4px; right: auto;
+}
+#docs-toc-panel[data-panel-floating="true"] {
+  --docs-panel-width: 288px; --docs-panel-shift: 4px; right: 4px; left: auto;
+}
+.docs-layout [data-docs-panel][data-panel-floating="true"][data-panel-open="true"] {
+  visibility: visible; opacity: 1; pointer-events: auto; transform: translateX(0); transition-delay: 0s;
+}
+[data-panel-floating="true"] .docs-panel-heading { min-height: 24px; margin: 0; flex: none; }
+[data-panel-floating="true"] .docs-panel-outline { display: block; }
+[data-panel-floating="true"] .docs-panel-heading h2 {
+  font: 700 calc(18px * var(--text-scale))/1.5 var(--font-display); color: var(--color-subtle);
+}
+[data-panel-floating="true"] .docs-panel-scroll { flex: 0 1 auto; }
+[data-panel-floating="true"] [data-docs-vertical-scroll] {
+  max-height: calc(100dvh - var(--docs-panel-top) - 84px); overscroll-behavior-y: contain;
+}
+#docs-pages-panel[data-panel-floating="true"] [data-docs-vertical-scroll] {
+  max-height: calc(100dvh - var(--docs-panel-top) - 48px);
+}
+
+@media (max-width: 75rem) {
+  .docs-layout .docs-toc:not([data-panel-floating]) { position: fixed; visibility: hidden; }
+}
+@media (max-width: 60rem) {
+  .docs-layout .docs-sidebar:not([data-panel-floating]) { position: fixed; visibility: hidden; }
+}
+@media (hover: none), (pointer: coarse) {
+  .docs-panel-trigger { top: calc(50% - 26px); bottom: auto; width: 44px; height: 52px; }
+}
+@media (forced-colors: active) {
+  .docs-panel-trigger .docs-edge-handle,
+  .docs-panel-trigger:is(:hover, [aria-expanded="true"]) .docs-edge-handle { color: ButtonText; forced-color-adjust: none; }
+  .docs-panel-trigger:focus-visible .docs-edge-handle { color: Highlight; outline: 1px solid Highlight; outline-offset: 1px; }
+}

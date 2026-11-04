@@ -1,0 +1,14 @@
+---
+import Documentation from '../../../layouts/Documentation.astro';
+import { getDocumentation, type DocPage } from '../../../data/docs';
+
+export function getStaticPaths() {
+  return getDocumentation('ru').map((page) => ({
+    params: { slug: page.frontmatter.slug || undefined },
+    props: { page },
+  }));
+}
+interface Props { page: DocPage; }
+const { page } = Astro.props;
+---
+<Documentation page={page} />

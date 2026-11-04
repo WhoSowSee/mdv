@@ -1,0 +1,24 @@
+@font-face {
+  font-family: "MDV Pixel Text";
+  src: url("../assets/fonts/mdv-pixel-text-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  ascent-override: 88.888889%;
+  descent-override: 11.111111%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "MDV Pixel Text";
+  src: url("../assets/fonts/mdv-pixel-text-bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  ascent-override: 88.888889%;
+  descent-override: 11.111111%;
+  line-gap-override: 0%;
+}
+
+:root { --locale-scale: 1; --text-scale: calc(.85 * var(--locale-scale)); }
+html:lang(ru) { --locale-scale: .95; }

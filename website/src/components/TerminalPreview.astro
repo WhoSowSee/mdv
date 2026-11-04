@@ -1,0 +1,31 @@
+---
+import { getCopy, getLocale } from '../i18n';
+const copy = getCopy(getLocale(Astro.url.pathname)).terminal;
+const divider = '<span class="terminal-table-divider">│</span>';
+const table = [
+  `<span class="terminal-table-row"><span class="accent"> Preset  </span>${divider}<span class="accent"> Wrap </span></span>`,
+  '<span class="terminal-table-row"><span class="terminal-table-rule">─────────</span><span class="terminal-table-divider terminal-table-cross">┼</span><span class="terminal-table-rule">──────</span></span>',
+  `<span class="terminal-table-row"><span> reader  </span>${divider}<span> word </span></span>`,
+  `<span class="terminal-table-row"><span> compact </span>${divider}<span> char </span></span>`,
+].join('\n');
+const sample = [
+  '<span class="accent">mdv</span>',
+  ' ',
+  ` <span class="dim">${copy.description}</span>`,
+  '',
+  ` <span class="accent">${copy.features}</span>`,
+  '  ',
+  `  <span class="accent">-</span> ${copy.rendering}`,
+  `  <span class="accent">-</span> ${copy.themes} <span class="dim">&#96;nord&#96; &#96;gruvbox&#96; &#96;tokyonight&#96;</span>`,
+  `  <span class="accent">-</span> ${copy.monitoring} <span class="dim">&#96;--monitor&#96;</span>`,
+  '  ',
+  `<span class="terminal-table">${table}</span>`,
+  '  ',
+  '    <span class="accent">fn</span> <span class="peach">main</span>() { println!(<span class="green">"hello, mdv"</span>); }',
+  '',
+].join('\n');
+---
+<figure class="terminal" aria-label={copy.label}>
+  <figcaption class="terminal-title">mdv README.md</figcaption>
+  <pre tabindex="0" aria-label={copy.example}><code set:html={sample} /></pre>
+</figure>

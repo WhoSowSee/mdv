@@ -1,0 +1,54 @@
+.wordmark-ink,
+.wordmark-echo {
+  animation-duration: 8s;
+  animation-timing-function: steps(1, end);
+  animation-iteration-count: infinite;
+}
+
+.wordmark-echo {
+  fill: var(--color-accent-hover);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wordmark-band-0 .wordmark-ink { animation-name: wordmark-glitch-a; }
+.wordmark-band-1 .wordmark-ink { animation-name: wordmark-glitch-b; }
+.wordmark-band-2 .wordmark-ink { animation-name: wordmark-glitch-c; }
+.wordmark-band-0 .wordmark-echo { animation-name: wordmark-echo-a; }
+.wordmark-band-1 .wordmark-echo { animation-name: wordmark-echo-b; }
+.wordmark-band-2 .wordmark-echo { animation-name: wordmark-echo-c; }
+
+.motion-paused .wordmark-ink { transform: none !important; }
+.motion-paused .wordmark-echo { opacity: 0 !important; }
+
+@keyframes wordmark-glitch-a {
+  0%, 71.24%, 72.14%, 73.92%, 74.5%, 100% { transform: translateX(0); }
+  71.25% { transform: translateX(12px); }
+  73.93% { transform: translateX(-10px); }
+}
+
+@keyframes wordmark-glitch-b {
+  0%, 73.03%, 73.93%, 100% { transform: translateX(0); }
+  73.04% { transform: translateX(12px); }
+}
+
+@keyframes wordmark-glitch-c {
+  0%, 72.13%, 73.04%, 100% { transform: translateX(0); }
+  72.14% { transform: translateX(-10px); }
+}
+
+@keyframes wordmark-echo-a {
+  0%, 71.24%, 72.14%, 73.92%, 74.5%, 100% { opacity: 0; transform: translateX(0); }
+  71.25% { opacity: .16; transform: translateX(-6px); }
+  73.93% { opacity: .16; transform: translateX(5px); }
+}
+
+@keyframes wordmark-echo-b {
+  0%, 73.03%, 73.93%, 100% { opacity: 0; transform: translateX(0); }
+  73.04% { opacity: .16; transform: translateX(-6px); }
+}
+
+@keyframes wordmark-echo-c {
+  0%, 72.13%, 73.04%, 100% { opacity: 0; transform: translateX(0); }
+  72.14% { opacity: .16; transform: translateX(5px); }
+}

@@ -1,0 +1,14 @@
+.pixel-selection-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.pixel-selection-layer * { pointer-events: none !important; user-select: none !important; }
+.pixel-selection-background { fill: var(--color-accent); shape-rendering: crispEdges; }
+html[data-pixel-selection] ::selection { color: transparent; background: transparent; text-shadow: none; }
+@media print { .pixel-selection-layer { display: none; } }

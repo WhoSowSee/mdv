@@ -1,0 +1,14 @@
+---
+interface Props {
+  items: { title: string; text: string }[];
+}
+const { items } = Astro.props;
+---
+<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+  {items.map((item) => (
+    <article class="pixel-box card">
+      <h3><span class="pixel-dot" aria-hidden="true"></span>{item.title}</h3>
+      <p>{item.text}</p>
+    </article>
+  ))}
+</div>

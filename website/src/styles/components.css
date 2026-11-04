@@ -1,0 +1,44 @@
+.pixel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 calc(16px * var(--text-scale))/1.5 var(--font-display); font-kerning: normal;
+  min-height: 44px;
+  padding: 10px 16px;
+  padding-inline-start: calc(16px + var(--text-tracking));
+  margin: 3px;
+  color: var(--color-background);
+}
+.pixel-button:active { transform: translate(2px, 2px); }
+.pixel-button.secondary { color: var(--color-ink); }
+.copy-button { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; background: transparent; color: var(--color-subtle); border: 0; flex: none; transition: color 200ms ease-in-out; }
+.copy-button svg { grid-area: 1 / 1; width: 24px; height: 24px; shape-rendering: crispEdges; transition: opacity 200ms ease-in-out; }
+.copy-button .copy-check-icon { opacity: 0; }
+.copy-button[data-copied="true"] { color: var(--color-accent); }
+.copy-button[data-copied="true"] .copy-icon { opacity: 0; }
+.copy-button[data-copied="true"] .copy-check-icon { opacity: 1; }
+.copy-button:hover { color: var(--color-accent); }
+.copy-button:disabled { cursor: wait; }
+.pixel-dot {
+  --pixel-dot-size: 8px;
+  display: inline-block;
+  flex: none;
+  width: var(--pixel-dot-size);
+  height: var(--pixel-dot-size);
+  filter: drop-shadow(3px 3px 0 #00000070);
+}
+.pixel-dot::before, .docs-prose ul > li::before {
+  content: "";
+  display: block;
+  width: var(--pixel-dot-size);
+  height: var(--pixel-dot-size);
+  background: var(--color-accent);
+  clip-path: var(--pixel-thumb-shape);
+  pointer-events: none;
+}
+@media (max-width: 35rem), (pointer: coarse) {
+  .copy-button { width: 44px; height: 44px; }
+}
+@media (forced-colors: active) {
+  .pixel-dot::before, .docs-prose ul > li::before { background: CanvasText; forced-color-adjust: none; }
+}

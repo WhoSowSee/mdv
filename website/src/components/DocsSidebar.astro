@@ -1,0 +1,41 @@
+---
+import { getDocumentation, documentationGroups, documentationUrl } from '../data/docs';
+import { getCopy, getLocale, siteLinks } from '../i18n';
+import PixelIcon from './PixelIcon.astro';
+import DocsPanelTrigger from './DocsPanelTrigger.astro';
+import DocsPanelFrame from './DocsPanelFrame.astro';
+const locale = getLocale(Astro.url.pathname);
+const copy = getCopy(locale).docs;
+const documentation = getDocumentation(locale);
+const links = siteLinks(locale);
+interface Props { current: string; }
+const { current } = Astro.props;
+---
+<aside id="docs-pages-panel" class="docs-sidebar docs-panel-frame" aria-label={copy.navigation}
+  data-docs-panel data-docs-panel-media="(max-width: 60rem)">
+  <DocsPanelFrame />
+  <div class="docs-panel-scroll">
+    <div class="docs-sidebar-content" data-docs-vertical-scroll>
+      <div class="docs-search" data-docs-search data-index={`${links.docs}search.json`} data-messages={JSON.stringify({ searching: copy.searching, matches: copy.matches, none: copy.noResults, unavailable: copy.unavailable })}>
+        <label class="sr-only" for="docs-search-input">{copy.search}</label>
+        <div class="docs-search-field">
+          <PixelIcon name="search" />
+          <input id="docs-search-input" type="search" placeholder={copy.placeholder} autocomplete="off" />
+        </div>
+        <p class="docs-search-status" role="status" aria-live="polite" hidden></p>
+        <ul class="docs-search-results" aria-label={copy.results} hidden></ul>
+      </div>
+      <nav class="docs-groups" aria-label={copy.pages} data-docs-groups>
+        {documentationGroups.map((group) => (
+          <div class="docs-nav-group">
+            <h2>{copy.groups[group]}</h2>
+            <ul>{documentation.filter((page) => page.frontmatter.group === group).map(({ frontmatter }) => (
+              <li><a class="pixel-menu-item" href={documentationUrl(frontmatter.slug, locale)} aria-current={frontmatter.slug === current ? 'page' : undefined}>{frontmatter.title}</a></li>
+            ))}</ul>
+          </div>
+        ))}
+      </nav>
+    </div>
+  </div>
+</aside>
+<DocsPanelTrigger target="docs-pages-panel" label={copy.browse} side="left" />

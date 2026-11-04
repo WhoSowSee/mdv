@@ -1,0 +1,49 @@
+---
+import { getDocumentationPreview } from '../data/previews';
+import { renderTerminalOutput, plainTerminalOutput } from '../scripts/terminal-preview';
+import { getCopy, type Locale } from '../i18n';
+
+interface Props { id: string; locale: Locale; }
+const { id, locale } = Astro.props;
+const { preview, version, interactive } = getDocumentationPreview(id);
+const { source, variants } = preview[locale];
+const selected = variants[0];
+const title = preview.title[locale];
+const description = preview.description?.[locale];
+const words = getCopy(locale).preview;
+const panel = `preview-${id}-panel`;
+const data = JSON.stringify(variants).replaceAll('<', '\\u003c');
+---
+<section class="mdv-preview" data-render-preview={id} data-interactive-preview={interactive ? '' : undefined} aria-label={title}>
+  <p class="mdv-preview-title">{title}</p>
+  {description && <p class="mdv-preview-description">{description}</p>}
+  <div class="mdv-preview-tabs" role="tablist" aria-label={title}>
+    {variants.map((variant, index) => (
+      <button type="button" class="mdv-preview-tab" role="tab" id={`preview-${id}-${index}`} aria-controls={panel}
+        aria-selected={index === 0 ? 'true' : 'false'}>
+        {variant.label}
+      </button>
+    ))}
+  </div>
+  <div id={panel} role="tabpanel" aria-labelledby={`preview-${id}-0`}>
+    <div class="mdv-preview-state" data-preview-state hidden={!selected.description}>
+      <div class="mdv-preview-keys" data-preview-keys aria-label={words.keys}>
+        {selected.keys?.map((key) => <kbd>{key}</kbd>)}
+      </div>
+      <p data-preview-instruction>{selected.description}</p>
+    </div>
+    <div class="code-frame mdv-preview-command" aria-label={words.command}>
+      <pre tabindex="0"><code data-preview-command>{selected.command}</code></pre>
+    </div>
+    <div class="mdv-preview-terminal">
+      <div class="mdv-preview-caption"><span>{words.result}</span><span>{words.version} {version}</span></div>
+      <pre class="mdv-preview-output" tabindex="0" style={`--preview-rows: ${selected.rows}; --preview-columns: ${selected.columns}`}><code role="img"
+        aria-label={plainTerminalOutput(selected.ansi)} data-preview-output set:html={renderTerminalOutput(selected.ansi)} /></pre>
+    </div>
+    <details class="mdv-preview-source">
+      <summary>{preview.sourceLabel?.[locale] ?? words.source}</summary>
+      <div class="code-frame"><pre tabindex="0"><code>{source}</code></pre></div>
+    </details>
+  </div>
+  <script type="application/json" data-preview-variants set:html={data} />
+</section>

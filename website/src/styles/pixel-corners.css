@@ -1,0 +1,107 @@
+:root {
+  --pixel-step: 2px;
+  --pixel-cut: calc(var(--pixel-step) * 2);
+  --pixel-outer-shape: polygon(
+    var(--pixel-cut) 0, calc(100% - var(--pixel-cut)) 0,
+    calc(100% - var(--pixel-cut)) var(--pixel-step), calc(100% - var(--pixel-step)) var(--pixel-step),
+    calc(100% - var(--pixel-step)) var(--pixel-cut), 100% var(--pixel-cut),
+    100% calc(100% - var(--pixel-cut)), calc(100% - var(--pixel-step)) calc(100% - var(--pixel-cut)),
+    calc(100% - var(--pixel-step)) calc(100% - var(--pixel-step)), calc(100% - var(--pixel-cut)) calc(100% - var(--pixel-step)),
+    calc(100% - var(--pixel-cut)) 100%, var(--pixel-cut) 100%,
+    var(--pixel-cut) calc(100% - var(--pixel-step)), var(--pixel-step) calc(100% - var(--pixel-step)),
+    var(--pixel-step) calc(100% - var(--pixel-cut)), 0 calc(100% - var(--pixel-cut)),
+    0 var(--pixel-cut), var(--pixel-step) var(--pixel-cut), var(--pixel-step) var(--pixel-step), var(--pixel-cut) var(--pixel-step)
+  );
+  --pixel-thumb-fill: color-mix(in srgb, var(--color-subtle) 85%, var(--color-background));
+  --pixel-thumb-shape: polygon(
+    1px 0, calc(100% - 1px) 0, calc(100% - 1px) 1px, 100% 1px,
+    100% calc(100% - 1px), calc(100% - 1px) calc(100% - 1px),
+    calc(100% - 1px) 100%, 1px 100%, 1px calc(100% - 1px), 0 calc(100% - 1px),
+    0 1px, 1px 1px
+  );
+}
+
+:is(.install-command, .usage-examples, .final-command, .monitor-preview, .layout-preview, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .card, .faq-item, .skip-link, .pixel-menu-item, .site-status, .docs-panel-frame) {
+  --pixel-border-width: 3px;
+  --pixel-border: var(--color-line);
+  --pixel-fill: var(--color-surface);
+  --pixel-inset: none;
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.install-command, .usage-examples, .final-command, .monitor-preview, .layout-preview, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .card, .faq-item, .skip-link, .site-status)::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--pixel-border-width));
+  z-index: -2;
+  background: var(--pixel-border);
+  clip-path: var(--pixel-outer-shape);
+  pointer-events: none;
+}
+
+:is(.install-command, .usage-examples, .final-command, .monitor-preview, .layout-preview, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .card, .faq-item, .skip-link, .site-status)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--pixel-fill);
+  box-shadow: var(--pixel-inset);
+  clip-path: var(--pixel-outer-shape);
+  pointer-events: none;
+}
+
+.pixel-button {
+  --pixel-border: var(--color-accent);
+  --pixel-fill: var(--color-accent);
+  --pixel-inset: inset -3px -3px 0 #00000030;
+  filter: drop-shadow(6px 6px 0 #00000070);
+}
+.pixel-button:hover { --pixel-fill: var(--color-accent-hover); }
+.pixel-button.secondary { --pixel-border: var(--color-line); --pixel-fill: var(--color-surface); --pixel-inset: none; }
+.pixel-button.secondary:hover,
+.install-tab[aria-selected="false"]:hover { --pixel-fill: var(--color-surface-hover); }
+.install-tab[aria-selected="true"] { --pixel-border: var(--color-accent); --pixel-fill: var(--color-accent); }
+.terminal { --pixel-border-width: 2px; --pixel-border: var(--terminal-border); --pixel-fill: var(--color-background); }
+
+.pixel-menu-item {
+  --navigation-shape: var(--pixel-outer-shape);
+  --navigation-transition: 140ms ease;
+  transition: color var(--navigation-transition);
+}
+.pixel-menu-item::before, .pixel-menu-item::after {
+  transition: background-color var(--navigation-transition);
+}
+.pixel-menu-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 calc(-1 * var(--navigation-marker-width));
+  z-index: -1;
+  background: var(--navigation-fill, transparent);
+  clip-path: var(--navigation-shape);
+  pointer-events: none;
+}
+.pixel-menu-item::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--navigation-marker-width));
+  width: var(--navigation-marker-width);
+  background: var(--navigation-marker, transparent);
+  pointer-events: none;
+}
+.pixel-menu-item[aria-current],
+.docs-toc .pixel-menu-item:hover {
+  --navigation-shape: polygon(
+    0 0, calc(100% - var(--pixel-cut)) 0,
+    calc(100% - var(--pixel-cut)) var(--pixel-step), calc(100% - var(--pixel-step)) var(--pixel-step),
+    calc(100% - var(--pixel-step)) var(--pixel-cut), 100% var(--pixel-cut),
+    100% calc(100% - var(--pixel-cut)), calc(100% - var(--pixel-step)) calc(100% - var(--pixel-cut)),
+    calc(100% - var(--pixel-step)) calc(100% - var(--pixel-step)), calc(100% - var(--pixel-cut)) calc(100% - var(--pixel-step)),
+    calc(100% - var(--pixel-cut)) 100%, 0 100%
+  );
+}

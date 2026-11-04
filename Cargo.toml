@@ -15,7 +15,8 @@ rust-version = "1.95.0"
 exclude = [
     "docs/images",
     ".github",
-    "snap"
+    "snap",
+    "website"
 ]
 
 [[bin]]

@@ -157,6 +157,59 @@ Before releasing CI or packaging changes, run `build.yml` through
 `workflow_dispatch` and require every job to pass. Local checks do not replace
 the platform and package jobs. Rerunning a tag checks out that tag's commit.
 
+## Binary installers
+
+The website publishes [install.sh](../../website/public/install.sh) and
+[install.ps1](../../website/public/install.ps1). They query the GitHub Releases
+API for the latest release or an exact tag and select
+`mdv-<tag>-<target>.zip`. Each matching asset must be unique and expose a valid
+`sha256:` digest. There is no checksum bypass or source-build fallback.
+
+The sh installer supports x86_64/ARM64 Linux with static musl archives and
+Intel/Apple Silicon macOS archives. The PowerShell installer supports x64/ARM64
+Windows. Extraction reads only the root `mdv` or `mdv.exe` entry; verified
+binaries are staged in the destination directory before replacement. Errors
+before replacement preserve the existing executable. Windows adds the install
+directory to the user and session PATH unless `-NoModifyPath` is set; sh prints
+PATH instructions without modifying shell profiles.
+
+[test_installers.py](../../.github/scripts/test_installers.py) covers local release
+fixtures, platform selection, pinned tags, installation and replacement, missing
+or duplicate assets, checksum failure, archive contents, and temporary-file
+cleanup. Shell tests need `sh` and `unzip`; Windows-specific tests run only on
+Windows. These tests are included in the helper suite. Native execution of
+downloaded macOS/Linux binaries still requires those operating systems.
+
+The installers use existing release assets, so adding them does not change the
+release workflow or its 23-file artifact contract. Public one-line installation
+commands become usable after the site is published to GitHub Pages.
+
+The website's package-manager tabs use exact RPM/Arch filenames from
+`website/src/data/package-release.json`. `bun run build` refreshes this snapshot
+from the latest stable GitHub release before checking types and generating the
+site. Missing assets, duplicate assets, unexpected download URLs, or API errors
+stop the build. Development uses the stored snapshot without network requests.
+
+## Website publication
+
+[website.yml](../../.github/workflows/website.yml) runs the website tests and
+`bun run build` on pull requests targeting `main` and every push to `main`.
+It installs Node.js 24 and the Bun version declared in `website/package.json`,
+using `website/bun.lock` with `--frozen-lockfile`.
+
+Successful main builds upload `website/dist/` and deploy it to the `github-pages`
+environment. Pull requests and manual runs on other branches only check and
+build. Set **Settings > Pages > Source** to **GitHub Actions** once. No custom
+token or committed build output is required.
+
+A successful tag-triggered `Build binaries` run also starts website publication
+through `workflow_run`. This handles releases created with `GITHUB_TOKEN`, whose
+`release` events do not trigger another workflow. The site is rebuilt from the
+default branch after release assets have been published; manual package checks
+and unsuccessful runs do not deploy it. Production runs share a concurrency
+group without cancelling an active deployment. Manual publication is available
+through **Actions > Website > Run workflow** on `main`.
+
 ## README star history
 
 [star-history.yml](../../.github/workflows/star-history.yml) refreshes four

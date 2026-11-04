@@ -1,0 +1,77 @@
+---
+import Page from './Page.astro';
+import DocsSidebar from '../components/DocsSidebar.astro';
+import CopyButton from '../components/CopyButton.astro';
+import RenderPreview from '../components/RenderPreview.astro';
+import DocsPanelTrigger from '../components/DocsPanelTrigger.astro';
+import DocsPanelFrame from '../components/DocsPanelFrame.astro';
+import { getDocumentation, documentationUrl, type DocPage } from '../data/docs';
+import { getCopy, getLocale } from '../i18n';
+import '../styles/docs.css';
+import '../styles/docs-blocks.css';
+import '../styles/docs-reference.css';
+import '../styles/render-previews.css';
+import '../styles/docs-panels.css';
+
+interface Props { page: DocPage; }
+const { page } = Astro.props;
+const locale = getLocale(Astro.url.pathname);
+const copy = getCopy(locale).docs;
+const documentation = getDocumentation(locale);
+const { frontmatter } = page;
+const content = (await page.compiledContent()).split(/<div data-mdv-preview="([a-z-]+)"><\/div>/g);
+const headings = page.getHeadings().filter((heading) => heading.depth === 2 || heading.depth === 3);
+const alternate = getDocumentation(locale === 'en' ? 'ru' : 'en').find((entry) => entry.frontmatter.slug === frontmatter.slug)!;
+const alternateHeadings = alternate.getHeadings().filter((heading) => heading.depth === 2 || heading.depth === 3);
+const languageAnchors = Object.fromEntries(headings.map((heading, index) => [heading.slug, alternateHeadings[index].slug]));
+const position = documentation.findIndex((entry) => entry.frontmatter.slug === frontmatter.slug);
+const previous = documentation[position - 1];
+const next = documentation[position + 1];
+---
+<Page title={`${frontmatter.title} | ${copy.title}`} description={frontmatter.description} wide languageAnchors={languageAnchors}>
+  <div class="docs-layout" data-documentation>
+    <template data-code-copy-template><CopyButton command="" label={copy.copyCode} /></template>
+    <DocsSidebar current={frontmatter.slug} />
+    <article class="docs-article">
+      <header class="docs-page-heading">
+        <p class="docs-eyebrow">{copy.groups[frontmatter.group]}</p>
+        <h1 id="doc-search-title" data-doc-search-id="doc-search-title">{frontmatter.title}</h1>
+        <p id="doc-search-description" data-doc-search-id="doc-search-description">{frontmatter.description}</p>
+      </header>
+      <div class="docs-prose">{content.map((part, index) => index % 2
+        ? <RenderPreview id={part} locale={locale} />
+        : <Fragment set:html={part} />)}</div>
+      <nav class="docs-pagination" aria-label={copy.adjacent}>
+        {previous && (
+          <a class="previous" href={documentationUrl(previous.frontmatter.slug, locale)} rel="prev">
+            <span class="docs-pagination-label">{copy.previous}</span>
+            <span class="docs-pagination-title"><span aria-hidden="true">←</span>{previous.frontmatter.title}</span>
+          </a>
+        )}
+        {next && (
+          <a class="next" href={documentationUrl(next.frontmatter.slug, locale)} rel="next">
+            <span class="docs-pagination-label">{copy.next}</span>
+            <span class="docs-pagination-title">{next.frontmatter.title}<span aria-hidden="true">→</span></span>
+          </a>
+        )}
+      </nav>
+    </article>
+    <aside id="docs-toc-panel" class="docs-toc docs-panel-frame" aria-label={copy.onPage}
+      data-docs-panel data-docs-panel-media="(max-width: 75rem)">
+      <DocsPanelFrame />
+      <div class="docs-panel-heading">
+        <h2>{copy.onPage}</h2>
+      </div>
+      <div class="docs-panel-scroll">
+        <nav data-docs-vertical-scroll><ul>{headings.filter((heading) => frontmatter.slug !== 'cli' || heading.depth === 2).map((heading) => (
+          <li class:list={{ nested: heading.depth === 3 }}><a class="pixel-menu-item" href={`#${heading.slug}`}>{heading.text}</a></li>
+        ))}</ul></nav>
+      </div>
+    </aside>
+    <DocsPanelTrigger target="docs-toc-panel" label={copy.onPage} side="right" />
+  </div>
+</Page>
+<script>
+  import { setupDocumentation } from '../scripts/documentation';
+  setupDocumentation(document.querySelector<HTMLElement>('[data-documentation]')!);
+</script>

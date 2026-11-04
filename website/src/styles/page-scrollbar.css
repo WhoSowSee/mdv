@@ -1,0 +1,36 @@
+:root { --page-scrollbar-grab-width: 8px; --page-scrollbar-hover-width: 12px; }
+html[data-custom-scrollbar] { scrollbar-width: none; }
+html[data-custom-scrollbar]::-webkit-scrollbar { display: none; }
+.page-scrollbar {
+  position: fixed; top: 4px; right: 0; bottom: 4px;
+  width: var(--page-scrollbar-hover-width); z-index: 18;
+  background: transparent; pointer-events: none; user-select: none;
+}
+.page-scrollbar-thumb {
+  position: absolute; top: 0; right: 0; width: var(--page-scrollbar-grab-width);
+  height: var(--page-scrollbar-thumb-height); opacity: 0; pointer-events: none;
+  cursor: ns-resize; touch-action: none;
+  transition: opacity 180ms ease-in-out;
+}
+.page-scrollbar-ink {
+  position: absolute; top: 0; bottom: 0; right: 1px; width: 4px;
+  background: var(--pixel-thumb-fill);
+  clip-path: var(--pixel-thumb-shape);
+  transition: width 160ms ease-in-out, background-color 160ms ease-in-out;
+}
+.page-scrollbar:is([data-hovered], [data-dragging]) .page-scrollbar-thumb { opacity: 1; pointer-events: auto; }
+.page-scrollbar-thumb:hover .page-scrollbar-ink,
+.page-scrollbar[data-dragging] .page-scrollbar-ink { width: 6px; background: var(--color-accent); }
+html:has(#docs-toc-panel[data-panel-floating="true"][data-panel-open="true"]) .page-scrollbar-thumb {
+  opacity: 0; pointer-events: none;
+}
+html[data-page-scrollbar-dragging] { cursor: ns-resize; }
+@media (any-hover: hover) {
+  html[data-custom-scrollbar] .docs-panel-trigger-right { right: var(--page-scrollbar-grab-width); }
+  html[data-custom-scrollbar] .docs-panel-trigger-left .docs-edge-handle { left: calc(3px + var(--page-scrollbar-grab-width)); }
+}
+@media (forced-colors: active) {
+  .page-scrollbar-ink { background: CanvasText; forced-color-adjust: none; }
+  .page-scrollbar-thumb:hover .page-scrollbar-ink,
+  .page-scrollbar[data-dragging] .page-scrollbar-ink { background: Highlight; }
+}

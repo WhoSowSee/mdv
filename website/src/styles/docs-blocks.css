@@ -1,0 +1,88 @@
+.docs-prose .code-frame {
+  --pixel-border-width: 1px;
+  --pixel-fill: var(--color-code-panel);
+  padding: 1px 40px 1px 1px;
+}
+.docs-prose .code-frame::before { inset: 0; }
+.docs-prose .code-frame::after { inset: 1px; }
+.docs-prose pre {
+  padding: 14px 16px;
+  margin: 0;
+  border: 0;
+  background: transparent !important;
+  font: calc(18px * var(--text-scale))/1.6 var(--font-body);
+  font-kerning: normal;
+  overflow-wrap: normal;
+  white-space: pre;
+}
+.docs-prose pre code { font: inherit; font-variant-ligatures: none; }
+.code-frame .copy-button {
+  position: absolute;
+  top: 11px;
+  right: 9px;
+  color: color-mix(in srgb, var(--color-muted) 82%, var(--color-code-panel));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease-in-out, color 200ms ease-in-out;
+}
+.code-frame[data-single-line="true"] .copy-button { top: calc(50% - 14px); }
+.code-frame:hover .copy-button,
+.code-frame[data-code-selected] .copy-button,
+html:not([data-input-method="pointer"]) .code-frame:has(:focus-visible) .copy-button { opacity: 1; pointer-events: auto; }
+.code-frame .copy-button:is(:hover, [data-copied="true"]) { color: var(--color-accent); }
+.code-frame .copy-button svg { width: 20px; height: 20px; }
+.pixel-scroll-host { position: relative; min-width: 0; }
+.pixel-scroll-content { scrollbar-width: none !important; }
+.pixel-scroll-content::-webkit-scrollbar { display: none; }
+[data-docs-vertical-scroll] {
+  --scroll-fade-top: 0px;
+  --scroll-fade-bottom: 0px;
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--scroll-fade-top), #000 calc(100% - var(--scroll-fade-bottom)), transparent);
+  scroll-padding-block: 24px;
+}
+[data-scroll-before] > [data-docs-vertical-scroll] { --scroll-fade-top: 18px; }
+[data-scroll-after] > [data-docs-vertical-scroll] { --scroll-fade-bottom: 18px; }
+.pixel-scroll-rail {
+  position: absolute;
+  bottom: 1px;
+  left: 16px;
+  right: 16px;
+  height: 14px;
+  opacity: 0;
+  transition: opacity 220ms ease-in-out;
+  touch-action: none;
+  user-select: none;
+}
+.pixel-scroll-thumb {
+  position: absolute;
+  top: 6px;
+  width: var(--thumb-length);
+  height: 3px;
+  background: var(--pixel-thumb-fill);
+  clip-path: var(--pixel-thumb-shape);
+  cursor: ew-resize;
+}
+.pixel-scroll-rail.vertical { top: 0; right: -3px; bottom: 0; left: auto; width: 12px; height: auto; }
+.pixel-scroll-rail.vertical .pixel-scroll-thumb {
+  top: 0;
+  right: 4px;
+  width: 3px;
+  height: var(--thumb-length);
+  cursor: ns-resize;
+}
+.pixel-scroll-rail:hover, .pixel-scroll-rail[data-dragging],
+.pixel-scroll-host:has(> .pixel-scroll-content:focus-visible) > .pixel-scroll-rail { opacity: 1; }
+.docs-table-scroll { margin-bottom: 16px; padding-bottom: 14px; }
+.docs-table-scroll .table-frame { margin-bottom: 0; }
+.docs-prose .docs-table-scroll { overflow-wrap: normal; }
+@media (hover: none) {
+  .code-frame .copy-button { opacity: 1; pointer-events: auto; }
+  .pixel-scroll-rail { opacity: 1; }
+}
+@media (max-width: 35rem) { .docs-prose pre { padding: 12px; } }
+@media (max-width: 35rem), (pointer: coarse) {
+  .docs-prose .code-frame { padding-right: 52px; }
+  .code-frame .copy-button { top: 3px; right: 4px; }
+  .code-frame[data-single-line="true"] .copy-button { top: calc(50% - 22px); }
+}
+@media (forced-colors: active) { .pixel-scroll-thumb { background: CanvasText; } }

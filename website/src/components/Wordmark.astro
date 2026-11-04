@@ -1,0 +1,27 @@
+---
+const letteringRows = [
+  'M60 0h60v10h-60zM190 0h50v10h-50zM260 0h110v10h-110zM410 0h50v10h-50zM540 0h60v10h-60z',
+  'M50 20h80v10h-80zM180 20h60v10h-60zM260 20h140v10h-140zM420 20h50v10h-50zM530 20h60v10h-60z',
+  'M70 40h70v10h-70zM170 40h70v10h-70zM260 40h50v10h-50zM360 40h50v10h-50zM430 40h50v10h-50zM520 40h50v10h-50z',
+  'M50 60h190v10h-190zM260 60h50v10h-50zM370 60h50v10h-50zM440 60h50v10h-50zM510 60h50v10h-50z',
+  'M70 80h40v10h-40zM120 80h70v10h-70zM200 80h40v10h-40zM260 80h50v10h-50zM370 80h50v10h-50zM440 80h50v10h-50zM510 80h60v10h-60z',
+  'M70 100h40v10h-40zM130 100h50v10h-50zM200 100h40v10h-40zM260 100h50v10h-50zM360 100h50v10h-50zM450 100h100v10h-100z',
+  'M70 120h40v10h-40zM140 120h30v10h-30zM200 120h40v10h-40zM260 120h140v10h-140zM460 120h80v10h-80z',
+  'M70 140h40v10h-40zM150 140h10v10h-10zM200 140h40v10h-40zM260 140h110v10h-110zM470 140h60v10h-60z',
+];
+---
+<svg class="wordmark" viewBox="-5 -10 650 290" role="img" aria-label="mdv" >
+  {letteringRows.map((d, row) => (
+    <g class={`wordmark-band wordmark-band-${row % 3}`}>
+      <path class="wordmark-echo" d={d} aria-hidden="true" />
+      <path class="wordmark-ink" d={d} fill="currentColor" />
+    </g>
+  ))}
+  <path d="M10 0h10v10h-10zM30 0h10v10h-10zM620 0h10v10h-10zM20 20h10v10h-10zM30 20h10v10h-10zM590 20h10v10h-10zM610 20h10v10h-10zM40 40h10v10h-10zM590 40h10v10h-10zM600 40h10v10h-10zM20 60h20v10h-20zM570 60h10v10h-10zM600 60h10v10h-10zM50 80h10v10h-10zM580 80h10v10h-10zM40 100h10v10h-10zM570 100h10v10h-10zM50 120h10v10h-10zM550 120h10v10h-10zM540 140h10v10h-10z" fill="currentColor" opacity=".8"/>
+  <path class="dr" style="--row:0" d="M70 160h10v10h-10zM100 160h10v10h-10zM150 160h10v10h-10zM200 160h10v10h-10zM230 160h10v10h-10zM270 160h10v10h-10zM290 160h10v10h-10zM320 160h10v10h-10zM350 160h10v10h-10zM390 160h10v10h-10zM460 160h10v10h-10zM490 160h10v10h-10zM520 160h10v10h-10z" fill="currentColor"/>
+  <path class="dr" style="--row:1" d="M100 180h10v10h-10zM150 180h10v10h-10zM200 180h10v10h-10zM270 180h10v10h-10zM290 180h10v10h-10zM320 180h10v10h-10zM460 180h10v10h-10zM490 180h10v10h-10zM520 180h10v10h-10z" fill="currentColor"/>
+  <path class="dr" style="--row:2" d="M70 200h10v10h-10zM100 200h10v10h-10zM200 200h10v10h-10zM230 200h10v10h-10zM270 200h10v10h-10zM290 200h10v10h-10zM320 200h10v10h-10zM350 200h10v10h-10zM390 200h10v10h-10zM460 200h10v10h-10zM490 200h10v10h-10zM520 200h10v10h-10z" fill="currentColor"/>
+  <path class="dr" style="--row:3" d="M200 220h10v10h-10zM290 220h10v10h-10zM490 220h10v10h-10zM520 220h10v10h-10z" fill="currentColor"/>
+  <path class="dr" style="--row:4" d="M100 240h10v10h-10zM290 240h10v10h-10zM350 240h10v10h-10zM480 240h10v10h-10z" fill="currentColor"/>
+  <path class="dr" style="--row:5" d="M290 260h10v10h-10z" fill="currentColor"/>
+</svg>

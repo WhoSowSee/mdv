@@ -41,6 +41,22 @@
 
 ## Установка
 
+### Установка готового файла одной командой
+
+Windows PowerShell 5.1 или PowerShell 7 (x64 и ARM64):
+
+```powershell
+irm https://whosowsee.github.io/mdv/install.ps1 | iex
+```
+
+Linux и macOS (x86_64 и ARM64):
+
+```sh
+curl -fsSL https://whosowsee.github.io/mdv/install.sh | sh
+```
+
+Скрипты скачивают последний релиз GitHub и проверяют SHA-256 перед заменой бинарника. Rust не нужен. Windows устанавливает в `%LOCALAPPDATA%\Programs\mdv` и добавляет каталог в пользовательский `PATH` и текущую сессию; Linux/macOS устанавливает в `~/.local/bin` без правки профилей оболочек. Для sh-установщика нужны `curl`, `unzip` и `sha256sum` (Linux) или `shasum` (macOS). Повторите команду для обновления. Выбор версии и каталога, настройка PATH и удаление описаны в [руководстве по установке](website/src/content/docs/ru/installation.md#выбор-версии-и-каталога).
+
 ### Установка с crates.io
 
 ```bash
@@ -51,21 +67,23 @@ cargo install mdv
 
 ### Установка RPM-пакетов и пакетов Arch Linux
 
-Скачайте пакет для своей системы из [Releases](https://github.com/WhoSowSee/mdv/releases). RPM-пакеты поддерживают Linux x86_64 и ARM64 и требуют glibc 2.39 или новее. Пакеты Arch Linux поддерживают x86_64.
+Скачайте пакет для своей системы из [Releases](https://github.com/WhoSowSee/mdv/releases) или используйте команды с `curl` ниже. RPM-пакеты поддерживают Linux x86_64 и ARM64 и требуют glibc 2.39 или новее. Пакеты Arch Linux поддерживают x86_64.
 
 Для Fedora и совместимых RPM-систем:
 
 ```bash
+curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
 sudo dnf install "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.rpm"
 ```
 
 Для Arch Linux:
 
 ```bash
+curl -fLO "https://github.com/WhoSowSee/mdv/releases/download/v<VERSION>/mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
 sudo pacman -U "./mdv-v<VERSION>-x86_64-unknown-linux-gnu.pkg.tar.zst"
 ```
 
-Замените `<VERSION>` номером релиза. Для RPM-пакетов ARM64 используйте имя файла с `aarch64-unknown-linux-gnu`. Эти пакеты содержат бинарник и лицензию; Rust для их установки не требуется.
+Замените все `<VERSION>` номером релиза. Для RPM на ARM64 замените `x86_64` на `aarch64` в обеих строках. Если файл скачан вручную, выполните только вторую строку. Эти пакеты содержат бинарник и лицензию; Rust для их установки не требуется.
 
 ### Установка через Nix (Flake)
 
@@ -117,6 +135,29 @@ just run-dev README.md
 ```
 
 На Windows нужен PowerShell 7.4+ (`pwsh.exe` в `PATH`); для `check-all` также требуется Python 3.11+. Все команды и подробности — в [документации разработки и тестирования](docs/modules/testing.md).
+
+### Сайт
+
+Сайт проекта находится в [website/](website/README.md) и использует Astro,
+TypeScript и Tailwind CSS. Нужны Bun 1.4.4 или новее и Node.js 22.23.4 или новее:
+
+```sh
+cd website
+bun install --frozen-lockfile
+bun run dev
+```
+
+Выведенный локальный адрес уже содержит путь `/mdv/`. `bun run build` обновляет
+ссылки на пакеты релиза, проверяет типы и собирает `website/dist/`; нужен доступ к GitHub API.
+[Workflow сайта](.github/workflows/website.yml) проверяет pull request и публикует
+успешные сборки main в GitHub Pages, в том числе после релиза по тегу.
+Один раз выберите **GitHub Actions** в **Settings > Pages > Source**.
+
+Сайт включает полные пользовательские руководства и справочники CLI/YAML по адресу
+`/mdv/docs/`, с навигацией, полнотекстовым поиском и оглавлениями. Исходники Markdown находятся в
+`website/src/content/docs/`.
+Значок языка переключает текущую страницу между английским и русским.
+Русская версия начинается с `/mdv/ru/`, документация находится в `/mdv/ru/docs/`.
 
 ## Использование
 

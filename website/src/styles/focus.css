@@ -1,0 +1,57 @@
+:focus-visible { outline: 2px solid var(--color-peach); outline-offset: 3px; }
+html[data-input-method="pointer"] .site-nav :is(a, button):focus { outline: 0; }
+:is(a, button, input, select, textarea, summary, pre) { scroll-margin-block: 12px; }
+
+:is(.pixel-button, .install-tab, .skip-link):focus-visible {
+  --pixel-border: var(--color-peach);
+  --pixel-inset: inset 0 0 0 1px var(--color-background);
+  outline: 0;
+}
+
+:is(.terminal, .install-command, .usage-examples, .code-frame):has(pre:focus-visible),
+.final-command:has(code:focus-visible) { --pixel-border: var(--color-peach); }
+
+:is(.terminal, .install-command, .usage-examples, .code-frame) pre:focus-visible,
+.final-command code:focus-visible { outline: 0; }
+
+.docs-prose .code-frame:has(> pre:focus-visible)::before { inset: -2px; }
+.usage-examples:has(pre:focus-visible) { --pixel-fill: color-mix(in srgb, var(--color-accent) 7%, var(--color-background)); }
+.terminal:has(pre:focus-visible) .terminal-title { color: var(--color-peach); }
+
+.docs-search-field:focus-within { --pixel-border: var(--color-accent); }
+.docs-search-field:has(input:focus-visible) { --pixel-border: var(--color-peach); }
+html[data-input-method="pointer"] .docs-search-field:focus-within,
+.docs-search-field:has(input[data-editing="true"]:focus) { --pixel-border: var(--color-accent); }
+.docs-search-field:focus-within::after { inset: 2px; }
+.docs-search input:focus-visible { outline: 0; }
+.docs-sidebar a:focus-visible {
+  outline: 2px solid var(--color-peach);
+  outline-offset: -2px;
+}
+.docs-toc a:focus-visible { outline-offset: -2px; }
+html[data-input-method="pointer"] .docs-toc a:focus,
+html[data-input-method="pointer"] .docs-prose :is(h2, h3)[tabindex="-1"]:focus { outline: 0; }
+html[data-input-method="pointer"] [data-doc-search-id]:focus { outline: 0; }
+[data-doc-search-focus]:focus { outline: 0; }
+[data-home-section-focus]:focus { outline: 0; }
+
+.faq-item:has(> details > summary:focus-visible) { --pixel-border: var(--color-peach); }
+.faq summary:focus-visible { outline: 0; }
+
+.docs-pagination a:focus-visible { outline: 0; }
+.docs-pagination a:focus-visible .docs-pagination-title {
+  color: var(--color-peach);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 2px;
+}
+
+@media (forced-colors: active) {
+  :is(.pixel-button, .install-tab):focus-visible,
+  :is(.terminal, .install-command, .usage-examples, .code-frame):has(pre:focus-visible),
+  .final-command:has(code:focus-visible),
+  .faq-item:has(> details > summary:focus-visible),
+  .docs-pagination a:focus-visible { outline: 2px solid Highlight; outline-offset: 3px; }
+  .docs-search-field:focus-within,
+  .docs-sidebar a:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; box-shadow: none; }
+}

@@ -1,0 +1,14 @@
+---
+import PixelIcon from './PixelIcon.astro';
+import { getCopy, getLocale } from '../i18n';
+
+interface Props { command: string; label?: string; }
+const { command, label } = Astro.props;
+const { install: copy } = getCopy(getLocale(Astro.url.pathname));
+---
+<button type="button" class="copy-button" data-copy={command} data-copy-success={copy.copied}
+  data-copy-failed={copy.failed} aria-label={label ?? copy.copyLabel} title={label ?? copy.copyLabel}>
+  <PixelIcon class="copy-icon" name="copy" />
+  <PixelIcon class="copy-check-icon" name="check" />
+  <span class="sr-only" data-copy-status role="status" aria-live="polite" aria-atomic="true"></span>
+</button>

@@ -1,0 +1,28 @@
+---
+import Eye from './Eye.astro';
+import { getCopy, getLocale, siteLinks } from '../i18n';
+const locale = getLocale(Astro.url.pathname);
+const copy = getCopy(locale).footer;
+const links = siteLinks(locale);
+---
+<footer class="site-footer">
+  <div class="page-wrap">
+    <div class="footer-row">
+      <div class="footer-brand">
+        <button class="footer-logo" type="button" data-easter-egg data-message={copy.found} aria-label={copy.egg}><Eye /></button>
+        <p>© {new Date().getUTCFullYear()} WhoSowSee</p>
+      </div>
+      <nav class="flex flex-wrap" aria-label={copy.links}>
+        <a href={links.github}>GitHub</a><a href={links.crate}>Crates</a><a href={links.license}>{copy.license}</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+<script>
+  import { notify } from '../scripts/notifications';
+
+  const egg = document.querySelector<HTMLButtonElement>('[data-easter-egg]');
+  egg?.addEventListener('click', () => {
+    notify(egg.dataset.message!);
+  });
+</script>

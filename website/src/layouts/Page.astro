@@ -1,0 +1,64 @@
+---
+import '../styles/global.css';
+import '../styles/page-scrollbar.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import PageScrollbar from '../components/PageScrollbar.astro';
+import textRegular from '../assets/fonts/mdv-pixel-text-regular.woff2?url';
+import textBold from '../assets/fonts/mdv-pixel-text-bold.woff2?url';
+import { alternatePath, getCopy, getLocale } from '../i18n';
+const locale = getLocale(Astro.url.pathname);
+const copy = getCopy(locale);
+const faviconHref = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon-eye.ico`;
+
+interface Props {
+  title?: string;
+  description?: string;
+  wide?: boolean;
+  languageAnchors?: Record<string, string>;
+}
+const {
+  title = copy.meta.title,
+  description = copy.meta.description,
+  wide = false,
+  languageAnchors = {},
+} = Astro.props;
+---
+<!doctype html>
+<html lang={locale} data-custom-scrollbar>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preload" href={textRegular} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={textBold} as="font" type="font/woff2" crossorigin="anonymous" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0e151a" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site)} />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <link rel="alternate" hreflang="en" href={new URL(alternatePath(Astro.url.pathname, 'en'), Astro.site)} />
+    <link rel="alternate" hreflang="ru" href={new URL(alternatePath(Astro.url.pathname, 'ru'), Astro.site)} />
+    <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48 64x64" href={faviconHref} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{copy.meta.skip}</a>
+    <Header languageAnchors={languageAnchors} />
+    <main id="main"><div id="top" class={wide ? 'docs-wrap' : 'page-wrap'}><slot /></div></main>
+    <Footer />
+    <PageScrollbar />
+    <div id="site-status" class="site-status" role="status" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
+<script>
+  import { setupKeyboard } from '../scripts/keyboard';
+  import { setupPixelSelection } from '../scripts/pixel-selection';
+  import { setupPageScrollbar } from '../scripts/page-scrollbar';
+  import { setupHomeSectionNavigation } from '../scripts/home-section-navigation';
+  setupKeyboard();
+  setupPixelSelection();
+  setupPageScrollbar();
+  setupHomeSectionNavigation();
+</script>

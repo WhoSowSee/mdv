@@ -1,0 +1,8 @@
+---
+interface Props { target: string; label: string; side: 'left' | 'right'; }
+const { target, label, side } = Astro.props;
+---
+<button type="button" class={`docs-panel-trigger docs-panel-trigger-${side}`} data-docs-panel-trigger={target}
+  aria-controls={target} aria-expanded="false" aria-label={label} hidden>
+  <span class="docs-edge-handle" aria-hidden="true"></span>
+</button>

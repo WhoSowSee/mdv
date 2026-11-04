@@ -1,0 +1,15 @@
+.docs-prose > h2 { margin-top: 38px; }
+.docs-prose > h2:first-child { margin-top: 0; }
+.docs-prose .cli-option { padding: 18px 0 22px; border-bottom: 1px solid var(--color-line); }
+.docs-prose .cli-option h3 {
+  font: 700 calc(20px * var(--text-scale))/1.45 var(--font-display);
+  font-kerning: normal;
+  margin: 0 0 8px;
+}
+.docs-prose .cli-option h3 code { padding: 0; color: var(--color-accent); background: transparent; }
+.docs-prose .cli-syntax { margin-bottom: 12px; color: var(--color-muted); font-size: calc(17px * var(--text-scale)); }
+.docs-prose .cli-syntax code { padding: 0; color: var(--color-subtle); background: transparent; }
+.docs-prose .cli-option p { margin-bottom: 10px; }
+.docs-prose .cli-option > :last-child { margin-bottom: 0; }
+.docs-prose .cli-option ul { padding-left: 19px; margin: 10px 0 0; }
+.docs-prose .cli-option li { margin-bottom: 7px; }

@@ -1,0 +1,17 @@
+{
+  "tag": "v6.1.0",
+  "packages": {
+    "rpm": {
+      "filename": "mdv-v6.1.0-x86_64-unknown-linux-gnu.rpm",
+      "url": "https://github.com/WhoSowSee/mdv/releases/download/v6.1.0/mdv-v6.1.0-x86_64-unknown-linux-gnu.rpm"
+    },
+    "rpmArm64": {
+      "filename": "mdv-v6.1.0-aarch64-unknown-linux-gnu.rpm",
+      "url": "https://github.com/WhoSowSee/mdv/releases/download/v6.1.0/mdv-v6.1.0-aarch64-unknown-linux-gnu.rpm"
+    },
+    "arch": {
+      "filename": "mdv-v6.1.0-x86_64-unknown-linux-gnu.pkg.tar.zst",
+      "url": "https://github.com/WhoSowSee/mdv/releases/download/v6.1.0/mdv-v6.1.0-x86_64-unknown-linux-gnu.pkg.tar.zst"
+    }
+  }
+}

@@ -1,0 +1,47 @@
+.site-nav { max-width: 1280px; margin-inline: auto; padding: 6px 28px; min-height: 48px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+.site-nav > .brand { justify-self: start; }
+.nav-links { display: flex; justify-content: center; align-items: center; gap: 20px; padding-inline-start: var(--text-tracking); color: var(--color-subtle); font-size: calc(18px * var(--text-scale)); line-height: 1.4; }
+.nav-links a { display: inline-flex; min-height: 30px; align-items: center; }
+.nav-links a[aria-current] { position: relative; color: var(--color-accent); }
+.nav-links a[aria-current]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc((100% - 1lh) / 2 - 6px);
+  height: 3px;
+  background: currentColor;
+  clip-path: var(--pixel-thumb-shape);
+  pointer-events: none;
+}
+.nav-label-short { display: none; }
+.nav-actions { justify-self: end; display: flex; gap: 16px; align-items: center; }
+.icon-link { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--color-subtle); }
+.icon-link:hover { color: var(--color-accent); }
+.icon-link svg { width: 24px; height: 24px; shape-rendering: crispEdges; }
+.motion-toggle { background: transparent; border: 0; padding: 0; }
+.motion-pause { transform: translateX(-2px); }
+.motion-play { display: none; transform: translateX(-3px); }
+.motion-toggle[aria-pressed="true"] .motion-pause { display: none; }
+.motion-toggle[aria-pressed="true"] .motion-play { display: block; }
+.motion-paused *, .motion-paused *::before, .motion-paused *::after { animation-play-state: paused !important; }
+@media (max-width: 52rem) {
+  .site-nav { padding: 6px 24px; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
+  .nav-links { grid-row: 2; grid-column: 1 / -1; gap: 28px; }
+  .nav-actions { grid-column: 2; grid-row: 1; gap: 16px; }
+  :root { scroll-padding-top: 96px; }
+}
+@media (max-width: 35rem) {
+  .site-nav { padding: 4px 20px; gap: 0 12px; }
+  .nav-links { font-size: calc(15px * var(--text-scale)); gap: 10px; }
+  .nav-label-wide { display: none; }
+  .nav-label-short { display: inline; }
+  :root { scroll-padding-top: 108px; }
+}
+@media (max-width: 35rem), (pointer: coarse) {
+  .site-nav > .brand, .nav-links a { min-height: 44px; }
+  .icon-link { width: 44px; height: 44px; }
+  .nav-actions { gap: 4px; }
+}
+@media (forced-colors: active) {
+  .nav-links a[aria-current]::after { background: LinkText; forced-color-adjust: none; }
+}

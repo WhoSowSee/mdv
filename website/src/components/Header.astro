@@ -1,0 +1,58 @@
+---
+import Eye from './Eye.astro';
+import PixelIcon from './PixelIcon.astro';
+import { alternatePath, getCopy, getLocale, siteLinks } from '../i18n';
+interface Props { languageAnchors?: Record<string, string>; }
+const { languageAnchors = {} } = Astro.props;
+const locale = getLocale(Astro.url.pathname);
+const copy = getCopy(locale).nav;
+const links = siteLinks(locale);
+const otherLocale = locale === 'en' ? 'ru' : 'en';
+const isDocumentation = Astro.url.pathname.startsWith(links.docs);
+---
+<header class="site-header">
+  <nav class="site-nav" aria-label={copy.label} data-home-url={links.home}>
+    <a class="brand flex items-center gap-2.5" href={`${links.home}#top`} aria-label={copy.home}>
+      <Eye />
+      <span>mdv</span>
+    </a>
+    <div class="nav-links">
+      <a href={`${links.home}?section=features`}>{copy.features}</a>
+      <a href={links.docs} aria-current={isDocumentation ? 'true' : undefined} aria-label={copy.docs}><span class="nav-label-wide">{copy.docs}</span><span class="nav-label-short">{copy.docsShort}</span></a>
+      <a href={`${links.home}?section=install`}>{copy.install}</a>
+    </div>
+    <div class="nav-actions">
+      <a class="icon-link" href={links.github} aria-label={copy.github} title={copy.github}>
+        <PixelIcon name="github" />
+      </a>
+      <a class="icon-link" href={alternatePath(Astro.url.pathname, otherLocale)} lang={otherLocale} hreflang={otherLocale} aria-label={copy.language} title={copy.language} data-language-toggle data-language-anchors={JSON.stringify(languageAnchors)}><PixelIcon name="languages" /></a>
+      <button class="motion-toggle icon-link" type="button" aria-label={copy.pause} title={copy.pause} aria-pressed="false" data-motion-toggle data-pause-label={copy.pause} data-resume-label={copy.resume}>
+        <PixelIcon class="motion-pause" name="pause" />
+        <PixelIcon class="motion-play" name="play" />
+      </button>
+    </div>
+  </nav>
+</header>
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-motion-toggle]');
+  button?.addEventListener('click', () => {
+    const paused = button.getAttribute('aria-pressed') !== 'true';
+    button.setAttribute('aria-pressed', String(paused));
+    const label = paused ? button.dataset.resumeLabel! : button.dataset.pauseLabel!;
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    document.documentElement.classList.toggle('motion-paused', paused);
+  });
+  const language = document.querySelector<HTMLAnchorElement>('[data-language-toggle]');
+  if (language) {
+    const anchors: Record<string, string> = JSON.parse(language.dataset.languageAnchors!);
+    const updateLanguageLink = () => {
+      const hash = decodeURIComponent(location.hash.slice(1));
+      const target = new URL(language.href);
+      target.hash = hash in anchors ? anchors[hash] : hash;
+      language.href = target.href;
+    };
+    updateLanguageLink();
+    window.addEventListener('hashchange', updateLanguageLink);
+  }
+</script>

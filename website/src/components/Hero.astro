@@ -1,0 +1,18 @@
+---
+import Wordmark from './Wordmark.astro';
+import TerminalPreview from './TerminalPreview.astro';
+import { getCopy, getLocale, siteLinks } from '../i18n';
+const locale = getLocale(Astro.url.pathname);
+const copy = getCopy(locale).hero;
+const links = siteLinks(locale);
+---
+<section class="hero" aria-labelledby="hero-heading">
+  <Wordmark />
+  <h1 id="hero-heading">{copy.before}<em>{copy.accent}</em><br class="hidden sm:block" />{copy.after}</h1>
+  <p class="hero-lead">{copy.lead}</p>
+  <div class="flex flex-wrap justify-center gap-4">
+    <a class="pixel-button" href="#install">{copy.start}</a>
+    <a class="pixel-button secondary" href={links.docs}>{copy.docs}</a>
+  </div>
+  <TerminalPreview />
+</section>
