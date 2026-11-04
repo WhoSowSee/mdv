@@ -26,7 +26,7 @@ export const catalog = [
   spec('block-spacing', 'rendering', 4, text('Block spacing', 'Интервалы между блоками'), 'spacing', [defaultChoice(), ...options('--block-spacing', ['paragraph:top=0,bottom=0;h2:top=0,bottom=0', 'paragraph:top=1,bottom=2;h2:top=2,bottom=1'])]),
   spec('horizontal-rule-style', 'rendering', 5, text('Horizontal rules', 'Горизонтальные линии'), 'rule', options('--horizontal-rule-style', ['pretty', 'simple'])),
   spec('hide-comments', 'rendering', 5, text('Comment visibility', 'Видимость комментариев'), 'comments', toggle('--hide-comments')),
-  spec('show-empty-elements', 'rendering', 5, text('Empty blocks', 'Пустые блоки'), 'empty', toggle('--show-empty-elements')),
+  spec('show-empty-elements', 'rendering', 5, text('Empty blocks', 'Пустые блоки'), 'empty', toggle('--show-empty-elements'), { base: ['--code-block-style', 'pretty:show-name'] }),
   spec('line-numbers', 'rendering', 6, text('Document line numbers', 'Номера строк документа'), 'numbered', lineNumbers('--line-numbers')),
   spec('code-block-style', 'code-blocks', 0, text('Code block frame', 'Оформление блока кода'), 'code', options('--code-block-style', ['basic', 'simple', 'pretty'])),
   spec('code-labels', 'code-blocks', 0, text('Code labels and icons', 'Подписи и значки кода'), 'code', modifiers('--code-block-style', 'pretty', ['show-name', 'show-icon', 'show-name;show-icon']), { option: '--code-block-style', description: text('Hidden labels, a language name, an icon, or both.', 'Скрытые подписи, название языка, значок или оба.') }),

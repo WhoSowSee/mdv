@@ -1804,10 +1804,12 @@
               "--theme",
               "catppuccin",
               "--cols",
-              "64"
+              "64",
+              "--code-block-style",
+              "pretty:show-name"
             ],
             "ansi": "Before an empty code block.\n\nAfter the block.\n",
-            "command": "mdv --no-config --theme catppuccin --cols 64 example.md",
+            "command": "mdv --no-config --theme catppuccin --cols 64 --code-block-style 'pretty:show-name' example.md",
             "rows": 3,
             "columns": 27
           },
@@ -1818,11 +1820,13 @@
               "catppuccin",
               "--cols",
               "64",
+              "--code-block-style",
+              "pretty:show-name",
               "--show-empty-elements"
             ],
-            "ansi": "Before an empty code block.\n\n  \u001b[0m\nAfter the block.\n",
-            "command": "mdv --no-config --theme catppuccin --cols 64 --show-empty-elements example.md",
-            "rows": 4,
+            "ansi": "Before an empty code block.\n\n╭─ \u001b[38;2;143;147;162mRust\u001b[0m ─╮\n│ \u001b[0m       │\n╰────────╯\n\nAfter the block.\n",
+            "command": "mdv --no-config --theme catppuccin --cols 64 --code-block-style 'pretty:show-name' --show-empty-elements example.md",
+            "rows": 7,
             "columns": 27
           }
         ]
@@ -1836,10 +1840,12 @@
               "--theme",
               "catppuccin",
               "--cols",
-              "64"
+              "64",
+              "--code-block-style",
+              "pretty:show-name"
             ],
             "ansi": "Перед пустым блоком кода.\n\nПосле блока.\n",
-            "command": "mdv --no-config --theme catppuccin --cols 64 example.md",
+            "command": "mdv --no-config --theme catppuccin --cols 64 --code-block-style 'pretty:show-name' example.md",
             "rows": 3,
             "columns": 25
           },
@@ -1850,11 +1856,13 @@
               "catppuccin",
               "--cols",
               "64",
+              "--code-block-style",
+              "pretty:show-name",
               "--show-empty-elements"
             ],
-            "ansi": "Перед пустым блоком кода.\n\n  \u001b[0m\nПосле блока.\n",
-            "command": "mdv --no-config --theme catppuccin --cols 64 --show-empty-elements example.md",
-            "rows": 4,
+            "ansi": "Перед пустым блоком кода.\n\n╭─ \u001b[38;2;143;147;162mRust\u001b[0m ─╮\n│ \u001b[0m       │\n╰────────╯\n\nПосле блока.\n",
+            "command": "mdv --no-config --theme catppuccin --cols 64 --code-block-style 'pretty:show-name' --show-empty-elements example.md",
+            "rows": 7,
             "columns": 25
           }
         ]
