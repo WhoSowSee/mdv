@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "version": "6.1.0",
-  "build": "mdv\n    Version: 6.1.0 (dfcfd6e 2026-10-30)\n    Debug  : false\n    Triple : x86_64-pc-windows-msvc (windows-x86_64)\n    Rustc  : 1.99.0 (b940084d7 2026-09-28)",
+  "version": "6.1.1",
+  "build": "mdv\n    Version: 6.1.1 (162ea6b 2026-11-05)\n    Debug  : false\n    Triple : x86_64-pc-windows-msvc (windows-x86_64)\n    Rustc  : 1.99.0 (b940084d7 2026-09-28)",
   "previews": {
     "link-style": {
       "title": {

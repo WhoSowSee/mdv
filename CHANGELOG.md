@@ -1,5 +1,26 @@
 # Changelog
 
+## [6.1.1] - 2026-11-05
+
+### Features
+
+- Added: bilingual project website with searchable documentation, terminal previews, installation scripts, and automatic GitHub Pages deployment ([e12c4a7](https://github.com/WhoSowSee/mdv/commit/e12c4a73ea4eca35a0878505ba7f137f998bc3bb))
+
+### Bug Fixes
+
+- Fixed: language switching preserves the current reading position instead of returning to a previously selected section ([9d64997](https://github.com/WhoSowSee/mdv/commit/9d64997fa38dee750498a6d6badd2e010f2fd9b1))
+- Fixed: page flicker, animation pause-state resets, and toggle icon flicker when switching languages ([bebe585](https://github.com/WhoSowSee/mdv/commit/bebe585fb93458dbcaa16789bac7d9893f0b4946))
+
+### Documentation
+
+- Updated: all four star history charts with current data for English and Russian, in light and dark variants ([d2005cd](https://github.com/WhoSowSee/mdv/commit/d2005cdcc3cd75331d4b109ddf521f92a59b34dc))
+- Improved: the empty code-block preview shows the visible frame produced by `--show-empty-elements` ([1d9b6a1](https://github.com/WhoSowSee/mdv/commit/1d9b6a181c11046c5ce03076d51f2ab5f3dcf592))
+- Simplified: English and Russian READMEs, retaining installation methods, usage examples, and theme screenshots while linking to the full website documentation ([a83d583](https://github.com/WhoSowSee/mdv/commit/a83d5833e50c00e069f26ec00e775f65ce8c7905))
+
+### Maintenance
+
+- Added: project homepage and documentation URLs to Cargo package metadata ([f039952](https://github.com/WhoSowSee/mdv/commit/f039952195491d36bc74988e2cd2e65de1649e84))
+
 ## [6.1.0] - 2026-10-30
 
 ### Bug Fixes
