@@ -7,6 +7,8 @@ import PageScrollbar from '../components/PageScrollbar.astro';
 import textRegular from '../assets/fonts/mdv-pixel-text-regular.woff2?url';
 import textBold from '../assets/fonts/mdv-pixel-text-bold.woff2?url';
 import { alternatePath, getCopy, getLocale } from '../i18n';
+import { languagePositionKey } from '../scripts/language-navigation';
+import { motionPauseKey } from '../scripts/motion-toggle';
 const locale = getLocale(Astro.url.pathname);
 const copy = getCopy(locale);
 const faviconHref = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon-eye.ico`;
@@ -28,6 +30,49 @@ const {
 <html lang={locale} data-custom-scrollbar>
   <head>
     <meta charset="utf-8" />
+    <style is:inline>
+      @view-transition { navigation: auto; }
+      :root:not(.motion-paused) .motion-play,
+      .motion-paused .motion-pause { display: none; }
+    </style>
+    <script define:vars={{ languagePositionKey, motionPauseKey }}>
+      const root = document.documentElement;
+      const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      try {
+        root.classList.toggle('motion-paused', sessionStorage.getItem(motionPauseKey) === 'true');
+        const stored = sessionStorage.getItem(languagePositionKey);
+        if (stored && JSON.parse(stored)?.url === location.href) {
+          root.dataset.languageRestoring = '';
+          window.addEventListener('pageshow', () => {
+            if (sessionStorage.getItem(languagePositionKey) === stored) delete root.dataset.languageRestoring;
+          }, { once: true });
+        }
+      } catch {
+        // Storage may be unavailable before the page is initialized.
+      }
+
+      window.addEventListener('pageswap', (event) => {
+        const destination = root.dataset.languageDestination;
+        delete root.dataset.languageDestination;
+        if (!destination || reducedMotion.matches || event.activation?.entry?.url !== destination) {
+          event.viewTransition?.skipTransition();
+        }
+      });
+
+      let languageArrival = root.hasAttribute('data-language-restoring');
+      window.addEventListener('pagereveal', (event) => {
+        const crossfade = languageArrival && !reducedMotion.matches;
+        languageArrival = false;
+        const transition = event.viewTransition;
+        if (!transition) return;
+        if (!crossfade) {
+          transition.skipTransition();
+          return;
+        }
+        root.dataset.languageCrossfade = '';
+        void transition.finished.then(() => delete root.dataset.languageCrossfade);
+      });
+    </script>
     <link rel="preload" href={textRegular} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={textBold} as="font" type="font/woff2" crossorigin="anonymous" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

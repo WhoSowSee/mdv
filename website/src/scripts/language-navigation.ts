@@ -3,7 +3,7 @@ import { pendingSectionLayout, sectionNavigationLink, sectionScrollTop } from '.
 interface ReadingAnchor { id: string; top: number; }
 interface ReadingPosition { anchor: string; next: string | null; progress: number; }
 
-const positionKey = 'mdv-language-position';
+export const languagePositionKey = 'mdv-language-position';
 
 export function languageReadingPosition(anchors: readonly ReadingAnchor[], scroll: number, maximum: number, translations: Readonly<Record<string, string>> = {}): ReadingPosition {
   const top = Math.max(0, Math.min(maximum, scroll));
@@ -43,17 +43,28 @@ function readingLayout() {
 }
 
 async function restoreReadingPosition() {
-  const stored = sessionStorage.getItem(positionKey);
-  if (!stored) return;
-  sessionStorage.removeItem(positionKey);
-  const saved: { url: string; position: ReadingPosition } = JSON.parse(stored);
-  if (saved.url !== location.href) return;
-  const pending = pendingSectionLayout();
-  if (pending) await pending;
-  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  const { anchors, maximum } = readingLayout();
-  const top = languageReadingScroll(saved.position, anchors, maximum);
-  if (top !== undefined) window.scrollTo({ top, behavior: 'instant' });
+  const root = document.documentElement;
+  try {
+    const stored = sessionStorage.getItem(languagePositionKey);
+    if (!stored) return;
+    sessionStorage.removeItem(languagePositionKey);
+    const saved: { url: string; position: ReadingPosition } = JSON.parse(stored);
+    if (saved.url !== location.href) return;
+
+    const pending = pendingSectionLayout();
+    if (pending) await pending;
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const { anchors, maximum } = readingLayout();
+    const top = languageReadingScroll(saved.position, anchors, maximum);
+    if (top === undefined) return;
+
+    window.scrollTo({ top, behavior: 'instant' });
+    root.dataset.languageRevealing = '';
+  } catch {
+    // Unavailable storage or invalid saved data must not block the page.
+  } finally {
+    delete root.dataset.languageRestoring;
+  }
 }
 
 export function setupLanguageNavigation() {
@@ -74,7 +85,12 @@ export function setupLanguageNavigation() {
   language.addEventListener('click', (event) => {
     if (sectionNavigationLink(event) !== language) return;
     const position = updateLink();
-    sessionStorage.setItem(positionKey, JSON.stringify({ url: destination.href, position }));
+    try {
+      sessionStorage.setItem(languagePositionKey, JSON.stringify({ url: destination.href, position }));
+      document.documentElement.dataset.languageDestination = destination.href;
+    } catch {
+      // The link still points to the translated section.
+    }
   });
   void restoreReadingPosition();
 }

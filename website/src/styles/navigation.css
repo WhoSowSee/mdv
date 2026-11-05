@@ -20,9 +20,7 @@
 .icon-link svg { width: 24px; height: 24px; shape-rendering: crispEdges; }
 .motion-toggle { background: transparent; border: 0; padding: 0; }
 .motion-pause { transform: translateX(-2px); }
-.motion-play { display: none; transform: translateX(-3px); }
-.motion-toggle[aria-pressed="true"] .motion-pause { display: none; }
-.motion-toggle[aria-pressed="true"] .motion-play { display: block; }
+.motion-play { transform: translateX(-3px); }
 .motion-paused *, .motion-paused *::before, .motion-paused *::after { animation-play-state: paused !important; }
 @media (max-width: 52rem) {
   .site-nav { padding: 6px 24px; grid-template-columns: 1fr 1fr; gap: 2px 16px; }

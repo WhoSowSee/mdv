@@ -205,7 +205,7 @@ The built-in themes are `terminal` (default), `solarized-dark`, `nord`, `tokyoni
 
 ## Documentation
 
-Full documentation is on the [project website](https://whosowsee.github.io/mdv/docs/) ([Русский](https://whosowsee.github.io/mdv/ru/docs/)).
+Full documentation is on the [project website](https://whosowsee.github.io/mdv/docs/).
 
 - **Getting started** · [Introduction](https://whosowsee.github.io/mdv/docs/), [Installation](https://whosowsee.github.io/mdv/docs/installation/), [Usage](https://whosowsee.github.io/mdv/docs/usage/)
 - **Reading** · [Document browser](https://whosowsee.github.io/mdv/docs/browser/), [Pager and editor](https://whosowsee.github.io/mdv/docs/pager/), [Live monitoring](https://whosowsee.github.io/mdv/docs/monitoring/)

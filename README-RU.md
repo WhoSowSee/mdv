@@ -205,7 +205,7 @@ cat notes.md | mdv                   # Прочитать Markdown из конв
 
 ## Документация
 
-Полная документация доступна на [сайте проекта](https://whosowsee.github.io/mdv/ru/docs/) ([English](https://whosowsee.github.io/mdv/docs/)).
+Полная документация доступна на [сайте проекта](https://whosowsee.github.io/mdv/ru/docs/).
 
 - **Начало работы** · [Введение](https://whosowsee.github.io/mdv/ru/docs/), [Установка](https://whosowsee.github.io/mdv/ru/docs/installation/), [Использование](https://whosowsee.github.io/mdv/ru/docs/usage/)
 - **Чтение** · [Выбор документов](https://whosowsee.github.io/mdv/ru/docs/browser/), [Просмотр и редактор](https://whosowsee.github.io/mdv/ru/docs/pager/), [Обновление на лету](https://whosowsee.github.io/mdv/ru/docs/monitoring/)

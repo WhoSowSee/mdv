@@ -34,13 +34,7 @@ const isDocumentation = Astro.url.pathname.startsWith(links.docs);
   </nav>
 </header>
 <script>
+  import { setupMotionToggle } from '../scripts/motion-toggle';
   const button = document.querySelector<HTMLButtonElement>('[data-motion-toggle]');
-  button?.addEventListener('click', () => {
-    const paused = button.getAttribute('aria-pressed') !== 'true';
-    button.setAttribute('aria-pressed', String(paused));
-    const label = paused ? button.dataset.resumeLabel! : button.dataset.pauseLabel!;
-    button.setAttribute('aria-label', label);
-    button.title = label;
-    document.documentElement.classList.toggle('motion-paused', paused);
-  });
+  if (button) setupMotionToggle(button);
 </script>

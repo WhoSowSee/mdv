@@ -27,6 +27,20 @@
 
 :root { color-scheme: dark; --color-code-panel: #0b1017; }
 html { scroll-behavior: smooth; scroll-padding-top: 65px; }
+html[data-language-restoring] { background-color: var(--color-background); scroll-behavior: auto; }
+[data-language-restoring] :is(main, .site-footer) { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-language-revealing]:not([data-language-crossfade]) :is(main, .site-footer) { transition: opacity 160ms ease-out; }
+}
+[data-language-crossfade]::view-transition-group(root) { animation: none; }
+[data-language-crossfade]::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+[data-language-crossfade]::view-transition-old(root) {
+  z-index: 1;
+  mix-blend-mode: normal;
+  animation: language-crossfade 190ms ease-out both;
+}
+[data-language-crossfade][data-language-restoring]::view-transition-old(root) { animation-play-state: paused; }
+@keyframes language-crossfade { from { opacity: 1; } to { opacity: 0; } }
 body {
   --text-tracking: calc(1.5px * var(--text-scale));
   background-color: var(--color-background);
