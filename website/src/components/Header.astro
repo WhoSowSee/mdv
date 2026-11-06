@@ -22,11 +22,11 @@ const isDocumentation = Astro.url.pathname.startsWith(links.docs);
       <a href={`${links.home}?section=install`}>{copy.install}</a>
     </div>
     <div class="nav-actions">
-      <a class="icon-link" href={links.github} aria-label={copy.github} title={copy.github}>
+      <a class="icon-link" href={links.github} aria-label={copy.github} title={copy.github} data-header-icon="github">
         <PixelIcon name="github" />
       </a>
-      <a class="icon-link" href={alternatePath(Astro.url.pathname, otherLocale)} lang={otherLocale} hreflang={otherLocale} aria-label={copy.language} title={copy.language} data-language-toggle data-language-anchors={JSON.stringify(languageAnchors)}><PixelIcon name="languages" /></a>
-      <button class="motion-toggle icon-link" type="button" aria-label={copy.pause} title={copy.pause} aria-pressed="false" data-motion-toggle data-pause-label={copy.pause} data-resume-label={copy.resume}>
+      <a class="icon-link" href={alternatePath(Astro.url.pathname, otherLocale)} lang={otherLocale} hreflang={otherLocale} aria-label={copy.language} title={copy.language} data-header-icon="language" data-language-toggle data-language-anchors={JSON.stringify(languageAnchors)}><PixelIcon name="languages" /></a>
+      <button class="motion-toggle icon-link" type="button" aria-label={copy.pause} title={copy.pause} aria-pressed="false" data-header-icon="motion" data-pause-label={copy.pause} data-resume-label={copy.resume}>
         <PixelIcon class="motion-pause" name="pause" />
         <PixelIcon class="motion-play" name="play" />
       </button>
@@ -34,7 +34,9 @@ const isDocumentation = Astro.url.pathname.startsWith(links.docs);
   </nav>
 </header>
 <script>
+  import { setupHeaderIconMotion } from '../scripts/header-icon-motion';
   import { setupMotionToggle } from '../scripts/motion-toggle';
-  const button = document.querySelector<HTMLButtonElement>('[data-motion-toggle]');
+  const button = document.querySelector<HTMLButtonElement>('[data-header-icon="motion"]');
   if (button) setupMotionToggle(button);
+  setupHeaderIconMotion();
 </script>

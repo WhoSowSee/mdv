@@ -32,8 +32,8 @@ const {
     <meta charset="utf-8" />
     <style is:inline>
       @view-transition { navigation: auto; }
-      :root:not(.motion-paused) .motion-play,
-      .motion-paused .motion-pause { display: none; }
+      :root:not(.motion-paused) .motion-toggle:not([data-icon-activated]) .motion-play,
+      .motion-paused .motion-toggle:not([data-icon-activated]) .motion-pause { display: none; }
     </style>
     <script define:vars={{ languagePositionKey, motionPauseKey }}>
       const root = document.documentElement;

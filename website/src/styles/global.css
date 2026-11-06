@@ -4,6 +4,7 @@
 @import "./pixel-corners.css";
 @import "./focus.css";
 @import "./navigation.css";
+@import "./header-icon-motion.css";
 @import "./pixel-selection.css";
 
 @theme {

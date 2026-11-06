@@ -1,0 +1,78 @@
+@media (prefers-reduced-motion: no-preference) {
+  [data-header-icon="language"] svg { overflow: visible; }
+  [data-icon-part="eyes"], [data-icon-part="eyes"] path { transform-box: fill-box; transform-origin: center; }
+
+  :root:not(.motion-paused) [data-icon-part="eyes"] path { animation: header-idle-blink 8s steps(1, end) infinite; }
+  :root:not(.motion-paused) [data-icon-part="language-front"] path { animation: header-idle-language-front 8s steps(1, end) infinite; }
+  :root:not(.motion-paused) [data-icon-part="language-back"] path { animation: header-idle-language-back 8s steps(1, end) infinite; }
+  :root:not(.motion-paused) .motion-pause path {
+    animation: header-idle-pause-bar 8s steps(1, end) infinite;
+  }
+  :root:not(.motion-paused) [data-icon-part="pause-right"] path { animation-delay: 160ms; }
+
+  a[data-header-icon]:active svg { translate: 0 1px; }
+  [data-header-icon="github"][data-icon-activated] svg { animation: header-press-hop 420ms steps(1, end); }
+  [data-header-icon="github"][data-icon-activated] [data-icon-part="eyes"] { animation: header-press-blink 420ms steps(1, end); }
+  [data-header-icon="language"][data-icon-activated] [data-icon-part="language-front"] { animation: header-press-language-front 390ms steps(1, end); }
+  [data-header-icon="language"][data-icon-activated] [data-icon-part="language-back"] { animation: header-press-language-back 390ms steps(1, end); }
+  :root[data-language-revealing] [data-header-icon="language"] svg {
+    animation: header-language-arrival 300ms steps(1, end);
+  }
+
+  .motion-toggle[data-icon-activated][aria-pressed="true"] .motion-pause,
+  .motion-toggle[data-icon-activated][aria-pressed="false"] .motion-play { animation: header-press-glyph-out 260ms steps(1, end) both; }
+  .motion-toggle[data-icon-activated][aria-pressed="true"] .motion-play,
+  .motion-toggle[data-icon-activated][aria-pressed="false"] .motion-pause { animation: header-press-glyph-in 260ms steps(1, end) both; }
+  .motion-paused [data-header-icon][data-icon-activated] :is(svg, [data-icon-part]),
+  .motion-paused[data-language-revealing] [data-header-icon="language"] svg { animation-play-state: running !important; }
+}
+
+@keyframes header-idle-blink {
+  0%, 19%, 100% { transform: scaleY(1); }
+  16% { transform: scaleY(.2); }
+}
+@keyframes header-idle-language-front {
+  0%, 44%, 100% { transform: translate(0); }
+  39% { transform: translate(1px, -1px); }
+}
+@keyframes header-idle-language-back {
+  0%, 44%, 100% { transform: translate(0); }
+  39% { transform: translate(-1px, 1px); }
+}
+@keyframes header-idle-pause-bar {
+  0%, 69%, 100% { transform: translateY(0); }
+  65% { transform: translateY(-2px); }
+}
+@keyframes header-press-hop {
+  0%, 60%, 100% { transform: translateY(0); }
+  18% { transform: translateY(-2px); }
+}
+@keyframes header-press-blink {
+  0%, 38%, 74%, 100% { transform: scaleY(1); }
+  18%, 56% { transform: scaleY(.15); }
+}
+@keyframes header-press-language-front {
+  0%, 78%, 100% { transform: translate(0); }
+  22% { transform: translate(3px, -2px); }
+  55% { transform: translate(1px, 0); }
+}
+@keyframes header-press-language-back {
+  0%, 78%, 100% { transform: translate(0); }
+  22% { transform: translate(-3px, 2px); }
+  55% { transform: translate(-1px, 0); }
+}
+@keyframes header-language-arrival {
+  0% { transform: translateX(2px); }
+  45% { transform: translateX(1px); }
+  75%, 100% { transform: translateX(0); }
+}
+@keyframes header-press-glyph-out {
+  0% { opacity: 1; transform: scaleX(1); }
+  22% { opacity: 1; transform: scaleX(.65); }
+  44%, 100% { opacity: 0; transform: scaleX(.35); }
+}
+@keyframes header-press-glyph-in {
+  0% { opacity: 0; transform: scaleX(.35); }
+  44% { opacity: 1; transform: scaleX(.65); }
+  75%, 100% { opacity: 1; transform: scaleX(1); }
+}

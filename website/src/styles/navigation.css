@@ -18,9 +18,10 @@
 .icon-link { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--color-subtle); }
 .icon-link:hover { color: var(--color-accent); }
 .icon-link svg { width: 24px; height: 24px; shape-rendering: crispEdges; }
-.motion-toggle { background: transparent; border: 0; padding: 0; }
-.motion-pause { transform: translateX(-2px); }
-.motion-play { transform: translateX(-3px); }
+.motion-toggle { display: inline-grid; place-items: center; background: transparent; border: 0; padding: 0; }
+.motion-toggle svg { grid-area: 1 / 1; }
+.motion-pause { translate: -2px; }
+.motion-play { translate: -3px; }
 .motion-paused *, .motion-paused *::before, .motion-paused *::after { animation-play-state: paused !important; }
 @media (max-width: 52rem) {
   .site-nav { padding: 6px 24px; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
