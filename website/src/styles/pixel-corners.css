@@ -59,11 +59,23 @@
   --pixel-inset: inset -3px -3px 0 #00000030;
   filter: drop-shadow(6px 6px 0 #00000070);
 }
-.pixel-button:hover { --pixel-fill: var(--color-accent-hover); }
+.pixel-button:hover,
+.install-tab[aria-selected="true"]:hover { --pixel-fill: var(--color-accent-hover); }
 .pixel-button.secondary { --pixel-border: var(--color-line); --pixel-fill: var(--color-surface); --pixel-inset: none; }
 .pixel-button.secondary:hover,
 .install-tab[aria-selected="false"]:hover { --pixel-fill: var(--color-surface-hover); }
-.install-tab[aria-selected="true"] { --pixel-border: var(--color-accent); --pixel-fill: var(--color-accent); }
+.install-tab[aria-selected="true"] {
+  --pixel-border: #547eb5;
+  --pixel-fill: var(--color-accent);
+}
+.install-tab[aria-selected="true"]::after {
+  inset: calc(-1 * var(--pixel-border-width));
+  bottom: calc(4px - var(--pixel-border-width));
+  box-shadow:
+    inset 2px 2px color-mix(in srgb, var(--pixel-fill), white 25%),
+    inset -2px -2px #6a96da;
+}
+:where(html:not([data-input-method="pointer"])) .install-tab[aria-selected="true"]:focus-visible::after { inset: 0; }
 .terminal { --pixel-border-width: 2px; --pixel-border: var(--terminal-border); --pixel-fill: var(--color-background); }
 
 .pixel-menu-item {
