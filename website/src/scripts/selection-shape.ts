@@ -1,21 +1,5 @@
 export interface SelectionRect { left: number; top: number; right: number; bottom: number; }
 
-export function intersectRect(rect: SelectionRect, clip: SelectionRect): SelectionRect | undefined {
-  const result = { left: Math.max(rect.left, clip.left), top: Math.max(rect.top, clip.top), right: Math.min(rect.right, clip.right), bottom: Math.min(rect.bottom, clip.bottom) };
-  return result.right > result.left && result.bottom > result.top ? result : undefined;
-}
-
-export function subtractRect(rect: SelectionRect, cover: SelectionRect): SelectionRect[] {
-  const overlap = intersectRect(rect, cover);
-  if (!overlap) return [rect];
-  return [
-    { ...rect, bottom: overlap.top },
-    { ...rect, top: overlap.bottom },
-    { left: rect.left, top: overlap.top, right: overlap.left, bottom: overlap.bottom },
-    { left: overlap.right, top: overlap.top, right: rect.right, bottom: overlap.bottom },
-  ].filter((piece) => piece.right > piece.left && piece.bottom > piece.top);
-}
-
 export function selectionLines(rectangles: SelectionRect[]) {
   const lines: SelectionRect[] = [];
   for (const rect of [...rectangles].sort((a, b) => a.top - b.top || a.left - b.left)) {
@@ -25,7 +9,7 @@ export function selectionLines(rectangles: SelectionRect[]) {
       line.right = Math.max(line.right, rect.right);
       line.top = Math.min(line.top, rect.top);
       line.bottom = Math.max(line.bottom, rect.bottom);
-    } else lines.push({ ...rect });
+    } else lines.push({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
   }
   return lines;
 }

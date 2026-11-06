@@ -21,8 +21,6 @@ export function setupDocumentationPanels(root: HTMLElement) {
   }));
   let active: DocumentationPanel | undefined;
   let pointer: { x: number; y: number } | undefined;
-  let selectionFrame = 0;
-  let selectionUntil = 0;
   const opening = createHoverDelay<DocumentationPanel>(PANEL_OPEN_DELAY, (panel) => {
     if (hover.matches && !document.hidden && panel.floating && panel.trigger.matches(':hover')
       && !document.documentElement.hasAttribute('data-page-scrollbar-dragging')) open(panel);
@@ -33,16 +31,6 @@ export function setupDocumentationPanels(root: HTMLElement) {
     if (active === panel && !hovered(panel) && !focused && !dragging) close();
   });
 
-  function updateSelection() {
-    document.dispatchEvent(new Event('mdv:disclosure-change'));
-    selectionFrame = performance.now() < selectionUntil ? requestAnimationFrame(updateSelection) : 0;
-  }
-
-  function selectionChanged() {
-    selectionUntil = performance.now() + 320;
-    if (!selectionFrame) selectionFrame = requestAnimationFrame(updateSelection);
-  }
-
   function render(panel: DocumentationPanel) {
     const open = panel.floating && active === panel;
     const changed = panel.element.dataset.panelFloating !== String(panel.floating)
@@ -52,7 +40,7 @@ export function setupDocumentationPanels(root: HTMLElement) {
     panel.element.inert = panel.floating && !open;
     panel.trigger.hidden = !panel.floating;
     panel.trigger.setAttribute('aria-expanded', String(open));
-    if (changed) selectionChanged();
+    if (changed) document.dispatchEvent(new Event('mdv:disclosure-change'));
   }
 
   function close(restoreFocus = false) {

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { intersectRect, subtractRect, selectionLines, selectionPath } from '../src/scripts/selection-shape';
+import { selectionLines, selectionPath } from '../src/scripts/selection-shape';
 
 const rect = (left, top, right, bottom) => ({ left, top, right, bottom });
 
@@ -14,10 +14,10 @@ test('retains gaps between columns and combines duplicate range rectangles', () 
     .toEqual([rect(0, 0, 10, 14), rect(50, 0, 70, 14)]);
 });
 
-test('clips scrolled text to the visible content area and ignores empty intersections', () => {
-  expect(intersectRect(rect(-80, 10, 200, 24), rect(20, 0, 100, 50))).toEqual(rect(20, 10, 100, 24));
-  expect(intersectRect(rect(0, -30, 20, -10), rect(0, 0, 100, 100))).toBeUndefined();
-  expect(intersectRect(rect(20, 10, 20, 24), rect(0, 0, 100, 100))).toBeUndefined();
+test('reads range rectangles with coordinates inherited like DOMRect', () => {
+  const first = Object.create(rect(5, 10, 20, 24));
+  const second = Object.create(rect(20, 10, 35, 24));
+  expect(selectionLines([first, second])).toEqual([rect(5, 10, 35, 24)]);
 });
 
 test('draws two square steps at each corner, including narrow selections', () => {
@@ -25,21 +25,4 @@ test('draws two square steps at each corner, including narrow selections', () =>
   const narrow = selectionPath(rect(0, 0, 2, 14));
   expect(narrow).toStartWith('M1,0H1V0.5');
   expect(narrow).not.toMatch(/NaN|Infinity|[CQAS]/);
-});
-
-test('clips selection behind a left or right overlay without changing unobscured text', () => {
-  const line = rect(0, 0, 100, 14);
-  expect(subtractRect(line, rect(-10, -10, 35, 100))).toEqual([rect(35, 0, 100, 14)]);
-  expect(subtractRect(line, rect(60, -10, 140, 50))).toEqual([rect(0, 0, 60, 14)]);
-  expect(subtractRect(line, rect(200, 0, 240, 50))).toEqual([line]);
-  expect(subtractRect(line, rect(-10, -10, 140, 50))).toEqual([]);
-  expect(line).toEqual(rect(0, 0, 100, 14));
-});
-
-test('preserves selection above and below a partially covering overlay', () => {
-  const cover = rect(30, 3, 70, 11);
-  const pieces = subtractRect(rect(0, 0, 100, 14), cover);
-  expect(pieces).toHaveLength(4);
-  expect(pieces.reduce((area, piece) => area + (piece.right - piece.left) * (piece.bottom - piece.top), 0)).toBe(1080);
-  for (const piece of pieces) expect(intersectRect(piece, cover)).toBeUndefined();
 });

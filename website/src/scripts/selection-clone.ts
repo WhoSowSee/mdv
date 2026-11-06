@@ -26,6 +26,5 @@ export function cloneSelectionText(source: HTMLElement, width: number) {
   for (const [property, value] of Object.entries({ position: 'static', margin: '0', width: `${width}px`, 'min-width': '0', 'max-width': 'none', height: 'auto', overflow: 'visible', transform: 'none' })) {
     clone.style.setProperty(property, value, 'important');
   }
-  clone.inert = true;
   return clone;
 }

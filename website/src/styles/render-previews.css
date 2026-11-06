@@ -48,8 +48,8 @@
   --pixel-fill: color-mix(in srgb, var(--color-accent) 7%, var(--color-background));
   color: var(--color-accent);
 }
-.mdv-preview-tabs button:focus-visible { --pixel-border: var(--color-peach); --pixel-border-width: 2px; outline: 0; }
-.mdv-preview-tabs button:focus-visible:not([aria-selected="true"]):not(:hover) { --pixel-fill: var(--color-background); }
+:where(html:not([data-input-method="pointer"])) .mdv-preview-tabs button:focus-visible { --pixel-border: var(--color-peach); --pixel-border-width: 2px; outline: 0; }
+:where(html:not([data-input-method="pointer"])) .mdv-preview-tabs button:focus-visible:not([aria-selected="true"]):not(:hover) { --pixel-fill: var(--color-background); }
 .docs-prose .mdv-preview-command { margin-bottom: 0; }
 .docs-prose .mdv-preview-command pre { padding-block: 12px; font-size: calc(17px * var(--text-scale)); }
 .mdv-preview-terminal {

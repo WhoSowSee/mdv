@@ -26,7 +26,7 @@
   color: var(--color-accent-hover);
 }
 .docs-panel-trigger:focus-visible { outline: 0; }
-.docs-panel-trigger:focus-visible .docs-edge-handle { color: var(--color-peach); }
+:where(html:not([data-input-method="pointer"])) .docs-panel-trigger:focus-visible .docs-edge-handle { color: var(--color-peach); }
 .docs-panel-trigger[aria-expanded="true"] .docs-edge-handle { opacity: 0; transform: translate(var(--docs-edge-shift), -50%); }
 .docs-panel-trigger[aria-expanded="true"] { pointer-events: none; }
 
@@ -76,5 +76,5 @@
 @media (forced-colors: active) {
   .docs-panel-trigger .docs-edge-handle,
   .docs-panel-trigger:is(:hover, [aria-expanded="true"]) .docs-edge-handle { color: ButtonText; forced-color-adjust: none; }
-  .docs-panel-trigger:focus-visible .docs-edge-handle { color: Highlight; outline: 1px solid Highlight; outline-offset: 1px; }
+  :where(html:not([data-input-method="pointer"])) .docs-panel-trigger:focus-visible .docs-edge-handle { color: Highlight; outline: 1px solid Highlight; outline-offset: 1px; }
 }
