@@ -21,7 +21,7 @@
   );
 }
 
-:is(.install-command, .usage-examples, .final-command, .monitor-preview, .layout-preview, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .card, .faq-item, .skip-link, .pixel-menu-item, .site-status, .docs-panel-frame) {
+:is(.pixel-box, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .skip-link, .pixel-menu-item, .site-status, .docs-panel-frame) {
   --pixel-border-width: 3px;
   --pixel-border: var(--color-line);
   --pixel-fill: var(--color-surface);
@@ -32,7 +32,7 @@
   box-shadow: none;
 }
 
-:is(.install-command, .usage-examples, .final-command, .monitor-preview, .layout-preview, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .card, .faq-item, .skip-link, .site-status)::before {
+:is(.pixel-box, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .skip-link, .site-status)::before {
   content: "";
   position: absolute;
   inset: calc(-1 * var(--pixel-border-width));
@@ -42,7 +42,7 @@
   pointer-events: none;
 }
 
-:is(.install-command, .usage-examples, .final-command, .monitor-preview, .layout-preview, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .card, .faq-item, .skip-link, .site-status)::after {
+:is(.pixel-box, .terminal, .pixel-button, .install-tab, .mdv-preview-tab, .code-frame, .mdv-preview-terminal, .docs-search-field, .skip-link, .site-status)::after {
   content: "";
   position: absolute;
   inset: 0;

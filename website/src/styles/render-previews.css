@@ -21,7 +21,8 @@
 .mdv-preview { margin: 20px 0 26px; min-width: 0; }
 .docs-prose .mdv-preview-title { margin: 0 0 10px; color: var(--color-subtle); font-size: calc(18px * var(--text-scale)); }
 .docs-prose .mdv-preview-description { margin: 0 0 10px; color: var(--color-muted); font-size: calc(17px * var(--text-scale)); }
-.mdv-preview-state { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 12px; }
+.mdv-preview-state-frame { overflow: clip; }
+.mdv-preview-state { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; padding-bottom: 12px; }
 .mdv-preview-keys { display: flex; flex-wrap: wrap; gap: 5px; }
 .mdv-preview-keys:empty { display: none; }
 .mdv-preview-keys kbd { padding: 1px 6px; border-bottom: 2px solid var(--color-line); background: var(--color-base); color: var(--color-accent); font: inherit; }

@@ -22,8 +22,6 @@
 .feature-row p code { color: var(--color-accent); }
 .palette-grid {
   display: grid; grid-template-columns: max-content repeat(5, minmax(0, 1fr)); gap: 10px 6px; padding: 18px;
-  background: var(--color-surface);
-  box-shadow: 0 -3px 0 var(--color-line), 0 3px 0 var(--color-line), -3px 0 0 var(--color-line), 3px 0 0 var(--color-line);
 }
 .palette-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
 .palette-row > span { padding-inline-end: 16px; white-space: nowrap; color: var(--color-subtle); font-size: calc(17px * var(--text-scale)); }
@@ -67,6 +65,7 @@
 .install-tabs { margin-bottom: 20px; }
 .install-tab { font: 700 calc(14px * var(--text-scale))/1.5 var(--font-display); font-kerning: normal; padding: 8px 12px; padding-inline-start: calc(12px + var(--text-tracking)); margin: 3px; color: var(--color-subtle); border: 0; min-height: 40px; }
 .install-tab[aria-selected="true"] { color: var(--color-background); }
+:where([data-install]) > [role="tabpanel"], .install-command { overflow-clip-margin: 5px; }
 .install-command { display: flex; align-items: flex-start; gap: 16px; padding: 12px 16px; }
 .install-code { position: relative; flex: 1; min-width: 0; }
 .install-command pre { white-space: pre; font-size: calc(20px * var(--text-scale)); color: var(--color-accent); scrollbar-width: none; }

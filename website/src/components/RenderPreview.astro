@@ -8,6 +8,7 @@ const { id, locale } = Astro.props;
 const { preview, version, interactive } = getDocumentationPreview(id);
 const { source, variants } = preview[locale];
 const selected = variants[0];
+const hasInstructions = variants.some((variant) => variant.description);
 const title = preview.title[locale];
 const description = preview.description?.[locale];
 const words = getCopy(locale).preview;
@@ -26,12 +27,16 @@ const data = JSON.stringify(variants).replaceAll('<', '\\u003c');
     ))}
   </div>
   <div id={panel} role="tabpanel" aria-labelledby={`preview-${id}-0`}>
-    <div class="mdv-preview-state" data-preview-state hidden={!selected.description}>
-      <div class="mdv-preview-keys" data-preview-keys aria-label={words.keys}>
-        {selected.keys?.map((key) => <kbd>{key}</kbd>)}
+    {hasInstructions && (
+      <div class="mdv-preview-state-frame">
+        <div class="mdv-preview-state" data-preview-state hidden={!selected.description}>
+          <div class="mdv-preview-keys" data-preview-keys aria-label={words.keys}>
+            {selected.keys?.map((key) => <kbd>{key}</kbd>)}
+          </div>
+          <p data-preview-instruction>{selected.description}</p>
+        </div>
       </div>
-      <p data-preview-instruction>{selected.description}</p>
-    </div>
+    )}
     <div class="code-frame mdv-preview-command" aria-label={words.command}>
       <pre tabindex="0"><code data-preview-command>{selected.command}</code></pre>
     </div>

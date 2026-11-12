@@ -2,26 +2,53 @@ import type { PreviewVariant } from '../data/previews';
 import { renderTerminalOutput, plainTerminalOutput } from './terminal-preview';
 import { setupTabs } from './tabs';
 
+function setupPreviewInstructions(preview: HTMLElement, reducedMotion: MediaQueryList) {
+  const state = preview.querySelector<HTMLElement>('[data-preview-state]');
+  if (!state) return;
+  const frame = state.parentElement!;
+  const keys = state.querySelector<HTMLElement>('[data-preview-keys]')!;
+  const instruction = state.querySelector<HTMLElement>('[data-preview-instruction]')!;
+  let animation: Animation | undefined;
+
+  reducedMotion.addEventListener('change', () => {
+    if (reducedMotion.matches) animation?.cancel();
+  });
+
+  return (variant: PreviewVariant, tabChanged: boolean) => {
+    const animate = tabChanged && !reducedMotion.matches;
+    const previousHeight = animate ? frame.getBoundingClientRect().height : 0;
+    state.hidden = !variant.description;
+    instruction.textContent = variant.description ?? '';
+    keys.replaceChildren(...(variant.keys ?? []).map((key) => {
+      const element = document.createElement('kbd');
+      element.textContent = key;
+      return element;
+    }));
+    if (!animate) return;
+
+    animation?.cancel();
+    const height = frame.getBoundingClientRect().height;
+    animation = height === previousHeight ? undefined : frame.animate(
+      [{ height: `${previousHeight}px` }, { height: `${height}px` }],
+      { duration: 180, easing: 'ease' },
+    );
+  };
+}
+
 export function setupRenderPreviews(root: ParentNode, updateCodeFocus: () => void) {
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   for (const preview of root.querySelectorAll<HTMLElement>('[data-render-preview]')) {
     const variants: PreviewVariant[] = JSON.parse(preview.querySelector('[data-preview-variants]')!.textContent!);
     const panel = preview.querySelector<HTMLElement>('[role="tabpanel"]')!;
     const command = preview.querySelector<HTMLElement>('[data-preview-command]')!;
     const output = preview.querySelector<HTMLElement>('[data-preview-output]')!;
-    const state = preview.querySelector<HTMLElement>('[data-preview-state]')!;
-    const keys = preview.querySelector<HTMLElement>('[data-preview-keys]')!;
-    const instruction = preview.querySelector<HTMLElement>('[data-preview-instruction]')!;
+    const updateInstructions = setupPreviewInstructions(preview, reducedMotion);
 
     setupTabs(preview, (tab, index) => {
       const variant = variants[index];
+      const tabChanged = panel.getAttribute('aria-labelledby') !== tab.id;
       panel.setAttribute('aria-labelledby', tab.id);
-      state.hidden = !variant.description;
-      instruction.textContent = variant.description ?? '';
-      keys.replaceChildren(...(variant.keys ?? []).map((key) => {
-        const element = document.createElement('kbd');
-        element.textContent = key;
-        return element;
-      }));
+      updateInstructions?.(variant, tabChanged);
       command.textContent = variant.command;
       const copy = command.closest('.code-frame')!.querySelector<HTMLButtonElement>('[data-copy]');
       if (copy) {
