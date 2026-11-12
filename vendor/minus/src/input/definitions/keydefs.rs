@@ -97,7 +97,7 @@ impl KeySeq {
                     }
                 }
                 Token::MultipleChar(c) => {
-                    let c = c.to_ascii_lowercase().clone();
+                    let c = c.to_ascii_lowercase();
                     SPECIAL_KEYS.get(c.as_str()).map_or_else(
                         || panic!("'{}': Invalid key input sequence given", text),
                         |key| {
