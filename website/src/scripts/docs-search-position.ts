@@ -1,6 +1,6 @@
-import { primarySearchMatch } from './docs-search-model';
+import { primarySearchMatch, searchTextMatches } from './docs-search-model';
 
-export function documentationSearchRange(target: HTMLElement, query: string) {
+export function documentationSearchRanges(target: HTMLElement, query: string) {
   const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
   const positions: { node: Text; offset: number }[] = [];
   let text = '';
@@ -16,13 +16,55 @@ export function documentationSearchRange(target: HTMLElement, query: string) {
       positions.push({ node: node as Text, offset });
     }
   }
-  const match = primarySearchMatch(text, query);
-  if (!match) return;
-  const first = positions[match.start], last = positions[match.end - 1];
-  const range = document.createRange();
-  range.setStart(first.node, first.offset);
-  range.setEnd(last.node, last.offset + 1);
-  return range;
+  const primary = primarySearchMatch(text, query);
+  if (!primary) return;
+
+  function toRange({ start, end }: { start: number; end: number }) {
+    const first = positions[start], last = positions[end - 1];
+    const range = document.createRange();
+    range.setStart(first.node, first.offset);
+    range.setEnd(last.node, last.offset + 1);
+    return range;
+  }
+
+  const primaryRange = toRange(primary);
+  const matches = searchTextMatches(text, query).map((match) =>
+    match.start === primary.start && match.end === primary.end ? primaryRange : toRange(match));
+  return { primary: primaryRange, matches };
+}
+
+const searchHighlight = 'docs-search-match';
+let highlightAnimation: Animation | undefined;
+
+export function setDocumentationSearchHighlight(target?: HTMLElement, ranges?: Range[]) {
+  const registry = CSS.highlights;
+  if (!registry) return;
+
+  highlightAnimation?.cancel();
+  highlightAnimation = undefined;
+  if (!target || !ranges?.length) {
+    registry.delete(searchHighlight);
+    return;
+  }
+
+  const fade = !matchMedia('(prefers-reduced-motion: reduce), (forced-colors: active)').matches
+    && !document.documentElement.classList.contains('motion-paused');
+  const hidden = { '--docs-search-match-opacity': '0%', '--docs-search-match-color': 'currentColor' };
+  const visible = { '--docs-search-match-opacity': '100%', '--docs-search-match-color': 'var(--color-background)' };
+  const animation = target.animate(fade ? [
+    { ...hidden, easing: 'ease-out' },
+    { ...visible, offset: .08 },
+    { ...visible, offset: .76, easing: 'ease-in-out' },
+    hidden,
+  ] : [visible, visible], { duration: 1750, fill: 'backwards' });
+
+  highlightAnimation = animation;
+  animation.onfinish = () => {
+    if (highlightAnimation !== animation) return;
+    registry.delete(searchHighlight);
+    highlightAnimation = undefined;
+  };
+  registry.set(searchHighlight, new Highlight(...ranges));
 }
 
 export function revealDocumentationSearchTarget(target: HTMLElement) {

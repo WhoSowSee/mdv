@@ -1,4 +1,5 @@
 import { searchDocumentation, searchResultUrl, searchTextMatches, type SearchPage } from './docs-search-model';
+import { setDocumentationSearchHighlight } from './docs-search-position';
 interface SearchMessages { searching: string; matches: string; none: string; unavailable: string; }
 
 export function setupDocumentationSearch(documentation: HTMLElement) {
@@ -21,6 +22,7 @@ export function setupDocumentationSearch(documentation: HTMLElement) {
         url.searchParams.delete('q');
         url.searchParams.delete('match');
         history.replaceState(history.state, '', url);
+        setDocumentationSearchHighlight();
       }
       results!.hidden = true;
       status!.hidden = true;

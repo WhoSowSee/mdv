@@ -23,6 +23,15 @@
 .docs-search-results .docs-search-section { font-size: calc(14px * var(--text-scale)); color: var(--color-muted); }
 .docs-search-results .docs-search-snippet { overflow-wrap: anywhere; }
 .docs-search-results mark { color: var(--color-accent); background: transparent; font-weight: 700; }
+@property --docs-search-match-opacity {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+::highlight(docs-search-match) {
+  background-color: color-mix(in srgb, var(--color-peach) calc(.9 * var(--docs-search-match-opacity)), transparent);
+  color: var(--docs-search-match-color, currentColor);
+}
 .docs-article { min-width: 0; }
 .docs-eyebrow { color: var(--color-accent); font: 700 calc(14px * var(--text-scale))/1.5 var(--font-display); font-kerning: normal; text-transform: uppercase; margin-bottom: 12px; }
 .docs-page-heading h1 { text-align: left; font: 700 calc(30px * var(--text-scale))/1.4 var(--font-display); font-kerning: normal; margin: 0 0 14px; overflow-wrap: anywhere; }
@@ -88,4 +97,5 @@
 }
 @media (forced-colors: active) {
   :is(.docs-nav-group, .docs-toc) a[aria-current]::after { background: Highlight; forced-color-adjust: none; }
+  ::highlight(docs-search-match) { color: MarkText; background-color: Mark; }
 }

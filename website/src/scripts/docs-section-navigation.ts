@@ -1,6 +1,6 @@
 import { setupActiveDocumentationSection } from './docs-active-section';
 import { documentationSearchDestination } from './docs-search-model';
-import { documentationSearchRange, revealDocumentationSearchTarget, revealSearchRangeHorizontally } from './docs-search-position';
+import { documentationSearchRanges, revealDocumentationSearchTarget, revealSearchRangeHorizontally, setDocumentationSearchHighlight } from './docs-search-position';
 import { createSectionScroller, focusSectionTarget, isSectionScrollInterrupt, pendingSectionLayout, sectionNavigationLink, sectionScrollTarget } from './section-scroll';
 
 export function documentationAnchor(href: string, current: string) {
@@ -26,19 +26,26 @@ export function setupDocumentationSectionNavigation(root: HTMLElement) {
     setDestination();
   }
 
-  function scroll(top: number, current: number) {
+  function scroll(top: number, current: number, onArrival?: () => void) {
     scroller.scroll(top, () => {
       requestAnimationFrame(() => {
         if (current !== request) return;
         source = undefined;
         setDestination();
+        onArrival?.();
       });
     });
   }
 
   window.addEventListener('wheel', cancel, { passive: true });
   window.addEventListener('resize', cancel);
-  window.addEventListener('popstate', cancel);
+  window.addEventListener('popstate', () => {
+    cancel();
+    highlightHistoryMatch();
+  });
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) highlightHistoryMatch();
+  });
   window.addEventListener('touchstart', () => {
     if (source === 'search') cancel();
   }, { passive: true });
@@ -75,16 +82,32 @@ export function setupDocumentationSectionNavigation(root: HTMLElement) {
     destination.url.searchParams.delete('match');
     if (destination.url.href !== previous) {
       history.pushState(history.state, '', destination.url);
+      setDocumentationSearchHighlight();
       window.dispatchEvent(new HashChangeEvent('hashchange', { oldURL: previous, newURL: destination.url.href }));
     }
     focusSectionTarget(target);
     scroll(top, current);
   });
 
-  async function navigateToMatch(destination: NonNullable<ReturnType<typeof documentationSearchDestination>>) {
+  function findSearchMatch(destination = documentationSearchDestination(location.href, location.href)) {
+    if (!destination) return;
     const target = root.querySelector<HTMLElement>(`[data-doc-search-id="${destination.id}"]`);
-    if (!target) return;
+    const ranges = target && documentationSearchRanges(target, destination.query);
+    if (target && ranges) return { target, ...ranges };
+  }
+
+  function highlightHistoryMatch() {
+    const match = findSearchMatch();
+    setDocumentationSearchHighlight(match?.target, match?.matches);
+  }
+
+  async function navigateToMatch(destination: NonNullable<ReturnType<typeof documentationSearchDestination>>) {
     cancel();
+    setDocumentationSearchHighlight();
+    const match = findSearchMatch(destination);
+    if (!match) return;
+    const { target, primary: range, matches } = match;
+    const href = destination.url.href;
     const current = request;
     source = 'search';
     revealDocumentationSearchTarget(target);
@@ -92,11 +115,7 @@ export function setupDocumentationSectionNavigation(root: HTMLElement) {
     if (pending) await pending;
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     if (current !== request) return;
-    const selected = documentationSearchDestination(location.href, location.href);
-    const range = selected?.id === destination.id && selected.query === destination.query
-      ? documentationSearchRange(target, destination.query)
-      : undefined;
-    if (!range) {
+    if (location.href !== href) {
       source = undefined;
       return;
     }
@@ -107,7 +126,9 @@ export function setupDocumentationSectionNavigation(root: HTMLElement) {
     focusTarget.dataset.docSearchFocus = '';
     focusSectionTarget(focusTarget);
     revealSearchRangeHorizontally(target, range);
-    scroll(top, current);
+    scroll(top, current, () => {
+      if (location.href === href) setDocumentationSearchHighlight(target, matches);
+    });
   }
 
   results.addEventListener('click', (event) => {
