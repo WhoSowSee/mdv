@@ -7,9 +7,17 @@
   margin: 0 0 8px;
 }
 .docs-prose .cli-option h3 code { padding: 0; color: var(--color-accent); background: transparent; }
-.docs-prose .cli-syntax { margin-bottom: 12px; color: var(--color-muted); font-size: calc(17px * var(--text-scale)); }
+.docs-prose .cli-syntax { font-size: calc(17px * var(--text-scale)); }
 .docs-prose .cli-syntax code { padding: 0; color: var(--color-subtle); background: transparent; }
-.docs-prose .cli-option p { margin-bottom: 10px; }
+.docs-prose .cli-option > :is(p, ul, .code-frame) { margin-bottom: 12px; }
+.docs-prose :is(.cli-default-label, .cli-example-label) {
+  color: var(--color-subtle);
+  font-size: .875em;
+}
+.docs-prose .cli-default-label { margin-inline-end: .65em; }
+.docs-prose .cli-default-value code { color: inherit; background: transparent; }
+.docs-prose .cli-option > p:has(+ :is(ul, .code-frame)) { margin-bottom: 6px; }
+.docs-prose .cli-option > ul { padding-left: 19px; }
+.docs-prose .cli-option > ul > li { margin-bottom: 4px; }
+.docs-prose .cli-option > ul > li:last-child { margin-bottom: 0; }
 .docs-prose .cli-option > :last-child { margin-bottom: 0; }
-.docs-prose .cli-option ul { padding-left: 19px; margin: 10px 0 0; }
-.docs-prose .cli-option li { margin-bottom: 7px; }

@@ -6,13 +6,24 @@ group: "Reference"
 order: 43
 ---
 
+Ниже описаны встроенные настройки. Как их меняют YAML, пресеты, переменные окружения и параметры CLI, объясняет [руководство по конфигурации](../configuration/).
+
+
 ## Вывод и рабочий процесс
 
 <section class="cli-option" aria-label="--html">
 
 ### `--html`
 
-Печать HTML вместо терминального форматирования.
+Экспортирует отрендеренный документ в HTML.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Терминальный вывод</strong><br> Применяет терминальную разметку и выбранный режим цвета.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --html example.md > example.html
+```
 
 </section>
 
@@ -22,9 +33,17 @@ order: 43
 
 <p class="cli-syntax"><code>-E, --render-html</code></p>
 
-Рендер встроенных HTML-фрагментов как форматированного терминального содержимого вместо буквального показа тегов.
+Рендерит встроенные HTML-фрагменты как форматированное содержимое терминала.
 
-- Вложенность HTML ограничена 64 DOM-элементами.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> HTML-теги выводятся буквально.
+
+Вложенность HTML ограничена 64 DOM-элементами.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --render-html example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -41,12 +60,20 @@ order: 43
 
 <p class="cli-syntax"><code>-N, --line-numbers [&lt;MODE&gt;]</code></p>
 
-Добавление номеров строк в терминальный вывод и pager.
+Добавляет номера строк в терминальный вывод и просмотрщик.
 
-- Без режима нумеруются отрендеренные строки
-- `source` использует физические строки Markdown
-- `separator` добавляет разделитель
-- `"source;separator"` сочетает оба режима.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Строки документа выводятся без поля для номеров.
+
+- Если передать флаг без значения, нумеруются строки вывода без разделителя.
+- `source` нумерует физические строки исходного Markdown.
+- `separator` нумерует строки вывода и добавляет разделитель.
+- `source;separator` нумерует исходные строки и добавляет разделитель.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --line-numbers 'source;separator' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -61,13 +88,21 @@ order: 43
 
 ### `--color`
 
-<p class="cli-syntax"><code>--color &lt;auto|always|never&gt;</code></p>
+<p class="cli-syntax"><code>--color &lt;WHEN&gt;</code></p>
 
-Управление терминальным оформлением.
+Управляет ANSI-оформлением и гиперссылками OSC 8.
 
-- `auto` включает ANSI и OSC 8 только при выводе в терминал
-- `always` сохраняет оформление в pipe
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`auto`</strong><br> Включает терминальное оформление и гиперссылки OSC 8 при выводе в терминал.
+
+- `auto` включает оформление и гиперссылки при выводе в терминал.
+- `always` сохраняет оформление и гиперссылки и при перенаправлении stdout.
 - `never` выводит отрендерированный текст без оформления.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --color always example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -82,11 +117,22 @@ order: 43
 
 ### `--color-depth`
 
-<p class="cli-syntax"><code>--color-depth &lt;auto|16|256|truecolor&gt;</code></p>
+<p class="cli-syntax"><code>--color-depth &lt;DEPTH&gt;</code></p>
 
-Автоматическое определение палитры терминала или её явное ограничение.
+Задаёт предел палитры документа и интерактивного интерфейса. Действует при включённом терминальном оформлении.
 
-- Действует на цвета документа и интерактивного интерфейса; по умолчанию `auto`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`auto`</strong><br> Определяет палитру, которую поддерживает терминал.
+
+- `auto` определяет возможности терминала.
+- `16` использует стандартную палитру ANSI.
+- `256` использует палитру ANSI из 256 цветов.
+- `truecolor` использует 24-битные цвета RGB.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --color-depth 256 example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -101,7 +147,15 @@ order: 43
 
 ### `--hide-comments`
 
-Скрытие Markdown-комментариев в итоговом выводе.
+Скрывает Markdown-комментарии в итоговом выводе.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Комментарии видны.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --hide-comments example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -116,18 +170,26 @@ order: 43
 
 ### `--front-matter`
 
-<p class="cli-syntax"><code>--front-matter &lt;hidden|panel|table|plain|inline|blocks|code|source&gt;</code></p>
+<p class="cli-syntax"><code>--front-matter &lt;MODE&gt;</code></p>
 
-Управление YAML-словарём свойств с точными разделителями `---`, начинающимся с первой строки.
+Управляет выводом YAML-словаря между строками с точным разделителем `---`. Открывающий разделитель должен быть на первой строке.
 
-- `hidden` скрывает его
-- `panel` показывает панель свойств
-- `table` выводит колонки «Property» и «Value»
-- `plain` - нормализованные строки «ключ: значение»
-- `inline` объединяет свойства в одну переносимую строку
-- `blocks` помещает значение под ключом
-- `code` выводит YAML с подсветкой
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`hidden`</strong><br> Скрывает начальный блок YAML в отрендерированном выводе.
+
+- `hidden` скрывает front matter.
+- `panel` показывает панель свойств.
+- `table` показывает столбцы `Property` и `Value`.
+- `plain` выводит нормализованные строки «ключ: значение».
+- `inline` объединяет свойства в один абзац с переносами.
+- `blocks` помещает каждое значение под его ключом.
+- `code` выводит YAML с подсветкой.
 - `source` разбирает весь ввод как обычный Markdown.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --front-matter panel example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -144,7 +206,15 @@ order: 43
 
 <p class="cli-syntax"><code>--theme-info [FILE]</code></p>
 
-Показ активной палитры; при указании `FILE` рендерит документ вместе со сведениями о теме.
+Без значения показывает активные и доступные темы. Если указать файл, выводит документ вместе со сведениями об активных темах.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Сведения о темах скрыты.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --theme-info example.md
+```
 
 </section>
 
@@ -152,12 +222,17 @@ order: 43
 
 ### `--from`
 
-<p class="cli-syntax"><code>--from &lt;TEXT&gt;</code></p>
+<p class="cli-syntax"><code>--from &lt;TEXT&gt;[:&lt;LINES&gt;]</code></p>
 
-Рендер начиная с первой строки, содержащей `<TEXT>`.
+Начинает вывод с первой строки, содержащей `<TEXT>`. Суффикс `:<LINES>` ограничивает число строк исходника с учётом найденной строки. Если совпадений нет, вывод начинается с первой строки.
 
-- Добавление `:<lines>` ограничит число строк (например
-- `--from "Install:20"`).
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Весь документ</strong><br> Выводится весь документ без фильтрации.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --from 'Installation:20' README.md
+```
 
 </section>
 
@@ -167,7 +242,15 @@ order: 43
 
 <p class="cli-syntax"><code>-r, --reverse</code></p>
 
-Рендер документа с конца, сохраняя форматирование блоков.
+Выводит документ с конца, сохраняя форматирование блоков.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Исходный порядок</strong><br> Выводит документ с начала.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --reverse example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -184,11 +267,19 @@ order: 43
 
 <p class="cli-syntax"><code>-p, --pager[=&lt;COMMAND&gt;]</code></p>
 
-Открыть результат в pager.
+Открывает результат в постраничном просмотрщике, если stdout подключён к терминалу. При перенаправлении выводит результат напрямую.
 
-- Голый флаг использует `MDV_PAGER`, если переменная задана, иначе pager по умолчанию.
-- `--pager=default` выбирает backend по умолчанию (сейчас встроенный `minus`)
-- `--pager=builtin` явно выбирает `minus`, а команда вроде `--pager="less -R"` получает отрендерированный вывод через stdin
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Прямой вывод</strong><br> Обычный вывод документа идёт напрямую в stdout.
+
+- `--pager` использует `MDV_PAGER`, если переменная задана, иначе встроенный просмотрщик `minus`.
+- `--pager=default` и `--pager=builtin` выбирают встроенный `minus`.
+- `--pager=<COMMAND>` запускает внешний просмотрщик и передаёт результат через stdin.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --pager=builtin example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Превью встроенного просмотрщика</summary>
@@ -203,12 +294,17 @@ order: 43
 
 <p class="cli-syntax"><code>-i, --interactive</code></p>
 
-Открыть интерактивный браузер документов.
+Открывает браузер документов для каталога или сразу показывает файл либо стандартный ввод в выбранном просмотрщике. Требует терминал на stdout и несовместим с `--pager`.
 
-- Каталог открывает выбор документов, а файл или стандартный ввод сразу открывается в выбранном просмотрщике.
-- Запуск `mdv` без аргументов в терминале открывает текущий каталог, а путь к каталогу открывает указанный каталог.
-- При перенаправленном выводе браузер автоматически не запускается.
-- Браузер рекурсивно находит Markdown-файлы с учётом скрытых путей и `.gitignore`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Автоматически</strong><br> Путь к каталогу открывает браузер. Без аргументов при терминальных stdin и stdout открывается текущий каталог. Файлы и перенаправленный ввод выводятся напрямую.
+
+Браузер рекурсивно ищет Markdown-файлы с учётом скрытых путей и правил `.gitignore`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --interactive .
+```
 
 <details class="mdv-reference-preview">
 <summary>Превью выбора документов</summary>
@@ -221,7 +317,15 @@ order: 43
 
 ### `--monitor`
 
-Наблюдение за файлом и автоматический перерендер при изменениях.
+Отслеживает изменения файла и обновляет вывод. Действует при прямом выводе из файла.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Документ выводится один раз, изменения файла не отслеживаются.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --monitor example.md
+```
 
 </section>
 
@@ -231,7 +335,15 @@ order: 43
 
 <p class="cli-syntax"><code>-F, --config-file &lt;CONFIG_DIR&gt;</code></p>
 
-Чтение настроек из указанного каталога.
+Ищет `config.yaml`, затем `config.yml` в указанном каталоге. Если их нет, проверяет `MDV_CONFIG_PATH`, когда переменная задана.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Автопоиск</strong><br> Поиск идёт в `MDV_CONFIG_PATH`, если переменная задана, иначе в [стандартном каталоге конфигурации](../configuration/).
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --config-file ./config example.md
+```
 
 </section>
 
@@ -241,7 +353,15 @@ order: 43
 
 <p class="cli-syntax"><code>-P, --preset &lt;NAME&gt;</code></p>
 
-Применение встроенного или пользовательского пресета поверх конфигурационного файла и до явных параметров CLI.
+Применяет встроенный или пользовательский пресет после загрузки конфигурации и перед обработкой переменных окружения и параметров CLI.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без пресета</strong><br> Настройки из конфигурации дополняются переменными окружения и параметрами CLI.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --preset reader example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -256,9 +376,15 @@ order: 43
 
 ### `--preset-info`
 
-Вывод списка доступных пресетов, если позиционный `FILE` не указан.
+Выводит список доступных пресетов, если позиционный файл не указан. Если передать файл и `--preset`, выводит документ и строку `Current preset: NAME`.
 
-- Команда `mdv --preset-info FILE --preset NAME` рендерит документ и печатает `Current preset: NAME`; с `FILE`, но без `--preset`, флаг не меняет рендеринг.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Сведения о пресетах скрыты.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --preset-info example.md --preset pretty
+```
 
 </section>
 
@@ -268,7 +394,15 @@ order: 43
 
 <p class="cli-syntax"><code>-n, --no-config</code></p>
 
-Игнорирование `config.yaml`/`config.yml`; пресеты остаются доступными.
+Пропускает загрузку `config.yaml` и `config.yml`. Пресеты остаются доступны.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Загрузка включена</strong><br> Загружается первый найденный файл конфигурации.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --no-config example.md
+```
 
 </section>
 
@@ -278,11 +412,17 @@ order: 43
 
 <p class="cli-syntax"><code>--init-config [CONFIG_DIR]</code></p>
 
-Создание конфигурационного файла по умолчанию.
+Создаёт `config.yaml` и завершает работу. Если файл уже существует, сохраняет его и возвращает ошибку.
 
-- Используется указанный каталог
-- `--config-file`
-- `MDV_CONFIG_PATH` или каталог по умолчанию.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">По запросу</strong><br> Обычный запуск оставляет конфигурационные файлы без изменений.
+
+Если передать `--init-config` без значения, mdv берёт каталог из `--config-file`, затем из `MDV_CONFIG_PATH` или из стандартного пути.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --init-config ./config
+```
 
 </section>
 
@@ -294,7 +434,15 @@ order: 43
 
 <p class="cli-syntax"><code>-t, --theme &lt;NAME&gt;</code></p>
 
-Выбор встроенной или пользовательской темы (по умолчанию `terminal`).
+Выбирает встроенную или [пользовательскую тему](../themes/).
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`terminal`</strong><br> Использует встроенную палитру терминала.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --theme catppuccin example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -311,9 +459,15 @@ order: 43
 
 <p class="cli-syntax"><code>-T, --code-theme &lt;NAME&gt;</code></p>
 
-Отдельная палитра подсветки кода.
+Выбирает отдельную палитру подсветки синтаксиса. Принимает те же имена тем, что и `--theme`.
 
-- Без явного выбора код использует палитру темы документа.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Тема документа</strong><br> Подсветка синтаксиса использует тему документа.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --code-theme monokai example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -330,9 +484,15 @@ order: 43
 
 <p class="cli-syntax"><code>--syntaxes-dir &lt;DIR&gt;</code></p>
 
-Рекурсивная загрузка пользовательских `.sublime-syntax` поверх встроенного набора.
+Рекурсивно загружает файлы `.sublime-syntax`. Пользовательские определения имеют приоритет при совпадении со встроенными. Относительный путь в CLI отсчитывается от рабочего каталога.
 
-- Пользовательские определения имеют приоритет при совпадении со встроенными.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Встроенные синтаксисы</strong><br> Используется только встроенный набор синтаксисов.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --syntaxes-dir ./syntaxes example.md
+```
 
 </section>
 
@@ -340,13 +500,25 @@ order: 43
 
 ### `--code-block-style`
 
-<p class="cli-syntax"><code>-b, --code-block-style &lt;basic|simple|pretty&gt;[:show-name;show-icon]</code></p>
+<p class="cli-syntax"><code>-b, --code-block-style &lt;STYLE&gt;[:&lt;OPTIONS&gt;]</code></p>
 
-Стиль оформления блоков кода: безрамочный блок с отступом, одинарная граница или полная рамка.
+Задаёт оформление и подпись блоков кода.
 
-- По умолчанию подпись скрыта
-- `show-name` показывает название языка
-- `show-icon` - его иконку, обе опции можно комбинировать (по умолчанию `basic`).
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`basic`</strong><br> Выводит код с отступом, без рамки и подписи языка.
+
+**Стили**
+
+- `basic` добавляет отступ без рамки.
+- `simple` добавляет левую границу.
+- `pretty` рисует рамку.
+
+Параметр `show-name` показывает название языка, а `show-icon` добавляет его иконку. Их можно объединить через `;`. Для иконок нужен шрифт Nerd Font.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --code-block-style 'pretty:show-name;show-icon' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -363,9 +535,21 @@ order: 43
 
 ### `--math-block-style`
 
-<p class="cli-syntax"><code>--math-block-style &lt;basic|simple|pretty&gt;</code></p>
+<p class="cli-syntax"><code>--math-block-style &lt;STYLE&gt;</code></p>
 
-Стиль display-формул и fenced-блоков `math`/`latex`/`tex`.
+Задаёт оформление блочных формул и ограждённых блоков `math`, `latex` и `tex`. У формул нет подписей, иконок и номеров строк.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`basic`</strong><br> Выводит формулы с отступом, без рамки.
+
+- `basic` добавляет отступ без рамки.
+- `simple` добавляет левую границу.
+- `pretty` рисует рамку.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --math-block-style pretty example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -382,12 +566,20 @@ order: 43
 
 <p class="cli-syntax"><code>-K, --code-line-numbers [&lt;MODE&gt;]</code></p>
 
-Нумерация строк внутри каждого блока кода.
+Добавляет номера строк внутри блоков кода. Каждый блок нумеруется отдельно.
 
-- Без режима нумеруется каждая перенесённая терминальная строка
-- `source` нумерует физические строки кода и оставляет продолжения без номера
-- `separator` добавляет разделитель
-- `"source;separator"` сочетает оба режима.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Строки кода выводятся без поля для номеров.
+
+- Если передать флаг без значения, нумеруются строки вывода без разделителя.
+- `source` нумерует физические строки кода и оставляет продолжения без номера.
+- `separator` нумерует строки вывода и добавляет разделитель.
+- `source;separator` нумерует исходные строки и добавляет разделитель.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --code-line-numbers 'source;separator' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -404,7 +596,17 @@ order: 43
 
 <p class="cli-syntax"><code>--custom-theme &lt;key=value;...&gt;</code></p>
 
-Переопределение цветов интерфейса поверх выбранной темы.
+Переопределяет цвета выбранной темы.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используется палитра выбранной темы.
+
+Разделяйте назначения символом `;`. Для цветов верхнего уровня используется `ключ=значение`, для вложенных цветов используется `раздел:поле=значение`. Доступные ключи перечислены в [справочнике полей темы](../theme-reference/). Цвета принимаются в именованном формате, hex, RGB или `ansi(N)`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --custom-theme 'line_number:number=grey;h2=blue' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -421,17 +623,21 @@ order: 43
 
 <p class="cli-syntax"><code>--inline-style &lt;STYLES&gt;</code></p>
 
-Переопределение оформления `emphasis`
+Переопределяет оформление строчных элементов Markdown.
 
-- `strong`
-- `strong_emphasis`
-- `code`
-- `strikethrough` и `highlight`.
-- Записи формата `element:property=true,property=false` разделяются `;`; доступны свойства `backticks`
-- `bold`
-- `italic`
-- `underline` и `strikethrough` (например
-- `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используется оформление активной темы.
+
+Формат записи `element:property=true,property=false`. Разделяйте элементы символом `;`, а свойства символом `,`.
+
+**Элементы** `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, `highlight`.
+
+**Свойства** `backticks`, `bold`, `italic`, `underline`, `strikethrough`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --inline-style 'code:backticks=false,bold=true;highlight:underline=true' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -448,7 +654,17 @@ order: 43
 
 <p class="cli-syntax"><code>--custom-code-theme &lt;key=value;...&gt;</code></p>
 
-Переопределение цветов подсветки кода в том же формате, что и `--custom-theme`.
+Переопределяет цвета подсветки синтаксиса.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используется текущая палитра подсветки без этих переопределений.
+
+Разделяйте назначения `key=value` символом `;`. Поддерживаются обе формы ключей, например `keyword` и `syntax:keyword`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --custom-code-theme 'keyword=#ffffff;string=128,0,128' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -463,15 +679,19 @@ order: 43
 
 ### `--custom-code-block`
 
-<p class="cli-syntax"><code>--custom-code-block &lt;lang:icon=...,label=...,aliases=...|...&gt;[;...]</code></p>
+<p class="cli-syntax"><code>--custom-code-block &lt;BLOCKS&gt;</code></p>
 
-Переопределение иконки, подписи и псевдонимов для конкретных языков блоков кода.
+Переопределяет иконки, подписи и псевдонимы языковых меток в блоках кода. Для подсветки требуется подходящее определение синтаксиса.
 
-- Несколько языков разделяются `;`, опции внутри одного языка - `,`, а псевдонимы - `|` (например
-- `python:icon=*,label=Python,aliases=py|py3;rust:icon=R`).
-- Работает для любого указанного языка, даже если его нет во встроенной карте иконок.
-- Подсветка синтаксиса применяется только к языкам, которые поддерживает текущая логика подсветки mdv.
-- Используйте `default:icon=...`, чтобы задать fallback-иконку для неизвестных языков.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используются встроенные иконки, подписи и псевдонимы.
+
+Разделяйте языки символом `;`, свойства символом `,`, а псевдонимы символом `|`. Явный список псевдонимов заменяет унаследованный. Чтобы очистить список, используйте `aliases=[]`. Запись `default:icon=…` задаёт иконку для неизвестных языков.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --code-block-style pretty:show-name --custom-code-block 'rust:label=Rust sample' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -488,17 +708,32 @@ order: 43
 
 ### `--callout-style`
 
-<p class="cli-syntax"><code>-C, --callout-style &lt;pretty|simple&gt;[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]</code></p>
+<p class="cli-syntax"><code>-C, --callout-style &lt;STYLE&gt;[:&lt;OPTIONS&gt;]</code></p>
 
-Стиль callout-блоков и правила отображения подписи.
+Задаёт оформление callout-блоков, иконок и подписей.
 
-- `show-icons` использует глифы Nerd Font
-- `show-simple-icons` - переносимые ASCII-маркеры вроде `[i]`
-- `[*]`
-- `[!]` и `[x]`.
-- Эти два параметра нельзя комбинировать.
-- `label-inside` поддерживается только с `pretty`
-- `fold-icons` требует `show-icons`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`pretty`</strong><br> Рисует рамку с подписью сверху, иконки выключены.
+
+**Стили**
+
+- `pretty` рисует рамку.
+- `simple` добавляет левую границу.
+
+**Дополнительные параметры**
+
+- `show-icons` использует иконки Nerd Font.
+- `show-simple-icons` использует ASCII-маркеры, например `[i]`, `[*]`, `[!]` и `[x]`. Несовместим с `show-icons`.
+- `fold-icons` добавляет маркеры сворачивания и требует `show-icons`.
+- `label-inside` переносит подпись внутрь рамки и требует `pretty`.
+- `uppercase` выводит подписи прописными буквами.
+
+Разделяйте дополнительные параметры символом `;`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --callout-style 'pretty:show-icons;fold-icons;label-inside' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -523,11 +758,17 @@ order: 43
 
 <p class="cli-syntax"><code>--custom-callout &lt;name:icon=...,color=...;...&gt;</code></p>
 
-Переопределение или добавление подписей callout.
+Переопределяет или добавляет иконки и цвета для типов callout-блоков. Можно указать одно свойство или оба.
 
-- `icon` и `color` можно указывать по отдельности; формат цвета как в `--custom-theme`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используются встроенные стили callout-блоков и цвета активной темы.
 
-- Для корректного отображения иконок, включённых через `show-icons` и `fold-icons`, нужны шрифты Nerd Fonts в терминале. Для `show-simple-icons` они не требуются.
+Разделяйте записи символом `;`, а свойства символом `,`. Форматы цвета совпадают с [`--custom-theme`](#--custom-theme).
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --custom-callout 'tip:icon=*,color=red;custom:color=#ff5555' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -546,9 +787,15 @@ order: 43
 
 <p class="cli-syntax"><code>-x, --checkbox-style &lt;square|circle&gt;</code></p>
 
-Рендерит чекбоксы task-list как иконки Nerd Font вместо стандартных `[ ]` / `[x]`.
+Выводит чекбоксы списков задач как квадратные (`square`) или круглые (`circle`) иконки. Требует шрифт Nerd Font.
 
-- Требует шрифт Nerd Font в терминале.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Текстовые маркеры</strong><br> Используются текстовые отметки, например `[ ]` и `[x]`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --checkbox-style square example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -565,17 +812,17 @@ order: 43
 
 <p class="cli-syntax"><code>--custom-checkbox &lt;PAIRS&gt;</code></p>
 
-Переопределяет встроенные иконки чекбоксов или добавляет новые состояния (только с `--checkbox-style`).
+Переопределяет иконки и цвета чекбоксов или добавляет новые состояния. Требует `--checkbox-style`.
 
-- Каждая разделённая точкой с запятой пара задаётся как `<char>:<icon>[:<color>]` или `<char>:<color>`.
-- Форма только с цветом сохраняет существующую иконку, а для нового состояния использует стандартную иконку неотмеченного чекбокса.
-- Цвета принимают именованные, hex, rgb и `ansi(N)`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используются иконки и цвета выбранного стиля чекбоксов и темы.
 
-- Переопределение:  `--custom-checkbox ' :!'`         заменить иконку неотмеченного
-- Добавление:       `--custom-checkbox '*:*'`         добавить состояние `[*]`
-- Цвет:             `--custom-checkbox ' :!:yellow'`  или `#ff0000`, `128,1,1`, `ansi(200)`
-- Только цвет: `--custom-checkbox '?:red'` сохраняет значок Nerd Font для состояния `?` и задаёт красный цвет.
-- Новое состояние, только цвет: `--custom-checkbox '*:yellow'` использует стандартный значок неотмеченного чекбокса и жёлтый цвет.
+Разделяйте записи символом `;`. Форматы записи `<char>:<icon>[:<color>]`, `<char>:<color>` или `<char>:icon=<glyph>,color=<color>`. Если задан только цвет, знакомое состояние сохраняет свою иконку, а новое использует иконку неотмеченного чекбокса. Цвета принимаются в именованном формате, hex, RGB или `ansi(N)`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --checkbox-style square --custom-checkbox ' :!:yellow' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -592,13 +839,22 @@ order: 43
 
 ### `--list-style`
 
-<p class="cli-syntax"><code>-L, --list-style &lt;стиль&gt;</code></p>
+<p class="cli-syntax"><code>-L, --list-style &lt;LIST_STYLE&gt;</code></p>
 
-Заменяет стандартные маркеры `-` неупорядоченных списков на набор иконок по уровням.
+Заменяет маркеры неупорядоченных списков иконками по уровням.
 
-- Значение обязательно и задаётся в формате `type:<nerd-font|unicode>;size:<large|small>`, например `--list-style 'type:unicode;size:small'`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Текстовые маркеры</strong><br> Используется маркер `-`.
 
-- `size` меняет только маркеры Nerd Font. Для Unicode принимаются оба значения, но набор остаётся одинаковым; его отображение зависит от шрифта. Проверено на семействах Nerd Font, особенно JetBrainsMono Nerd Font.
+- `type` принимает `nerd-font` или `unicode`.
+- `size` принимает `large` или `small` и влияет только на иконки Nerd Font.
+
+Используйте запись `type:TYPE;size:SIZE` или укажите один из двух параметров. Для пропущенных параметров используются `type:nerd-font` и `size:large`. Иконки Nerd Font требуют соответствующий шрифт. Отображение Unicode-маркеров может зависеть от шрифта.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --list-style 'type:unicode' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -615,7 +871,15 @@ order: 43
 
 <p class="cli-syntax"><code>-D, --definition-marker-style &lt;unicode|nerd-font&gt;</code></p>
 
-Выводит описания definition list со встроенным Unicode- или Nerd Font-маркером.
+Добавляет маркер `unicode` или `nerd-font` перед описанием определения. Для `nerd-font` нужен шрифт Nerd Font.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Только отступ</strong><br> Описание выводится с отступом в два пробела без маркера.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --definition-marker-style unicode example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -630,12 +894,20 @@ order: 43
 
 ### `--uniform-list-marker`
 
-<p class="cli-syntax"><code>--uniform-list-marker &lt;level:1-4|icon:глиф&gt;</code></p>
+<p class="cli-syntax"><code>--uniform-list-marker &lt;MARKER&gt;</code></p>
 
-Использует один маркер на всех уровнях вложенности (только с `--list-style`).
+Выводит один маркер неупорядоченного списка на всех уровнях. Требует `--list-style`.
 
-- `level:2` берёт второй маркер выбранного набора
-- `icon:*` задаёт собственный глиф.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">По уровню</strong><br> Используются маркеры выбранного набора для каждого уровня.
+
+- `level:<1-4>` берёт маркер указанного уровня.
+- `icon:<GLYPH>` задаёт свой маркер.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --list-style 'type:unicode' --uniform-list-marker 'level:2' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -650,16 +922,19 @@ order: 43
 
 ### `--custom-list`
 
-<p class="cli-syntax"><code>--custom-list &lt;уровень&gt;:&lt;иконка&gt;[:&lt;цвет&gt;];...</code></p>
+<p class="cli-syntax"><code>--custom-list &lt;PAIRS&gt;</code></p>
 
-Переопределяет иконку и/или цвет маркера для конкретных уровней вложенности (только с `--list-style`).
+Переопределяет маркеры неупорядоченных списков по уровням вложенности. Требует `--list-style`.
 
-- Уровень - 1-based; иконка - глиф маркера.
-- Цвета принимают именованные (`red`), hex (`#ff0000`), rgb (`255,0,0`) и `ansi(N)`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Без переопределений</strong><br> Используются маркеры выбранного набора и цвета темы.
 
-- Иконка + цвет:  `--custom-list '1:*:yellow'`   маркер `*` жёлтого цвета
-- Только иконка:  `--custom-list '1:>'`          маркер `>` в цвете темы
-- Только цвет:    `--custom-list '1:red'`        встроенная иконка, красный цвет
+Разделяйте записи символом `;`. Нумерация уровней начинается с 1. Форматы записи `<level>:<icon>[:<color>]`, `<level>:<color>` или `<level>:icon=<glyph>,color=<color>`. Цвета принимаются в именованном формате, hex, RGB или `ansi(N)`.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --list-style 'type:unicode' --custom-list '1:*:yellow' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -678,9 +953,15 @@ order: 43
 
 <p class="cli-syntax"><code>-c, --cols &lt;N&gt;</code></p>
 
-Фиксированная ширина вывода.
+Задаёт ширину вывода в столбцах терминала.
 
-- Без него используется определённая ширина терминала, если она не меньше 20 столбцов, затем `cols` из конфигурации, затем 80 столбцов.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Автоматически</strong><br> Используется определённая ширина терминала, если она не меньше 20 столбцов, затем `cols` из конфигурации, затем 80 столбцов.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --cols 72 example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -695,11 +976,17 @@ order: 43
 
 ### `--margin`
 
-<p class="cli-syntax"><code>-m, --margin &lt;right:N;left:N&gt;</code></p>
+<p class="cli-syntax"><code>-m, --margin &lt;MARGINS&gt;</code></p>
 
-Задаёт левый и/или правый отступ.
+Задаёт левое и правое поля в столбцах терминала. Можно указать одну сторону или обе. Неуказанная сторона равна нулю. При экспорте в HTML поля не применяются.
 
-- Неуказанная сторона равна `0`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">0 столбцов</strong><br> Оба поля равны нулю.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --margin 'left:4;right:5' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -716,7 +1003,15 @@ order: 43
 
 <p class="cli-syntax"><code>--tab-length &lt;N&gt;</code></p>
 
-Замена символов табуляции на `N` пробелов (по умолчанию `4`).
+Задаёт число пробелов, которыми заменяется символ табуляции.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`4`</strong><br> Заменяет каждую табуляцию четырьмя пробелами.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --tab-length 2 example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -731,9 +1026,21 @@ order: 43
 
 ### `--wrap`
 
-<p class="cli-syntax"><code>-w, --wrap &lt;char|word|none&gt;</code></p>
+<p class="cli-syntax"><code>-w, --wrap &lt;MODE&gt;</code></p>
 
-Стратегия переноса текста, кода, callout-блоков и содержимого ячеек таблиц (по умолчанию `char`).
+Определяет, где переносить текст, код, содержимое callout-блоков и ячеек таблиц.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`char`</strong><br> Переносит по границам символов.
+
+- `char` переносит по границам символов.
+- `word` предпочитает границы слов. Слишком длинное слово может разбиваться.
+- `none` отключает мягкий перенос. Текст в ячейках с ограниченной шириной всё ещё может переноситься.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --wrap word example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -748,9 +1055,15 @@ order: 43
 
 ### `--reflow`
 
-Склеивает внутриабзацные мягкие переносы строк (soft breaks) и заново заполняет каждую строку до ширины переноса, так что жёстко разбитый исходник перетекает под узкие экраны.
+Объединяет строки внутри абзаца по мягким переносам и заново разбивает текст по ширине вывода. Требует включённого переноса строк и сохраняет жёсткие переносы.
 
-- Требует включённого переноса; жёсткие переносы сохраняются.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Исходные разрывы строк внутри абзацев сохраняются.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --reflow example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -765,11 +1078,21 @@ order: 43
 
 ### `--table-wrap`
 
-<p class="cli-syntax"><code>-W, --table-wrap &lt;fit|wrap|none&gt;</code></p>
+<p class="cli-syntax"><code>-W, --table-wrap &lt;MODE&gt;</code></p>
 
-Геометрия таблиц: подогнать ячейки, разделить колонки на блоки или разрешить переполнение (по умолчанию `fit`).
+Определяет, как широкие таблицы помещаются в терминал. Если ширина ячеек ограничена, места переноса определяет `--wrap`.
 
-- Точки переноса в ячейках определяет `--wrap`.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`fit`</strong><br> Переносит содержимое ячеек, чтобы таблица уместилась по ширине.
+
+- `fit` переносит текст внутри ячеек, чтобы таблица поместилась по ширине.
+- `wrap` разбивает широкую таблицу на блоки столбцов.
+- `none` сохраняет строки ячеек без переноса и разрешает выход за границы по горизонтали.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --table-wrap wrap example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -786,7 +1109,15 @@ order: 43
 
 <p class="cli-syntax"><code>-B, --table-borders</code></p>
 
-Возвращает полные скруглённые рамки у таблиц.
+Рисует полную сетку таблицы со скруглёнными внешними углами.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Компактные границы</strong><br> Используются компактные границы без полной внешней рамки.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --table-borders example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -803,7 +1134,15 @@ order: 43
 
 <p class="cli-syntax"><code>-S, --table-smart-indent</code></p>
 
-Автоматический подбор отступа таблицы в зависимости от доступной ширины.
+Сохраняет текущий отступ содержимого для таблицы, когда хватает места, и уменьшает его при нехватке ширины.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Автоматическая корректировка отступа выключена.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --table-smart-indent example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -818,9 +1157,22 @@ order: 43
 
 ### `--heading-layout`
 
-<p class="cli-syntax"><code>-H, --heading-layout &lt;level|center|flat|none&gt;</code></p>
+<p class="cli-syntax"><code>-H, --heading-layout &lt;LAYOUT&gt;</code></p>
 
-Схема выравнивания заголовков (по умолчанию `level`).
+Управляет выравниванием заголовков и отступами содержимого под ними.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`level`</strong><br> Задаёт отступ по уровню заголовка, а его содержимое сдвигает ещё на один столбец.
+
+- `level` сдвигает заголовки по уровню, а содержимое ещё на один столбец.
+- `center` центрирует заголовки, содержимое остаётся без отступа.
+- `flat` выравнивает заголовки по левому краю, содержимое сдвигается на один столбец.
+- `none` выравнивает заголовки и содержимое по левому краю.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --heading-layout center example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -835,7 +1187,15 @@ order: 43
 
 ### `--show-heading-markers`
 
-Добавляет перед заголовками markdown-маркеры, соответствующие их уровню.
+Выводит перед заголовками маркеры Markdown, соответствующие их уровню.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Маркеры заголовков скрыты.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --show-heading-markers example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -852,7 +1212,15 @@ order: 43
 
 <p class="cli-syntax"><code>-I, --smart-indent</code></p>
 
-Сглаживание скачков отступов между уровнями заголовков в режиме `level`.
+Сглаживает скачки отступов между соседними заголовками. Действует только при `--heading-layout level`.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Отступ каждого заголовка соответствует его уровню.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --heading-layout level --smart-indent example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -867,9 +1235,21 @@ order: 43
 
 ### `--code-wrap-indent`
 
-<p class="cli-syntax"><code>--code-wrap-indent &lt;none|base|double&gt;</code></p>
+<p class="cli-syntax"><code>--code-wrap-indent &lt;MODE&gt;</code></p>
 
-Управляет «висячим» отступом при переносе строк внутри блоков кода (по умолчанию `double`).
+Задаёт висячий отступ для продолжений строк кода.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`double`</strong><br> Добавляет два пробела к исходному отступу при переносе строк кода.
+
+- `none` отключает висячий отступ.
+- `base` выравнивает продолжение по отступу исходной строки.
+- `double` добавляет два пробела к отступу исходной строки.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --code-wrap-indent base example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -884,11 +1264,19 @@ order: 43
 
 ### `--block-spacing`
 
-<p class="cli-syntax"><code>--block-spacing &lt;спецификация&gt;</code></p>
+<p class="cli-syntax"><code>--block-spacing &lt;SPACING&gt;</code></p>
 
-Переопределяет количество пустых строк сверху и снизу для отдельных блоков.
+Задаёт число пустых строк до и после блоков каждого типа. Между соседними блоками используется больший из двух отступов.
 
-- Неуказанные стороны сохраняют стандартные значения, а отступы соседних блоков схлопываются до большего значения.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Встроенные отступы</strong><br> У большинства блоков по одной строке сверху и снизу. У абзацев ноль сверху и одна снизу. У `end-references` две сверху и одна снизу.
+
+Формат записи `<element>:top=<lines>,bottom=<lines>`. Разделяйте элементы символом `;`, а стороны символом `,`. Пропущенные элементы и стороны сохраняют прежние отступы. Поддерживаемые типы блоков перечислены в [руководстве по разметке](../rendering/).
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --block-spacing 'paragraph:bottom=0;callout:top=2' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -903,9 +1291,20 @@ order: 43
 
 ### `--horizontal-rule-style`
 
-<p class="cli-syntax"><code>--horizontal-rule-style &lt;pretty|simple&gt;</code></p>
+<p class="cli-syntax"><code>--horizontal-rule-style &lt;STYLE&gt;</code></p>
 
-Рисует разделители Markdown и HTML `<hr>` с декоративными символами по краям или сплошной линией.
+Управляет стилем разделителей Markdown и HTML `<hr>`.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`pretty`</strong><br> Рисует линию с декоративными символами по краям.
+
+- `pretty` рисует линию с декоративными символами по краям.
+- `simple` рисует сплошную линию.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --horizontal-rule-style simple example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -922,7 +1321,15 @@ order: 43
 
 ### `--show-empty-elements`
 
-Отображение обычно скрытых пустых заголовков, списков, цитат, блоков кода и таблиц.
+Показывает пустые заголовки, элементы списков, цитаты, блоки кода и таблицы, которые иначе были бы скрыты.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Выключено</strong><br> Пустые элементы, лишние для разметки, скрываются.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --show-empty-elements example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -937,7 +1344,15 @@ order: 43
 
 ### `--no-code-guessing`
 
-Отключение эвристики определения языка; неизвестные блоки остаются текстом.
+Отключает эвристическое определение языка. Если языковая метка распознана, подсветка продолжает работать.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">Определение включено</strong><br> Если метки нет или она неизвестна, mdv пытается определить язык блока.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --no-code-guessing example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -954,9 +1369,24 @@ order: 43
 
 ### `--link-style`
 
-<p class="cli-syntax"><code>-u, --link-style &lt;clickable|fclickable|inline|inlinetable|endtable|hide&gt;</code></p>
+<p class="cli-syntax"><code>-u, --link-style &lt;STYLE&gt;</code></p>
 
-Способ отображения ссылок (по умолчанию `clickable`).
+Задаёт способ отображения ссылок. Для гиперссылок OSC 8 требуется терминальное оформление.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`clickable`</strong><br> Показывает кликабельный текст ссылки в терминале с поддержкой OSC 8.
+
+- `clickable` (`c`) делает текст ссылки кликабельным и скрывает URL.
+- `fclickable` (`fc`) подчёркивает кликабельный текст ссылки.
+- `inline` (`i`) показывает URL после текста ссылки.
+- `inlinetable` (`it`) нумерует ссылки и показывает таблицу адресов рядом с блоком.
+- `endtable` (`et`) нумерует ссылки и показывает таблицу адресов в конце документа.
+- `hide` (`h`) оставляет только текст ссылки.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --link-style inline example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -971,9 +1401,22 @@ order: 43
 
 ### `--link-overflow`
 
-<p class="cli-syntax"><code>-l, --link-overflow &lt;wrap|cut|tablecut|none&gt;</code></p>
+<p class="cli-syntax"><code>-l, --link-overflow &lt;MODE&gt;</code></p>
 
-Определяет, переносить, обрезать или разрешать переполнение длинных ссылок (по умолчанию `wrap`).
+Определяет, что делать с видимым URL при нехватке ширины. Адрес перехода остаётся прежним.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`wrap`</strong><br> Переносит видимый URL, если он не помещается по ширине.
+
+- `wrap` переносит длинные URL.
+- `cut` обрезает длинные URL с многоточием.
+- `tablecut` обрезает длинные URL в тексте и в ячейках таблиц.
+- `none` разрешает выход за границы по горизонтали.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --link-style inline --link-overflow cut example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -990,9 +1433,20 @@ order: 43
 
 ### `--footnote-style`
 
-<p class="cli-syntax"><code>--footnote-style &lt;endnotes|attached&gt;</code></p>
+<p class="cli-syntax"><code>--footnote-style &lt;STYLE&gt;</code></p>
 
-Размещение сносок в конце документа или сразу после блока со ссылкой, включая абзацы, таблицы и элементы списков.
+Задаёт расположение сносок, на которые есть ссылки.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`endnotes`</strong><br> Собирает сноски, на которые есть ссылки, в конце документа.
+
+- `endnotes` собирает сноски в конце документа.
+- `attached` помещает сноски сразу после блока со ссылкой, например абзаца, таблицы или элемента списка.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --footnote-style attached example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -1007,11 +1461,20 @@ order: 43
 
 ### `--missing-footnote-style`
 
-<p class="cli-syntax"><code>--missing-footnote-style &lt;show|hide&gt;</code></p>
+<p class="cli-syntax"><code>--missing-footnote-style &lt;STYLE&gt;</code></p>
 
-Поведение для отсутствующих, некорректных или пустых определений сносок.
+Управляет отображением отсутствующих, некорректных и пустых определений сносок.
 
-- `show` выводит сообщение-заглушку в блоке сносок `hide` полностью скрывает такие записи.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">`show`</strong><br> Показывает сообщение-заглушку для отсутствующих, некорректных или пустых определений.
+
+- `show` выводит запись с сообщением-заглушкой.
+- `hide` скрывает запись.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --missing-footnote-style hide example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Пример отображения</summary>
@@ -1028,9 +1491,15 @@ order: 43
 
 ### `mdv help`
 
-Открывает полный вывод `mdv --help` в выбранном pager.
+Открывает полную справку в просмотрщике, если stdin и stdout подключены к терминалу. Просмотрщик выбирает `MDV_PAGER`, при отсутствии значения используется встроенный. Если один из потоков перенаправлен, справка печатается напрямую.
 
-- Если задан `MDV_PAGER`, используется он, иначе встроенный pager; при перенаправлении ввода или вывода та же справка печатается напрямую.
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">По запросу</strong><br> Открывает справку при вызове подкоманды.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv help
+```
 
 </section>
 
@@ -1038,7 +1507,15 @@ order: 43
 
 ### `-h`
 
-Краткая сводка параметров.
+Выводит краткую сводку параметров.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">По запросу</strong><br> Печатает сводку при указании флага.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv -h
+```
 
 </section>
 
@@ -1046,7 +1523,15 @@ order: 43
 
 ### `--help`
 
-Полная справка с описаниями значений, форматами и примерами.
+Выводит полную справку с описаниями значений, форматами и примерами.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">По запросу</strong><br> Печатает полную справку при указании флага.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --help
+```
 
 </section>
 
@@ -1056,6 +1541,14 @@ order: 43
 
 <p class="cli-syntax"><code>-V, --version</code></p>
 
-Отображение текущей версии.
+Выводит текущую версию.
+
+<strong class="cli-default-label">По умолчанию</strong> <strong class="cli-default-value">По запросу</strong><br> Печатает версию при указании флага.
+
+<strong class="cli-example-label">Пример</strong>
+
+```sh
+mdv --version
+```
 
 </section>

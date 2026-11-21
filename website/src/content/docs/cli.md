@@ -6,13 +6,24 @@ group: "Reference"
 order: 43
 ---
 
+The defaults below describe a run with no configuration overrides. The [configuration guide](../configuration/) explains how YAML, presets, environment variables, and CLI options interact.
+
+
 ## Output and workflow
 
 <section class="cli-option" aria-label="--html">
 
 ### `--html`
 
-Prints HTML instead of terminal formatting.
+Exports the rendered document as HTML.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Terminal output</strong><br> Applies terminal layout and the active color policy.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --html example.md > example.html
+```
 
 </section>
 
@@ -22,9 +33,17 @@ Prints HTML instead of terminal formatting.
 
 <p class="cli-syntax"><code>-E, --render-html</code></p>
 
-Renders raw HTML fragments as terminal-formatted content instead of displaying their tags literally.
+Renders raw HTML fragments as formatted content in terminal output.
 
-- HTML nesting is limited to 64 DOM elements.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Raw HTML tags are displayed literally.
+
+HTML nesting is limited to 64 DOM elements.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --render-html example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -41,12 +60,20 @@ Renders raw HTML fragments as terminal-formatted content instead of displaying t
 
 <p class="cli-syntax"><code>-N, --line-numbers [&lt;MODE&gt;]</code></p>
 
-Prefixes terminal and pager rows with line numbers.
+Adds line numbers to terminal and pager output.
 
-- Without a mode, it numbers rendered rows
-- `source` uses physical Markdown source lines
-- `separator` adds a separator
-- `"source;separator"` combines both.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Renders document rows without a line-number gutter.
+
+- With no value, numbers rendered rows without a separator.
+- `source` numbers physical Markdown source lines.
+- `separator` numbers rendered rows and adds a separator.
+- `source;separator` numbers source lines and adds a separator.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --line-numbers 'source;separator' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -61,13 +88,21 @@ Prefixes terminal and pager rows with line numbers.
 
 ### `--color`
 
-<p class="cli-syntax"><code>--color &lt;auto|always|never&gt;</code></p>
+<p class="cli-syntax"><code>--color &lt;WHEN&gt;</code></p>
 
-Controls terminal styling.
+Controls ANSI styling and OSC 8 hyperlinks.
 
-- `auto` enables ANSI and OSC 8 only when stdout is a terminal
-- `always` preserves styling through pipes
-- `never` emits plain rendered output.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`auto`</strong><br> Enables terminal styling and OSC 8 hyperlinks when stdout is a terminal.
+
+- `auto` enables styling and hyperlinks when stdout is a terminal.
+- `always` keeps styling and hyperlinks even when stdout is redirected.
+- `never` prints plain rendered text.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --color always example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -82,11 +117,22 @@ Controls terminal styling.
 
 ### `--color-depth`
 
-<p class="cli-syntax"><code>--color-depth &lt;auto|16|256|truecolor&gt;</code></p>
+<p class="cli-syntax"><code>--color-depth &lt;DEPTH&gt;</code></p>
 
-Detects the terminal palette or sets its limit explicitly.
+Sets the palette limit for the document and interactive interface. Applies when terminal styling is enabled.
 
-- Applies to document colors and the interactive interface; default `auto`.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`auto`</strong><br> Detects the palette supported by the terminal.
+
+- `auto` detects the terminal's color capabilities.
+- `16` uses the standard ANSI palette.
+- `256` uses the ANSI 256-color palette.
+- `truecolor` uses 24-bit RGB colors.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --color-depth 256 example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -101,7 +147,15 @@ Detects the terminal palette or sets its limit explicitly.
 
 ### `--hide-comments`
 
-Removes Markdown comments from the rendered output.
+Removes Markdown comments from rendered output.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Comments remain visible.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --hide-comments example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -116,18 +170,26 @@ Removes Markdown comments from the rendered output.
 
 ### `--front-matter`
 
-<p class="cli-syntax"><code>--front-matter &lt;hidden|panel|table|plain|inline|blocks|code|source&gt;</code></p>
+<p class="cli-syntax"><code>--front-matter &lt;MODE&gt;</code></p>
 
-Controls an exact `---`-delimited YAML property mapping beginning on the first line.
+Controls how mdv renders a YAML mapping enclosed by exact `---` delimiter lines. The opening delimiter must be on the first line.
 
-- `hidden` omits it
-- `panel` renders a property panel
-- `table` uses Property/Value columns
-- `plain` emits normalized key/value lines
-- `inline` joins properties into one flowing row
-- `blocks` places each value below its key
-- `code` renders highlighted YAML
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`hidden`</strong><br> Omits YAML front matter from rendered output.
+
+- `hidden` omits front matter.
+- `panel` shows a property panel.
+- `table` shows `Property` and `Value` columns.
+- `plain` shows normalized key/value lines.
+- `inline` puts properties in one wrapping paragraph.
+- `blocks` puts each value below its key.
+- `code` shows syntax-highlighted YAML.
 - `source` parses the complete input as ordinary Markdown.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --front-matter panel example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -144,7 +206,15 @@ Controls an exact `---`-delimited YAML property mapping beginning on the first l
 
 <p class="cli-syntax"><code>--theme-info [FILE]</code></p>
 
-Shows the active palette; when `FILE` is provided it renders the file along with palette information.
+With no value, shows the active themes and lists available themes. Pass a file to render it with the active theme information.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Theme information is suppressed.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --theme-info example.md
+```
 
 </section>
 
@@ -152,11 +222,17 @@ Shows the active palette; when `FILE` is provided it renders the file along with
 
 ### `--from`
 
-<p class="cli-syntax"><code>--from &lt;TEXT&gt;</code></p>
+<p class="cli-syntax"><code>--from &lt;TEXT&gt;[:&lt;LINES&gt;]</code></p>
 
-Starts rendering from the first match of `<TEXT>`.
+Starts rendering at the first line containing `<TEXT>`. Add `:<LINES>` to limit the number of source lines, including the matching line. If there is no match, rendering starts at the first line.
 
-- Adding `:<lines>` limits the number of lines (for example `--from "Install:20"`).
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Full document</strong><br> Renders the full document without filtering.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --from 'Installation:20' README.md
+```
 
 </section>
 
@@ -166,7 +242,15 @@ Starts rendering from the first match of `<TEXT>`.
 
 <p class="cli-syntax"><code>-r, --reverse</code></p>
 
-Renders the document starting from the end while keeping block formatting intact.
+Renders the document from the end while preserving block formatting.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Document order</strong><br> Renders from the beginning of the document.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --reverse example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -183,11 +267,19 @@ Renders the document starting from the end while keeping block formatting intact
 
 <p class="cli-syntax"><code>-p, --pager[=&lt;COMMAND&gt;]</code></p>
 
-Opens the rendered output in a pager.
+Opens rendered output in a pager when stdout is a terminal. With redirected stdout, writes directly to stdout.
 
-- A bare flag uses `MDV_PAGER` when set and the default pager otherwise.
-- `--pager=default` selects the default backend (currently the built-in `minus`)
-- `--pager=builtin` explicitly selects `minus`, and a command such as `--pager="less -R"` receives the rendered output on stdin.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Direct output</strong><br> Ordinary document output goes directly to stdout.
+
+- `--pager` uses `MDV_PAGER` when set, otherwise it uses the built-in `minus` pager.
+- `--pager=default` or `--pager=builtin` selects the built-in `minus` pager.
+- `--pager=<COMMAND>` runs an external pager and passes rendered output to its stdin.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --pager=builtin example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Preview the built-in pager</summary>
@@ -202,12 +294,17 @@ Opens the rendered output in a pager.
 
 <p class="cli-syntax"><code>-i, --interactive</code></p>
 
-Opens the interactive document browser.
+Opens the interactive document browser for a directory, or opens a file or standard input directly in the selected pager. Requires a terminal on stdout and conflicts with `--pager`.
 
-- A directory opens the browser; a file or standard input opens the document directly in the selected pager.
-- Running `mdv` without arguments in a terminal opens the current directory, and passing a directory opens that directory.
-- Redirected output does not open the browser implicitly.
-- The browser recursively finds Markdown files while honoring hidden-file and `.gitignore` rules.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Automatic</strong><br> A directory argument opens the browser. With no arguments, terminal stdin and stdout open the current directory. Ordinary files and piped input use direct output.
+
+The browser searches recursively, honoring hidden paths and `.gitignore` rules.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --interactive .
+```
 
 <details class="mdv-reference-preview">
 <summary>Preview the document browser</summary>
@@ -220,7 +317,15 @@ Opens the interactive document browser.
 
 ### `--monitor`
 
-Watches the source file and re-renders when it changes.
+Watches a file and re-renders it when it changes. Applies to direct output from a file.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Renders once without watching for changes.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --monitor example.md
+```
 
 </section>
 
@@ -230,7 +335,15 @@ Watches the source file and re-renders when it changes.
 
 <p class="cli-syntax"><code>-F, --config-file &lt;CONFIG_DIR&gt;</code></p>
 
-Reads configuration from the provided directory.
+Looks for `config.yaml` and then `config.yml` in the specified directory. If neither exists, also checks `MDV_CONFIG_PATH` when set.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Automatic lookup</strong><br> Looks in `MDV_CONFIG_PATH` when set, otherwise in the [platform's default configuration directory](../configuration/).
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --config-file ./config example.md
+```
 
 </section>
 
@@ -240,7 +353,15 @@ Reads configuration from the provided directory.
 
 <p class="cli-syntax"><code>-P, --preset &lt;NAME&gt;</code></p>
 
-Applies a built-in or user preset above the configuration file and below explicit CLI options.
+Applies a built-in or user preset after loading the configuration file and before applying environment and CLI overrides.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No preset</strong><br> Keeps the loaded configuration and applies environment and CLI overrides.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --preset reader example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -255,9 +376,15 @@ Applies a built-in or user preset above the configuration file and below explici
 
 ### `--preset-info`
 
-Lists available presets when no positional `FILE` is provided.
+Lists available presets when no positional file is supplied. With a file and `--preset`, renders the file and prints `Current preset: NAME`.
 
-- `mdv --preset-info FILE --preset NAME` renders the document and prints `Current preset: NAME`; with `FILE` but no `--preset`, the flag does not alter rendering.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Preset information is suppressed.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --preset-info example.md --preset pretty
+```
 
 </section>
 
@@ -267,7 +394,15 @@ Lists available presets when no positional `FILE` is provided.
 
 <p class="cli-syntax"><code>-n, --no-config</code></p>
 
-Skips `config.yaml`/`config.yml`; presets remain available.
+Skips loading `config.yaml` and `config.yml`. Presets remain available.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Config loading on</strong><br> Loads the first configuration file found.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --no-config example.md
+```
 
 </section>
 
@@ -277,11 +412,17 @@ Skips `config.yaml`/`config.yml`; presets remain available.
 
 <p class="cli-syntax"><code>--init-config [CONFIG_DIR]</code></p>
 
-Creates the default config file.
+Creates `config.yaml` and exits. An existing `config.yaml` is preserved and the command returns an error.
 
-- Uses the provided directory
-- `--config-file`
-- `MDV_CONFIG_PATH`, or the default config directory.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">On request</strong><br> Regular runs leave configuration files intact.
+
+A bare `--init-config` uses the directory from `--config-file`, then `MDV_CONFIG_PATH`, then the platform default.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --init-config ./config
+```
 
 </section>
 
@@ -293,7 +434,15 @@ Creates the default config file.
 
 <p class="cli-syntax"><code>-t, --theme &lt;NAME&gt;</code></p>
 
-Chooses a built-in or user theme (default `terminal`).
+Chooses a built-in or [user theme](../themes/).
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`terminal`</strong><br> Uses mdv's built-in terminal palette.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --theme catppuccin example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -310,9 +459,15 @@ Chooses a built-in or user theme (default `terminal`).
 
 <p class="cli-syntax"><code>-T, --code-theme &lt;NAME&gt;</code></p>
 
-Selects a separate syntax palette.
+Chooses a separate syntax-highlighting theme. Accepts the same theme names as `--theme`.
 
-- Without an explicit selection, code follows the document theme.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Document theme</strong><br> Syntax highlighting follows the document theme.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --code-theme monokai example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -329,9 +484,15 @@ Selects a separate syntax palette.
 
 <p class="cli-syntax"><code>--syntaxes-dir &lt;DIR&gt;</code></p>
 
-Recursively loads custom `.sublime-syntax` files on top of the embedded syntax set.
+Recursively loads custom `.sublime-syntax` files. Custom definitions take precedence over matching embedded definitions. Relative CLI paths are resolved from the working directory.
 
-- Custom entries take precedence over matching built-in syntaxes.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Embedded syntaxes</strong><br> Uses only the embedded syntax set.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --syntaxes-dir ./syntaxes example.md
+```
 
 </section>
 
@@ -339,13 +500,25 @@ Recursively loads custom `.sublime-syntax` files on top of the embedded syntax s
 
 ### `--code-block-style`
 
-<p class="cli-syntax"><code>-b, --code-block-style &lt;basic|simple|pretty&gt;[:show-name;show-icon]</code></p>
+<p class="cli-syntax"><code>-b, --code-block-style &lt;STYLE&gt;[:&lt;OPTIONS&gt;]</code></p>
 
-Selects an indented borderless block, a single gutter, or a boxed frame.
+Sets the layout and optional label for fenced code blocks.
 
-- Labels are hidden by default
-- `show-name` displays the language name
-- `show-icon` displays its icon, and both options may be combined (default `basic`).
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`basic`</strong><br> Indents code without a border or language label.
+
+**Styles**
+
+- `basic` indents code without a border.
+- `simple` adds a single left border.
+- `pretty` adds a frame.
+
+Add `show-name` for the language name or `show-icon` for its icon. Combine them with `;`. Icons require a Nerd Font.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --code-block-style 'pretty:show-name;show-icon' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -362,9 +535,21 @@ Selects an indented borderless block, a single gutter, or a boxed frame.
 
 ### `--math-block-style`
 
-<p class="cli-syntax"><code>--math-block-style &lt;basic|simple|pretty&gt;</code></p>
+<p class="cli-syntax"><code>--math-block-style &lt;STYLE&gt;</code></p>
 
-Selects the presentation for display formulas and fenced `math`/`latex`/`tex` blocks.
+Sets the layout for display formulas and fenced `math`, `latex`, and `tex` blocks. Math blocks do not use code labels, icons, or line numbers.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`basic`</strong><br> Indents formulas without a border.
+
+- `basic` indents the formula without a border.
+- `simple` adds a single left border.
+- `pretty` adds a frame.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --math-block-style pretty example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -381,12 +566,20 @@ Selects the presentation for display formulas and fenced `math`/`latex`/`tex` bl
 
 <p class="cli-syntax"><code>-K, --code-line-numbers [&lt;MODE&gt;]</code></p>
 
-Numbers rows inside each code block.
+Adds line numbers inside code blocks. Numbering restarts for each block.
 
-- Without a mode, every wrapped terminal row is numbered
-- `source` numbers physical code lines and leaves wrapped continuations unnumbered
-- `separator` adds a separator
-- `"source;separator"` combines both modes.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Renders code rows without a line-number gutter.
+
+- With no value, numbers each rendered code row without a separator.
+- `source` numbers physical code lines and leaves wrapped continuations unnumbered.
+- `separator` numbers rendered code rows and adds a separator.
+- `source;separator` numbers source lines and adds a separator.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --code-line-numbers 'source;separator' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -403,7 +596,17 @@ Numbers rows inside each code block.
 
 <p class="cli-syntax"><code>--custom-theme &lt;key=value;...&gt;</code></p>
 
-Overrides UI colors on top of the selected theme.
+Overrides colors from the selected theme.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses the selected theme without color overrides.
+
+Separate assignments with `;`. Use `key=value` for top-level colors and `section:field=value` for grouped colors. See the [theme field reference](../theme-reference/) for available keys. Colors can be named, hex, RGB, or `ansi(N)`.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --custom-theme 'line_number:number=grey;h2=blue' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -420,18 +623,21 @@ Overrides UI colors on top of the selected theme.
 
 <p class="cli-syntax"><code>--inline-style &lt;STYLES&gt;</code></p>
 
-Overrides decorations for `emphasis`
+Overrides decorations for inline Markdown elements.
 
-- `strong`
-- `strong_emphasis`
-- `code`
-- `strikethrough`
-- `highlight`.
-- Use `element:property=true,property=false` entries separated by `;`; properties are `backticks`
-- `bold`
-- `italic`
-- `underline`
-- `strikethrough` (for example `--inline-style 'code:backticks=false,bold=true;highlight:underline=true'`).
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses the active theme's decorations.
+
+Use `element:property=true,property=false`. Separate elements with `;` and properties with `,`.
+
+**Elements** `emphasis`, `strong`, `strong_emphasis`, `code`, `strikethrough`, `highlight`.
+
+**Properties** `backticks`, `bold`, `italic`, `underline`, `strikethrough`.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --inline-style 'code:backticks=false,bold=true;highlight:underline=true' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -448,7 +654,17 @@ Overrides decorations for `emphasis`
 
 <p class="cli-syntax"><code>--custom-code-theme &lt;key=value;...&gt;</code></p>
 
-Overrides syntax colors using the same format as `--custom-theme`.
+Overrides syntax-highlighting colors.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses the effective syntax palette without these overrides.
+
+Separate `key=value` assignments with `;`. Both `keyword` and `syntax:keyword` forms are accepted.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --custom-code-theme 'keyword=#ffffff;string=128,0,128' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -463,15 +679,19 @@ Overrides syntax colors using the same format as `--custom-theme`.
 
 ### `--custom-code-block`
 
-<p class="cli-syntax"><code>--custom-code-block &lt;lang:icon=...,label=...,aliases=...|...&gt;[;...]</code></p>
+<p class="cli-syntax"><code>--custom-code-block &lt;BLOCKS&gt;</code></p>
 
-Overrides the icon, label, and aliases for specific code block languages.
+Overrides icons, labels, or aliases for code-block language hints. Syntax highlighting requires a matching syntax definition.
 
-- Multiple languages are separated by `;`, options within one language by `,`, and aliases by `|` (for example
-- `python:icon=*,label=Python,aliases=py|py3;rust:icon=R`).
-- Works for any language hint, even if it is not in the built-in icon mapping.
-- Syntax highlighting is applied only when the language is supported by mdv's syntax highlighting logic.
-- Use `default:icon=...` to set the fallback icon for unknown languages.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses built-in icons, labels, and aliases.
+
+Separate language entries with `;`, properties with `,`, and aliases with `|`. An explicit list replaces inherited aliases. Use `aliases=[]` to clear them. Use `default:icon=…` to set the icon for unknown languages.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --code-block-style pretty:show-name --custom-code-block 'rust:label=Rust sample' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -488,18 +708,32 @@ Overrides the icon, label, and aliases for specific code block languages.
 
 ### `--callout-style`
 
-<p class="cli-syntax"><code>-C, --callout-style &lt;pretty|simple&gt;[:show-icons;show-simple-icons;fold-icons;label-inside;uppercase]</code></p>
+<p class="cli-syntax"><code>-C, --callout-style &lt;STYLE&gt;[:&lt;OPTIONS&gt;]</code></p>
 
-Sets the callout layout and label behavior.
+Sets the callout layout, icons, and label formatting.
 
-- `show-icons` uses Nerd Font glyphs
-- `show-simple-icons` uses portable ASCII markers such as `[i]`
-- `[*]`
-- `[!]`
-- `[x]`.
-- The two icon options cannot be combined.
-- `label-inside` is only supported with `pretty`
-- `fold-icons` requires `show-icons`.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`pretty`</strong><br> Uses a frame with the label above it and icons off.
+
+**Styles**
+
+- `pretty` adds a frame.
+- `simple` uses a single left border.
+
+**Options**
+
+- `show-icons` uses Nerd Font icons.
+- `show-simple-icons` uses ASCII markers such as `[i]`, `[*]`, `[!]`, and `[x]`. It cannot be combined with `show-icons`.
+- `fold-icons` shows fold markers and requires `show-icons`.
+- `label-inside` moves the label into the frame and requires `pretty`.
+- `uppercase` converts labels to uppercase.
+
+Separate multiple options with `;`.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --callout-style 'pretty:show-icons;fold-icons;label-inside' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -524,11 +758,17 @@ Sets the callout layout and label behavior.
 
 <p class="cli-syntax"><code>--custom-callout &lt;name:icon=...,color=...;...&gt;</code></p>
 
-Overrides or adds callout labels.
+Overrides or defines callout icons and colors. Specify either property or both.
 
-- `icon` and `color` are optional; color formats match `--custom-theme`.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses the built-in callout styles and active theme colors.
 
-- A Nerd Font is required in the terminal for icons enabled by `show-icons` and `fold-icons` to render correctly. `show-simple-icons` does not require a Nerd Font.
+Separate entries with `;` and properties with `,`. Colors use the same formats as [`--custom-theme`](#--custom-theme).
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --custom-callout 'tip:icon=*,color=red;custom:color=#ff5555' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -547,9 +787,15 @@ Overrides or adds callout labels.
 
 <p class="cli-syntax"><code>-x, --checkbox-style &lt;square|circle&gt;</code></p>
 
-Renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `[x]` markers.
+Renders task-list checkboxes as `square` or `circle` icons. Requires a Nerd Font.
 
-- Requires a Nerd Font in the terminal.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Text markers</strong><br> Uses text markers such as `[ ]` and `[x]`.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --checkbox-style square example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -566,18 +812,17 @@ Renders task-list checkboxes as Nerd Font icons instead of the default `[ ]` / `
 
 <p class="cli-syntax"><code>--custom-checkbox &lt;PAIRS&gt;</code></p>
 
-Overrides built-in checkbox icons or adds new states (only with `--checkbox-style`).
+Overrides checkbox icons and colors or adds new states. Requires `--checkbox-style`.
 
-- Each semicolon-separated pair is either `<char>:<icon>[:<color>]` or `<char>:<color>`.
-- The color-only form keeps an existing icon or uses the default unchecked icon for a new state.
-- Colors accept named, hex, rgb
-- `ansi(N)` values.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses the icons and colors provided by the selected checkbox style and theme.
 
-- Override:  `--custom-checkbox ' :!'`          replace the unchecked icon
-- Add:       `--custom-checkbox '*:*'`          add a new `[*]` checkbox state
-- Color:     `--custom-checkbox ' :!:yellow'`   or `#ff0000`, `128,1,1`, `ansi(200)`
-- Color only: `--custom-checkbox '?:red'` keeps the Nerd Font icon for the `?` state and applies red.
-- New state, color only: `--custom-checkbox '*:yellow'` uses the default unchecked icon and applies yellow.
+Separate entries with `;`. Use `<char>:<icon>[:<color>]`, `<char>:<color>`, or `<char>:icon=<glyph>,color=<color>`. With only a color, a known state keeps its icon and a new state uses the unchecked icon. Colors can be named, hex, RGB, or `ansi(N)`.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --checkbox-style square --custom-checkbox ' :!:yellow' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -594,13 +839,22 @@ Overrides built-in checkbox icons or adds new states (only with `--checkbox-styl
 
 ### `--list-style`
 
-<p class="cli-syntax"><code>-L, --list-style &lt;style&gt;</code></p>
+<p class="cli-syntax"><code>-L, --list-style &lt;LIST_STYLE&gt;</code></p>
 
-Replaces the default `-` unordered-list markers with a level-aware icon set.
+Uses level-specific icons for unordered-list markers.
 
-- The value is required and uses the format `type:<nerd-font|unicode>;size:<large|small>`, for example `--list-style 'type:unicode;size:small'`.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Text markers</strong><br> Uses `-` markers.
 
-- `size` changes only Nerd Font markers. Unicode accepts either value but renders the same markers; their spacing may vary by font. Verified with Nerd Font families, especially JetBrainsMono Nerd Font.
+- `type` accepts `nerd-font` or `unicode`.
+- `size` accepts `large` or `small` and changes only Nerd Font markers.
+
+Use `type:TYPE;size:SIZE`, or specify just one option. Omitted options use `type:nerd-font` and `size:large`. Nerd Font markers require a Nerd Font. Unicode marker spacing can vary by font.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --list-style 'type:unicode' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -617,7 +871,15 @@ Replaces the default `-` unordered-list markers with a level-aware icon set.
 
 <p class="cli-syntax"><code>-D, --definition-marker-style &lt;unicode|nerd-font&gt;</code></p>
 
-Renders definition descriptions with a built-in Unicode or Nerd Font marker.
+Adds a `unicode` or `nerd-font` marker to definition descriptions. The `nerd-font` style requires a Nerd Font.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Indent only</strong><br> Indents descriptions by two spaces without a marker.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --definition-marker-style unicode example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -632,12 +894,20 @@ Renders definition descriptions with a built-in Unicode or Nerd Font marker.
 
 ### `--uniform-list-marker`
 
-<p class="cli-syntax"><code>--uniform-list-marker &lt;level:1-4|icon:glyph&gt;</code></p>
+<p class="cli-syntax"><code>--uniform-list-marker &lt;MARKER&gt;</code></p>
 
-Uses one marker at every nesting level (only with `--list-style`).
+Uses one unordered-list marker at all nesting levels. Requires `--list-style`.
 
-- `level:2` reuses level 2 from the selected set
-- `icon:*` uses a custom glyph.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Per level</strong><br> Keeps the selected set's level-specific markers.
+
+- `level:<1-4>` uses the marker from that level.
+- `icon:<GLYPH>` uses a custom marker.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --list-style 'type:unicode' --uniform-list-marker 'level:2' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -652,17 +922,19 @@ Uses one marker at every nesting level (only with `--list-style`).
 
 ### `--custom-list`
 
-<p class="cli-syntax"><code>--custom-list &lt;level&gt;:&lt;icon&gt;[:&lt;color&gt;];...</code></p>
+<p class="cli-syntax"><code>--custom-list &lt;PAIRS&gt;</code></p>
 
-Overrides the marker icon and/or color for specific nesting levels (only with `--list-style`).
+Overrides unordered-list markers by nesting level. Requires `--list-style`.
 
-- Level is 1-based; icon is the marker glyph.
-- Colors accept named (`red`), hex (`#ff0000`), rgb (`255,0,0`)
-- `ansi(N)` values.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">No overrides</strong><br> Uses the selected set's markers and theme colors.
 
-- Icon + color:  `--custom-list '1:*:yellow'`   marker `*` in yellow
-- Icon only:     `--custom-list '1:>'`          marker `>` in theme color
-- Color only:    `--custom-list '1:red'`        keep built-in icon, red color
+Separate entries with `;`. Levels start at 1. Use `<level>:<icon>[:<color>]`, `<level>:<color>`, or `<level>:icon=<glyph>,color=<color>`. Colors can be named, hex, RGB, or `ansi(N)`.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --list-style 'type:unicode' --custom-list '1:*:yellow' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -681,9 +953,15 @@ Overrides the marker icon and/or color for specific nesting levels (only with `-
 
 <p class="cli-syntax"><code>-c, --cols &lt;N&gt;</code></p>
 
-Enforces the output width.
+Sets the output width in terminal columns.
 
-- Without it, mdv uses a detected terminal width of at least 20 columns, then configured `cols`, then 80 columns.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Automatic</strong><br> Uses a detected terminal width of at least 20 columns, then configured `cols` if available, then 80 columns.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --cols 72 example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -698,11 +976,17 @@ Enforces the output width.
 
 ### `--margin`
 
-<p class="cli-syntax"><code>-m, --margin &lt;right:N;left:N&gt;</code></p>
+<p class="cli-syntax"><code>-m, --margin &lt;MARGINS&gt;</code></p>
 
-Reserves separate left and right terminal margins.
+Reserves left and right margins in terminal columns. Specify either side or both. A side omitted from the argument is zero. HTML export does not use terminal margins.
 
-- An omitted side defaults to `0`.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">0 columns</strong><br> Both sides are zero.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --margin 'left:4;right:5' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -719,7 +1003,15 @@ Reserves separate left and right terminal margins.
 
 <p class="cli-syntax"><code>--tab-length &lt;N&gt;</code></p>
 
-Replaces tab characters with `N` spaces (default `4`).
+Sets how many spaces replace a tab.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`4`</strong><br> Replaces each tab with four spaces.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --tab-length 2 example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -734,9 +1026,21 @@ Replaces tab characters with `N` spaces (default `4`).
 
 ### `--wrap`
 
-<p class="cli-syntax"><code>-w, --wrap &lt;char|word|none&gt;</code></p>
+<p class="cli-syntax"><code>-w, --wrap &lt;MODE&gt;</code></p>
 
-Selects the break strategy for text, code, callouts, and table cells (default `char`).
+Selects where to break prose, code, callouts, and table-cell text.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`char`</strong><br> Wraps at character boundaries.
+
+- `char` breaks at character boundaries.
+- `word` prefers word boundaries. A word that cannot fit can still break.
+- `none` turns off soft wrapping. Constrained table cells may still break to fit.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --wrap word example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -751,9 +1055,15 @@ Selects the break strategy for text, code, callouts, and table cells (default `c
 
 ### `--reflow`
 
-Collapses in-paragraph source newlines (soft breaks) and refills each line to the wrap width, so hard-wrapped source reflows to fit smaller screens.
+Collapses soft source line breaks within paragraphs and reflows the text to the output width. Requires wrapping and preserves hard breaks.
 
-- Requires wrapping to be enabled; hard breaks are preserved.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Preserves source line breaks within paragraphs.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --reflow example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -768,11 +1078,21 @@ Collapses in-paragraph source newlines (soft breaks) and refills each line to th
 
 ### `--table-wrap`
 
-<p class="cli-syntax"><code>-W, --table-wrap &lt;fit|wrap|none&gt;</code></p>
+<p class="cli-syntax"><code>-W, --table-wrap &lt;MODE&gt;</code></p>
 
-Chooses table geometry: fit cells, split columns into blocks, or allow overflow (default `fit`).
+Controls how wide tables use the available terminal width. Breakpoints inside cells follow `--wrap` when the layout constrains cell width.
 
-- Cell breaks still follow `--wrap`.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`fit`</strong><br> Wraps cell content to fit within the available width.
+
+- `fit` wraps cell content to fit the table within the terminal width.
+- `wrap` splits wide tables into column blocks.
+- `none` leaves cells unwrapped and allows horizontal overflow.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --table-wrap wrap example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -789,7 +1109,15 @@ Chooses table geometry: fit cells, split columns into blocks, or allow overflow 
 
 <p class="cli-syntax"><code>-B, --table-borders</code></p>
 
-Restores full rounded table borders.
+Draws a full table grid with rounded outer corners.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Compact borders</strong><br> Uses compact borders without a full outer grid.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --table-borders example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -806,7 +1134,15 @@ Restores full rounded table borders.
 
 <p class="cli-syntax"><code>-S, --table-smart-indent</code></p>
 
-Automatic table indent adjustment based on available width.
+Uses the current content indent for tables when space allows and reduces it when width is tight.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Automatic table indent adjustment is off.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --table-smart-indent example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -821,9 +1157,22 @@ Automatic table indent adjustment based on available width.
 
 ### `--heading-layout`
 
-<p class="cli-syntax"><code>-H, --heading-layout &lt;level|center|flat|none&gt;</code></p>
+<p class="cli-syntax"><code>-H, --heading-layout &lt;LAYOUT&gt;</code></p>
 
-Controls heading indentation (default `level`).
+Sets heading alignment and the indentation of content under headings.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`level`</strong><br> Indents headings by level and content one column further.
+
+- `level` indents headings by level and content one column further.
+- `center` centers headings and leaves content unindented.
+- `flat` aligns headings to the left and indents content one column.
+- `none` aligns headings and content to the left.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --heading-layout center example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -838,7 +1187,15 @@ Controls heading indentation (default `level`).
 
 ### `--show-heading-markers`
 
-Prefixes headings with markdown-style markers matching their level.
+Prefixes headings with Markdown markers matching their level.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Heading markers are hidden.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --show-heading-markers example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -855,7 +1212,15 @@ Prefixes headings with markdown-style markers matching their level.
 
 <p class="cli-syntax"><code>-I, --smart-indent</code></p>
 
-Smooths indentation jumps between heading levels in `level` mode.
+Smooths indentation jumps between consecutive headings. Applies only to `--heading-layout level`.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Heading indentation follows the actual heading level.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --heading-layout level --smart-indent example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -870,9 +1235,21 @@ Smooths indentation jumps between heading levels in `level` mode.
 
 ### `--code-wrap-indent`
 
-<p class="cli-syntax"><code>--code-wrap-indent &lt;none|base|double&gt;</code></p>
+<p class="cli-syntax"><code>--code-wrap-indent &lt;MODE&gt;</code></p>
 
-Sets the hanging indent applied to wrapped code block lines (default `double`).
+Controls hanging indentation on wrapped code lines.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`double`</strong><br> Adds two spaces to the original indent on wrapped code lines.
+
+- `none` adds no hanging indent.
+- `base` aligns continuations with the original line indentation.
+- `double` adds two spaces to the original indentation.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --code-wrap-indent base example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -887,11 +1264,19 @@ Sets the hanging indent applied to wrapped code block lines (default `double`).
 
 ### `--block-spacing`
 
-<p class="cli-syntax"><code>--block-spacing &lt;spec&gt;</code></p>
+<p class="cli-syntax"><code>--block-spacing &lt;SPACING&gt;</code></p>
 
-Overrides top and bottom blank lines per block.
+Sets how many blank lines appear above and below each block type. Adjacent gaps collapse to the larger value.
 
-- Omitted sides keep their defaults, and adjacent block gaps collapse to the larger value.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Built-in spacing</strong><br> Most blocks use one line above and below. Paragraphs use zero above and one below. `end-references` uses two above and one below.
+
+Use `<element>:top=<lines>,bottom=<lines>`. Separate elements with `;` and sides with `,`. Omitted elements and sides retain their spacing. See [block spacing](../rendering/) for supported block types.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --block-spacing 'paragraph:bottom=0;callout:top=2' example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -906,9 +1291,20 @@ Overrides top and bottom blank lines per block.
 
 ### `--horizontal-rule-style`
 
-<p class="cli-syntax"><code>--horizontal-rule-style &lt;pretty|simple&gt;</code></p>
+<p class="cli-syntax"><code>--horizontal-rule-style &lt;STYLE&gt;</code></p>
 
-Draws Markdown rules and HTML `<hr>` with decorative endpoints or as a continuous line.
+Sets the appearance of Markdown rules and HTML `<hr>`.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`pretty`</strong><br> Draws a line with decorative endpoints.
+
+- `pretty` draws a line with decorative endpoints.
+- `simple` draws a continuous line.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --horizontal-rule-style simple example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -925,7 +1321,15 @@ Draws Markdown rules and HTML `<hr>` with decorative endpoints or as a continuou
 
 ### `--show-empty-elements`
 
-Keeps normally hidden empty headings, lists, block quotes, code blocks, and tables in the output.
+Keeps empty headings, list items, block quotes, code blocks, and tables that would otherwise be hidden.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Off</strong><br> Hides empty elements that are unnecessary for layout.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --show-empty-elements example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -940,7 +1344,15 @@ Keeps normally hidden empty headings, lists, block quotes, code blocks, and tabl
 
 ### `--no-code-guessing`
 
-Disables heuristic detection of code block languages (unknown blocks remain plain text).
+Disables heuristic language detection. Explicitly supported language hints still select syntax highlighting.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">Detection on</strong><br> Tries to detect the language when the code block has no recognized hint.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --no-code-guessing example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -957,9 +1369,24 @@ Disables heuristic detection of code block languages (unknown blocks remain plai
 
 ### `--link-style`
 
-<p class="cli-syntax"><code>-u, --link-style &lt;clickable|fclickable|inline|inlinetable|endtable|hide&gt;</code></p>
+<p class="cli-syntax"><code>-u, --link-style &lt;STYLE&gt;</code></p>
 
-Changes how links are displayed (default `clickable`).
+Sets what readers see for links. OSC 8 hyperlinks require terminal styling.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`clickable`</strong><br> Displays clickable link text in a terminal that supports OSC 8.
+
+- `clickable` (`c`) makes the link text clickable and hides the URL.
+- `fclickable` (`fc`) underlines clickable link text.
+- `inline` (`i`) shows the URL after the link text.
+- `inlinetable` (`it`) numbers links and shows a reference table near the block.
+- `endtable` (`et`) numbers links and shows a reference table at the document end.
+- `hide` (`h`) shows link text only.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --link-style inline example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -974,9 +1401,22 @@ Changes how links are displayed (default `clickable`).
 
 ### `--link-overflow`
 
-<p class="cli-syntax"><code>-l, --link-overflow &lt;wrap|cut|tablecut|none&gt;</code></p>
+<p class="cli-syntax"><code>-l, --link-overflow &lt;MODE&gt;</code></p>
 
-Controls whether links wrap, are shortened, or overflow the available width (default `wrap`).
+Controls the layout of visible URLs that do not fit the available width. The actual link destination stays the same.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`wrap`</strong><br> Wraps visible URLs that exceed the available width.
+
+- `wrap` wraps long URLs.
+- `cut` shortens long URLs with an ellipsis.
+- `tablecut` shortens long URLs in text and inside table cells.
+- `none` allows horizontal overflow.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --link-style inline --link-overflow cut example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -993,9 +1433,20 @@ Controls whether links wrap, are shortened, or overflow the available width (def
 
 ### `--footnote-style`
 
-<p class="cli-syntax"><code>--footnote-style &lt;endnotes|attached&gt;</code></p>
+<p class="cli-syntax"><code>--footnote-style &lt;STYLE&gt;</code></p>
 
-Places footnotes at the end of the document or immediately after the block that references them, including paragraphs, tables, and list items.
+Sets where referenced footnotes appear.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`endnotes`</strong><br> Collects referenced footnotes at the end of the document.
+
+- `endnotes` collects footnotes at the end of the document.
+- `attached` places footnotes after the block that references them, including paragraphs, tables, and list items.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --footnote-style attached example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -1010,11 +1461,20 @@ Places footnotes at the end of the document or immediately after the block that 
 
 ### `--missing-footnote-style`
 
-<p class="cli-syntax"><code>--missing-footnote-style &lt;show|hide&gt;</code></p>
+<p class="cli-syntax"><code>--missing-footnote-style &lt;STYLE&gt;</code></p>
 
-Controls placeholder entries for missing, invalid, or empty footnote definitions.
+Controls the display of missing, invalid, or empty footnote definitions.
 
-- `show` renders a placeholder message in the footnote block `hide` omits those entries entirely.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">`show`</strong><br> Shows a placeholder for missing, invalid, or empty definitions.
+
+- `show` displays a placeholder entry.
+- `hide` omits the entry.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --missing-footnote-style hide example.md
+```
 
 <details class="mdv-reference-preview">
 <summary>Output preview</summary>
@@ -1031,9 +1491,15 @@ Controls placeholder entries for missing, invalid, or empty footnote definitions
 
 ### `mdv help`
 
-Opens the full `mdv --help` output in the selected pager.
+Shows the full help in a pager when stdin and stdout are terminals. Uses `MDV_PAGER` when set, otherwise the built-in pager. If either stream is redirected, prints the same help directly.
 
-- It uses `MDV_PAGER` when set and the built-in pager otherwise; when input or output is redirected, it prints the same help directly.
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">On request</strong><br> Opens help when the subcommand is supplied.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv help
+```
 
 </section>
 
@@ -1041,7 +1507,15 @@ Opens the full `mdv --help` output in the selected pager.
 
 ### `-h`
 
-Shows a concise option summary.
+Prints a concise option summary.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">On request</strong><br> Prints the summary when the flag is supplied.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv -h
+```
 
 </section>
 
@@ -1049,7 +1523,15 @@ Shows a concise option summary.
 
 ### `--help`
 
-Shows full help with value descriptions, formats, and examples.
+Prints the full help with value descriptions, formats, and examples.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">On request</strong><br> Prints full help when the flag is supplied.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --help
+```
 
 </section>
 
@@ -1060,5 +1542,13 @@ Shows full help with value descriptions, formats, and examples.
 <p class="cli-syntax"><code>-V, --version</code></p>
 
 Prints the current version.
+
+<strong class="cli-default-label">Default</strong> <strong class="cli-default-value">On request</strong><br> Prints the version when the flag is supplied.
+
+<strong class="cli-example-label">Example</strong>
+
+```sh
+mdv --version
+```
 
 </section>

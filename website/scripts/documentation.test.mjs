@@ -89,6 +89,42 @@ describe('Complete website documentation', () => {
     }
   });
 
+  test('renders a default value, explanation, and command example for every CLI entry', () => {
+    const commandsByLocale = {};
+    for (const [locale, pages] of Object.entries(catalog)) {
+      const reference = pages.find((page) => page.meta.slug === 'cli');
+      const defaultLabel = locale === 'en' ? 'Default' : 'По умолчанию';
+      const exampleLabel = locale === 'en' ? 'Example' : 'Пример';
+      const defaultBlock = new RegExp(`<strong class="cli-default-label">${defaultLabel}</strong> <strong class="cli-default-value">(.+?)</strong><br> [^<\\s]`);
+      const sections = [...reference.code.matchAll(/<section class="cli-option" aria-label="([^"]+)">([\s\S]*?)<\/section>/g)];
+      const blocks = reference.metadata.frontmatter.searchBlocks;
+      commandsByLocale[locale] = new Map();
+      for (const [, option, html] of sections) {
+        const entry = `${locale}: ${option}`;
+        const defaultMatch = html.match(defaultBlock);
+        expect(defaultMatch, entry).not.toBeNull();
+        expect(html.match(/class="cli-default-label"/g), entry).toHaveLength(1);
+        expect(html.match(/class="cli-example-label"/g), entry).toHaveLength(1);
+        const content = blocks.filter((block) => block.section === option && block.kind !== 'heading');
+        const defaultIndex = content.findIndex((block) => block.text.startsWith(`${defaultLabel} `));
+        expect([1, 2], entry).toContain(defaultIndex);
+        expect(content.slice(0, defaultIndex).every((block) => block.kind === 'paragraph'), entry).toBe(true);
+        const examples = content.filter((block) => block.kind === 'code');
+        expect(examples, entry).toHaveLength(1);
+        const [example] = examples;
+        const exampleIndex = content.indexOf(example);
+        expect(content[exampleIndex - 1].text, entry).toBe(exampleLabel);
+        expect(example.text, entry).toStartWith('mdv ');
+        expect(example.text === option || example.text.split(' ').some((part) => part === option || part.startsWith(`${option}=`)), entry).toBe(true);
+        if (html.includes('<details')) expect(html.indexOf('</pre>'), entry).toBeLessThan(html.indexOf('<details'));
+        if (option === '--front-matter') expect(defaultMatch[1], entry).toBe('<code>hidden</code>');
+        if (option === '--inline-style') expect(content.some((block) => block.kind === 'list'), entry).toBe(false);
+        commandsByLocale[locale].set(option, example.text);
+      }
+    }
+    expect(commandsByLocale.ru).toEqual(commandsByLocale.en);
+  });
+
   test('includes every YAML key and the unchanged canonical configuration template', async () => {
     const template = (await readFile(resolve(root, 'docs/examples/config.yaml'), 'utf8')).replaceAll('\r\n', '\n').trim();
     const defaults = [...template.matchAll(/^([a-z_]+):[ \t]+([^#\n]+)/gm)].map((match) => [match[1], match[2].trim()]);
