@@ -14,6 +14,25 @@ export function searchTextMatches(text: string, query: string): TextMatch[] {
     .map((match) => ({ start: match.index!, end: match.index! + match[0].length }));
 }
 
+export function searchHighlightMatches(text: string, query: string): TextMatch[] {
+  const matches = searchTextMatches(text, query);
+  const joinAdjacent = /\S\s+\S/.test(query);
+  const wordPattern = /[\p{L}\p{M}\p{N}_]+/gu;
+  let word = wordPattern.exec(text);
+  const ranges: TextMatch[] = [];
+  for (const match of matches) {
+    while (word && wordPattern.lastIndex <= match.start) word = wordPattern.exec(text);
+    const start = word && word.index < match.start ? word.index : match.start;
+    while (word && wordPattern.lastIndex < match.end) word = wordPattern.exec(text);
+    const end = word && word.index < match.end ? wordPattern.lastIndex : match.end;
+
+    const previous = ranges.at(-1);
+    if (previous && (start < previous.end || (joinAdjacent && !text.slice(previous.end, start).trim()))) previous.end = end;
+    else ranges.push({ start, end });
+  }
+  return ranges;
+}
+
 export function primarySearchMatch(text: string, query: string): TextMatch | undefined {
   const phrase = normalize(query);
   if (!phrase) return;

@@ -29,8 +29,8 @@
   initial-value: 0%;
 }
 ::highlight(docs-search-match) {
-  background-color: color-mix(in srgb, var(--color-peach) calc(.9 * var(--docs-search-match-opacity)), transparent);
-  color: var(--docs-search-match-color, currentColor);
+  text-decoration: underline 2px color-mix(in srgb, var(--color-peach) var(--docs-search-match-opacity), transparent);
+  text-underline-offset: 3px;
 }
 .docs-article { min-width: 0; }
 .docs-eyebrow { color: var(--color-accent); font: 700 calc(14px * var(--text-scale))/1.5 var(--font-display); font-kerning: normal; text-transform: uppercase; margin-bottom: 12px; }
@@ -97,5 +97,5 @@
 }
 @media (forced-colors: active) {
   :is(.docs-nav-group, .docs-toc) a[aria-current]::after { background: Highlight; forced-color-adjust: none; }
-  ::highlight(docs-search-match) { color: MarkText; background-color: Mark; }
+  ::highlight(docs-search-match) { text-decoration-color: Highlight; }
 }

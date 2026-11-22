@@ -3,7 +3,7 @@ import { createSatteriMarkdownProcessor } from '@astrojs/markdown-satteri';
 import blocksPlugin from './docs-search-blocks.mjs';
 import pixelCodeBlocks from './pixel-code-blocks.mjs';
 import scrollTables from './scroll-tables.mjs';
-import { searchDocumentation, searchSnippet, searchTextMatches, primarySearchMatch, searchResultUrl, documentationSearchDestination } from '../src/scripts/docs-search-model';
+import { searchDocumentation, searchSnippet, searchTextMatches, searchHighlightMatches, primarySearchMatch, searchResultUrl, documentationSearchDestination } from '../src/scripts/docs-search-model';
 
 const processor = await createSatteriMarkdownProcessor({
   shikiConfig: { theme: 'catppuccin-mocha' }, hastPlugins: [pixelCodeBlocks, scrollTables, blocksPlugin],
@@ -49,6 +49,19 @@ test('matches literal flags, Unicode text and query punctuation without regex in
   expect(searchTextMatches('Use [MODE] and --color-depth', '[MODE]')).toEqual([{ start: 4, end: 10 }]);
   expect(searchTextMatches('ТЕМА: канagawa', 'тема')).toEqual([{ start: 0, end: 4 }]);
   expect(searchTextMatches('<script>alert(1)</script>', '<script>')[0]).toEqual({ start: 0, end: 8 });
+});
+
+test('groups only neighboring matches in multi-word document highlights', () => {
+  const text = 'word границы or word\tграницы, word and границы';
+  const ranges = searchHighlightMatches(text, 'word границы');
+  expect(ranges.map(({ start, end }) => text.slice(start, end))).toEqual(['word границы', 'word\tграницы', 'word', 'границы']);
+  expect(searchHighlightMatches('word word', 'word')).toEqual([{ start: 0, end: 4 }, { start: 5, end: 9 }]);
+});
+
+test('expands incomplete document matches to whole words before grouping them', () => {
+  expect(searchHighlightMatches('cargo install mdv', 'cargo insta')).toEqual([{ start: 0, end: 13 }]);
+  expect(searchHighlightMatches('настройки,', 'строй ки')).toEqual([{ start: 0, end: 9 }]);
+  expect(searchHighlightMatches('cafe\u0301.', 'caf')).toEqual([{ start: 0, end: 5 }]);
 });
 
 test('builds a search destination without a native hash jump and validates its target', () => {

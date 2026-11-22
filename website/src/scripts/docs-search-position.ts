@@ -1,4 +1,4 @@
-import { primarySearchMatch, searchTextMatches } from './docs-search-model';
+import { primarySearchMatch, searchHighlightMatches } from './docs-search-model';
 
 export function documentationSearchRanges(target: HTMLElement, query: string) {
   const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
@@ -28,7 +28,7 @@ export function documentationSearchRanges(target: HTMLElement, query: string) {
   }
 
   const primaryRange = toRange(primary);
-  const matches = searchTextMatches(text, query).map((match) =>
+  const matches = searchHighlightMatches(text, query).map((match) =>
     match.start === primary.start && match.end === primary.end ? primaryRange : toRange(match));
   return { primary: primaryRange, matches };
 }
@@ -49,14 +49,15 @@ export function setDocumentationSearchHighlight(target?: HTMLElement, ranges?: R
 
   const fade = !matchMedia('(prefers-reduced-motion: reduce), (forced-colors: active)').matches
     && !document.documentElement.classList.contains('motion-paused');
-  const hidden = { '--docs-search-match-opacity': '0%', '--docs-search-match-color': 'currentColor' };
-  const visible = { '--docs-search-match-opacity': '100%', '--docs-search-match-color': 'var(--color-background)' };
+  const hidden = { '--docs-search-match-opacity': '0%' };
+  const visible = { '--docs-search-match-opacity': '100%' };
+  const easing = 'cubic-bezier(.25, 0, .75, 1)';
   const animation = target.animate(fade ? [
-    { ...hidden, easing: 'ease-out' },
-    { ...visible, offset: .08 },
-    { ...visible, offset: .76, easing: 'ease-in-out' },
+    { ...hidden, easing },
+    { ...visible, offset: .25 },
+    { ...visible, offset: .5, easing },
     hidden,
-  ] : [visible, visible], { duration: 1750, fill: 'backwards' });
+  ] : [visible, visible], { duration: fade ? 1650 : 1750, fill: 'backwards' });
 
   highlightAnimation = animation;
   animation.onfinish = () => {
